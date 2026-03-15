@@ -21,7 +21,7 @@ export interface VirtualModuleOptions {
   locales: string[]
   sourceLocale: string
   defaultBuildLocale: string
-  framework: 'vue' | 'solid'
+  framework: 'vue' | 'solid' | 'svelte'
 }
 
 export function resolveVirtualSplitId(id: string): string | undefined {

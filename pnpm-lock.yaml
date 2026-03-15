@@ -175,6 +175,31 @@ importers:
         specifier: ^5.9
         version: 5.9.3
 
+  examples/svelte:
+    dependencies:
+      '@fluenti/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@fluenti/svelte':
+        specifier: workspace:*
+        version: link:../../packages/svelte
+      '@fluenti/vite-plugin':
+        specifier: workspace:*
+        version: link:../../packages/vite-plugin
+      svelte:
+        specifier: ^5
+        version: 5.53.12
+    devDependencies:
+      '@sveltejs/vite-plugin-svelte':
+        specifier: ^5
+        version: 5.1.1(svelte@5.53.12)(vite@8.0.0(@types/node@24.12.0)(esbuild@0.27.4)(jiti@2.6.1)(terser@5.46.0)(yaml@2.8.2))
+      typescript:
+        specifier: ^5.9
+        version: 5.9.3
+      vite:
+        specifier: ^8
+        version: 8.0.0(@types/node@24.12.0)(esbuild@0.27.4)(jiti@2.6.1)(terser@5.46.0)(yaml@2.8.2)
+
   examples/vue:
     dependencies:
       '@fluenti/core':

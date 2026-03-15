@@ -29,6 +29,11 @@ export default defineConfig({
       testMatch: '**/solid-start.spec.ts',
     },
     {
+      name: 'svelte',
+      use: { baseURL: 'http://localhost:5177' },
+      testMatch: '**/svelte.spec.ts',
+    },
+    {
       name: 'splitting-vue',
       use: { baseURL: 'http://localhost:5180' },
       testMatch: '**/splitting-vue.spec.ts',
@@ -56,6 +61,12 @@ export default defineConfig({
     {
       command: 'cd examples/solid-start && pnpm build && pnpm preview',
       port: 5176,
+      reuseExistingServer: true,
+      timeout: 60_000,
+    },
+    {
+      command: 'cd examples/svelte && pnpm build && pnpm preview --port 5177',
+      port: 5177,
       reuseExistingServer: true,
       timeout: 60_000,
     },

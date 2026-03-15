@@ -32,7 +32,9 @@
     "test:e2e:vue": "playwright test --project=vue",
     "test:e2e:solid": "playwright test --project=solid",
     "test:e2e:nuxt": "playwright test --project=nuxt",
-    "test:e2e:solid-start": "playwright test --project=solid-start"
+    "test:e2e:solid-start": "playwright test --project=solid-start",
+    "test:e2e:svelte": "playwright test --project=svelte",
+    "example:svelte": "pnpm --filter playground-svelte dev"
   },
   "devDependencies": {
     "@playwright/test": "^1.58.2",
