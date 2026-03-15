@@ -1,4 +1,4 @@
-import { useContext, type ReactNode } from 'react'
+import { memo, useContext, type ReactNode } from 'react'
 import { I18nContext } from '../context'
 
 const PLURAL_CATEGORIES = ['zero', 'one', 'two', 'few', 'many', 'other'] as const
@@ -58,7 +58,7 @@ function replaceHash(node: ReactNode, formatted: string): ReactNode {
  * <Plural value={count} zero="No messages" one="# message" other="# messages" />
  * ```
  */
-export function Plural({ value, zero, one, two, few, many, other, offset }: PluralProps) {
+export const Plural = memo(function Plural({ value, zero, one, two, few, many, other, offset }: PluralProps) {
   const ctx = useContext(I18nContext)
   if (!ctx) {
     throw new Error('[fluenti] <Plural> must be used within an <I18nProvider>')
@@ -91,4 +91,4 @@ export function Plural({ value, zero, one, two, few, many, other, offset }: Plur
   const formatted = ctx.i18n.n(value)
 
   return <>{replaceHash(selected, formatted)}</>
-}
+})

@@ -1,5 +1,7 @@
 import {
+  memo,
   useContext,
+  useMemo,
   Children,
   isValidElement,
   cloneElement,
@@ -122,14 +124,20 @@ function reconstruct(
  * <Trans>Read the <a href="/docs">documentation</a> for more info.</Trans>
  * ```
  */
-export function Trans({ children, id, render }: TransProps) {
+export const Trans = memo(function Trans({ children, id, render }: TransProps) {
   const ctx = useContext(I18nContext)
   if (!ctx) {
     throw new Error('[fluenti] <Trans> must be used within an <I18nProvider>')
   }
 
-  const { message, components } = extractMessage(children)
-  const messageId = id ?? hashMessage(message)
+  const { message, components } = useMemo(
+    () => extractMessage(children),
+    [children],
+  )
+  const messageId = useMemo(
+    () => id ?? hashMessage(message),
+    [id, message],
+  )
 
   // Look up translation; fall back to source message
   const translated = ctx.i18n.t(
@@ -138,4 +146,4 @@ export function Trans({ children, id, render }: TransProps) {
 
   const result = reconstruct(translated, components)
   return render ? render(result) : <>{result}</>
-}
+})

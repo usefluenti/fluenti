@@ -28,6 +28,9 @@ export function I18nProvider({
   const loadedMessagesRef = useRef(loadedMessages)
   loadedMessagesRef.current = loadedMessages
 
+  // Guard against out-of-order async locale loads (race condition protection)
+  const localeRequestRef = useRef(0)
+
   const i18n = useMemo(() => {
     const config: Parameters<typeof createFluent>[0] = {
       locale: currentLocale,
@@ -46,10 +49,16 @@ export function I18nProvider({
     if (locale !== currentLocale) {
       void handleSetLocale(locale)
     }
-  }, [locale]) // eslint-disable-line react-hooks/exhaustive-deps
+    // Intentionally only depend on `locale` — we want to sync when the
+    // external prop changes, not when internal state (`currentLocale`,
+    // `handleSetLocale`) updates, which would cause infinite re-renders.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [locale])
 
   const handleSetLocale = useCallback(
     async (newLocale: string) => {
+      const requestId = ++localeRequestRef.current
+
       if (loadedMessagesRef.current[newLocale]) {
         setCurrentLocale(newLocale)
         return
@@ -65,6 +74,10 @@ export function I18nProvider({
       setIsLoading(true)
       try {
         const msgs = await loadMessages(newLocale)
+
+        // A newer request has superseded this one — discard stale result
+        if (requestId !== localeRequestRef.current) return
+
         const resolved: Messages =
           typeof msgs === 'object' && msgs !== null && 'default' in msgs
             ? (msgs as { default: Messages }).default
@@ -73,9 +86,14 @@ export function I18nProvider({
         setLoadedLocales((prev) => [...new Set([...prev, newLocale])])
         setCurrentLocale(newLocale)
       } catch (err) {
-        console.error(`[fluenti] Failed to load locale "${newLocale}"`, err)
+        // Only log if this request is still the latest
+        if (requestId === localeRequestRef.current) {
+          console.error(`[fluenti] Failed to load locale "${newLocale}"`, err)
+        }
       } finally {
-        setIsLoading(false)
+        if (requestId === localeRequestRef.current) {
+          setIsLoading(false)
+        }
       }
     },
     [loadMessages],
