@@ -1,0 +1,232 @@
+---
+title: "@fluenti/react"
+description: React bindings API reference
+---
+
+## `<I18nProvider>`
+
+Provide i18n context to the component tree.
+
+```tsx
+import { I18nProvider } from '@fluenti/react'
+import en from './locales/compiled/en'
+import zhCN from './locales/compiled/zh-CN'
+
+<I18nProvider
+  locale="en"
+  fallbackLocale="en"
+  messages={{ en, 'zh-CN': zhCN }}
+>
+  <App />
+</I18nProvider>
+```
+
+### Props
+
+| Prop | Type | Description |
+|------|------|-------------|
+| `locale` | `string` | Initial locale |
+| `fallbackLocale` | `string?` | Fallback locale |
+| `messages` | `AllMessages` | Compiled message catalogs (from `fluenti compile`) |
+| `loadMessages` | `(locale) => Promise<Messages>?` | Async locale loader for lazy loading |
+| `fallbackChain` | `Record<string, string[]>?` | Locale fallback chains |
+| `dateFormats` | `DateFormatOptions?` | Custom date format presets |
+| `numberFormats` | `NumberFormatOptions?` | Custom number format presets |
+| `missing` | `(locale, id) => string?` | Missing message handler |
+
+### Lazy loading
+
+```tsx
+<I18nProvider
+  locale="en"
+  fallbackLocale="en"
+  messages={{ en }}
+  loadMessages={(locale) => import(`./locales/compiled/${locale}.ts`)}
+>
+  <App />
+</I18nProvider>
+```
+
+## `useI18n()`
+
+Access the i18n context from the nearest provider. Throws if used outside an `<I18nProvider>`.
+
+```tsx
+import { useI18n } from '@fluenti/react'
+
+function MyComponent() {
+  const { i18n, locale, setLocale, isLoading, loadedLocales, preloadLocale } = useI18n()
+  return <p>{i18n.t('Hello, {name}!', { name: 'World' })}</p>
+}
+```
+
+### Return values
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `i18n` | `FluentInstanceExtended` | Fluent instance with `t()`, `d()`, `n()`, `format()` methods |
+| `locale` | `string` | Current locale |
+| `setLocale` | `(locale) => Promise<void>` | Change locale (async if loading is needed) |
+| `isLoading` | `boolean` | Whether a locale is being loaded |
+| `loadedLocales` | `string[]` | Array of loaded locale codes |
+| `preloadLocale` | `(locale) => Promise<void>` | Preload a locale without switching |
+
+### `i18n.t(message, values?)`
+
+Translate a message. O(1) hash lookup — safe to call directly in JSX without `useMemo`.
+
+```tsx
+i18n.t('Welcome to my app')
+i18n.t('Hello, {name}!', { name: 'World' })
+i18n.t('You have {count} items', { count: 5 })
+```
+
+### `i18n.d(value, style?)`
+
+Format a date.
+
+```tsx
+i18n.d(new Date())          // default format
+i18n.d(new Date(), 'long')  // named preset
+```
+
+### `i18n.n(value, style?)`
+
+Format a number.
+
+```tsx
+i18n.n(1234.5)              // default format
+i18n.n(1234.5, 'currency')  // named preset
+```
+
+### `i18n.format(message, values?)`
+
+Direct ICU interpolation without catalog lookup.
+
+```tsx
+i18n.format('Hello {name}!', { name: 'World' })
+```
+
+## `<Trans>`
+
+Rich text with component interpolation. Write native HTML — no indexed placeholders.
+
+```tsx
+import { Trans } from '@fluenti/react'
+
+<Trans>Click <a href="/next">here</a> to continue.</Trans>
+<Trans>This is <strong>important</strong> and <em>urgent</em>.</Trans>
+```
+
+The component extracts text content as the source message (e.g., `Click <0>here</0> to continue.`), looks up the translation, and reconstructs the React elements with `cloneElement`.
+
+### Props
+
+| Prop | Type | Description |
+|------|------|-------------|
+| `children` | `ReactNode` | Source-language content with HTML elements |
+| `tag` | `string?` | Wrapper element (default: `'span'`) |
+
+## `<Plural>`
+
+Locale-aware pluralization using `Intl.PluralRules`.
+
+```tsx
+import { Plural } from '@fluenti/react'
+
+<Plural value={count} zero="No items" one="# item" other="# items" />
+```
+
+Use `#` as a placeholder for the numeric value.
+
+### Props
+
+| Prop | Type | Description |
+|------|------|-------------|
+| `value` | `number` | **(required)** The numeric value to pluralize on |
+| `zero` | `string?` | Exact zero match |
+| `one` | `string?` | CLDR "one" category |
+| `two` | `string?` | CLDR "two" category |
+| `few` | `string?` | CLDR "few" category |
+| `many` | `string?` | CLDR "many" category |
+| `other` | `string` | **(required)** Fallback for all other values |
+| `offset` | `number?` | Offset to subtract before selecting category |
+| `tag` | `string?` | Wrapper element (default: `'span'`) |
+
+## `<Select>`
+
+Categorical value selection (gender, role, etc.).
+
+```tsx
+import { Select } from '@fluenti/react'
+
+<Select value={gender} male="He liked this" female="She liked this" other="They liked this" />
+```
+
+### Props
+
+| Prop | Type | Description |
+|------|------|-------------|
+| `value` | `string` | **(required)** The value to select on |
+| `other` | `string` | **(required)** Fallback when no match |
+| `tag` | `string?` | Wrapper element (default: `'span'`) |
+| `[key]` | `string` | Any additional props are treated as case options |
+
+## `<DateTime>`
+
+Date formatting component.
+
+```tsx
+import { DateTime } from '@fluenti/react'
+
+<DateTime value={new Date()} style="long" />
+```
+
+## `<NumberFormat>`
+
+Number formatting component.
+
+```tsx
+import { NumberFormat } from '@fluenti/react'
+
+<NumberFormat value={1234.5} style="decimal" />
+```
+
+## `msg`
+
+Re-exported from `@fluenti/core`. Create lazy message descriptors for module-level constants.
+
+```tsx
+import { msg } from '@fluenti/react'
+
+const ROLES = {
+  admin: msg`Administrator`,
+  user: msg`Regular User`,
+}
+
+// Resolve at render time:
+function RoleBadge({ role }) {
+  const { i18n } = useI18n()
+  return <span>{i18n.t(ROLES[role])}</span>
+}
+```
+
+## Reactivity
+
+React's re-render cycle handles reactivity automatically. When `setLocale()` is called:
+
+1. The provider updates its internal state
+2. A new `createFluent()` instance is created with the new locale
+3. All child components re-render with updated translations
+
+Since `i18n.t()` is an O(1) hash lookup, calling it directly in JSX is efficient — no `useMemo` needed.
+
+## Vite Plugin Integration
+
+When using `@fluenti/vite-plugin` with `framework: 'react'`, the tagged template `t`` ` `` is transformed at build time:
+
+```
+t`Hello ${name}` → __i18n.t('Hello {name}', { name })
+```
+
+The plugin auto-injects the `__useI18n()` internal hook. Unlike Vue (`computed`) and Solid (`createMemo`), React uses direct calls since re-renders handle reactivity.

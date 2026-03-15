@@ -14,7 +14,7 @@ export default {
   locales: ['en', 'zh-CN', 'ja'],
   catalogDir: './locales',
   format: 'po',
-  include: ['./src/**/*.vue', './src/**/*.tsx', './src/**/*.ts'],
+  include: ['./src/**/*.vue', './src/**/*.tsx', './src/**/*.jsx', './src/**/*.ts'],
   exclude: ['./src/**/*.test.*'],
   compileOutDir: './src/locales/compiled',
   fallbackChain: { 'zh-TW': ['zh-CN', 'en'], '*': ['en'] },
@@ -31,7 +31,7 @@ export default {
 | `locales` | `string[]` | `['en']` | All target locales |
 | `catalogDir` | `string` | `'./locales'` | Directory for translation catalogs |
 | `format` | `'json' \| 'po'` | `'po'` | Catalog file format. PO is recommended — compatible with Poedit, Weblate, Crowdin and other translation tools |
-| `include` | `string[]` | `['./src/**/*.vue', './src/**/*.tsx']` | Glob patterns for source files |
+| `include` | `string[]` | `['./src/**/*.vue', './src/**/*.tsx', './src/**/*.jsx']` | Glob patterns for source files |
 | `exclude` | `string[]` | `['./src/**/*.test.*']` | Glob patterns to exclude |
 | `compileOutDir` | `string` | `'./src/locales/compiled'` | Output directory for compiled messages |
 | `fallbackChain` | `Record<string, string[]>` | `{}` | Locale fallback chains |

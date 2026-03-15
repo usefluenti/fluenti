@@ -5,11 +5,11 @@ description: Trans, Plural, and Select components
 
 import { Tabs, TabItem, Aside } from '@astrojs/starlight/components'
 
-Fluenti provides three components for complex translation patterns. All three are **globally registered** by the Fluenti plugin — no imports needed in Vue templates.
+Fluenti provides three components for complex translation patterns. In Vue, all three are **globally registered** by the Fluenti plugin — no imports needed. In React and Solid, import them from `@fluenti/react` or `@fluenti/solid`.
 
 ## Trans
 
-When translations contain HTML elements or framework components, use `<Trans>` with its **default slot** (Vue) or **children** (Solid). You write native HTML inside the component — no indexed placeholders.
+When translations contain HTML elements or framework components, use `<Trans>` with its **default slot** (Vue) or **children** (React/Solid). You write native HTML inside the component — no indexed placeholders.
 
 ### Default Slot Pattern
 
@@ -22,6 +22,16 @@ When translations contain HTML elements or framework components, use `<Trans>` w
 ```
 
 `Trans`, `Plural`, and `Select` are globally registered by the Fluenti plugin — no import needed.
+</TabItem>
+
+<TabItem label="React">
+```tsx
+import { Trans } from '@fluenti/react'
+
+<Trans>
+  Read the <a href="/terms">terms</a> and <strong>conditions</strong>
+</Trans>
+```
 </TabItem>
 
 <TabItem label="Solid">
@@ -45,6 +55,14 @@ You can nest elements naturally — no special syntax required:
     Click <a href="/next">here</a> to <strong>sign up</strong> for the <em>beta program</em>
   </Trans>
 </template>
+```
+</TabItem>
+
+<TabItem label="React">
+```tsx
+<Trans>
+  Click <a href="/next">here</a> to <strong>sign up</strong> for the <em>beta program</em>
+</Trans>
 ```
 </TabItem>
 
@@ -112,6 +130,12 @@ Fluenti uses `Intl.PluralRules` for locale-aware pluralization, supporting all C
 <template>
   <Plural :value="count" one="# item" other="# items" />
 </template>
+```
+</TabItem>
+
+<TabItem label="React">
+```tsx
+<Plural value={count} one="# item" other="# items" />
 ```
 </TabItem>
 
@@ -211,6 +235,12 @@ Pass each option as a separate prop:
 ```
 </TabItem>
 
+<TabItem label="React">
+```tsx
+<Select value={gender} male="He liked this" female="She liked this" other="They liked this" />
+```
+</TabItem>
+
 <TabItem label="Solid">
 ```tsx
 <Select value={gender()} male="He liked this" female="She liked this" other="They liked this" />
@@ -241,6 +271,21 @@ const roleOptions = {
 <template>
   <Select :value="role" :options="roleOptions" />
 </template>
+```
+</TabItem>
+
+<TabItem label="React">
+```tsx
+const [role, setRole] = useState<'admin' | 'editor' | 'viewer'>('editor')
+
+const roleOptions = {
+  admin: 'Full access granted',
+  editor: 'Can edit content',
+  viewer: 'Read-only access',
+  other: 'Unknown role',
+} as const
+
+<Select value={role} options={roleOptions} />
 ```
 </TabItem>
 
