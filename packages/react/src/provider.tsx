@@ -28,19 +28,18 @@ export function I18nProvider({
   const loadedMessagesRef = useRef(loadedMessages)
   loadedMessagesRef.current = loadedMessages
 
-  const i18n = useMemo(
-    () =>
-      createFluent({
-        locale: currentLocale,
-        fallbackLocale,
-        fallbackChain,
-        messages: loadedMessages,
-        dateFormats,
-        numberFormats,
-        missing,
-      }),
-    [currentLocale, loadedMessages, fallbackLocale, fallbackChain, dateFormats, numberFormats, missing],
-  )
+  const i18n = useMemo(() => {
+    const config: Parameters<typeof createFluent>[0] = {
+      locale: currentLocale,
+      messages: loadedMessages,
+    }
+    if (fallbackLocale !== undefined) config.fallbackLocale = fallbackLocale
+    if (fallbackChain !== undefined) config.fallbackChain = fallbackChain
+    if (dateFormats !== undefined) config.dateFormats = dateFormats
+    if (numberFormats !== undefined) config.numberFormats = numberFormats
+    if (missing !== undefined) config.missing = missing
+    return createFluent(config)
+  }, [currentLocale, loadedMessages, fallbackLocale, fallbackChain, dateFormats, numberFormats, missing])
 
   // Sync external locale prop changes
   useEffect(() => {
