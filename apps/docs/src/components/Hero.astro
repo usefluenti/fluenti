@@ -12,10 +12,23 @@ const actions = hero?.actions ?? [];
     <div class="orb orb-3"></div>
   </div>
 
-  <div class="hero-content">
+  {/* Grid overlay */}
+  <div class="hero-grid"></div>
+
+  {/* Floating particles */}
+  <div class="hero-particles">
+    <div class="particle" style="left:12%;width:5px;height:5px;animation-delay:0s;animation-duration:5s"></div>
+    <div class="particle" style="left:28%;width:4px;height:4px;animation-delay:1.2s;animation-duration:6s"></div>
+    <div class="particle" style="left:45%;width:6px;height:6px;animation-delay:0.5s;animation-duration:4.5s"></div>
+    <div class="particle" style="left:62%;width:3px;height:3px;animation-delay:2s;animation-duration:7s"></div>
+    <div class="particle" style="left:78%;width:5px;height:5px;animation-delay:0.8s;animation-duration:5.5s"></div>
+    <div class="particle" style="left:90%;width:4px;height:4px;animation-delay:1.5s;animation-duration:6.5s"></div>
+  </div>
+
+  <div class="hero-content hero-entrance">
     {/* Badge */}
     <div class="hero-badge">
-      <span class="badge-icon">✦</span>
+      <span class="badge-icon">&#10022;</span>
       <span>Zero runtime overhead</span>
     </div>
 
@@ -33,7 +46,7 @@ const actions = hero?.actions ?? [];
     {/* CTA buttons */}
     <div class="hero-actions">
       <a href="/getting-started/quick-start-vue/" class="hero-btn btn-primary">
-        Get Started <span class="btn-arrow">→</span>
+        Get Started <span class="btn-arrow">&rarr;</span>
       </a>
       <a href="https://github.com/usefluenti/fluenti" class="hero-btn btn-secondary">
         View on GitHub
@@ -41,34 +54,37 @@ const actions = hero?.actions ?? [];
     </div>
   </div>
 
-  {/* Compile flow */}
-  <div class="compile-flow">
-    <div class="flow-step">
-      <div class="flow-icon">
-        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m18 16 4-4-4-4"/><path d="m6 8-4 4 4 4"/><path d="m14.5 4-5 16"/></svg>
-      </div>
-      <div class="flow-title">Your Templates</div>
-      <div class="flow-desc">Write natural HTML<br/>with v-t directives</div>
+  {/* Compile Demo */}
+  <div class="compile-demo hero-entrance-delay" id="compile-demo">
+    {/* Step indicators */}
+    <div class="demo-steps">
+      <button class="demo-step active" data-step="0">
+        <span class="step-num">1</span> Your Template
+      </button>
+      <div class="step-arrow" data-arrow="0">&rarr;</div>
+      <button class="demo-step" data-step="1">
+        <span class="step-num">2</span> Compiled Output
+      </button>
+      <div class="step-arrow" data-arrow="1">&rarr;</div>
+      <button class="demo-step" data-step="2">
+        <span class="step-num">3</span> Generated Module
+      </button>
     </div>
 
-    <div class="flow-arrow">→</div>
-
-    <div class="flow-step flow-step-accent">
-      <div class="flow-icon">
-        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+    {/* Code block */}
+    <div class="demo-code-wrapper">
+      <div class="demo-glow"></div>
+      <div class="demo-code">
+        <div class="demo-code-header">
+          <div class="demo-dots">
+            <span class="dot dot-red"></span>
+            <span class="dot dot-yellow"></span>
+            <span class="dot dot-green"></span>
+          </div>
+          <span class="demo-code-label" id="demo-code-label">Your Template</span>
+        </div>
+        <div class="demo-code-body" id="demo-code-body"></div>
       </div>
-      <div class="flow-title">Fluenti Compiler</div>
-      <div class="flow-desc">ICU parsing, hash IDs,<br/>tree-shaking at build</div>
-    </div>
-
-    <div class="flow-arrow">→</div>
-
-    <div class="flow-step">
-      <div class="flow-icon">
-        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>
-      </div>
-      <div class="flow-title">Zero Runtime</div>
-      <div class="flow-desc">Optimized output,<br/>no parser in bundle</div>
     </div>
   </div>
 
@@ -129,6 +145,63 @@ const actions = hero?.actions ?? [];
     background: #a78bfa;
     bottom: -50px;
     left: 15%;
+  }
+
+  /* ---------- Grid Overlay ---------- */
+  .hero-grid {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background-image:
+      repeating-linear-gradient(0deg, rgba(255,255,255,0.015) 0 1px, transparent 1px 60px),
+      repeating-linear-gradient(90deg, rgba(255,255,255,0.015) 0 1px, transparent 1px 60px);
+  }
+
+  :root:not([data-theme='dark']) .hero-grid {
+    background-image:
+      repeating-linear-gradient(0deg, rgba(0,0,0,0.02) 0 1px, transparent 1px 60px),
+      repeating-linear-gradient(90deg, rgba(0,0,0,0.02) 0 1px, transparent 1px 60px);
+  }
+
+  /* ---------- Floating Particles ---------- */
+  .hero-particles {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    overflow: hidden;
+  }
+
+  .particle {
+    position: absolute;
+    bottom: -10px;
+    border-radius: 50%;
+    background: rgba(99, 102, 241, 0.3);
+    animation: particleFloat linear infinite;
+  }
+
+  :root:not([data-theme='dark']) .particle {
+    background: rgba(99, 102, 241, 0.15);
+  }
+
+  @keyframes particleFloat {
+    0% { transform: translateY(0) translateX(0); opacity: 0; }
+    10% { opacity: 1; }
+    90% { opacity: 1; }
+    100% { transform: translateY(-500px) translateX(30px); opacity: 0; }
+  }
+
+  /* ---------- Entrance Animations ---------- */
+  @keyframes fadeSlideUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .hero-entrance {
+    animation: fadeSlideUp 0.8s ease both;
+  }
+
+  .hero-entrance-delay {
+    animation: fadeSlideUp 1s ease 0.3s both;
   }
 
   /* ---------- Content ---------- */
@@ -274,118 +347,244 @@ const actions = hero?.actions ?? [];
     transform: translateX(2px);
   }
 
-  /* ---------- Compile Flow ---------- */
-  .compile-flow {
+  /* ---------- Compile Demo ---------- */
+  .compile-demo {
     position: relative;
     z-index: 1;
+    max-width: 700px;
+    margin: 2.5rem auto 0;
+    width: 100%;
+  }
+
+  /* Step Indicators */
+  .demo-steps {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 0;
-    margin-top: 2.5rem;
-    padding: 0 2rem;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
   }
 
-  .flow-step {
+  .demo-step {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.4rem 0.875rem;
+    border-radius: 100px;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    font-family: var(--sl-font);
+    cursor: pointer;
+    border: 1px solid transparent;
+    background: transparent;
+    transition: all 0.2s ease;
+  }
+
+  :root[data-theme='dark'] .demo-step {
+    color: rgba(255, 255, 255, 0.4);
+  }
+
+  :root:not([data-theme='dark']) .demo-step {
+    color: rgba(0, 0, 0, 0.35);
+  }
+
+  :root[data-theme='dark'] .demo-step.active {
+    background: rgba(99, 102, 241, 0.15);
+    border-color: rgba(129, 140, 248, 0.3);
+    color: #ffffff;
+  }
+
+  :root:not([data-theme='dark']) .demo-step.active {
+    background: rgba(99, 102, 241, 0.1);
+    border-color: rgba(99, 102, 241, 0.3);
+    color: #4f46e5;
+  }
+
+  .demo-step:hover:not(.active) {
+    color: rgba(255, 255, 255, 0.7);
+  }
+
+  :root:not([data-theme='dark']) .demo-step:hover:not(.active) {
+    color: rgba(0, 0, 0, 0.6);
+  }
+
+  .step-num {
+    font-weight: 600;
+    font-size: 0.75rem;
+    opacity: 0.7;
+  }
+
+  .step-arrow {
+    font-size: 0.875rem;
+    transition: transform 0.3s ease;
+  }
+
+  :root[data-theme='dark'] .step-arrow {
+    color: rgba(255, 255, 255, 0.2);
+  }
+
+  :root:not([data-theme='dark']) .step-arrow {
+    color: rgba(0, 0, 0, 0.15);
+  }
+
+  .step-arrow.animate {
+    animation: arrowSlide 1s ease-in-out infinite;
+    color: #818cf8;
+  }
+
+  @keyframes arrowSlide {
+    0%, 100% { transform: translateX(0); }
+    50% { transform: translateX(4px); }
+  }
+
+  /* Code Block Wrapper */
+  .demo-code-wrapper {
+    position: relative;
+  }
+
+  /* Glow Effect */
+  .demo-glow {
+    position: absolute;
+    inset: -2px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.3), transparent 40%, rgba(139, 92, 246, 0.2));
+    filter: blur(1px);
+    animation: glowPulse 3s ease-in-out infinite;
+    z-index: -1;
+  }
+
+  @keyframes glowPulse {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 0.7; }
+  }
+
+  :root:not([data-theme='dark']) .demo-glow {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), transparent 40%, rgba(139, 92, 246, 0.1));
+  }
+
+  /* Code Block */
+  .demo-code {
+    position: relative;
+    background: rgba(12, 12, 22, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 14px;
+    overflow: hidden;
+    backdrop-filter: blur(20px);
+  }
+
+  :root:not([data-theme='dark']) .demo-code {
+    background: rgba(20, 20, 35, 0.97);
+  }
+
+  /* Code Header */
+  .demo-code-header {
     display: flex;
-    flex-direction: column;
     align-items: center;
     gap: 0.75rem;
-    padding: 2rem 1.75rem;
-    border-radius: 1rem;
-    width: 18rem;
-    text-align: center;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   }
 
-  :root[data-theme='dark'] .flow-step {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-  }
-
-  :root:not([data-theme='dark']) .flow-step {
-    background: #fafafa;
-    border: 1px solid #e4e4e7;
-  }
-
-  :root[data-theme='dark'] .flow-step-accent {
-    background: rgba(99, 102, 241, 0.05);
-    border-color: rgba(99, 102, 241, 0.2);
-    box-shadow: 0 0 40px rgba(99, 102, 241, 0.08);
-  }
-
-  :root:not([data-theme='dark']) .flow-step-accent {
-    background: #eef2ff;
-    border-color: #c7d2fe;
-    box-shadow: 0 4px 30px rgba(99, 102, 241, 0.08);
-  }
-
-  .flow-icon {
+  .demo-dots {
     display: flex;
-    align-items: center;
-    justify-content: center;
+    gap: 6px;
   }
 
-  :root[data-theme='dark'] .flow-step .flow-icon {
-    color: #a78bfa;
+  .dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
   }
 
-  :root:not([data-theme='dark']) .flow-step .flow-icon {
-    color: #6366f1;
+  .dot-red { background: #ff5f57; }
+  .dot-yellow { background: #febc2e; }
+  .dot-green { background: #28c840; }
+
+  .demo-code-label {
+    font-size: 0.75rem;
+    font-family: var(--sl-font);
+    color: rgba(255, 255, 255, 0.6);
   }
 
-  :root[data-theme='dark'] .flow-step-accent .flow-icon {
-    color: #6366f1;
+  /* Code Body */
+  .demo-code-body {
+    padding: 1rem 0;
+    min-height: 200px;
+    font-family: 'JetBrains Mono Variable', 'JetBrains Mono', var(--sl-font-mono);
+    font-size: 14px;
+    line-height: 1.75;
+    color: #d4d4e0;
+    overflow-x: auto;
   }
 
-  :root:not([data-theme='dark']) .flow-step-accent .flow-icon {
-    color: #4f46e5;
+  /* Code Lines */
+  .demo-code-body :global(.code-line) {
+    display: flex;
+    padding: 0 1rem 0 0;
+    min-height: 1.75em;
   }
 
-  .flow-title {
-    font-size: 0.9375rem;
+  .demo-code-body :global(.code-line.highlighted) {
+    background: rgba(99, 102, 241, 0.12);
+    border-left: 2px solid #818cf8;
+  }
+
+  .demo-code-body :global(.code-line:not(.highlighted)) {
+    border-left: 2px solid transparent;
+  }
+
+  .demo-code-body :global(.line-num) {
+    display: inline-block;
+    width: 24px;
+    min-width: 24px;
+    margin-left: 12px;
+    margin-right: 12px;
+    text-align: right;
+    color: rgba(255, 255, 255, 0.3);
+    font-size: 12px;
+    user-select: none;
+    line-height: 1.75em;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .demo-code-body :global(.line-content) {
+    white-space: pre;
+    line-height: 1.75em;
+  }
+
+  /* Cursor */
+  .demo-code-body :global(.cursor) {
+    display: inline-block;
+    width: 2px;
+    height: 1.1em;
+    background: #818cf8;
+    vertical-align: text-bottom;
+    animation: cursorBlink 1s step-end infinite;
+    margin-left: 1px;
+  }
+
+  @keyframes cursorBlink {
+    0%, 50% { opacity: 1; }
+    51%, 100% { opacity: 0; }
+  }
+
+  /* Syntax Highlighting Classes */
+  .demo-code-body :global(.hl-comment) { color: #8b95a5; }
+  .demo-code-body :global(.hl-pure) { color: #5eead4; font-weight: 600; }
+  .demo-code-body :global(.hl-export) { color: #c4b5fd; }
+  .demo-code-body :global(.hl-tag) { color: #f9a8d4; }
+  .demo-code-body :global(.hl-bracket) { color: #9ca3af; }
+  .demo-code-body :global(.hl-string) { color: #6ee7b7; }
+  .demo-code-body :global(.hl-interp) { color: #fcd34d; }
+  .demo-code-body :global(.hl-var) { color: #fcd34d; }
+
+  .demo-code-body :global(.hl-vt) {
+    color: #a5b4fc;
     font-weight: 600;
-    font-family: var(--sl-font);
-  }
-
-  :root[data-theme='dark'] .flow-step .flow-title {
-    color: #e2e2e2;
-  }
-
-  :root:not([data-theme='dark']) .flow-step .flow-title {
-    color: #18181b;
-  }
-
-  :root[data-theme='dark'] .flow-step-accent .flow-title {
-    color: #c4b5fd;
-  }
-
-  :root:not([data-theme='dark']) .flow-step-accent .flow-title {
-    color: #4f46e5;
-  }
-
-  .flow-desc {
-    font-size: 0.8125rem;
-    line-height: 1.5;
-    font-family: var(--sl-font);
-  }
-
-  :root[data-theme='dark'] .flow-desc {
-    color: #71717a;
-  }
-
-  :root:not([data-theme='dark']) .flow-desc {
-    color: #71717a;
-  }
-
-  :root:not([data-theme='dark']) .flow-step-accent .flow-desc {
-    color: #6366f1;
-  }
-
-  .flow-arrow {
-    font-size: 1.5rem;
-    padding: 0 1rem;
-    color: #6366f1;
-    flex-shrink: 0;
+    background: rgba(99, 102, 241, 0.2);
+    padding: 1px 6px;
+    border-radius: 4px;
   }
 
   /* ---------- Responsive ---------- */
@@ -406,20 +605,264 @@ const actions = hero?.actions ?? [];
       display: none;
     }
 
-    .compile-flow {
-      flex-direction: column;
-      gap: 0.75rem;
+    .compile-demo {
       margin-top: 2rem;
     }
 
-    .flow-step {
-      width: 100%;
-      max-width: 20rem;
+    .demo-steps {
+      gap: 0.25rem;
     }
 
-    .flow-arrow {
-      transform: rotate(90deg);
-      padding: 0;
+    .demo-step {
+      font-size: 0.75rem;
+      padding: 0.3rem 0.625rem;
+    }
+
+    .step-arrow {
+      font-size: 0.75rem;
+    }
+
+    .demo-code-body {
+      font-size: 12px;
+      min-height: 160px;
+    }
+
+    .demo-code-body :global(.line-num) {
+      width: 20px;
+      min-width: 20px;
+      margin-left: 8px;
+      margin-right: 8px;
+      font-size: 10px;
     }
   }
 </style>
+
+<script>
+  const STEPS = [
+    {
+      label: 'Your Template',
+      code:
+        '<template>\n' +
+        '  <div class="checkout">\n' +
+        '    <h1 v-t>Complete your order</h1>\n' +
+        '    <p v-t>Hello {{ name }}, ready to pay?</p>\n' +
+        '    <span v-t>{{ count }} items in cart</span>\n' +
+        '    <button v-t>Confirm purchase</button>\n' +
+        '  </div>\n' +
+        '</template>',
+      highlightLines: [2, 3, 4, 5],
+    },
+    {
+      label: 'Compiled Output',
+      code:
+        '<template>\n' +
+        '  <div class="checkout">\n' +
+        '    <h1>{{ __t._a3f1() }}</h1>\n' +
+        '    <p>{{ __t._b7e2({ name }) }}</p>\n' +
+        '    <span>{{ __t._c9d4({ count }) }}</span>\n' +
+        '    <button>{{ __t._d2a8() }}</button>\n' +
+        '  </div>\n' +
+        '</template>',
+      highlightLines: [2, 3, 4, 5],
+    },
+    {
+      label: 'Generated Module',
+      code:
+        '// locales/en.js \u2014 tree-shakeable \u2728\n' +
+        '/* @__PURE__ */\n' +
+        'export const _a3f1 = () =>\n' +
+        "  'Complete your order'\n" +
+        '\n' +
+        '/* @__PURE__ */\n' +
+        'export const _b7e2 = (v) =>\n' +
+        '  `Hello ${v.name}, ready to pay?`\n' +
+        '\n' +
+        '/* @__PURE__ */\n' +
+        'export const _c9d4 = (v) =>\n' +
+        '  `${v.count} items in cart`\n' +
+        '\n' +
+        '/* @__PURE__ */\n' +
+        'export const _d2a8 = () =>\n' +
+        "  'Confirm purchase'",
+      highlightLines: [1, 2, 5, 6, 9, 10, 13, 14],
+    },
+  ];
+
+  // Pre-compute lines and highlighted HTML
+  STEPS.forEach((step) => {
+    step.lines = step.code.split('\n');
+    step.totalChars = step.code.length;
+    step.highlighted = step.lines.map((line) => highlightLine(line));
+  });
+
+  function escapeHtml(str) {
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  function highlightLine(rawLine) {
+    let s = escapeHtml(rawLine);
+    const tokens = [];
+
+    function mark(cls, text) {
+      const id = tokens.length;
+      tokens.push(cls);
+      return '\x01' + id + '\x02' + text + '\x03';
+    }
+
+    // Protect => arrows from bracket matching
+    s = s.replace(/=&gt;/g, '\x04ARROW\x04');
+
+    // Full-line comment
+    if (/^\s*\/\//.test(s)) {
+      s = mark('hl-comment', s);
+      s = s.replace(/\x04ARROW\x04/g, '=&gt;');
+      return resolveMarkers(s, tokens);
+    }
+
+    // /* @__PURE__ */ block comment
+    s = s.replace(/(\/\*)\s*(@__PURE__)\s*(\*\/)/, (_, o, p, c) =>
+      mark('hl-comment', o) + ' ' + mark('hl-pure', p) + ' ' + mark('hl-comment', c)
+    );
+
+    // export const
+    s = s.replace(/\b(export const)\b/g, (m) => mark('hl-export', m));
+
+    // v-t directive
+    s = s.replace(/\bv-t\b/g, () => mark('hl-vt', 'v-t'));
+
+    // {{ interpolations }} — use [\s\S] to handle inner braces like { name }
+    s = s.replace(/(\{\{[\s\S]*?\}\})/g, (m) => mark('hl-interp', m));
+
+    // Template literals with ${} interpolations
+    s = s.replace(/`([^`]*)`/g, (_, inner) => {
+      const hi = inner.replace(/(\$\{[^}]*\})/g, (m2) => mark('hl-interp', m2));
+      return mark('hl-string', '`' + hi + '`');
+    });
+
+    // Single-quoted strings
+    s = s.replace(/'([^']*)'/g, (m) => mark('hl-string', m));
+
+    // Double-quoted strings
+    s = s.replace(/"([^"]*)"/g, (m) => mark('hl-string', m));
+
+    // __t variable
+    s = s.replace(/__t\b/g, (m) => mark('hl-var', m));
+
+    // Hash identifiers like _a3f1
+    s = s.replace(/\b(_[a-f0-9]{4})\b/g, (m) => mark('hl-var', m));
+
+    // HTML tag names after &lt; or &lt;/
+    s = s.replace(/(&lt;)(\/?)(\w[\w-]*)/g, (_, lt, slash, tag) =>
+      mark('hl-bracket', lt) + slash + mark('hl-tag', tag)
+    );
+
+    // Closing &gt; brackets
+    s = s.replace(/(&gt;)/g, (m) => mark('hl-bracket', m));
+
+    // Restore arrows (no special styling — just base text color)
+    s = s.replace(/\x04ARROW\x04/g, '=&gt;');
+
+    return resolveMarkers(s, tokens);
+  }
+
+  function resolveMarkers(s, tokens) {
+    let maxIter = 10;
+    while (s.includes('\x01') && maxIter-- > 0) {
+      s = s.replace(/\x01(\d+)\x02([^\x01\x03]*?)\x03/g, (_, id, content) => {
+        return '<span class="' + tokens[parseInt(id)] + '">' + content + '</span>';
+      });
+    }
+    return s;
+  }
+
+  // DOM elements
+  const codeBody = document.getElementById('demo-code-body');
+  const codeLabel = document.getElementById('demo-code-label');
+  const stepButtons = document.querySelectorAll('.demo-step');
+  const stepArrows = document.querySelectorAll('.step-arrow');
+
+  let currentStep = 0;
+  let charIndex = 0;
+  let typeTimer = null;
+  let pauseTimer = null;
+
+  function render() {
+    const step = STEPS[currentStep];
+    const visible = step.code.substring(0, charIndex);
+    const visibleLines = visible.split('\n');
+    const totalLines = step.lines.length;
+    const allComplete = charIndex >= step.totalChars;
+
+    let html = '';
+    for (let i = 0; i < totalLines; i++) {
+      const isHL = step.highlightLines.includes(i);
+      let lineContent = '';
+      let showCursor = false;
+
+      if (i < visibleLines.length) {
+        const isLastVisible = i === visibleLines.length - 1;
+        const isLineComplete = !isLastVisible || allComplete;
+
+        lineContent = isLineComplete ? step.highlighted[i] : escapeHtml(visibleLines[i]);
+        showCursor = isLastVisible;
+      }
+
+      const hlClass = isHL && i < visibleLines.length ? ' highlighted' : '';
+      html +=
+        '<div class="code-line' + hlClass + '">' +
+        '<span class="line-num">' + (i + 1) + '</span>' +
+        '<span class="line-content">' + lineContent +
+        (showCursor ? '<span class="cursor"></span>' : '') +
+        '</span></div>';
+    }
+
+    if (codeBody) codeBody.innerHTML = html;
+  }
+
+  function updateStepIndicators() {
+    stepButtons.forEach((btn, i) => {
+      btn.classList.toggle('active', i === currentStep);
+    });
+    stepArrows.forEach((arrow, i) => {
+      arrow.classList.toggle('animate', i === currentStep);
+    });
+  }
+
+  function startTyping() {
+    charIndex = 0;
+    clearInterval(typeTimer);
+    clearTimeout(pauseTimer);
+
+    updateStepIndicators();
+    if (codeLabel) codeLabel.textContent = STEPS[currentStep].label;
+
+    render();
+
+    setTimeout(() => {
+      typeTimer = setInterval(() => {
+        if (charIndex < STEPS[currentStep].totalChars) {
+          charIndex++;
+          render();
+        } else {
+          clearInterval(typeTimer);
+          render();
+          pauseTimer = setTimeout(() => {
+            currentStep = (currentStep + 1) % 3;
+            startTyping();
+          }, 2000);
+        }
+      }, 8);
+    }, 200);
+  }
+
+  // Click handlers
+  stepButtons.forEach((btn, i) => {
+    btn.addEventListener('click', () => {
+      currentStep = i;
+      startTyping();
+    });
+  });
+
+  // Start the animation
+  startTyping();
+</script>
