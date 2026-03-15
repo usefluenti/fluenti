@@ -39,7 +39,8 @@
   },
   "dependencies": {
     "@fluenti/core": "workspace:*",
-    "@fluenti/vue": "workspace:*"
+    "@fluenti/vue": "workspace:*",
+    "@nuxt/kit": "^3.0.0"
   },
   "devDependencies": {
     "typescript": "^5.9",

@@ -1,20 +1,18 @@
-import { defineComponent, computed, h, type PropType } from 'vue'
+import { defineComponent, computed, h, resolveComponent, type PropType } from 'vue'
+import { useLocalePath } from '../composables'
 
 /**
- * NuxtLinkLocale component definition.
+ * Locale-aware wrapper around NuxtLink.
  *
- * This is a framework-level component that wraps NuxtLink with locale-aware
- * path resolution. It's designed to be used within a Nuxt app where
- * the localePath helper is injected via the runtime plugin.
+ * Automatically prefixes the `to` prop with the current locale
+ * based on the routing strategy. Uses the real NuxtLink component
+ * for client-side navigation and prefetching.
  *
- * Usage in templates:
+ * @example
  * ```vue
  * <NuxtLinkLocale to="/about">About</NuxtLinkLocale>
  * <NuxtLinkLocale to="/about" locale="ja">About (Japanese)</NuxtLinkLocale>
  * ```
- *
- * NOTE: This component expects `$localePath` to be available on globalProperties,
- * which is set up by the Nuxt runtime plugin.
  */
 export const NuxtLinkLocale = defineComponent({
   name: 'NuxtLinkLocale',
@@ -29,26 +27,20 @@ export const NuxtLinkLocale = defineComponent({
     },
   },
   setup(props, { slots, attrs }) {
+    const getLocalePath = useLocalePath()
+
     const localizedTo = computed(() => {
       const path = typeof props.to === 'string' ? props.to : props.to.path ?? '/'
-      // $localePath is injected by the runtime plugin
-      const localePath = (getCurrentInstance()?.appContext.config.globalProperties as any)?.$localePath
-      if (typeof localePath === 'function') {
-        return localePath(path, props.locale)
-      }
-      return path
+      return getLocalePath(path, props.locale)
     })
 
     return () => {
-      // Resolve NuxtLink at runtime (it's registered globally by Nuxt)
+      const NuxtLink = resolveComponent('NuxtLink')
       return h(
-        'a', // Fallback to <a> — in a real Nuxt app, the runtime plugin resolves NuxtLink
-        { ...attrs, href: localizedTo.value },
-        slots['default']?.(),
+        NuxtLink,
+        { ...attrs, to: localizedTo.value },
+        slots,
       )
     }
   },
 })
-
-// We need getCurrentInstance for accessing globalProperties
-import { getCurrentInstance } from 'vue'

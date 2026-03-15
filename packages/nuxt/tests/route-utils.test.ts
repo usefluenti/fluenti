@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
-import { localePath, extractLocaleFromPath, switchLocalePath, extendPages } from '../src/runtime/route-utils'
-import type { PageRoute } from '../src/runtime/route-utils'
+import { localePath, extractLocaleFromPath, switchLocalePath } from '../src/runtime/path-utils'
+import { extendPages } from '../src/runtime/page-extend'
+import type { PageRoute } from '../src/runtime/page-extend'
 
 describe('localePath', () => {
   describe('no_prefix strategy', () => {

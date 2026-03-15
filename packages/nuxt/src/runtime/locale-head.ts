@@ -1,6 +1,4 @@
-import type { Ref, ComputedRef } from 'vue'
-import { computed } from 'vue'
-import { switchLocalePath } from './route-utils'
+import { switchLocalePath } from './path-utils'
 import type { FluentNuxtRuntimeConfig } from '../types'
 
 /** Head metadata for locale SEO */
@@ -18,71 +16,66 @@ export interface LocaleHeadOptions {
 }
 
 /**
- * Composable that generates locale-aware HTML head metadata.
+ * Pure function that builds locale-aware HTML head metadata.
  *
- * @example
- * ```ts
- * const head = useLocaleHead({ addSeoAttributes: true, baseUrl: 'https://example.com' })
- * useHead(head.value) // Nuxt useHead
- * ```
+ * This is the framework-agnostic core logic. For the Nuxt composable,
+ * use `useLocaleHead()` from `composables.ts` instead.
  */
-export function useLocaleHead(
-  localeRef: Ref<string>,
-  currentPath: Ref<string>,
+export function buildLocaleHead(
+  locale: string,
+  currentPath: string,
   config: FluentNuxtRuntimeConfig,
   options?: LocaleHeadOptions,
-): ComputedRef<LocaleHeadMeta> {
-  return computed(() => {
-    const head: LocaleHeadMeta = {
-      htmlAttrs: { lang: localeRef.value },
-      link: [],
-      meta: [],
-    }
+): LocaleHeadMeta {
+  const head: LocaleHeadMeta = {
+    htmlAttrs: { lang: locale },
+    link: [],
+    meta: [],
+  }
 
-    if (options?.addSeoAttributes) {
-      const baseUrl = options.baseUrl ?? ''
+  if (options?.addSeoAttributes) {
+    const baseUrl = options.baseUrl ?? ''
 
-      // hreflang alternate links for each locale
-      for (const loc of config.locales) {
-        const path = switchLocalePath(
-          currentPath.value,
-          loc,
-          config.locales,
-          config.defaultLocale,
-          config.strategy,
-        )
-        head.link.push({
-          rel: 'alternate',
-          hreflang: loc,
-          href: `${baseUrl}${path}`,
-        })
-      }
-
-      // x-default hreflang
-      const defaultPath = switchLocalePath(
-        currentPath.value,
-        config.defaultLocale,
+    // hreflang alternate links for each locale
+    for (const loc of config.locales) {
+      const path = switchLocalePath(
+        currentPath,
+        loc,
         config.locales,
         config.defaultLocale,
         config.strategy,
       )
       head.link.push({
         rel: 'alternate',
-        hreflang: 'x-default',
-        href: `${baseUrl}${defaultPath}`,
+        hreflang: loc,
+        href: `${baseUrl}${path}`,
       })
-
-      // og:locale
-      head.meta.push({ property: 'og:locale', content: localeRef.value })
-
-      // og:locale:alternate for other locales
-      for (const loc of config.locales) {
-        if (loc !== localeRef.value) {
-          head.meta.push({ property: 'og:locale:alternate', content: loc })
-        }
-      }
     }
 
-    return head
-  })
+    // x-default hreflang
+    const defaultPath = switchLocalePath(
+      currentPath,
+      config.defaultLocale,
+      config.locales,
+      config.defaultLocale,
+      config.strategy,
+    )
+    head.link.push({
+      rel: 'alternate',
+      hreflang: 'x-default',
+      href: `${baseUrl}${defaultPath}`,
+    })
+
+    // og:locale
+    head.meta.push({ property: 'og:locale', content: locale })
+
+    // og:locale:alternate for other locales
+    for (const loc of config.locales) {
+      if (loc !== locale) {
+        head.meta.push({ property: 'og:locale:alternate', content: loc })
+      }
+    }
+  }
+
+  return head
 }

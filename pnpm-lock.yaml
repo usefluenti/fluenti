@@ -326,6 +326,9 @@ importers:
       '@fluenti/vue':
         specifier: workspace:*
         version: link:../vue
+      '@nuxt/kit':
+        specifier: ^3.0.0
+        version: 3.21.2(magicast@0.5.2)
     devDependencies:
       nuxt:
         specifier: ^3.17
