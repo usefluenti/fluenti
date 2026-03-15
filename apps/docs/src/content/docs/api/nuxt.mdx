@@ -28,6 +28,7 @@ export default defineNuxtConfig({
 | `sourceLocale` | `string?` | — | Source locale for extraction |
 | `catalogDir` | `string?` | — | Directory for compiled catalogs |
 | `detectBrowserLanguage` | `DetectBrowserLanguageOptions?` | — | Browser language detection |
+| `detectOrder` | `Array<string>` | `['path', 'cookie', 'header']` | Ordered list of locale detectors |
 | `compat` | `boolean?` | — | Enable `@fluenti/vue-i18n-compat` bridge mode |
 
 ### `Strategy`
@@ -63,13 +64,10 @@ const localePath = useLocalePath()
 **Signature:**
 
 ```typescript
-function useLocalePath(
-  localeRef: Ref<string>,
-  config: FluentNuxtRuntimeConfig,
-): (path: string, locale?: string) => string
+function useLocalePath(): (path: string, locale?: string) => string
 ```
 
-When `locale` is omitted, the current locale is used.
+Zero-argument — reads locale from `@fluenti/vue` and config from Nuxt runtimeConfig automatically. When `locale` is omitted, the current locale is used.
 
 ### `useSwitchLocalePath()`
 
@@ -90,10 +88,7 @@ const switchLocalePath = useSwitchLocalePath()
 **Signature:**
 
 ```typescript
-function useSwitchLocalePath(
-  currentPath: Ref<string>,
-  config: FluentNuxtRuntimeConfig,
-): (locale: string) => string
+function useSwitchLocalePath(): (locale: string) => string
 ```
 
 ### `useLocaleHead()`
@@ -102,7 +97,7 @@ Returns a computed ref with SEO-friendly `<head>` metadata.
 
 ```vue
 <script setup>
-const head = useLocaleHead(locale, currentPath, config, {
+const head = useLocaleHead({
   addSeoAttributes: true,
   baseUrl: 'https://example.com',
 })
@@ -114,12 +109,7 @@ useHead(head.value)
 **Signature:**
 
 ```typescript
-function useLocaleHead(
-  localeRef: Ref<string>,
-  currentPath: Ref<string>,
-  config: FluentNuxtRuntimeConfig,
-  options?: LocaleHeadOptions,
-): ComputedRef<LocaleHeadMeta>
+function useLocaleHead(options?: LocaleHeadOptions): ComputedRef<LocaleHeadMeta>
 ```
 
 **Options:**
@@ -210,7 +200,39 @@ extendPages(pages, {
 // { path: '/ja/about', name: 'about___ja' }
 ```
 
-## Browser Language Detection
+## Locale Detection
+
+### Detection Chain
+
+The module detects the user's locale by running an ordered chain of **detectors**. The first detector to call `ctx.setLocale()` wins; subsequent detectors are skipped.
+
+Default detection order: `path` → `cookie` → `header`.
+
+### `detectOrder`
+
+Customize the detection order or add custom detectors:
+
+```typescript
+export default defineNuxtConfig({
+  modules: ['@fluenti/nuxt'],
+  fluenti: {
+    locales: ['en', 'ja', 'zh'],
+    defaultLocale: 'en',
+    detectOrder: ['query', 'cookie', 'path', 'header'],
+  },
+})
+```
+
+#### Built-in Detectors
+
+| Name | Source | Description |
+|------|--------|-------------|
+| `path` | URL path prefix | Extracts locale from `/ja/about` → `'ja'`. Skipped when strategy is `'no_prefix'`. |
+| `cookie` | Cookie value | Reads the locale cookie. Requires `detectBrowserLanguage.useCookie: true`. |
+| `header` | `Accept-Language` header | Negotiates against available locales. SSR only. |
+| `query` | `?locale=` query param | Reads `locale` from the URL query string. |
+
+### `DetectBrowserLanguageOptions`
 
 ```typescript
 interface DetectBrowserLanguageOptions {
@@ -221,4 +243,45 @@ interface DetectBrowserLanguageOptions {
   /** Fallback locale when detection fails */
   fallbackLocale?: string
 }
+```
+
+### `fluenti:detect-locale` Hook
+
+A Nuxt runtime hook fired **after** the detector chain completes (when no detector matched). Use this to inject locale from any custom source — database, JWT, session, external API, etc.
+
+```typescript
+// plugins/db-locale.ts
+export default defineNuxtPlugin((nuxtApp) => {
+  nuxtApp.hook('fluenti:detect-locale', async (ctx) => {
+    // ctx.detectedLocale is null if no detector matched yet
+    if (ctx.detectedLocale) return
+
+    // Read from any source: database, JWT, session...
+    const user = nuxtApp.ssrContext?.event?.context.user
+    if (user?.preferredLocale) {
+      ctx.setLocale(user.preferredLocale)
+    }
+  })
+})
+```
+
+### `LocaleDetectContext`
+
+The context object passed to detectors and the `fluenti:detect-locale` hook:
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `path` | `string` | Request path (e.g. `'/ja/about'`) |
+| `locales` | `string[]` | Available locale codes |
+| `defaultLocale` | `string` | Default locale code |
+| `strategy` | `Strategy` | Current routing strategy |
+| `detectBrowserLanguage` | `DetectBrowserLanguageOptions?` | Browser language detection config |
+| `detectedLocale` | `string \| null` | Locale detected so far (`null` if none) |
+| `setLocale` | `(locale: string) => void` | Claim a locale. Only accepts values in `locales`. |
+| `isServer` | `boolean` | Whether running on the server |
+
+### `LocaleDetectorFn`
+
+```typescript
+type LocaleDetectorFn = (ctx: LocaleDetectContext) => void | Promise<void>
 ```
