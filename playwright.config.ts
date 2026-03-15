@@ -43,6 +43,11 @@ export default defineConfig({
       use: { baseURL: 'http://localhost:5182' },
       testMatch: '**/nuxt-routes.spec.ts',
     },
+    {
+      name: 'nuxt-ssg',
+      use: { baseURL: 'http://localhost:5183' },
+      testMatch: '**/nuxt-ssg.spec.ts',
+    },
   ],
   webServer: [
     {
@@ -86,6 +91,12 @@ export default defineConfig({
       port: 5182,
       reuseExistingServer: true,
       timeout: 60_000,
+    },
+    {
+      command: 'cd e2e/fixtures/nuxt-ssg && pnpm generate && npx serve .output/public -l 5183',
+      port: 5183,
+      reuseExistingServer: true,
+      timeout: 120_000,
     },
   ],
 })

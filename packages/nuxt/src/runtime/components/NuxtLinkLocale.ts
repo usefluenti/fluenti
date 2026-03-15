@@ -1,4 +1,5 @@
-import { defineComponent, computed, h, resolveComponent, type PropType } from 'vue'
+import { defineComponent, computed, h, type PropType } from 'vue'
+import { NuxtLink } from '#components'
 import { useLocalePath } from '../composables'
 
 /**
@@ -14,7 +15,7 @@ import { useLocalePath } from '../composables'
  * <NuxtLinkLocale to="/about" locale="ja">About (Japanese)</NuxtLinkLocale>
  * ```
  */
-export const NuxtLinkLocale = defineComponent({
+const NuxtLinkLocale = defineComponent({
   name: 'NuxtLinkLocale',
   props: {
     to: {
@@ -34,13 +35,13 @@ export const NuxtLinkLocale = defineComponent({
       return getLocalePath(path, props.locale)
     })
 
-    return () => {
-      const NuxtLink = resolveComponent('NuxtLink')
-      return h(
-        NuxtLink,
-        { ...attrs, to: localizedTo.value },
-        slots,
-      )
-    }
+    return () => h(
+      NuxtLink,
+      { ...attrs, to: localizedTo.value },
+      slots,
+    )
   },
 })
+
+export { NuxtLinkLocale }
+export default NuxtLinkLocale

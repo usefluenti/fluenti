@@ -42,6 +42,9 @@ export default defineNuxtPlugin(async (nuxtApp) => {
       const { locale } = extractLocaleFromPath(newPath, config.locales)
       if (locale) {
         currentLocale.value = locale
+      } else if (config.strategy === 'prefix_except_default') {
+        // No locale prefix found — this means we're on a default locale route
+        currentLocale.value = config.defaultLocale
       }
     })
   }
