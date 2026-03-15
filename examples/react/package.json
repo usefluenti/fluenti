@@ -4,10 +4,12 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "compile": "fluenti compile",
+    "build": "fluenti compile && vite build",
     "preview": "vite preview"
   },
   "dependencies": {
+    "@fluenti/cli": "workspace:*",
     "@fluenti/core": "workspace:*",
     "@fluenti/react": "workspace:*",
     "@fluenti/vite-plugin": "workspace:*",
