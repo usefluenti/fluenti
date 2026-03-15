@@ -33,6 +33,16 @@ export default defineConfig({
       use: { baseURL: 'http://localhost:5180' },
       testMatch: '**/splitting-vue.spec.ts',
     },
+    {
+      name: 'vue-i18n-bridge',
+      use: { baseURL: 'http://localhost:5181' },
+      testMatch: '**/vue-i18n-bridge.spec.ts',
+    },
+    {
+      name: 'nuxt-routes',
+      use: { baseURL: 'http://localhost:5182' },
+      testMatch: '**/nuxt-routes.spec.ts',
+    },
   ],
   webServer: [
     {
@@ -62,6 +72,18 @@ export default defineConfig({
     {
       command: 'cd e2e/fixtures/vue-splitting && pnpm build && pnpm preview --port 5180',
       port: 5180,
+      reuseExistingServer: true,
+      timeout: 60_000,
+    },
+    {
+      command: 'cd e2e/fixtures/vue-i18n-bridge && pnpm build && pnpm preview --port 5181',
+      port: 5181,
+      reuseExistingServer: true,
+      timeout: 60_000,
+    },
+    {
+      command: 'cd e2e/fixtures/nuxt-routes && pnpm build && pnpm preview --port 5182',
+      port: 5182,
       reuseExistingServer: true,
       timeout: 60_000,
     },

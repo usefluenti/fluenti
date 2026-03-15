@@ -1,6 +1,6 @@
 import type { Ref, ComputedRef } from 'vue'
 import { computed } from 'vue'
-import { localePath } from './route-utils'
+import { switchLocalePath } from './route-utils'
 import type { FluentNuxtRuntimeConfig } from '../types'
 
 /** Head metadata for locale SEO */
@@ -44,9 +44,10 @@ export function useLocaleHead(
 
       // hreflang alternate links for each locale
       for (const loc of config.locales) {
-        const path = localePath(
+        const path = switchLocalePath(
           currentPath.value,
           loc,
+          config.locales,
           config.defaultLocale,
           config.strategy,
         )
@@ -58,9 +59,10 @@ export function useLocaleHead(
       }
 
       // x-default hreflang
-      const defaultPath = localePath(
+      const defaultPath = switchLocalePath(
         currentPath.value,
         config.defaultLocale,
+        config.locales,
         config.defaultLocale,
         config.strategy,
       )
