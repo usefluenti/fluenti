@@ -12,7 +12,7 @@ import type { FluentNuxtRuntimeConfig, LocaleDetectContext } from '../types'
  * 4. Provides reactive `$fluentiLocale` via Nuxt's provide system
  */
 export default defineNuxtPlugin(async (nuxtApp) => {
-  const config = useRuntimeConfig().public.fluenti as FluentNuxtRuntimeConfig
+  const config = useRuntimeConfig().public['fluenti'] as FluentNuxtRuntimeConfig
   const route = useRoute()
 
   // --- Locale detection via detector chain + hook ---
@@ -21,8 +21,7 @@ export default defineNuxtPlugin(async (nuxtApp) => {
     config,
     undefined,
     async (ctx: LocaleDetectContext) => {
-      // @ts-expect-error -- Nuxt hook type augmentation
-      await nuxtApp.callHook('fluenti:detect-locale', ctx)
+      await (nuxtApp.callHook as Function)('fluenti:detect-locale', ctx)
     },
   )
   const currentLocale = ref(detectedLocale)

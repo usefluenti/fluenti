@@ -5,7 +5,7 @@ import type { LocaleDetectContext } from '../../types'
 export default function detectQuery(ctx: LocaleDetectContext): void {
   try {
     const route = useRoute()
-    const queryLocale = route.query.locale as string | undefined
+    const queryLocale = route.query['locale'] as string | undefined
     if (queryLocale && ctx.locales.includes(queryLocale)) {
       ctx.setLocale(queryLocale)
     }

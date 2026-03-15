@@ -11,7 +11,7 @@ import type { FluentNuxtRuntimeConfig } from '../../types'
  * Skips redirect when the URL already contains a valid locale prefix.
  */
 export default defineNuxtRouteMiddleware(async (to) => {
-  const config = useRuntimeConfig().public.fluenti as FluentNuxtRuntimeConfig
+  const config = useRuntimeConfig().public['fluenti'] as FluentNuxtRuntimeConfig
 
   if (config.strategy === 'no_prefix') return
 

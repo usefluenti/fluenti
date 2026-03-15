@@ -31,7 +31,7 @@ export async function runDetectors(
     locales: config.locales,
     defaultLocale: config.defaultLocale,
     strategy: config.strategy,
-    detectBrowserLanguage: config.detectBrowserLanguage,
+    ...(config.detectBrowserLanguage ? { detectBrowserLanguage: config.detectBrowserLanguage } : {}),
     detectedLocale: null,
     setLocale(locale: string) {
       if (config.locales.includes(locale)) {
