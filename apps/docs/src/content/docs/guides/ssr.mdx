@@ -35,6 +35,46 @@ export default defineNuxtPlugin((nuxtApp) => {
 })
 ```
 
+## React (Next.js)
+
+With Next.js App Router, wrap your layout in a client-side `I18nProvider`:
+
+```tsx
+// src/components/I18nClientProvider.tsx
+'use client'
+
+import { I18nProvider } from '@fluenti/react'
+import en from '@/locales/compiled/en'
+import ja from '@/locales/compiled/ja'
+
+const allMessages = { en, ja }
+
+export function I18nClientProvider({ children, locale = 'en' }) {
+  return (
+    <I18nProvider locale={locale} fallbackLocale="en" messages={allMessages}>
+      {children}
+    </I18nProvider>
+  )
+}
+```
+
+```tsx
+// src/app/layout.tsx
+import { I18nClientProvider } from '@/components/I18nClientProvider'
+
+export default function RootLayout({ children }) {
+  return (
+    <html lang="en">
+      <body>
+        <I18nClientProvider>{children}</I18nClientProvider>
+      </body>
+    </html>
+  )
+}
+```
+
+For server-side locale detection, read the locale from cookies or headers in a Server Component and pass it to the client provider.
+
 ## SolidJS (SolidStart)
 
 SolidJS is naturally SSR-safe because each `renderToString()` creates a new component tree with isolated signals.
