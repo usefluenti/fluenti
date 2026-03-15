@@ -1,12 +1,34 @@
 import { Links, Meta, Outlet, Scripts, ScrollRestoration, Link } from '@remix-run/react'
 import { I18nProvider, useI18n } from '@fluenti/react'
+import { getDirection } from '@fluenti/core'
+import { useState } from 'react'
 import en from './locales/compiled/en'
 import ja from './locales/compiled/ja'
+import ar from './locales/compiled/ar'
 
-const allMessages = { en, ja }
+const allMessages = { en, ja, ar }
 
-function NavBar() {
+function getInitialLocale(): string {
+  if (typeof document === 'undefined') return 'en'
+  const urlParams = new URLSearchParams(window.location.search)
+  const queryLang = urlParams.get('lang')
+  if (queryLang) {
+    document.cookie = `locale=${queryLang};path=/;max-age=31536000`
+    return queryLang
+  }
+  const match = document.cookie.match(/(?:^|;\s*)locale=([^;]*)/)
+  if (match) return decodeURIComponent(match[1])
+  return 'en'
+}
+
+function NavBar({ onLocaleChange }: { onLocaleChange: (loc: string) => void }) {
   const { i18n, locale, setLocale } = useI18n()
+
+  const switchLocale = async (loc: string) => {
+    document.cookie = `locale=${loc};path=/;max-age=31536000`
+    await setLocale(loc)
+    onLocaleChange(loc)
+  }
 
   return (
     <div>
@@ -22,13 +44,18 @@ function NavBar() {
         <button
           data-testid="lang-en"
           className={locale === 'en' ? 'active' : ''}
-          onClick={() => setLocale('en')}
+          onClick={() => switchLocale('en')}
         >English</button>
         <button
           data-testid="lang-ja"
           className={locale === 'ja' ? 'active' : ''}
-          onClick={() => setLocale('ja')}
+          onClick={() => switchLocale('ja')}
         >日本語</button>
+        <button
+          data-testid="lang-ar"
+          className={locale === 'ar' ? 'active' : ''}
+          onClick={() => switchLocale('ar')}
+        >العربية</button>
       </div>
 
       <Outlet />
@@ -37,8 +64,10 @@ function NavBar() {
 }
 
 export default function App() {
+  const [currentLocale, setCurrentLocale] = useState(getInitialLocale)
+
   return (
-    <html lang="en">
+    <html lang={currentLocale} dir={getDirection(currentLocale)}>
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -54,8 +83,8 @@ export default function App() {
         `}</style>
       </head>
       <body>
-        <I18nProvider locale="en" fallbackLocale="en" messages={allMessages}>
-          <NavBar />
+        <I18nProvider locale={currentLocale} fallbackLocale="en" messages={allMessages}>
+          <NavBar onLocaleChange={setCurrentLocale} />
         </I18nProvider>
         <ScrollRestoration />
         <Scripts />
