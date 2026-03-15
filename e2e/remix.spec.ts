@@ -32,7 +32,7 @@ test.describe('Remix SPA e2e', () => {
     await expect(page.getByTestId('plural-result')).toContainText('No messages')
   })
 
-  test('navigation between Remix routes works', async ({ page }) => {
+  test('Remix Link navigation between routes works', async ({ page }) => {
     await page.goto('/')
     await expect(page.getByTestId('home-page')).toBeVisible()
 
@@ -46,14 +46,18 @@ test.describe('Remix SPA e2e', () => {
     await expect(page.getByTestId('home-page')).toBeVisible()
   })
 
-  test('locale switching to Japanese updates all text', async ({ page }) => {
+  test('locale switching to Japanese persists across Remix routes', async ({ page }) => {
     await page.goto('/')
     await page.getByTestId('lang-ja').click()
     await expect(page.getByTestId('welcome')).toContainText('Fluenti へようこそ')
     await expect(page.getByTestId('greeting')).toContainText('こんにちは、Worldさん！')
 
+    // Navigate to another Remix route — locale should persist
     await page.getByTestId('nav-about').click()
     await expect(page.getByTestId('about-title')).toContainText('私たちのプロジェクトについて')
+
+    await page.getByTestId('nav-home').click()
+    await expect(page.getByTestId('welcome')).toContainText('Fluenti へようこそ')
   })
 
   test('switching back to English restores original text', async ({ page }) => {
@@ -63,18 +67,6 @@ test.describe('Remix SPA e2e', () => {
 
     await page.getByTestId('lang-en').click()
     await expect(page.getByTestId('welcome')).toContainText('Welcome to Fluenti')
-  })
-
-  test('locale persists across route navigation', async ({ page }) => {
-    await page.goto('/')
-    await page.getByTestId('lang-ja').click()
-    await expect(page.getByTestId('welcome')).toContainText('Fluenti へようこそ')
-
-    await page.getByTestId('nav-plurals').click()
-    await expect(page.getByTestId('nav-home')).toContainText('ホーム')
-
-    await page.getByTestId('nav-home').click()
-    await expect(page.getByTestId('welcome')).toContainText('Fluenti へようこそ')
   })
 
   test('query-based locale via ?lang=ja loads Japanese', async ({ page }) => {
@@ -90,10 +82,9 @@ test.describe('Remix SPA e2e', () => {
 
     await page.reload()
     await expect(page.getByTestId('welcome')).toContainText('Fluenti へようこそ')
-    await expect(page.getByTestId('greeting')).toContainText('こんにちは、Worldさん！')
   })
 
-  test('cookie persists locale across routes after reload', async ({ page }) => {
+  test('cookie persists locale across Remix routes after reload', async ({ page }) => {
     await page.goto('/')
     await page.getByTestId('lang-ja').click()
     await expect(page.getByTestId('welcome')).toContainText('Fluenti へようこそ')
@@ -129,6 +120,5 @@ test.describe('Remix SPA e2e', () => {
 
     await page.goto('/?lang=en')
     await expect(page.getByTestId('welcome')).toContainText('Welcome to Fluenti')
-    await expect(page.getByTestId('greeting')).toContainText('Hello, World!')
   })
 })

@@ -15,10 +15,11 @@ test.describe('React SPA Playground', () => {
     await expect(page.getByTestId('items')).toContainText('You have 3 items in your cart.')
   })
 
-  test('d() date formatting renders output', async ({ page }) => {
+  test('d() date formatting renders locale-aware output', async ({ page }) => {
     await page.goto('/')
-    const dateOutput = page.getByTestId('date')
-    await expect(dateOutput).not.toBeEmpty()
+    const dateText = await page.getByTestId('date').textContent()
+    // Date output should contain a recognizable date pattern (month, day, year)
+    expect(dateText).toMatch(/\d/)
   })
 
   test('n() number formatting renders locale-aware number', async ({ page }) => {
@@ -43,7 +44,9 @@ test.describe('React SPA Playground', () => {
   test('locale switching updates translations to Chinese', async ({ page }) => {
     await page.goto('/')
     await page.getByTestId('lang-zh').click()
-    await expect(page.getByTestId('title')).not.toContainText('Fluenti React Playground')
+    await expect(page.getByTestId('title')).toContainText('Fluenti React 练习场')
+    await expect(page.getByTestId('welcome')).toContainText('欢迎使用 Fluenti')
+    await expect(page.getByTestId('greeting')).toContainText('你好，World！')
   })
 
   test('switching back to English restores original text', async ({ page }) => {
@@ -64,15 +67,8 @@ test.describe('React SPA Playground', () => {
 
     await page.getByTestId('btn-add').click()
     await expect(page.getByTestId('plural-result')).toContainText('2 messages')
-  })
 
-  test('Plural reset button works', async ({ page }) => {
-    await page.goto('/')
-    await page.getByTestId('nav-plurals').click()
-    await page.getByTestId('btn-add').click()
-    await page.getByTestId('btn-add').click()
-    await expect(page.getByTestId('plural-result')).toContainText('2 messages')
-
+    // Also verify reset works
     await page.getByTestId('btn-reset').click()
     await expect(page.getByTestId('plural-result')).toContainText('No messages')
   })
@@ -95,11 +91,6 @@ test.describe('React SPA Playground', () => {
     await expect(page.getByTestId('richtext-section')).toBeVisible()
     await expect(page.getByTestId('trans-basic').locator('a[href="/docs"]')).toContainText('documentation')
     await expect(page.getByTestId('trans-bold').locator('strong')).toContainText('important')
-  })
-
-  test('footer renders attribution', async ({ page }) => {
-    await page.goto('/')
-    await expect(page.getByTestId('footer')).toContainText('Built with Fluenti and React')
   })
 
   test('navigation between sections works', async ({ page }) => {

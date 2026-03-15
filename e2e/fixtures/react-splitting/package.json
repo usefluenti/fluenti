@@ -1,0 +1,23 @@
+{
+  "name": "e2e-react-splitting",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@fluenti/react": "workspace:*",
+    "@fluenti/vite-plugin": "workspace:*",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-router-dom": "^7"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "typescript": "^5.9",
+    "vite": "^8"
+  }
+}
