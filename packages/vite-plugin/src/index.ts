@@ -11,10 +11,13 @@ export type { FluentiPluginOptions } from './types'
 const VIRTUAL_PREFIX = 'virtual:fluenti/messages/'
 const RESOLVED_PREFIX = '\0virtual:fluenti/messages/'
 
-function detectFramework(id: string, code: string): 'vue' | 'solid' {
+function detectFramework(id: string, code: string): 'vue' | 'solid' | 'react' {
   if (id.endsWith('.vue')) return 'vue'
   if (code.includes('solid-js') || code.includes('createSignal') || code.includes('createMemo')) {
     return 'solid'
+  }
+  if (code.includes('react') || code.includes('useState') || code.includes('useEffect') || code.includes('jsx')) {
+    return 'react'
   }
   return 'vue'
 }
@@ -819,7 +822,7 @@ function transformPluralSFC(template: string): string {
 
 function transformTaggedTemplate(
   code: string,
-  framework: 'vue' | 'solid',
+  framework: 'vue' | 'solid' | 'react',
 ): { code: string; needsImport: boolean } {
   let result = code
   let needsImport = false
@@ -892,8 +895,16 @@ function transformTaggedTemplate(
       ? `, { ${valueEntries.join(', ')} }`
       : ''
 
-    const wrapperFn = framework === 'vue' ? 'computed' : 'createMemo'
-    const replacement = `${wrapperFn}(() => __i18n.t('${icuMessage}'${valuesObj}))`
+    // React: direct call (no useMemo — t() is a hash lookup, fast enough)
+    // Vue: computed(() => ...)
+    // Solid: createMemo(() => ...)
+    let replacement: string
+    if (framework === 'react') {
+      replacement = `__i18n.t('${icuMessage}'${valuesObj})`
+    } else {
+      const wrapperFn = framework === 'vue' ? 'computed' : 'createMemo'
+      replacement = `${wrapperFn}(() => __i18n.t('${icuMessage}'${valuesObj}))`
+    }
 
     result = result.replace(fullMatch, replacement)
   }
@@ -935,15 +946,28 @@ function classifyExpression(expr: string): string {
   return ''
 }
 
-function injectImport(code: string, framework: 'vue' | 'solid'): string {
-  const pkg = framework === 'vue' ? '@fluenti/vue' : '@fluenti/solid'
+function injectImport(code: string, framework: 'vue' | 'solid' | 'react'): string {
+  const pkgMap = { vue: '@fluenti/vue', solid: '@fluenti/solid', react: '@fluenti/react' } as const
+  const pkg = pkgMap[framework]
 
+  // For React, we import __useI18n (internal hook) and call it at component top level.
+  // The Vite plugin injects this at the top of the component function body.
   // For Vue, <script setup> runs inside the setup function, so eager call is safe.
   // For Solid, module-level code runs at import time — before createI18n() —
   // so we must lazily resolve the context on first property access.
-  const importLine = framework === 'vue'
-    ? `import { useI18n as __useI18n } from '${pkg}';\nconst __i18n = __useI18n();\n`
-    : `import { useI18n as __useI18n } from '${pkg}';\nlet __i18n_v;\nconst __i18n = new Proxy({}, { get: (_, p) => { __i18n_v ??= __useI18n(); return __i18n_v[p]; } });\n`
+  let importLine: string
+  if (framework === 'react') {
+    importLine = `import { __useI18n } from '${pkg}';\nconst __i18n = __useI18n();\n`
+  } else if (framework === 'vue') {
+    importLine = `import { useI18n as __useI18n } from '${pkg}';\nconst __i18n = __useI18n();\n`
+  } else {
+    importLine = `import { useI18n as __useI18n } from '${pkg}';\nlet __i18n_v;\nconst __i18n = new Proxy({}, { get: (_, p) => { __i18n_v ??= __useI18n(); return __i18n_v[p]; } });\n`
+  }
+
+  if (framework === 'react') {
+    // React: no additional framework imports needed (no computed/createMemo)
+    return importLine + code
+  }
 
   if (framework === 'vue') {
     const neededVueImports: string[] = []
@@ -1070,7 +1094,7 @@ export default function fluentiPlugin(options?: FluentiPluginOptions): Plugin[] 
   const sourceLocale = options?.sourceLocale ?? 'en'
   const locales = options?.locales ?? [sourceLocale]
   const defaultBuildLocale = options?.defaultBuildLocale ?? sourceLocale
-  let detectedFramework: 'vue' | 'solid' = 'vue'
+  let detectedFramework: 'vue' | 'solid' | 'react' = 'vue'
 
   const virtualPlugin: Plugin = {
     name: 'fluenti:virtual',

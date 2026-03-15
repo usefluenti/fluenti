@@ -1,0 +1,51 @@
+{
+  "name": "@fluenti/react",
+  "version": "0.0.1",
+  "type": "module",
+  "description": "React bindings for Fluenti — I18nProvider, useI18n, Trans/Plural/Select components",
+  "homepage": "https://fluenti.dev",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/usefluenti/fluenti.git",
+    "directory": "packages/react"
+  },
+  "bugs": {
+    "url": "https://github.com/usefluenti/fluenti/issues"
+  },
+  "license": "MIT",
+  "keywords": ["i18n", "internationalization", "compile-time", "icu", "messageformat", "react", "hooks", "provider"],
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": { "types": "./dist/index.d.ts", "default": "./dist/index.js" },
+      "require": { "types": "./dist/index.d.cts", "default": "./dist/index.cjs" }
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "react": ">=18.0.0"
+  },
+  "dependencies": {
+    "@fluenti/core": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.9",
+    "vitest": "^4",
+    "tsup": "^8",
+    "@vitest/coverage-v8": "^4",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "@testing-library/react": "^16.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "happy-dom": "^20"
+  }
+}
