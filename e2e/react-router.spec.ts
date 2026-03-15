@@ -85,4 +85,57 @@ test.describe('React Router e2e', () => {
     await page.getByTestId('nav-home').click()
     await expect(page.getByTestId('welcome')).toContainText('Fluenti へようこそ')
   })
+
+  test('query-based locale sets Japanese via ?lang=ja', async ({ page }) => {
+    await page.goto('/?lang=ja')
+    await expect(page.getByTestId('welcome')).toContainText('Fluenti へようこそ')
+  })
+
+  test('cookie persists locale across reload', async ({ page }) => {
+    await page.goto('/')
+    await page.getByTestId('lang-ja').click()
+    await expect(page.getByTestId('welcome')).toContainText('Fluenti へようこそ')
+
+    await page.reload()
+    await expect(page.getByTestId('welcome')).toContainText('Fluenti へようこそ')
+  })
+
+  test('cookie persists locale across routes after reload', async ({ page }) => {
+    await page.goto('/')
+    await page.getByTestId('lang-ja').click()
+    await expect(page.getByTestId('welcome')).toContainText('Fluenti へようこそ')
+
+    await page.getByTestId('nav-about').click()
+    await expect(page.getByTestId('about-page')).toBeVisible()
+
+    await page.reload()
+    await expect(page.getByTestId('about-title')).toContainText('私たちのプロジェクトについて')
+  })
+
+  test('RTL Arabic locale sets dir=rtl and shows Arabic text', async ({ page }) => {
+    await page.goto('/?lang=ar')
+    const dir = await page.locator('html').getAttribute('dir')
+    expect(dir).toBe('rtl')
+    await expect(page.getByTestId('welcome')).toContainText('مرحباً بكم في Fluenti')
+  })
+
+  test('RTL switches back to LTR when changing to English', async ({ page }) => {
+    await page.goto('/')
+    await page.getByTestId('lang-ar').click()
+    const rtlDir = await page.locator('html').getAttribute('dir')
+    expect(rtlDir).toBe('rtl')
+
+    await page.getByTestId('lang-en').click()
+    const ltrDir = await page.locator('html').getAttribute('dir')
+    expect(ltrDir).toBe('ltr')
+  })
+
+  test('query param overrides cookie locale', async ({ page }) => {
+    await page.goto('/')
+    await page.getByTestId('lang-ja').click()
+    await expect(page.getByTestId('welcome')).toContainText('Fluenti へようこそ')
+
+    await page.goto('/?lang=en')
+    await expect(page.getByTestId('welcome')).toContainText('Welcome to Fluenti')
+  })
 })

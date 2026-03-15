@@ -33,3 +33,45 @@ msgstr ""
 
 msgid "Reset"
 msgstr ""
+
+msgid "RSC"
+msgstr ""
+
+msgid "Metadata"
+msgstr ""
+
+msgid "Streaming"
+msgstr ""
+
+msgid "Actions"
+msgstr ""
+
+msgid "Server rendered"
+msgstr ""
+
+msgid "This page is a React Server Component."
+msgstr ""
+
+msgid "Current server locale: {locale}"
+msgstr ""
+
+msgid "Metadata Page"
+msgstr ""
+
+msgid "This page has translated metadata."
+msgstr ""
+
+msgid "Streamed content loaded!"
+msgstr ""
+
+msgid "Server Action Demo"
+msgstr ""
+
+msgid "Submit"
+msgstr ""
+
+msgid "Server says: {message}"
+msgstr ""
+
+msgid "Hello from server action"
+msgstr ""

@@ -28,6 +28,11 @@ export function Layout({ onLocaleChange }: { onLocaleChange: (l: string) => void
           className={locale === 'ja' ? 'active' : ''}
           onClick={() => handleSwitch('ja')}
         >日本語</button>
+        <button
+          data-testid="lang-ar"
+          className={locale === 'ar' ? 'active' : ''}
+          onClick={() => handleSwitch('ar')}
+        >العربية</button>
       </div>
 
       <Outlet />
