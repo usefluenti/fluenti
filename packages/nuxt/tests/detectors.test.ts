@@ -1,4 +1,5 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, afterEach } from 'vitest'
+import { getHydratedLocale } from '@fluenti/core'
 import type { LocaleDetectContext, LocaleDetectorFn, FluentNuxtRuntimeConfig } from '../src/types'
 
 /**
@@ -211,5 +212,93 @@ describe('LocaleDetectContext', () => {
     expect(capturedCtx!.detectBrowserLanguage).toEqual({ useCookie: true, cookieKey: 'my_locale' })
     expect(typeof capturedCtx!.setLocale).toBe('function')
     expect(typeof capturedCtx!.isServer).toBe('boolean')
+  })
+})
+
+describe('SSG scenario: path-only detection', () => {
+  it('detects locale from path when cookie/header detectors are no-ops', async () => {
+    // In SSG, cookie and header detectors silently fail → only path works
+    const detectors = new Map<string, LocaleDetectorFn>([
+      ['path', (ctx) => {
+        // Simulate extractLocaleFromPath
+        const match = ctx.path.match(/^\/([a-z]{2})(\/|$)/)
+        if (match && ctx.locales.includes(match[1]!)) {
+          ctx.setLocale(match[1]!)
+        }
+      }],
+      ['cookie', () => { /* silent fail in SSG */ }],
+      ['header', () => { /* silent fail in SSG */ }],
+    ])
+
+    const config = createConfig()
+
+    expect(await runDetectors('/ja/about', config, detectors)).toBe('ja')
+    expect(await runDetectors('/zh/contact', config, detectors)).toBe('zh')
+    expect(await runDetectors('/en/home', config, detectors)).toBe('en')
+  })
+
+  it('falls back to defaultLocale for unprefixed paths in SSG', async () => {
+    const detectors = new Map<string, LocaleDetectorFn>([
+      ['path', () => { /* no match for / */ }],
+      ['cookie', () => { /* silent fail */ }],
+      ['header', () => { /* silent fail */ }],
+    ])
+
+    const result = await runDetectors('/', createConfig(), detectors)
+    expect(result).toBe('en')
+  })
+
+  it('SSG with prefix_except_default: default locale gets no prefix', async () => {
+    const detectors = new Map<string, LocaleDetectorFn>([
+      ['path', (ctx) => {
+        const match = ctx.path.match(/^\/([a-z]{2})(\/|$)/)
+        if (match && ctx.locales.includes(match[1]!)) {
+          ctx.setLocale(match[1]!)
+        }
+      }],
+    ])
+
+    const config = createConfig({ strategy: 'prefix_except_default' })
+
+    // /about → no path match → defaultLocale 'en'
+    expect(await runDetectors('/about', config, detectors)).toBe('en')
+    // /ja/about → 'ja'
+    expect(await runDetectors('/ja/about', config, detectors)).toBe('ja')
+  })
+})
+
+describe('server → client hydration round-trip', () => {
+  afterEach(() => {
+    if (typeof globalThis.window !== 'undefined') {
+      delete (globalThis.window as Record<string, unknown>)['__FLUENTI_LOCALE__']
+    }
+  })
+
+  it('getHydratedLocale reads the server-injected locale', () => {
+    // Simulate what plugin.ts does on the server: inject window.__FLUENTI_LOCALE__
+    (globalThis as Record<string, unknown>).window = { __FLUENTI_LOCALE__: 'ja' }
+
+    // Client reads it back
+    const locale = getHydratedLocale('en')
+    expect(locale).toBe('ja')
+
+    delete (globalThis as Record<string, unknown>).window
+  })
+
+  it('getHydratedLocale falls back to defaultLocale when not injected', () => {
+    (globalThis as Record<string, unknown>).window = {}
+    const locale = getHydratedLocale('en')
+    expect(locale).toBe('en')
+    delete (globalThis as Record<string, unknown>).window
+  })
+
+  it('getHydratedLocale falls back when no window exists (SSR)', () => {
+    const origWindow = (globalThis as Record<string, unknown>).window
+    delete (globalThis as Record<string, unknown>).window
+    const locale = getHydratedLocale('zh')
+    expect(locale).toBe('zh')
+    if (origWindow !== undefined) {
+      (globalThis as Record<string, unknown>).window = origWindow
+    }
   })
 })

@@ -88,8 +88,23 @@ export interface FluentNuxtOptions {
    * @default true
    */
   autoVitePlugin?: boolean
+  /**
+   * Incremental Static Regeneration (ISR) settings.
+   *
+   * When enabled, the module automatically generates `routeRules` with
+   * ISR caching for all locale route patterns.
+   */
+  isr?: ISROptions
   /** Enable @fluenti/vue-i18n-compat bridge mode */
   compat?: boolean
+}
+
+/** ISR configuration */
+export interface ISROptions {
+  /** Enable ISR route rules generation */
+  enabled: boolean
+  /** Cache TTL in seconds (default: 3600 — 1 hour) */
+  ttl?: number
 }
 
 /** Runtime config injected into Nuxt's public runtimeConfig */

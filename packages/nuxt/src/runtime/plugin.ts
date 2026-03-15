@@ -6,24 +6,34 @@ import type { FluentNuxtRuntimeConfig, LocaleDetectContext } from '../types'
 
 /**
  * Nuxt runtime plugin that:
- * 1. Runs the locale detection chain (built-in detectors + custom detectors)
- * 2. Fires the `fluenti:detect-locale` hook for runtime customization
- * 3. Injects `$localePath` into globalProperties
- * 4. Provides reactive `$fluentiLocale` via Nuxt's provide system
+ * 1. Server: runs the locale detection chain, stores locale in payload for hydration
+ * 2. Client: reads locale from payload to avoid hydration mismatch
+ * 3. Provides reactive locale state and global helpers
  */
 export default defineNuxtPlugin(async (nuxtApp) => {
   const config = useRuntimeConfig().public['fluenti'] as FluentNuxtRuntimeConfig
   const route = useRoute()
 
-  // --- Locale detection via detector chain + hook ---
-  const detectedLocale = await runDetectors(
-    route.path,
-    config,
-    undefined,
-    async (ctx: LocaleDetectContext) => {
-      await (nuxtApp.callHook as Function)('fluenti:detect-locale', ctx)
-    },
-  )
+  let detectedLocale: string
+
+  if (import.meta.server) {
+    // --- Server (SSR / SSG / ISR): run full detection chain ---
+    detectedLocale = await runDetectors(
+      route.path,
+      config,
+      undefined,
+      async (ctx: LocaleDetectContext) => {
+        await (nuxtApp.callHook as Function)('fluenti:detect-locale', ctx)
+      },
+    )
+    // Store in payload — Nuxt serializes this to HTML automatically.
+    // The client reads it back to ensure hydration uses the same locale.
+    nuxtApp.payload['fluentiLocale'] = detectedLocale
+  } else {
+    // --- Client: read from Nuxt payload to avoid hydration mismatch ---
+    detectedLocale = (nuxtApp.payload['fluentiLocale'] as string) ?? config.defaultLocale
+  }
+
   const currentLocale = ref(detectedLocale)
 
   // Sync locale when route changes (path-based detection)

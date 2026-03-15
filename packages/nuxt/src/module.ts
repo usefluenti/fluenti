@@ -2,7 +2,7 @@ import { defineNuxtModule, addPlugin, addImports, addComponent, addRouteMiddlewa
 import type { FluentNuxtOptions } from './types'
 import { extendPages } from './runtime/page-extend'
 
-export type { FluentNuxtOptions, Strategy, FluentNuxtRuntimeConfig, DetectBrowserLanguageOptions, LocaleDetectContext, LocaleDetectorFn, BuiltinDetector } from './types'
+export type { FluentNuxtOptions, Strategy, FluentNuxtRuntimeConfig, DetectBrowserLanguageOptions, LocaleDetectContext, LocaleDetectorFn, BuiltinDetector, ISROptions } from './types'
 export { localePath, extractLocaleFromPath, switchLocalePath } from './runtime/path-utils'
 export { extendPages } from './runtime/page-extend'
 export type { PageRoute } from './runtime/page-extend'
@@ -91,5 +91,29 @@ export default defineNuxtModule<FluentNuxtOptions>({
       name: `${prefix}NuxtLinkLocale`,
       filePath: resolve('./runtime/components/NuxtLinkLocale'),
     })
+
+    // --- SSG / ISR: configure nitro prerender and route rules ---
+    const strategy = options.strategy ?? 'prefix_except_default'
+    if (strategy !== 'no_prefix') {
+      const nuxtOpts = nuxt.options as unknown as Record<string, unknown>
+
+      // Enable link crawling so locale-prefixed routes are discovered during prerender
+      const nitroOpts = (nuxtOpts['nitro'] ?? (nuxtOpts['nitro'] = {})) as Record<string, unknown>
+      const prerender = (nitroOpts['prerender'] ?? (nitroOpts['prerender'] = {})) as Record<string, unknown>
+      prerender['crawlLinks'] = prerender['crawlLinks'] ?? true
+
+      // ISR: generate routeRules for each locale pattern
+      if (options.isr?.enabled) {
+        const routeRules = (nuxtOpts['routeRules'] ?? (nuxtOpts['routeRules'] = {})) as Record<string, Record<string, unknown>>
+        const ttl = options.isr.ttl ?? 3600
+        for (const locale of options.locales) {
+          if (locale === options.defaultLocale && strategy === 'prefix_except_default') {
+            routeRules['/**'] = { ...routeRules['/**'], isr: ttl }
+          } else {
+            routeRules[`/${locale}/**`] = { ...routeRules[`/${locale}/**`], isr: ttl }
+          }
+        }
+      }
+    }
   },
 })
