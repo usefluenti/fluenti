@@ -76,4 +76,59 @@ test.describe('Remix SPA e2e', () => {
     await page.getByTestId('nav-home').click()
     await expect(page.getByTestId('welcome')).toContainText('Fluenti へようこそ')
   })
+
+  test('query-based locale via ?lang=ja loads Japanese', async ({ page }) => {
+    await page.goto('/?lang=ja')
+    await expect(page.getByTestId('welcome')).toContainText('Fluenti へようこそ')
+    await expect(page.getByTestId('greeting')).toContainText('こんにちは、Worldさん！')
+  })
+
+  test('cookie persists locale across reload', async ({ page }) => {
+    await page.goto('/')
+    await page.getByTestId('lang-ja').click()
+    await expect(page.getByTestId('welcome')).toContainText('Fluenti へようこそ')
+
+    await page.reload()
+    await expect(page.getByTestId('welcome')).toContainText('Fluenti へようこそ')
+    await expect(page.getByTestId('greeting')).toContainText('こんにちは、Worldさん！')
+  })
+
+  test('cookie persists locale across routes after reload', async ({ page }) => {
+    await page.goto('/')
+    await page.getByTestId('lang-ja').click()
+    await expect(page.getByTestId('welcome')).toContainText('Fluenti へようこそ')
+
+    await page.getByTestId('nav-about').click()
+    await expect(page.getByTestId('about-page')).toBeVisible()
+
+    await page.reload()
+    await expect(page.getByTestId('about-title')).toContainText('私たちのプロジェクトについて')
+    await expect(page.getByTestId('nav-home')).toContainText('ホーム')
+  })
+
+  test('RTL Arabic locale via ?lang=ar', async ({ page }) => {
+    await page.goto('/?lang=ar')
+    await expect(page.locator('html')).toHaveAttribute('dir', 'rtl')
+    await expect(page.getByTestId('welcome')).toContainText('مرحباً بكم في Fluenti')
+    await expect(page.getByTestId('nav-home')).toContainText('الرئيسية')
+  })
+
+  test('RTL switches back to LTR when changing to English', async ({ page }) => {
+    await page.goto('/?lang=ar')
+    await expect(page.locator('html')).toHaveAttribute('dir', 'rtl')
+
+    await page.getByTestId('lang-en').click()
+    await expect(page.locator('html')).toHaveAttribute('dir', 'ltr')
+    await expect(page.getByTestId('welcome')).toContainText('Welcome to Fluenti')
+  })
+
+  test('query param overrides cookie locale', async ({ page }) => {
+    await page.goto('/')
+    await page.getByTestId('lang-ja').click()
+    await expect(page.getByTestId('welcome')).toContainText('Fluenti へようこそ')
+
+    await page.goto('/?lang=en')
+    await expect(page.getByTestId('welcome')).toContainText('Welcome to Fluenti')
+    await expect(page.getByTestId('greeting')).toContainText('Hello, World!')
+  })
 })

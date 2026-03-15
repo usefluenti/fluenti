@@ -33,3 +33,45 @@ msgstr "追加"
 
 msgid "Reset"
 msgstr "リセット"
+
+msgid "RSC"
+msgstr "RSC"
+
+msgid "Metadata"
+msgstr "メタデータ"
+
+msgid "Streaming"
+msgstr "ストリーミング"
+
+msgid "Actions"
+msgstr "アクション"
+
+msgid "Server rendered"
+msgstr "サーバーレンダリング"
+
+msgid "This page is a React Server Component."
+msgstr "このページは React サーバーコンポーネントです。"
+
+msgid "Current server locale: {locale}"
+msgstr "現在のサーバーロケール：{locale}"
+
+msgid "Metadata Page"
+msgstr "メタデータページ"
+
+msgid "This page has translated metadata."
+msgstr "このページには翻訳されたメタデータがあります。"
+
+msgid "Streamed content loaded!"
+msgstr "ストリーミングコンテンツが読み込まれました！"
+
+msgid "Server Action Demo"
+msgstr "サーバーアクションデモ"
+
+msgid "Submit"
+msgstr "送信"
+
+msgid "Server says: {message}"
+msgstr "サーバーの応答：{message}"
+
+msgid "Hello from server action"
+msgstr "サーバーアクションからこんにちは"
