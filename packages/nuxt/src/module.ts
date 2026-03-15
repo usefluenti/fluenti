@@ -2,7 +2,7 @@ import { defineNuxtModule, addPlugin, addImports, addComponent, addRouteMiddlewa
 import type { FluentNuxtOptions } from './types'
 import { extendPages } from './runtime/page-extend'
 
-export type { FluentNuxtOptions, Strategy, FluentNuxtRuntimeConfig, DetectBrowserLanguageOptions } from './types'
+export type { FluentNuxtOptions, Strategy, FluentNuxtRuntimeConfig, DetectBrowserLanguageOptions, LocaleDetectContext, LocaleDetectorFn, BuiltinDetector } from './types'
 export { localePath, extractLocaleFromPath, switchLocalePath } from './runtime/path-utils'
 export { extendPages } from './runtime/page-extend'
 export type { PageRoute } from './runtime/page-extend'
@@ -27,11 +27,13 @@ export default defineNuxtModule<FluentNuxtOptions>({
     const { resolve } = createResolver(import.meta.url)
 
     // --- Inject runtime config ---
+    const detectOrder = options.detectOrder ?? ['path', 'cookie', 'header']
     nuxt.options.runtimeConfig.public['fluenti'] = {
       locales: options.locales,
       defaultLocale: options.defaultLocale,
       strategy: options.strategy ?? 'prefix_except_default',
       detectBrowserLanguage: options.detectBrowserLanguage,
+      detectOrder,
     }
 
     // --- Register runtime plugin ---
