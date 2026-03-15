@@ -3,10 +3,12 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "remix vite:build",
+    "compile": "fluenti compile",
+    "build": "fluenti compile && remix vite:build",
     "preview": "vite preview"
   },
   "dependencies": {
+    "@fluenti/cli": "workspace:*",
     "@fluenti/core": "workspace:*",
     "@fluenti/react": "workspace:*",
     "@fluenti/vite-plugin": "workspace:*",

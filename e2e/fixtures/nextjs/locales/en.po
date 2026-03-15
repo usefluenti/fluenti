@@ -1,0 +1,35 @@
+msgid ""
+msgstr "Content-Type: text/plain; charset=utf-8\n"
+
+msgid "Home"
+msgstr ""
+
+msgid "About"
+msgstr ""
+
+msgid "Plurals"
+msgstr ""
+
+msgid "Welcome to Fluenti"
+msgstr ""
+
+msgid "This is the home page."
+msgstr ""
+
+msgid "Hello, {name}!"
+msgstr ""
+
+msgid "About our project"
+msgstr ""
+
+msgid "Learn more about Fluenti."
+msgstr ""
+
+msgid "Contact us at {email}"
+msgstr ""
+
+msgid "Add"
+msgstr ""
+
+msgid "Reset"
+msgstr ""

@@ -1,0 +1,59 @@
+msgid ""
+msgstr "Content-Type: text/plain; charset=utf-8\n"
+
+msgid "Fluenti React Playground"
+msgstr ""
+
+msgid "Write text. Fluenti translates it. Zero config."
+msgstr ""
+
+msgid "Built with Fluenti and React"
+msgstr ""
+
+msgid "Welcome to Fluenti"
+msgstr ""
+
+msgid "A modern i18n library for React"
+msgstr ""
+
+msgid "Hello, {name}!"
+msgstr ""
+
+msgid "You have {count} items in your cart."
+msgstr ""
+
+msgid "Current locale: {locale}"
+msgstr ""
+
+msgid "Features"
+msgstr ""
+
+msgid "Reactive locale switching"
+msgstr ""
+
+msgid "Rich text with React components"
+msgstr ""
+
+msgid "Built-in plural support"
+msgstr ""
+
+msgid "Type-safe message catalogs"
+msgstr ""
+
+msgid "Home"
+msgstr ""
+
+msgid "Plurals"
+msgstr ""
+
+msgid "Rich Text"
+msgstr ""
+
+msgid "Add"
+msgstr ""
+
+msgid "Remove"
+msgstr ""
+
+msgid "Reset"
+msgstr ""
