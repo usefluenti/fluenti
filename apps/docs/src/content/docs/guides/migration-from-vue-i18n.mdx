@@ -1,0 +1,73 @@
+---
+title: Migration from vue-i18n
+description: Step-by-step migration guide with before/after examples
+---
+
+## Step 1: Install Fluenti
+
+```bash
+pnpm add @fluenti/vue @fluenti/vite-plugin @fluenti/cli
+```
+
+## Step 2: Replace Plugin Setup
+
+```typescript
+// Before (vue-i18n)
+import { createI18n } from 'vue-i18n'
+const i18n = createI18n({ locale: 'en', messages: { en, zhCN } })
+app.use(i18n)
+
+// After (Fluenti)
+import { createFluentVue } from '@fluenti/vue'
+const i18n = createFluentVue({ locale: 'en', messages: { en, 'zh-CN': zhCN } })
+app.use(i18n)
+```
+
+## Step 3: Replace Template Usage
+
+```vue
+<!-- Before -->
+<p>{{ $t('hello', { name: userName }) }}</p>
+
+<!-- After — Option A: v-t directive -->
+<p v-t>Hello {{ userName }}</p>
+
+<!-- After — Option B: keep $t() (works as-is) -->
+<p>{{ $t('hello', { name: userName }) }}</p>
+```
+
+## Step 4: Replace Script Usage
+
+```vue
+<script setup>
+// Before
+import { useI18n } from 'vue-i18n'
+const { t } = useI18n()
+const msg = t('greeting')
+
+// After — no imports needed
+const msg = t('greeting')
+</script>
+```
+
+## Step 5: Update Vite Config
+
+```typescript
+// vite.config.ts
+import fluentiPlugin from '@fluenti/vite-plugin'
+
+export default defineConfig({
+  plugins: [vue(), fluentiPlugin()],
+})
+```
+
+## API Mapping
+
+| vue-i18n | Fluenti |
+|----------|---------|
+| `$t(key)` | `$t(key)` (same) |
+| `$d(date)` | `$d(date)` (same) |
+| `$n(num)` | `$n(num)` (same) |
+| `useI18n()` | `useI18n()` (same) |
+| `<i18n-t>` | `<Trans>` |
+| Manual key files | Automatic extraction with `fluenti extract` |

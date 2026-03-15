@@ -1,0 +1,163 @@
+---
+title: Formatting
+description: ICU interpolation, date formatting, and number formatting
+---
+
+import { Aside } from '@astrojs/starlight/components'
+
+Fluenti provides ICU message interpolation via `format()`, catalog-based translation via `t()`, and locale-aware date/number formatting via `$d()` and `$n()`.
+
+## `t()` vs `format()`
+
+| Function | Purpose | Source |
+|----------|---------|--------|
+| `t(message, values?)` | Translate a message from the compiled catalog. The message is looked up by hash, and the translated string for the current locale is returned. | Catalog (PO/JSON) |
+| `format(pattern, values?)` | Direct ICU MessageFormat interpolation. No catalog lookup — the pattern is interpreted as-is. Use for dynamic patterns (e.g., server-provided templates, user-generated content). | Inline pattern |
+
+### `format()` examples
+
+```ts
+const { format } = useI18n()
+
+// Simple interpolation
+format('Hello, {name}!', { name: 'World' })
+// → "Hello, World!"
+
+// Plural
+format('{count, plural, one {# item} other {# items}}', { count: 5 })
+// → "5 items"
+
+// Select
+format('{role, select, admin {Full access} other {Limited access}}', { role: 'admin' })
+// → "Full access"
+```
+
+Use `format()` when the pattern itself is dynamic or not part of your static catalog — for example, patterns received from an API response or a CMS.
+
+<Aside type="caution">
+`tRaw()` is a deprecated alias for `format()`. Existing code using `tRaw()` will continue to work, but you should migrate to `format()`.
+</Aside>
+
+## `t()` — Catalog Translation
+
+`t()` is the primary API for translating static messages:
+
+```ts
+const { t } = useI18n()
+
+t('Hello, {name}!', { name: 'World' })
+// Looks up the hash of "Hello, {name}!" in the compiled catalog,
+// returns the translated string for the current locale.
+```
+
+Messages used with `t()` are extracted by `fluenti extract` and compiled into per-locale bundles.
+
+---
+
+Fluenti also provides locale-aware date and number formatting via `$d()` and `$n()`.
+
+## Date Formatting — $d()
+
+```vue
+<template>
+  <p>{{ $d(createdAt) }}</p>           <!-- Default format -->
+  <p>{{ $d(createdAt, 'short') }}</p>  <!-- 1/15/2025 -->
+  <p>{{ $d(createdAt, 'long') }}</p>   <!-- Wednesday, January 15, 2025 -->
+  <p>{{ $d(createdAt, 'relative') }}</p> <!-- 3 days ago -->
+</template>
+```
+
+### Built-in Date Styles
+
+| Style | Example (en) |
+|-------|-------------|
+| `default` | Jan 15, 2025 |
+| `short` | 1/15/2025 |
+| `long` | Wednesday, January 15, 2025 |
+| `time` | 3:30 PM |
+| `datetime` | Jan 15, 2025, 3:30 PM |
+| `relative` | 3 days ago / in 2 hours |
+
+## Number Formatting — $n()
+
+```vue
+<template>
+  <p>{{ $n(price, 'currency') }}</p>  <!-- $1,234.50 -->
+  <p>{{ $n(ratio, 'percent') }}</p>   <!-- 85% -->
+  <p>{{ $n(value, 'decimal') }}</p>   <!-- 1,234.50 -->
+</template>
+```
+
+### Built-in Number Styles
+
+| Style | Example (en) |
+|-------|-------------|
+| `default` | 1,234.5 |
+| `currency` | $1,234.50 (auto-detects currency from locale) |
+| `percent` | 85% |
+| `decimal` | 1,234.50 |
+
+### Auto Currency Detection
+
+The `currency` style automatically uses the correct currency for each locale:
+
+| Locale | Currency |
+|--------|----------|
+| `en` | USD |
+| `en-GB` | GBP |
+| `zh-CN` | CNY |
+| `ja` | JPY |
+| `de` / `fr` | EUR |
+
+## Custom Format Styles
+
+You can define your own date and number format styles when creating your i18n instance.
+
+### Custom Date Formats
+
+```typescript
+const i18n = createFluentVue({
+  locale: 'en',
+  messages,
+  dateFormats: {
+    'month-year': { year: 'numeric', month: 'long' },
+    'time-24h': { hour: '2-digit', minute: '2-digit', hour12: false },
+    relative: 'relative',
+  },
+})
+```
+
+Usage: `{{ $d(date, 'month-year') }}` → "January 2025"
+
+### Custom Number Formats
+
+```typescript
+const i18n = createFluentVue({
+  locale: 'en',
+  messages,
+  numberFormats: {
+    compact: { notation: 'compact' },
+    'currency-no-cents': { style: 'currency', currency: 'USD', maximumFractionDigits: 0 },
+    // Function form for locale-dependent config
+    currency: (locale) => ({
+      style: 'currency',
+      currency: CURRENCY_MAP[locale] ?? 'USD',
+    }),
+  },
+})
+```
+
+Usage: `{{ $n(1234567, 'compact') }}` → "1.2M"
+
+### Solid
+
+The same format options work with `createI18nContext`:
+
+```typescript
+const ctx = createI18nContext({
+  locale: 'en',
+  messages,
+  dateFormats: { ... },
+  numberFormats: { ... },
+})
+```

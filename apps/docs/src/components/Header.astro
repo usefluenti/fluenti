@@ -1,0 +1,194 @@
+---
+import config from 'virtual:starlight/user-config';
+import Search from 'virtual:starlight/components/Search';
+import SocialIcons from 'virtual:starlight/components/SocialIcons';
+import ThemeSelect from 'virtual:starlight/components/ThemeSelect';
+
+const shouldRenderSearch =
+	config.pagefind || config.components.Search !== '@astrojs/starlight/components/Search.astro';
+
+const { siteTitleHref } = Astro.locals.starlightRoute;
+
+const navItems = [
+	{ label: 'Docs', href: '/getting-started/introduction/' },
+	{ label: 'Examples', href: '/examples/' },
+	{ label: 'Playground', href: 'https://playground.fluenti.dev', external: true },
+];
+---
+
+<div class="header fl-header">
+	{/* Logo */}
+	<a href={siteTitleHref} class="fl-header-brand">
+		<span class="fl-logo-icon">F</span>
+		<span class="fl-logo-text">fluenti</span>
+	</a>
+
+	{/* Divider */}
+	<div class="fl-header-divider"></div>
+
+	{/* Nav links */}
+	<nav class="fl-header-nav">
+		{navItems.map((item) => (
+			<a href={item.href} class="fl-nav-link" {...(item.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}>{item.label}{item.external && <span class="fl-external-icon">&thinsp;&#8599;</span>}</a>
+		))}
+	</nav>
+
+	{/* Search */}
+	<div class="fl-header-search sl-flex print:hidden">
+		{shouldRenderSearch && <Search />}
+	</div>
+
+	{/* Right actions */}
+	<div class="fl-header-actions print:hidden">
+		<div class="fl-header-social">
+			<SocialIcons />
+		</div>
+		<ThemeSelect />
+	</div>
+</div>
+
+<script is:inline>
+	(() => {
+		const header = document.querySelector('header.header');
+		if (!header) return;
+		const onScroll = () => {
+			if (window.scrollY > 8) {
+				header.setAttribute('data-scrolled', '');
+			} else {
+				header.removeAttribute('data-scrolled');
+			}
+		};
+		window.addEventListener('scroll', onScroll, { passive: true });
+		onScroll();
+	})();
+</script>
+
+<style>
+	.fl-header {
+		display: flex;
+		align-items: center;
+		height: 100%;
+		padding: 0 24px;
+		gap: 8px;
+		position: relative;
+	}
+
+	/* Logo brand */
+	.fl-header-brand {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		text-decoration: none;
+		flex-shrink: 0;
+		padding: 4px 2px;
+		border-radius: 8px;
+		transition: opacity 150ms ease;
+	}
+
+	.fl-header-brand:hover {
+		opacity: 0.8;
+	}
+
+	.fl-logo-icon {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 22px;
+		height: 22px;
+		border-radius: 18%;
+		background: linear-gradient(135deg, #6366f1, #7c3aed);
+		color: white;
+		font-weight: 700;
+		font-size: 12px;
+		line-height: 1;
+		flex-shrink: 0;
+	}
+
+	.fl-logo-text {
+		font-size: 17px;
+		font-weight: 700;
+		letter-spacing: -0.02em;
+		line-height: 1;
+		color: var(--fl-header-text);
+	}
+
+	/* Divider */
+	.fl-header-divider {
+		width: 1px;
+		height: 20px;
+		margin: 0 8px;
+		flex-shrink: 0;
+		background: var(--fl-header-border);
+	}
+
+	/* Nav links */
+	.fl-header-nav {
+		display: flex;
+		align-items: center;
+		gap: 2px;
+	}
+
+	.fl-nav-link {
+		font-size: 13px;
+		font-weight: 500;
+		padding: 5px 12px;
+		border-radius: 7px;
+		text-decoration: none;
+		transition: color 150ms ease, background 150ms ease;
+		white-space: nowrap;
+		color: var(--fl-header-text-secondary);
+	}
+
+	.fl-nav-link:hover {
+		color: var(--fl-header-text);
+		background: var(--fl-header-hover-bg);
+	}
+
+	.fl-external-icon {
+		font-size: 11px;
+		opacity: 0.5;
+	}
+
+	/* Search area */
+	.fl-header-search {
+		margin-left: auto;
+		flex-shrink: 1;
+	}
+
+	/* Right actions */
+	.fl-header-actions {
+		display: flex;
+		align-items: center;
+		gap: 4px;
+		flex-shrink: 0;
+		margin-left: 8px;
+	}
+
+	.fl-header-social {
+		display: flex;
+		align-items: center;
+	}
+
+	.fl-header-social :global(.social-icons::after) {
+		display: none;
+	}
+
+	/* Mobile: hide nav, divider, actions */
+	@media (max-width: 50rem) {
+		.fl-header-divider,
+		.fl-header-nav,
+		.fl-header-actions {
+			display: none;
+		}
+
+		.fl-header {
+			padding: 0 16px;
+		}
+	}
+
+	@media (max-width: 480px) {
+		.fl-header-search {
+			display: none;
+		}
+	}
+</style>

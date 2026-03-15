@@ -1,0 +1,148 @@
+msgid ""
+msgstr "Content-Type: text/plain; charset=utf-8\n"
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/CompileTime.tsx:12
+msgid "Compile-Time Transforms"
+msgstr ""
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/CompileTime.tsx:14
+msgid ""
+"These demos showcase compile-time features: function calls and tagged "
+"templates — all transformed at build time by the Vite plugin."
+msgstr ""
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/CompileTime.tsx:28
+msgid "source text"
+msgstr ""
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/CompileTime.tsx:34
+msgid "Hello, {"
+msgstr ""
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/Home.tsx:13
+msgid "Hello, {name}!"
+msgstr ""
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/CompileTime.tsx:41
+msgid "You have {"
+msgstr ""
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/CompileTime.tsx:43
+msgid "You have {count} items."
+msgstr ""
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/CompileTime.tsx:48
+msgid "Current locale: {"
+msgstr ""
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/Home.tsx:16
+msgid "Current locale: {locale}"
+msgstr ""
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/CompileTime.tsx:91
+msgid "You have {count} items in your cart."
+msgstr ""
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/CompileTime.tsx:105
+msgid "Total: {price}"
+msgstr ""
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/Home.tsx:9
+msgid "Welcome to Fluenti"
+msgstr ""
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/Home.tsx:10
+msgid "A type-safe i18n library for Solid"
+msgstr ""
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/Home.tsx:14
+msgid "This playground demonstrates the features of @fluenti/solid."
+msgstr ""
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/Home.tsx:30
+msgid "Username"
+msgstr ""
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/Home.tsx:34
+msgid "Email"
+msgstr ""
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/Home.tsx:38
+msgid "Password"
+msgstr ""
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/Home.tsx:40
+msgid "This field is required"
+msgstr ""
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/Home.tsx:42
+msgid "Submit"
+msgstr ""
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/Home.tsx:43
+msgid "Cancel"
+msgstr ""
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/Plurals.tsx:10
+msgid "Plurals"
+msgstr ""
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/Plurals.tsx:34
+msgid "Your cart is empty."
+msgstr ""
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/Plurals.tsx:35
+msgid "You have # item in your cart."
+msgstr ""
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/Plurals.tsx:36
+msgid "You have # items in your cart."
+msgstr ""
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/Reactivity.tsx:36
+msgid "Reset"
+msgstr ""
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/Plurals.tsx:32
+msgid ""
+"{count, plural, zero {t('Your cart is empty.')} one {t('You have # item in "
+"your cart.')} other {t('You have # items in your cart.')}}"
+msgstr ""
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/Reactivity.tsx:12
+msgid "Reactivity Demo"
+msgstr ""
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/Reactivity.tsx:14
+msgid "In SolidJS, the component body runs only once. Text nodes update reactively."
+msgstr ""
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/Reactivity.tsx:26
+msgid "Counter value: {count}"
+msgstr ""
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/Reactivity.tsx:30
+msgid "Decrement"
+msgstr ""
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/Reactivity.tsx:33
+msgid "Increment"
+msgstr ""
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/RichText.tsx:23
+msgid "Rich Text"
+msgstr ""
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/RichText.tsx:42
+msgid "Welcome to <bold>Fluenti</bold> for <italic>SolidJS</italic>!"
+msgstr ""
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/RichText.tsx:57
+msgid "Supports <bold>bold</bold>, <italic>italic</italic>, and <link>links</link>."
+msgstr ""
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/RichText.tsx:72
+msgid ""
+"You can even <bold>nest <italic>components</italic> inside</bold> each "
+"other."
+msgstr ""

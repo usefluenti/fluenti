@@ -1,0 +1,69 @@
+import { defineConfig } from '@playwright/test'
+
+export default defineConfig({
+  testDir: './e2e',
+  timeout: 30_000,
+  retries: 0,
+  use: {
+    headless: true,
+  },
+  projects: [
+    {
+      name: 'vue',
+      use: { baseURL: 'http://localhost:5173' },
+      testMatch: '**/vue.spec.ts',
+    },
+    {
+      name: 'solid',
+      use: { baseURL: 'http://localhost:5174' },
+      testMatch: '**/solid.spec.ts',
+    },
+    {
+      name: 'nuxt',
+      use: { baseURL: 'http://localhost:5175' },
+      testMatch: '**/nuxt.spec.ts',
+    },
+    {
+      name: 'solid-start',
+      use: { baseURL: 'http://localhost:5176' },
+      testMatch: '**/solid-start.spec.ts',
+    },
+    {
+      name: 'splitting-vue',
+      use: { baseURL: 'http://localhost:5180' },
+      testMatch: '**/splitting-vue.spec.ts',
+    },
+  ],
+  webServer: [
+    {
+      command: 'cd examples/vue && pnpm build && pnpm preview --port 5173',
+      port: 5173,
+      reuseExistingServer: true,
+      timeout: 60_000,
+    },
+    {
+      command: 'cd examples/solid && pnpm build && pnpm preview --port 5174',
+      port: 5174,
+      reuseExistingServer: true,
+      timeout: 60_000,
+    },
+    {
+      command: 'cd examples/nuxt && pnpm build && pnpm preview',
+      port: 5175,
+      reuseExistingServer: true,
+      timeout: 60_000,
+    },
+    {
+      command: 'cd examples/solid-start && pnpm build && pnpm preview',
+      port: 5176,
+      reuseExistingServer: true,
+      timeout: 60_000,
+    },
+    {
+      command: 'cd e2e/fixtures/vue-splitting && pnpm build && pnpm preview --port 5180',
+      port: 5180,
+      reuseExistingServer: true,
+      timeout: 60_000,
+    },
+  ],
+})

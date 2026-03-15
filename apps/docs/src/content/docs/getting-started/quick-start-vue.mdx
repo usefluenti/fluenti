@@ -1,0 +1,167 @@
+---
+title: Quick Start (Vue)
+description: Get started with Fluenti in a Vue 3 project
+---
+
+import { Steps } from '@astrojs/starlight/components'
+
+<Steps>
+
+1. **Install packages**
+
+   ```bash
+   pnpm add @fluenti/core @fluenti/vue
+   pnpm add -D @fluenti/cli @fluenti/vite-plugin
+   ```
+
+2. **Configure Vite**
+
+   ```typescript
+   // vite.config.ts
+   import { defineConfig } from 'vite'
+   import vue from '@vitejs/plugin-vue'
+   import fluenti from '@fluenti/vite-plugin'
+
+   export default defineConfig({
+     plugins: [
+       vue(),
+       fluenti({ framework: 'vue' }),
+     ],
+   })
+   ```
+
+3. **Create `fluenti.config.ts`**
+
+   ```typescript
+   // fluenti.config.ts
+   export default {
+     sourceLocale: 'en',
+     locales: ['en', 'zh-CN'],
+     catalogDir: './locales',
+     format: 'po',
+     include: ['./src/**/*.{vue,ts}'],
+     compileOutDir: './src/locales/compiled',
+   }
+   ```
+
+4. **Write your component — just use `v-t`**
+
+   ```vue
+   <script setup>
+   import { useI18n } from '@fluenti/vue'
+   const { t, setLocale } = useI18n()
+   </script>
+
+   <template>
+     <h1 v-t>Welcome to my app</h1>
+     <p v-t>This text will be automatically extracted for translation.</p>
+     <p>{{ t('Hello, {name}!', { name: 'World' }) }}</p>
+
+     <button @click="setLocale('en')">English</button>
+     <button @click="setLocale('zh-CN')">中文</button>
+   </template>
+   ```
+
+5. **Extract messages**
+
+   ```bash
+   npx fluenti extract
+   ```
+
+   This scans your source files and generates catalog files in `./locales/`:
+   - `locales/en.po` — source messages (auto-filled)
+   - `locales/zh-CN.po` — empty translations to fill in
+
+6. **Add translations**
+
+   Open `locales/zh-CN.po` and fill in `msgstr` fields:
+
+   ```po
+   msgid "Welcome to my app"
+   msgstr "欢迎使用我的应用"
+
+   msgid "Hello, {name}!"
+   msgstr "你好，{name}！"
+   ```
+
+7. **Compile messages**
+
+   ```bash
+   npx fluenti compile
+   ```
+
+   This generates optimized JS modules in `src/locales/compiled/`.
+
+8. **Initialize from compiled output**
+
+   ```typescript
+   // src/main.ts
+   import { createApp } from 'vue'
+   import { createFluentVue } from '@fluenti/vue'
+   import App from './App.vue'
+   import en from './locales/compiled/en'
+   import zhCN from './locales/compiled/zh-CN'
+
+   const i18n = createFluentVue({
+     locale: 'en',
+     fallbackLocale: 'en',
+     messages: { en, 'zh-CN': zhCN },
+   })
+
+   const app = createApp(App)
+   app.use(i18n)
+   app.mount('#app')
+   ```
+
+</Steps>
+
+## What's happening under the hood?
+
+1. **`v-t` directive** — The Vite plugin transforms `<h1 v-t>Welcome</h1>` into `<h1>{{ $t('hash') }}</h1>` at compile time
+2. **`t()` calls** — `t('Hello, {name}!')` is extracted by the CLI and looked up at runtime via the compiled catalog
+3. **No manual keys** — Message IDs are auto-generated hashes. You write source text, not key names.
+
+## Rich text with `<Trans>`
+
+`Trans`, `Plural`, and `Select` are globally registered by `app.use(i18n)` — no import needed.
+
+```vue
+<template>
+  <Trans>Click <a href="/next">here</a> to continue</Trans>
+</template>
+```
+
+## Plurals with `<Plural>`
+
+```vue
+<script setup>
+import { ref } from 'vue'
+
+const count = ref(0)
+</script>
+
+<template>
+  <Plural :value="count" one="# item" other="# items" />
+  <button @click="count++">Add</button>
+</template>
+```
+
+## Lazy messages with `msg\`\``
+
+```vue
+<script setup>
+import { msg } from '@fluenti/core'
+import { useI18n } from '@fluenti/vue'
+
+const { t } = useI18n()
+
+const ROLES = {
+  admin: msg`Administrator`,
+  user: msg`Regular User`,
+}
+</script>
+
+<template>
+  <span>{{ t(ROLES.admin) }}</span>
+</template>
+```

@@ -1,0 +1,6 @@
+export { createFluentVue, FLUENTI_KEY } from './plugin'
+export type { FluentVueOptions, FluentVuePlugin, FluentVueContext } from './plugin'
+export { useI18n } from './use-i18n'
+export { Trans } from './components/Trans'
+export { Plural } from './components/Plural'
+export { Select } from './components/Select'

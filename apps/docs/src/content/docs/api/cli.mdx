@@ -1,0 +1,52 @@
+---
+title: "@fluenti/cli"
+description: CLI tool API reference
+---
+
+## Commands
+
+### `fluenti extract`
+
+Extract messages from source files.
+
+Supports:
+- `t()` and `` t` ` `` calls
+- `<Trans message="...">` components
+- `<Plural>` components
+- `v-t` directive (Vue)
+
+### `fluenti compile`
+
+Compile message catalogs to optimized JavaScript modules.
+
+Input: JSON or PO catalog files
+Output: ES modules with string literals and template functions
+
+### `fluenti stats`
+
+Show translation progress as a table.
+
+## Programmatic API
+
+```typescript
+import { extractFromVue, extractFromTsx } from '@fluenti/cli'
+import { updateCatalog, compileCatalog } from '@fluenti/cli'
+import { readJsonCatalog, writeJsonCatalog } from '@fluenti/cli'
+import { readPoCatalog, writePoCatalog } from '@fluenti/cli'
+```
+
+### `extractFromVue(code, filename)`
+
+Extract messages from a Vue SFC string.
+
+### `extractFromTsx(code, filename)`
+
+Extract messages from a TSX/JSX string.
+
+### `updateCatalog(existing, extracted)`
+
+Update a catalog with newly extracted messages. Returns `{ catalog, result }` where result contains `added`, `unchanged`, and `obsolete` counts.
+
+### `compileCatalog(catalog, locale)`
+
+Compile a catalog to an optimized JavaScript module string.

@@ -1,0 +1,168 @@
+---
+title: Introduction
+description: Why Fluenti exists and how it compares to other i18n solutions
+---
+
+import { Tabs, TabItem, Steps } from '@astrojs/starlight/components';
+
+Fluenti is a **compile-time** internationalization library for modern frameworks. It currently supports **Vue** and **SolidJS**, with **React** and **Svelte** planned. It eliminates the three biggest pain points of traditional i18n: manual key management, runtime parsing overhead, and clunky rich text APIs.
+
+## Why Fluenti exists
+
+### The key management tax
+
+Every i18n library asks you to invent a key for every string:
+
+```json
+// en.json — you maintain this by hand
+{
+  "pages.home.hero.title": "Welcome to our app",
+  "pages.home.hero.subtitle": "The best tool for ...",
+  "pages.home.cta": "Get started"
+}
+```
+
+Keys drift out of sync. Unused keys pile up. Developers spend time naming things instead of building features.
+
+**Fluenti's answer**: the source text *is* the key. Write `<h1 v-t>Welcome to our app</h1>` and extraction happens automatically. No JSON file to maintain.
+
+### Runtime parsing overhead
+
+Traditional libraries ship a full ICU parser to the browser, parsing message strings on every render. For a page with 50 translated strings, that's 50 parse calls before the user sees anything.
+
+**Fluenti's answer**: the `v-t` directive is a **Vue `nodeTransform`** — it rewrites your template at build time. The compiled render function contains the translated string directly. At runtime, there is nothing left to parse.
+
+### Clunky rich text
+
+Need a link inside a translated sentence? Most libraries force you into one of these:
+
+<Tabs>
+  <TabItem label="v-html (XSS risk)">
+    ```vue
+    <!-- vue-i18n: raw HTML injection -->
+    <p v-html="$t('click_here', { link: '<a href=\'/docs\'>here</a>' })" />
+    ```
+  </TabItem>
+  <TabItem label="Indexed slots">
+    ```jsx
+    {/* Lingui: numbered placeholders */}
+    <Trans>Click <0>here</0> to continue</Trans>
+    {/* Translators see: Click {0} to continue */}
+    ```
+  </TabItem>
+  <TabItem label="Fluenti">
+    ```vue
+    <!-- Real HTML elements — no indices, no XSS -->
+    <Trans>Click <a href="/docs">here</a> to continue</Trans>
+    ```
+  </TabItem>
+</Tabs>
+
+Fluenti preserves your actual markup. Translators see HTML they already understand, and there is no XSS vector.
+
+## How Fluenti compares
+
+| Feature | vue-i18n | Lingui | Fluenti |
+|---------|----------|--------|---------|
+| **Keys** | Manual key strings | Auto-generated IDs | Source text = key |
+| **Rich text** | `v-html` (XSS risk) | `<0>indexed</0>` placeholders | Native `<a>`, `<strong>`, etc. |
+| **Runtime cost** | Full parser in bundle | Compiled messages | Compiled + `v-t` zero-cost |
+| **Code splitting** | Manual | Per-route | Per-route (built-in) |
+| **Catalog format** | JSON only | PO / JSON | PO / JSON |
+| **SSR** | Plugin config required | Custom setup | Built-in locale detection |
+| **Frameworks** | Vue only | React only | Vue, Solid, and more |
+| **ICU MessageFormat** | Partial support | Full | Full |
+| **Formatters** | Separate `@intlify/core` | External packages | Built-in `d()` / `n()` |
+
+## Architecture overview
+
+Fluenti's pipeline turns your source text into optimized, per-locale bundles at build time:
+
+```
+  Source code          Extract           Catalog          Translate
+ ┌──────────┐      ┌──────────┐      ┌──────────┐      ┌──────────┐
+ │ <h1 v-t> │ ───► │ fluenti  │ ───► │  .po     │ ───► │ Poedit / │
+ │ Hello!   │      │ extract  │      │ catalog  │      │ Crowdin  │
+ │ </h1>    │      └──────────┘      └──────────┘      └──────────┘
+ └──────────┘                                                │
+                                                             ▼
+  Ship                Compile                          Translated
+ ┌──────────┐      ┌──────────┐      ┌──────────────────────────┐
+ │  Vite    │ ◄─── │ fluenti  │ ◄─── │ .po catalog with target  │
+ │  bundle  │      │ compile  │      │ language strings filled   │
+ └──────────┘      └──────────┘      └──────────────────────────┘
+```
+
+<Steps>
+
+1. **Write** source text directly in your templates: `<h1 v-t>Welcome</h1>` or `t('Hello!')`
+
+2. **Extract** messages with `fluenti extract` — scans Vue SFCs and TSX files, generates PO catalogs
+
+3. **Translate** using any gettext-compatible tool (Poedit, Crowdin, Weblate) or translate the PO files by hand
+
+4. **Compile** with `fluenti compile` — generates optimized JS modules, one per locale, ready for code splitting
+
+5. **Ship** — Vite bundles compiled translations automatically via `@fluenti/vite-plugin`, lazy-loading per route
+
+</Steps>
+
+## Packages
+
+| Package | Description |
+|---------|-------------|
+| `@fluenti/core` | Framework-agnostic ICU parser, compiler, interpolation, plural/select, and formatters |
+| `@fluenti/vue` | Vue 3 plugin: `v-t` directive, `<Trans>`, `<Plural>`, `<Select>`, `useI18n()` composable |
+| `@fluenti/solid` | SolidJS integration: `I18nProvider`, `<Trans>`, `<Plural>`, `<Select>`, `useI18n()` hook |
+| `@fluenti/cli` | Message extraction (Vue SFC + TSX), PO/JSON catalog format, compilation |
+| `@fluenti/vite-plugin` | Vite plugin: virtual modules, build-time `v-t` transforms, per-route code splitting |
+
+## Installation
+
+### Vue
+
+<Tabs>
+  <TabItem label="pnpm">
+    ```bash
+    pnpm add @fluenti/core @fluenti/vue
+    pnpm add -D @fluenti/cli @fluenti/vite-plugin
+    ```
+  </TabItem>
+  <TabItem label="npm">
+    ```bash
+    npm install @fluenti/core @fluenti/vue
+    npm install -D @fluenti/cli @fluenti/vite-plugin
+    ```
+  </TabItem>
+</Tabs>
+
+### SolidJS
+
+<Tabs>
+  <TabItem label="pnpm">
+    ```bash
+    pnpm add @fluenti/core @fluenti/solid
+    pnpm add -D @fluenti/cli @fluenti/vite-plugin
+    ```
+  </TabItem>
+  <TabItem label="npm">
+    ```bash
+    npm install @fluenti/core @fluenti/solid
+    npm install -D @fluenti/cli @fluenti/vite-plugin
+    ```
+  </TabItem>
+</Tabs>
+
+### Requirements
+
+- Node.js >= 18
+- Vue >= 3.4 (for Vue bindings)
+- SolidJS >= 1.8 (for Solid bindings)
+- Vite >= 5 (for Vite plugin)
+
+## Next steps
+
+- [Quick Start (Vue)](/getting-started/quick-start-vue/) — build your first translated Vue app
+- [Quick Start (SolidJS)](/getting-started/quick-start-solid/) — build your first translated Solid app
+- [The v-t directive](/guides/v-t-directive/) — deep dive into compile-time transforms
+- [Components](/guides/components/) — Trans, Plural, and Select components

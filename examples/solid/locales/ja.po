@@ -1,0 +1,148 @@
+msgid ""
+msgstr "Content-Type: text/plain; charset=utf-8\n"
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/CompileTime.tsx:12
+msgid "Compile-Time Transforms"
+msgstr "コンパイル時変換"
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/CompileTime.tsx:14
+msgid ""
+"These demos showcase compile-time features: function calls and tagged "
+"templates — all transformed at build time by the Vite plugin."
+msgstr ""
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/CompileTime.tsx:28
+msgid "source text"
+msgstr ""
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/CompileTime.tsx:34
+msgid "Hello, {"
+msgstr ""
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/Home.tsx:13
+msgid "Hello, {name}!"
+msgstr "こんにちは、{name}さん！"
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/CompileTime.tsx:41
+msgid "You have {"
+msgstr ""
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/CompileTime.tsx:43
+msgid "You have {count} items."
+msgstr "{count} 個のアイテムがあります。"
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/CompileTime.tsx:48
+msgid "Current locale: {"
+msgstr ""
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/Home.tsx:16
+msgid "Current locale: {locale}"
+msgstr "現在のロケール：{locale}"
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/CompileTime.tsx:91
+msgid "You have {count} items in your cart."
+msgstr "カートに {count} 個のアイテムがあります。"
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/CompileTime.tsx:105
+msgid "Total: {price}"
+msgstr "合計：{price}"
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/Home.tsx:9
+msgid "Welcome to Fluenti"
+msgstr "Fluenti へようこそ"
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/Home.tsx:10
+msgid "A type-safe i18n library for Solid"
+msgstr "Solid 向けの型安全な i18n ライブラリ"
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/Home.tsx:14
+msgid "This playground demonstrates the features of @fluenti/solid."
+msgstr "このプレイグラウンドは @fluenti/solid の機能をデモンストレーションします。"
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/Home.tsx:30
+msgid "Username"
+msgstr "ユーザー名"
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/Home.tsx:34
+msgid "Email"
+msgstr "メールアドレス"
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/Home.tsx:38
+msgid "Password"
+msgstr "パスワード"
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/Home.tsx:40
+msgid "This field is required"
+msgstr "この項目は必須です"
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/Home.tsx:42
+msgid "Submit"
+msgstr "送信"
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/Home.tsx:43
+msgid "Cancel"
+msgstr "キャンセル"
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/Plurals.tsx:10
+msgid "Plurals"
+msgstr "複数形"
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/Plurals.tsx:34
+msgid "Your cart is empty."
+msgstr "カートは空です。"
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/Plurals.tsx:35
+msgid "You have # item in your cart."
+msgstr "カートに # 個のアイテムがあります。"
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/Plurals.tsx:36
+msgid "You have # items in your cart."
+msgstr "カートに # 個のアイテムがあります。"
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/Reactivity.tsx:36
+msgid "Reset"
+msgstr "リセット"
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/Plurals.tsx:32
+msgid ""
+"{count, plural, zero {t('Your cart is empty.')} one {t('You have # item in "
+"your cart.')} other {t('You have # items in your cart.')}}"
+msgstr ""
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/Reactivity.tsx:12
+msgid "Reactivity Demo"
+msgstr "リアクティビティデモ"
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/Reactivity.tsx:14
+msgid "In SolidJS, the component body runs only once. Text nodes update reactively."
+msgstr "SolidJS では、コンポーネント本体は一度だけ実行されます。テキストノードはリアクティブに更新されます。"
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/Reactivity.tsx:26
+msgid "Counter value: {count}"
+msgstr "カウンター値：{count}"
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/Reactivity.tsx:30
+msgid "Decrement"
+msgstr "減少"
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/Reactivity.tsx:33
+msgid "Increment"
+msgstr "増加"
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/RichText.tsx:23
+msgid "Rich Text"
+msgstr "リッチテキスト"
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/RichText.tsx:42
+msgid "Welcome to <bold>Fluenti</bold> for <italic>SolidJS</italic>!"
+msgstr "<bold>Fluenti</bold> の <italic>SolidJS</italic> 版へようこそ！"
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/RichText.tsx:57
+msgid "Supports <bold>bold</bold>, <italic>italic</italic>, and <link>links</link>."
+msgstr "<bold>太字</bold>、<italic>斜体</italic>、<link>リンク</link> をサポート。"
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/RichText.tsx:72
+msgid ""
+"You can even <bold>nest <italic>components</italic> inside</bold> each "
+"other."
+msgstr ""

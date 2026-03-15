@@ -1,0 +1,57 @@
+---
+title: SSR
+description: Server-side rendering with Fluenti
+---
+
+Fluenti is SSR-safe by design. Every API works identically in SSR and CSR.
+
+## Key rules
+
+1. **No shared global state** — Every SSR request gets its own Fluenti instance
+2. **Hydration consistency** — Client must initialize with the same locale the server used
+
+## Vue (Nuxt)
+
+```typescript
+// server plugin
+export default defineNuxtPlugin((nuxtApp) => {
+  const event = nuxtApp.ssrContext?.event
+  const locale = detectLocale({
+    cookie: getCookie(event, 'lang'),
+    headers: event?.headers,
+    available: ['en', 'zh-CN', 'ja'],
+    fallback: 'en',
+  })
+
+  const i18n = createFluentVue({ locale, messages: allMessages })
+  nuxtApp.vueApp.use(i18n)
+})
+
+// client plugin
+export default defineNuxtPlugin((nuxtApp) => {
+  const locale = getHydratedLocale('en')
+  const i18n = createFluentVue({ locale, messages: allMessages })
+  nuxtApp.vueApp.use(i18n)
+})
+```
+
+## SolidJS (SolidStart)
+
+SolidJS is naturally SSR-safe because each `renderToString()` creates a new component tree with isolated signals.
+
+```tsx
+function Server() {
+  const locale = detectLocale({ ... })
+  return (
+    <I18nProvider locale={locale} messages={allMessages}>
+      <App />
+    </I18nProvider>
+  )
+}
+```
+
+## Utilities
+
+- `detectLocale(options)` — Detects locale from cookie, query, path, or Accept-Language header
+- `getSSRLocaleScript(locale)` — Generates a `<script>` tag to inject locale into HTML
+- `getHydratedLocale(fallback)` — Reads the injected locale on the client

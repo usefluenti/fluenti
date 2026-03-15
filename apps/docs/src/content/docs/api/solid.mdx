@@ -1,0 +1,127 @@
+---
+title: "@fluenti/solid"
+description: SolidJS bindings API reference
+---
+
+## `<I18nProvider>`
+
+Provide i18n context to the component tree.
+
+```tsx
+import { I18nProvider } from '@fluenti/solid'
+import en from './locales/compiled/en'
+import zhCN from './locales/compiled/zh-CN'
+
+<I18nProvider
+  locale="en"
+  fallbackLocale="en"
+  messages={{ en, 'zh-CN': zhCN }}
+>
+  <App />
+</I18nProvider>
+```
+
+### Props
+
+| Prop | Type | Description |
+|------|------|-------------|
+| `locale` | `string` | Initial locale |
+| `fallbackLocale` | `string?` | Fallback locale |
+| `messages` | `AllMessages` | Compiled message catalogs (from `fluenti compile`) |
+| `missing` | `(locale, id) => string?` | Missing message handler |
+| `splitting` | `boolean?` | Enable code-splitting mode |
+| `chunkLoader` | `(locale) => Promise<Messages>?` | Async locale loader |
+
+## `useI18n()`
+
+Access the i18n context from the nearest provider.
+
+```tsx
+import { useI18n } from '@fluenti/solid'
+
+function MyComponent() {
+  const { t, format, locale, setLocale, d, n, isLoading, preloadLocale } = useI18n()
+  return <p>{t('Hello, {name}!', { name: 'World' })}</p>
+}
+```
+
+### Return values
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `t` | `(id, values?) => string` | Translate a message |
+| `format` | `(message, values?) => string` | Direct ICU interpolation without catalog lookup |
+| `locale` | `Accessor<string>` | Current locale (signal) |
+| `setLocale` | `(locale) => Promise<void>` | Change locale (async with splitting) |
+| `loadMessages` | `(locale, messages) => void` | Load messages at runtime |
+| `getLocales` | `() => string[]` | Get all loaded locale codes |
+| `d` | `(value, style?) => string` | Format a date |
+| `n` | `(value, style?) => string` | Format a number |
+| `tRaw` | `(message, values?) => string` | @deprecated Use `format()` instead |
+| `isLoading` | `Accessor<boolean>` | Whether a locale chunk is loading |
+| `loadedLocales` | `Accessor<Set<string>>` | Set of loaded locales |
+| `preloadLocale` | `(locale) => void` | Preload a locale without switching |
+
+## `format()`
+
+Direct ICU interpolation without catalog lookup. Useful for one-off messages or dynamic patterns.
+
+```tsx
+function MyComponent() {
+  const { format } = useI18n()
+  return <p>{format('Hello {name}!', { name: 'World' })}</p>
+}
+```
+
+## `<Trans>`
+
+Rich text with component interpolation. Globally registered — no import needed.
+
+The default slot is the primary API. The slot content is the source-language message, which is auto-extracted and translated via the catalog:
+
+```tsx
+<Trans>Click <a href="/next">here</a> to continue.</Trans>
+```
+
+You can still use the `message` prop with `components` for explicit component mapping:
+
+```tsx
+<Trans
+  message={t('Click <link>here</link>')}
+  components={{ link: (props) => <a href="/next">{props.children}</a> }}
+/>
+```
+
+:::note[Migration]
+The `message` prop is deprecated. Move your message text into the default slot (children) for automatic extraction and translation.
+:::
+
+## `<Plural>`
+
+Pluralization component. Globally registered — no import needed.
+
+Plural forms are source-language text, auto-extracted and translated via the catalog:
+
+```tsx
+<Plural value={count()} one="# item" other="# items" />
+```
+
+## `<Select>`
+
+Select component for gender, role, etc. Globally registered — no import needed.
+
+Use the `options` prop for type-safe select patterns:
+
+```tsx
+<Select value={gender()} options={{ male: 'He', female: 'She' }} other="They" />
+```
+
+Alternatively, pass options as attributes:
+
+```tsx
+<Select value={gender()} male="He" female="She" other="They" />
+```
+
+## Reactivity
+
+`t()` reads the `locale()` signal internally. In JSX expressions, Solid automatically tracks this dependency. When locale changes, only the specific text nodes that call `t()` update — the component body does not re-execute.

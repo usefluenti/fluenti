@@ -1,0 +1,20 @@
+import { defineConfig } from 'tsup'
+
+export default defineConfig({
+  entry: ['src/index.ts', 'src/cli.ts'],
+  format: ['esm', 'cjs'],
+  dts: true,
+  splitting: false,
+  sourcemap: true,
+  clean: true,
+  treeshake: true,
+  external: [
+    '@fluenti/core',
+    '@vue/compiler-sfc',
+    'gettext-parser',
+    'citty',
+    'consola',
+    'fast-glob',
+    'jiti',
+  ],
+})
