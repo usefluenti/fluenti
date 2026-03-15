@@ -1,30 +1,47 @@
 'use client'
 
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useI18n } from '@fluenti/react'
 
 export function Nav() {
   const { i18n, locale, setLocale } = useI18n()
+  const router = useRouter()
+
+  const switchLocale = async (loc: string) => {
+    document.cookie = `locale=${loc};path=/;max-age=31536000`
+    await setLocale(loc)
+    router.refresh()
+  }
 
   return (
     <div>
-      <nav style={{ display: 'flex', gap: '16px', marginBottom: '20px' }}>
+      <nav style={{ display: 'flex', gap: '16px', marginBottom: '20px', flexWrap: 'wrap' }}>
         <Link href="/" data-testid="nav-home">{i18n.t('Home')}</Link>
         <Link href="/about" data-testid="nav-about">{i18n.t('About')}</Link>
         <Link href="/plurals" data-testid="nav-plurals">{i18n.t('Plurals')}</Link>
+        <Link href="/rsc" data-testid="nav-rsc">{i18n.t('RSC')}</Link>
+        <Link href="/metadata" data-testid="nav-metadata">{i18n.t('Metadata')}</Link>
+        <Link href="/streaming" data-testid="nav-streaming">{i18n.t('Streaming')}</Link>
+        <Link href="/server-action" data-testid="nav-actions">{i18n.t('Actions')}</Link>
       </nav>
 
       <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
         <button
           data-testid="lang-en"
           style={{ fontWeight: locale === 'en' ? 'bold' : 'normal' }}
-          onClick={() => setLocale('en')}
+          onClick={() => switchLocale('en')}
         >English</button>
         <button
           data-testid="lang-ja"
           style={{ fontWeight: locale === 'ja' ? 'bold' : 'normal' }}
-          onClick={() => setLocale('ja')}
+          onClick={() => switchLocale('ja')}
         >日本語</button>
+        <button
+          data-testid="lang-ar"
+          style={{ fontWeight: locale === 'ar' ? 'bold' : 'normal' }}
+          onClick={() => switchLocale('ar')}
+        >العربية</button>
       </div>
     </div>
   )
