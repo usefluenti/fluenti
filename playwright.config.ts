@@ -29,9 +29,29 @@ export default defineConfig({
       testMatch: '**/solid-start.spec.ts',
     },
     {
+      name: 'react',
+      use: { baseURL: 'http://localhost:5177' },
+      testMatch: '**/react.spec.ts',
+    },
+    {
       name: 'splitting-vue',
       use: { baseURL: 'http://localhost:5180' },
       testMatch: '**/splitting-vue.spec.ts',
+    },
+    {
+      name: 'react-router',
+      use: { baseURL: 'http://localhost:5181' },
+      testMatch: '**/react-router.spec.ts',
+    },
+    {
+      name: 'remix',
+      use: { baseURL: 'http://localhost:5182' },
+      testMatch: '**/remix.spec.ts',
+    },
+    {
+      name: 'nextjs',
+      use: { baseURL: 'http://localhost:5183' },
+      testMatch: '**/nextjs.spec.ts',
     },
   ],
   webServer: [
@@ -60,10 +80,34 @@ export default defineConfig({
       timeout: 60_000,
     },
     {
+      command: 'cd examples/react && pnpm build && pnpm preview --port 5177',
+      port: 5177,
+      reuseExistingServer: true,
+      timeout: 60_000,
+    },
+    {
       command: 'cd e2e/fixtures/vue-splitting && pnpm build && pnpm preview --port 5180',
       port: 5180,
       reuseExistingServer: true,
       timeout: 60_000,
+    },
+    {
+      command: 'cd e2e/fixtures/react-router && pnpm build && pnpm preview --port 5181',
+      port: 5181,
+      reuseExistingServer: true,
+      timeout: 60_000,
+    },
+    {
+      command: 'cd e2e/fixtures/remix && pnpm build && pnpm preview --port 5182',
+      port: 5182,
+      reuseExistingServer: true,
+      timeout: 60_000,
+    },
+    {
+      command: 'cd e2e/fixtures/nextjs && pnpm build && pnpm start -p 5183',
+      port: 5183,
+      reuseExistingServer: true,
+      timeout: 120_000,
     },
   ],
 })

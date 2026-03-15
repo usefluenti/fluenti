@@ -16,7 +16,7 @@
   "scripts": {
     "build": "pnpm -r --filter './packages/*' run build",
     "dev": "pnpm -r --filter './packages/*' run dev --parallel",
-    "test": "pnpm --filter @fluenti/core --filter @fluenti/vue --filter @fluenti/solid --filter @fluenti/cli --filter @fluenti/vite-plugin run test",
+    "test": "pnpm --filter @fluenti/core --filter @fluenti/vue --filter @fluenti/solid --filter @fluenti/react --filter @fluenti/cli --filter @fluenti/vite-plugin run test",
     "test:watch": "vitest",
     "typecheck": "pnpm -r run typecheck",
     "lint": "oxlint --fix",
@@ -32,7 +32,11 @@
     "test:e2e:vue": "playwright test --project=vue",
     "test:e2e:solid": "playwright test --project=solid",
     "test:e2e:nuxt": "playwright test --project=nuxt",
-    "test:e2e:solid-start": "playwright test --project=solid-start"
+    "test:e2e:solid-start": "playwright test --project=solid-start",
+    "test:e2e:react": "playwright test --project=react",
+    "test:e2e:react-router": "playwright test --project=react-router",
+    "test:e2e:remix": "playwright test --project=remix",
+    "test:e2e:nextjs": "playwright test --project=nextjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.58.2",
