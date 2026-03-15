@@ -22,7 +22,7 @@ Traditional i18n libraries interpret messages at runtime, adding bundle weight a
 
 - **ICU MessageFormat** — plurals, selects, nested arguments, custom formatters
 - **Vue `v-t` directive** — compile-time template transform, not a runtime directive
-- **`<Trans>`, `<Plural>`, `<Select>` components** — for Vue, Solid, and more
+- **`<Trans>`, `<Plural>`, `<Select>` components** — for Vue, Solid, and Svelte
 - **Code splitting** — lazy-load translations per route (`dynamic`, `static`, or off)
 - **SSR-safe** — locale detection via cookie, query, path, or headers
 - **Date / number formatting** — thin wrappers around `Intl` APIs
@@ -36,6 +36,9 @@ pnpm add @fluenti/core @fluenti/vue @fluenti/vite-plugin
 
 # SolidJS
 pnpm add @fluenti/core @fluenti/solid @fluenti/vite-plugin
+
+# Svelte
+pnpm add @fluenti/core @fluenti/svelte @fluenti/vite-plugin
 
 # CLI (message extraction & compilation)
 pnpm add -D @fluenti/cli
@@ -79,6 +82,7 @@ The Vite plugin loads compiled catalogs automatically — no manual wiring neede
 | [`@fluenti/core`](packages/core) <br> [![npm](https://img.shields.io/npm/v/@fluenti/core?color=4f46e5&label=)](https://www.npmjs.com/package/@fluenti/core) | Framework-agnostic core — ICU parser, compiler, interpolation, formatters |
 | [`@fluenti/vue`](packages/vue) <br> [![npm](https://img.shields.io/npm/v/@fluenti/vue?color=4f46e5&label=)](https://www.npmjs.com/package/@fluenti/vue) | Vue 3 integration — `v-t` directive, `<Trans>`, `useI18n()` composable |
 | [`@fluenti/solid`](packages/solid) <br> [![npm](https://img.shields.io/npm/v/@fluenti/solid?color=4f46e5&label=)](https://www.npmjs.com/package/@fluenti/solid) | SolidJS integration — `<Trans>`, `I18nProvider`, `useI18n()` |
+| [`@fluenti/svelte`](packages/svelte) <br> [![npm](https://img.shields.io/npm/v/@fluenti/svelte?color=4f46e5&label=)](https://www.npmjs.com/package/@fluenti/svelte) | Svelte 5 integration — `<Trans>`, `setI18nContext()`, `getI18n()` |
 | [`@fluenti/cli`](packages/cli) <br> [![npm](https://img.shields.io/npm/v/@fluenti/cli?color=4f46e5&label=)](https://www.npmjs.com/package/@fluenti/cli) | Message extraction from Vue SFC & TSX, PO/JSON catalog compilation |
 | [`@fluenti/vite-plugin`](packages/vite-plugin) <br> [![npm](https://img.shields.io/npm/v/@fluenti/vite-plugin?color=4f46e5&label=)](https://www.npmjs.com/package/@fluenti/vite-plugin) | Vite build-time transforms, virtual modules, code splitting |
 
@@ -89,6 +93,7 @@ Full documentation — guides, API reference, and examples — is available at *
 - [Getting Started](https://fluenti.dev/getting-started/introduction/)
 - [Vue Quick Start](https://fluenti.dev/getting-started/quick-start-vue/)
 - [SolidJS Quick Start](https://fluenti.dev/getting-started/quick-start-solid/)
+- [Svelte Quick Start](https://fluenti.dev/getting-started/quick-start-svelte/)
 - [Code Splitting](https://fluenti.dev/advanced/code-splitting/)
 - [SSR Guide](https://fluenti.dev/guides/ssr/)
 
