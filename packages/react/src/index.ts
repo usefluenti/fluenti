@@ -1,3 +1,5 @@
+"use client"
+
 // Provider
 export { I18nProvider } from './provider'
 
