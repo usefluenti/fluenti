@@ -581,6 +581,78 @@ describe('runtime v-t directive', () => {
   })
 })
 
+describe('te()', () => {
+  it('returns true when the key exists in the current locale', () => {
+    const plugin = createFluentVue({
+      locale: 'en',
+      messages: { en: { hello: 'Hello' }, fr: { bonjour: 'Bonjour' } },
+    })
+
+    expect(plugin.global.te('hello')).toBe(true)
+    expect(plugin.global.te('missing')).toBe(false)
+  })
+
+  it('checks a specific locale when provided', () => {
+    const plugin = createFluentVue({
+      locale: 'en',
+      messages: { en: { hello: 'Hello' }, fr: { bonjour: 'Bonjour' } },
+    })
+
+    expect(plugin.global.te('bonjour', 'fr')).toBe(true)
+    expect(plugin.global.te('bonjour', 'en')).toBe(false)
+  })
+
+  it('returns true for compiled function messages', () => {
+    const plugin = createFluentVue({
+      locale: 'en',
+      messages: {
+        en: { greeting: () => 'Hello' },
+      },
+    })
+
+    expect(plugin.global.te('greeting')).toBe(true)
+  })
+})
+
+describe('tm()', () => {
+  it('returns the raw compiled message', () => {
+    const plugin = createFluentVue({
+      locale: 'en',
+      messages: { en: { hello: 'Hello {name}' } },
+    })
+
+    expect(plugin.global.tm('hello')).toBe('Hello {name}')
+  })
+
+  it('returns undefined when the key does not exist', () => {
+    const plugin = createFluentVue({
+      locale: 'en',
+      messages: { en: {} },
+    })
+
+    expect(plugin.global.tm('missing')).toBeUndefined()
+  })
+
+  it('returns a function message as-is', () => {
+    const fn = () => 'Hello'
+    const plugin = createFluentVue({
+      locale: 'en',
+      messages: { en: { greeting: fn } },
+    })
+
+    expect(plugin.global.tm('greeting')).toBe(fn)
+  })
+
+  it('looks up a specific locale when provided', () => {
+    const plugin = createFluentVue({
+      locale: 'en',
+      messages: { en: { hello: 'Hello' }, fr: { hello: 'Bonjour' } },
+    })
+
+    expect(plugin.global.tm('hello', 'fr')).toBe('Bonjour')
+  })
+})
+
 describe('$vtRich XSS prevention', () => {
   it('escapes HTML injected outside numbered tags in translation', () => {
     const plugin = createFluentVue({

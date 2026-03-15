@@ -41,6 +41,10 @@ export interface FluentVueContext {
   loadedLocales: Readonly<Ref<ReadonlySet<string>>>
   /** Preload a locale in the background without switching to it */
   preloadLocale(locale: string): void
+  /** Check if a translation key exists in the catalog */
+  te(key: string, locale?: string): boolean
+  /** Get the raw compiled message without interpolation */
+  tm(key: string, locale?: string): CompiledMessage | undefined
 }
 
 /** Injection key for providing/injecting fluenti context */
@@ -257,6 +261,16 @@ export function createFluentVue(options: FluentVueOptions): FluentVuePlugin {
     })
   }
 
+  function te(key: string, loc?: string): boolean {
+    const targetLocale = loc ?? locale.value
+    return lookup(targetLocale, key) !== undefined
+  }
+
+  function tm(key: string, loc?: string): CompiledMessage | undefined {
+    const targetLocale = loc ?? locale.value
+    return lookup(targetLocale, key)
+  }
+
   const context: FluentVueContext = {
     t,
     locale,
@@ -270,6 +284,8 @@ export function createFluentVue(options: FluentVueOptions): FluentVuePlugin {
     isLoading,
     loadedLocales,
     preloadLocale,
+    te,
+    tm,
   }
 
   return {

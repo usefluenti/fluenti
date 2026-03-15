@@ -1,0 +1,50 @@
+{
+  "name": "@fluenti/vue-i18n-compat",
+  "version": "0.0.1",
+  "type": "module",
+  "description": "Progressive migration bridge between vue-i18n and Fluenti — share locale, translate across both libraries",
+  "homepage": "https://fluenti.dev",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/usefluenti/fluenti.git",
+    "directory": "packages/vue-i18n-compat"
+  },
+  "bugs": {
+    "url": "https://github.com/usefluenti/fluenti/issues"
+  },
+  "license": "MIT",
+  "keywords": ["i18n", "vue-i18n", "compat", "migration", "bridge", "fluenti", "vue"],
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": { "types": "./dist/index.d.ts", "default": "./dist/index.js" },
+      "require": { "types": "./dist/index.d.cts", "default": "./dist/index.cjs" }
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "vue": "^3.5",
+    "vue-i18n": "^9 || ^10"
+  },
+  "dependencies": {
+    "@fluenti/core": "workspace:*",
+    "@fluenti/vue": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.9",
+    "vitest": "^4",
+    "tsup": "^8",
+    "vue": "^3.5",
+    "vue-i18n": "^10",
+    "@vue/test-utils": "^2",
+    "happy-dom": "^20"
+  }
+}

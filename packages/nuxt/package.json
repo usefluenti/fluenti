@@ -1,0 +1,52 @@
+{
+  "name": "@fluenti/nuxt",
+  "version": "0.0.1",
+  "type": "module",
+  "description": "Nuxt module for Fluenti — locale-prefixed routes, SEO helpers, auto locale detection",
+  "homepage": "https://fluenti.dev",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/usefluenti/fluenti.git",
+    "directory": "packages/nuxt"
+  },
+  "bugs": {
+    "url": "https://github.com/usefluenti/fluenti/issues"
+  },
+  "license": "MIT",
+  "keywords": ["i18n", "nuxt", "nuxt-module", "fluenti", "ssr", "locale", "routing"],
+  "main": "./dist/module.cjs",
+  "module": "./dist/module.js",
+  "types": "./dist/module.d.ts",
+  "exports": {
+    ".": {
+      "import": { "types": "./dist/module.d.ts", "default": "./dist/module.js" },
+      "require": { "types": "./dist/module.d.cts", "default": "./dist/module.cjs" }
+    },
+    "./runtime": {
+      "import": { "types": "./dist/runtime/index.d.ts", "default": "./dist/runtime/index.js" },
+      "require": { "types": "./dist/runtime/index.d.cts", "default": "./dist/runtime/index.cjs" }
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "nuxt": "^3.0.0"
+  },
+  "dependencies": {
+    "@fluenti/core": "workspace:*",
+    "@fluenti/vue": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.9",
+    "vitest": "^4",
+    "tsup": "^8",
+    "vue": "^3.5",
+    "nuxt": "^3.17",
+    "vue-router": "^4"
+  }
+}

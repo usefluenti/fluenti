@@ -1,0 +1,6 @@
+export { localePath, extractLocaleFromPath, switchLocalePath, extendPages } from './route-utils'
+export { useLocalePath, useSwitchLocalePath } from './composables'
+export { useLocaleHead } from './locale-head'
+export { NuxtLinkLocale } from './components/NuxtLinkLocale'
+export type { LocaleHeadMeta, LocaleHeadOptions } from './locale-head'
+export type { PageRoute } from './route-utils'
