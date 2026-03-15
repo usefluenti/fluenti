@@ -22,7 +22,7 @@
     "lint": "oxlint --fix",
     "docs:dev": "pnpm --filter @fluenti/docs dev",
     "docs:build": "pnpm --filter @fluenti/docs build",
-    "playground:build": "pnpm --filter @fluenti/playground build",
+    "playground:build": "pnpm build && pnpm --filter @fluenti/playground build",
     "playground:dev": "pnpm --filter @fluenti/playground dev",
     "example:vue": "pnpm --filter playground-vue dev",
     "example:solid": "pnpm --filter playground-solid dev",
