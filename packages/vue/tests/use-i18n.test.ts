@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { createApp, defineComponent, h, nextTick, ref } from 'vue'
+import { defineComponent, h, nextTick } from 'vue'
 import { createFluentVue } from '../src/plugin'
 import { useI18n } from '../src/use-i18n'
 import { mount } from '@vue/test-utils'
@@ -52,7 +52,7 @@ describe('useI18n', () => {
 
     const Comp = defineComponent({
       setup() {
-        const { t, locale } = useI18n()
+        const { t } = useI18n()
         return () => h('div', t('hello'))
       },
     })

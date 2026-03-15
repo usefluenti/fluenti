@@ -127,7 +127,7 @@ export function createI18nContext(config: FluentConfig | I18nConfig): I18nContex
   }
 
   const loadMessages = (loc: Locale, msgs: Messages): void => {
-    messages[loc] = { ...(messages[loc] ?? {}), ...msgs }
+    messages[loc] = { ...messages[loc], ...msgs }
     loadedLocalesSet.add(loc)
     setLoadedLocales(new Set(loadedLocalesSet))
   }
@@ -146,7 +146,7 @@ export function createI18nContext(config: FluentConfig | I18nConfig): I18nContex
     setIsLoading(true)
     try {
       const loaded = await i18nConfig.chunkLoader(newLocale)
-      messages[newLocale] = { ...(messages[newLocale] ?? {}), ...loaded }
+      messages[newLocale] = { ...messages[newLocale], ...loaded }
       loadedLocalesSet.add(newLocale)
       setLoadedLocales(new Set(loadedLocalesSet))
       setLocaleSignal(newLocale)
@@ -158,7 +158,7 @@ export function createI18nContext(config: FluentConfig | I18nConfig): I18nContex
   const preloadLocale = (loc: string): void => {
     if (loadedLocalesSet.has(loc) || !i18nConfig.chunkLoader) return
     i18nConfig.chunkLoader(loc).then((loaded) => {
-      messages[loc] = { ...(messages[loc] ?? {}), ...loaded }
+      messages[loc] = { ...messages[loc], ...loaded }
       loadedLocalesSet.add(loc)
       setLoadedLocales(new Set(loadedLocalesSet))
     }).catch(() => {

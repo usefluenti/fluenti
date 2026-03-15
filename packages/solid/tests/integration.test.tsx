@@ -77,11 +77,11 @@ describe('integration', () => {
   })
 
   it('Trans and Plural work together with locale switch', async () => {
-    let changeLocale: (l: string) => void
+    let _changeLocale: (l: string) => void
 
     function App() {
       const { setLocale } = useI18n()
-      changeLocale = setLocale
+      _changeLocale = setLocale
       return (
         <div>
           <Trans
