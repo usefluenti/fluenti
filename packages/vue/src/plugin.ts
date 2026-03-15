@@ -63,6 +63,22 @@ export interface FluentVueOptions {
   chunkLoader?: ChunkLoader
   /** Enable code-splitting mode */
   splitting?: boolean
+  /**
+   * Prefix for globally registered components (Trans, Plural, Select).
+   *
+   * Set this to avoid naming conflicts with other libraries.
+   *
+   * @example
+   * componentPrefix: 'I18n'
+   * // Registers: I18nTrans, I18nPlural, I18nSelect
+   *
+   * @example
+   * componentPrefix: 'Fluenti'
+   * // Registers: FluentiTrans, FluentiPlural, FluentiSelect
+   *
+   * @default '' (no prefix — Trans, Plural, Select)
+   */
+  componentPrefix?: string
 }
 
 /** Return value of `createFluentVue()` */
@@ -291,9 +307,10 @@ export function createFluentVue(options: FluentVueOptions): FluentVuePlugin {
   return {
     install(app: App) {
       app.provide(FLUENTI_KEY, context)
-      app.component('Trans', Trans)
-      app.component('Plural', Plural)
-      app.component('Select', Select)
+      const prefix = options.componentPrefix ?? ''
+      app.component(`${prefix}Trans`, Trans)
+      app.component(`${prefix}Plural`, Plural)
+      app.component(`${prefix}Select`, Select)
       app.config.globalProperties['$t'] = t
       app.config.globalProperties['$d'] = d
       app.config.globalProperties['$n'] = n

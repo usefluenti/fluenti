@@ -71,6 +71,23 @@ export interface FluentNuxtOptions {
    * @default ['path', 'cookie', 'header']
    */
   detectOrder?: Array<BuiltinDetector | string>
+  /**
+   * Prefix for globally registered i18n components (Trans, Plural, Select).
+   *
+   * Use this to avoid naming conflicts with other libraries.
+   *
+   * @example 'I18n'  // → I18nTrans, I18nPlural, I18nSelect
+   * @default '' (no prefix)
+   */
+  componentPrefix?: string
+  /**
+   * Automatically register `@fluenti/vite-plugin` in the Vite config.
+   *
+   * Set to `false` to disable if you configure the Vite plugin manually.
+   *
+   * @default true
+   */
+  autoVitePlugin?: boolean
   /** Enable @fluenti/vue-i18n-compat bridge mode */
   compat?: boolean
 }

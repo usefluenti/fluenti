@@ -67,6 +67,25 @@ describe('createFluentVue', () => {
     expect(app.component('Plural')).toBeDefined()
     expect(app.component('Select')).toBeDefined()
   })
+
+  it('registers components with prefix when componentPrefix is set', () => {
+    const plugin = createFluentVue({
+      locale: 'en',
+      messages: { en: {} },
+      componentPrefix: 'I18n',
+    })
+
+    const app = createApp({ render: () => h('div') })
+    app.use(plugin)
+
+    expect(app.component('I18nTrans')).toBeDefined()
+    expect(app.component('I18nPlural')).toBeDefined()
+    expect(app.component('I18nSelect')).toBeDefined()
+    // Original names should NOT be registered
+    expect(app.component('Trans')).toBeUndefined()
+    expect(app.component('Plural')).toBeUndefined()
+    expect(app.component('Select')).toBeUndefined()
+  })
 })
 
 describe('t()', () => {

@@ -36,6 +36,21 @@ export default defineNuxtModule<FluentNuxtOptions>({
       detectOrder,
     }
 
+    // --- Auto-register @fluenti/vite-plugin ---
+    if (options.autoVitePlugin !== false) {
+      try {
+        const vitePlugin = require('@fluenti/vite-plugin')
+        const plugin = vitePlugin.default ?? vitePlugin
+        nuxt.options.vite = nuxt.options.vite || {}
+        nuxt.options.vite.plugins = nuxt.options.vite.plugins || []
+        ;(nuxt.options.vite.plugins as unknown[]).push(
+          plugin({ framework: 'vue' }),
+        )
+      } catch {
+        // @fluenti/vite-plugin is an optional peer dependency
+      }
+    }
+
     // --- Register runtime plugin ---
     addPlugin({
       src: resolve('./runtime/plugin'),
@@ -67,11 +82,13 @@ export default defineNuxtModule<FluentNuxtOptions>({
       { name: 'useLocalePath', from: resolve('./runtime/composables') },
       { name: 'useSwitchLocalePath', from: resolve('./runtime/composables') },
       { name: 'useLocaleHead', from: resolve('./runtime/composables') },
+      { name: 'useI18n', from: '@fluenti/vue' },
     ])
 
     // --- Register NuxtLinkLocale component ---
+    const prefix = options.componentPrefix ?? ''
     addComponent({
-      name: 'NuxtLinkLocale',
+      name: `${prefix}NuxtLinkLocale`,
       filePath: resolve('./runtime/components/NuxtLinkLocale'),
     })
   },

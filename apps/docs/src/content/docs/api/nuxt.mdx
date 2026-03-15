@@ -29,6 +29,8 @@ export default defineNuxtConfig({
 | `catalogDir` | `string?` | — | Directory for compiled catalogs |
 | `detectBrowserLanguage` | `DetectBrowserLanguageOptions?` | — | Browser language detection |
 | `detectOrder` | `Array<string>` | `['path', 'cookie', 'header']` | Ordered list of locale detectors |
+| `componentPrefix` | `string?` | `''` | Prefix for global components (`'I18n'` → `I18nNuxtLinkLocale`) |
+| `autoVitePlugin` | `boolean?` | `true` | Auto-register `@fluenti/vite-plugin` in Vite config |
 | `compat` | `boolean?` | — | Enable `@fluenti/vue-i18n-compat` bridge mode |
 
 ### `Strategy`
@@ -45,6 +47,18 @@ type Strategy = 'prefix' | 'prefix_except_default' | 'prefix_and_default' | 'no_
 | `no_prefix` | `/about` | `/about` |
 
 ## Composables
+
+All composables are auto-imported — no `import` needed. This includes `useI18n` from `@fluenti/vue`:
+
+```vue
+<script setup>
+// All auto-imported, zero imports needed
+const { t, locale, setLocale, d, n } = useI18n()
+const localePath = useLocalePath()
+const switchLocalePath = useSwitchLocalePath()
+const head = useLocaleHead({ addSeoAttributes: true })
+</script>
+```
 
 ### `useLocalePath()`
 
@@ -139,6 +153,20 @@ A locale-aware link component. Automatically prefixes the `to` path with the cur
   <!-- When locale is 'ja': renders <a href="/ja/about">About</a> -->
   <!-- When locale is 'en' (default): renders <a href="/about">About</a> -->
 </template>
+```
+
+## Vite Plugin Auto-Registration
+
+The module automatically registers `@fluenti/vite-plugin` with `framework: 'vue'` so you don't need to configure it manually. This means `v-t` directive transforms, `<Trans>` / `<Plural>` compile-time optimization, and code splitting all work out of the box.
+
+To disable this (e.g. if you configure the plugin yourself):
+
+```typescript
+export default defineNuxtConfig({
+  fluenti: {
+    autoVitePlugin: false,
+  },
+})
 ```
 
 ## Route Utilities
