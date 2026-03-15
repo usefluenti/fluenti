@@ -1,0 +1,145 @@
+---
+import Default from '@astrojs/starlight/components/Footer.astro';
+---
+
+<Default><slot /></Default>
+
+<footer class="fluenti-footer">
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <div class="footer-logo">
+        <span class="footer-logo-icon">F</span>
+        <span class="footer-logo-text">fluenti</span>
+      </div>
+      <p class="footer-tagline">Compile-time i18n for modern frameworks</p>
+    </div>
+    <div class="footer-links">
+      <a href="/getting-started/quick-start-vue/">Quick Start</a>
+      <a href="/api/core/">API Reference</a>
+      <a href="https://github.com/usefluenti/fluenti">GitHub</a>
+    </div>
+    <p class="footer-copy">&copy; {new Date().getFullYear()} Fluenti Contributors. MIT License.</p>
+  </div>
+</footer>
+
+<style>
+  .fluenti-footer {
+    margin-top: 0;
+    padding: 2rem 2rem 1.5rem;
+    text-align: center;
+    font-family: var(--sl-font);
+  }
+
+  :root[data-theme='dark'] .fluenti-footer {
+    border-top: 1px solid #1e1e2e;
+  }
+
+  :root:not([data-theme='dark']) .fluenti-footer {
+    border-top: 1px solid #e4e4e7;
+  }
+
+  .footer-inner {
+    max-width: 60rem;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.25rem;
+  }
+
+  .footer-brand {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .footer-logo {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .footer-logo-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: 0.25rem;
+    background: linear-gradient(135deg, #6366f1, #7c3aed);
+    color: white;
+    font-weight: 700;
+    font-size: 0.8125rem;
+    line-height: 1;
+  }
+
+  .footer-logo-text {
+    font-weight: 600;
+    font-size: 0.9375rem;
+    letter-spacing: -0.02em;
+  }
+
+  :root[data-theme='dark'] .footer-logo-text {
+    color: #fafafa;
+  }
+
+  :root:not([data-theme='dark']) .footer-logo-text {
+    color: #18181b;
+  }
+
+  .footer-tagline {
+    font-size: 0.8125rem;
+    margin: 0;
+  }
+
+  :root[data-theme='dark'] .footer-tagline {
+    color: #52525b;
+  }
+
+  :root:not([data-theme='dark']) .footer-tagline {
+    color: #a1a1aa;
+  }
+
+  .footer-links {
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .footer-links a {
+    font-size: 0.8125rem;
+    text-decoration: none;
+    transition: color 0.15s;
+  }
+
+  :root[data-theme='dark'] .footer-links a {
+    color: #71717a;
+  }
+
+  :root[data-theme='dark'] .footer-links a:hover {
+    color: #c4b5fd;
+  }
+
+  :root:not([data-theme='dark']) .footer-links a {
+    color: #71717a;
+  }
+
+  :root:not([data-theme='dark']) .footer-links a:hover {
+    color: #4f46e5;
+  }
+
+  .footer-copy {
+    font-size: 0.75rem;
+    margin: 0;
+  }
+
+  :root[data-theme='dark'] .footer-copy {
+    color: #3f3f46;
+  }
+
+  :root:not([data-theme='dark']) .footer-copy {
+    color: #a1a1aa;
+  }
+</style>

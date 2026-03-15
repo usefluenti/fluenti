@@ -1,0 +1,134 @@
+---
+title: "@fluenti/vue"
+description: Vue bindings API reference
+---
+
+## `createFluentVue(options)`
+
+Create a Vue plugin instance. SSR-safe — call once per request in SSR.
+
+```typescript
+import { createFluentVue } from '@fluenti/vue'
+import en from './locales/compiled/en'
+import zhCN from './locales/compiled/zh-CN'
+
+const i18n = createFluentVue({
+  locale: 'en',
+  fallbackLocale: 'en',
+  messages: { en, 'zh-CN': zhCN },
+})
+
+app.use(i18n)
+```
+
+### Options
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `locale` | `string` | Initial locale |
+| `fallbackLocale` | `string?` | Fallback locale |
+| `messages` | `AllMessages` | Compiled message catalogs (from `fluenti compile`) |
+| `missing` | `(locale, id) => string?` | Missing message handler |
+| `dateFormats` | `Record<string, DateTimeFormatOptions \| 'relative'>?` | Named date styles |
+| `numberFormats` | `Record<string, NumberFormatOptions>?` | Named number styles |
+| `fallbackChain` | `Record<string, string[]>?` | Locale fallback chains |
+| `splitting` | `boolean?` | Enable code-splitting mode |
+| `chunkLoader` | `(locale: string) => Promise<Messages>?` | Async locale loader for splitting |
+
+## `useI18n()`
+
+Composable to access the i18n context.
+
+```vue
+<script setup>
+import { useI18n } from '@fluenti/vue'
+const { t, format, locale, setLocale, d, n, tRaw, isLoading, loadedLocales, preloadLocale } = useI18n()
+</script>
+```
+
+### Return values
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `t` | `(id, values?) => string` | Translate a message |
+| `format` | `(message, values?) => string` | Direct ICU interpolation without catalog lookup |
+| `locale` | `Ref<string>` | Current locale (reactive) |
+| `setLocale` | `(locale) => Promise<void>` | Change locale (async with splitting) |
+| `loadMessages` | `(locale, messages) => void` | Load messages at runtime |
+| `getLocales` | `() => string[]` | Get all loaded locale codes |
+| `d` | `(value, style?) => string` | Format a date |
+| `n` | `(value, style?) => string` | Format a number |
+| `tRaw` | `(message, values?) => string` | @deprecated Use `format()` instead |
+| `isLoading` | `Ref<boolean>` | Whether a locale chunk is loading |
+| `loadedLocales` | `Ref<ReadonlySet<string>>` | Set of loaded locales |
+| `preloadLocale` | `(locale) => void` | Preload a locale without switching |
+
+## `format()`
+
+Direct ICU interpolation without catalog lookup. Useful for one-off messages or dynamic patterns.
+
+```vue
+<script setup>
+import { useI18n } from '@fluenti/vue'
+const { format } = useI18n()
+</script>
+
+<template>
+  <p>{{ format('Hello {name}!', { name: 'World' }) }}</p>
+</template>
+```
+
+## `<Trans>`
+
+Rich text component with slot-based component injection. Globally registered — no import needed.
+
+The default slot is the primary API. The slot content is the source-language message, which is auto-extracted and translated via the catalog:
+
+```vue
+<Trans>Visit our <a href="/docs">documentation</a> to learn more.</Trans>
+```
+
+Use native HTML elements directly in the slot:
+
+```vue
+<Trans>Click <a href="/next">here</a> to continue.</Trans>
+<Trans>This is <strong>important</strong> information.</Trans>
+```
+
+### Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `message` | `string` | — | @deprecated Use the default slot instead. Message with `<tag>` markers |
+| `values` | `object` | `{}` | Interpolation values |
+| `tag` | `string` | `'span'` | Wrapper element |
+
+:::note[Migration]
+The `message` prop is deprecated. Move your message text into the default slot for automatic extraction and translation.
+:::
+
+## `<Plural>`
+
+Shorthand for ICU plural patterns. Globally registered — no import needed.
+
+Plural forms are source-language text, auto-extracted and translated via the catalog:
+
+```vue
+<Plural :value="count" one="# item" other="# items" />
+```
+
+## `<Select>`
+
+Shorthand for ICU select patterns. Globally registered — no import needed.
+
+Use the `options` prop for type-safe select patterns:
+
+```vue
+<Select :value="gender" :options="{ male: 'He', female: 'She' }" other="They" />
+```
+
+Alternatively, pass options as attributes:
+
+```vue
+<Select :value="gender" male="He" female="She" other="They" />
+```

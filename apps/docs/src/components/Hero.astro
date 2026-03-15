@@ -1,0 +1,425 @@
+---
+const { data } = Astro.locals.starlightRoute.entry;
+const { hero } = data;
+const actions = hero?.actions ?? [];
+---
+
+<div class="hero-wrapper">
+  {/* Gradient background orbs */}
+  <div class="hero-bg">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+  </div>
+
+  <div class="hero-content">
+    {/* Badge */}
+    <div class="hero-badge">
+      <span class="badge-icon">✦</span>
+      <span>Zero runtime overhead</span>
+    </div>
+
+    {/* Title with gradient */}
+    <h1 class="hero-title">
+      The i18n compiler<br />for modern web
+    </h1>
+
+    {/* Tagline */}
+    <p class="hero-tagline">
+      Write natural HTML templates. Fluenti compiles your markup<br />
+      into optimized, zero-cost translations at build time.
+    </p>
+
+    {/* CTA buttons */}
+    <div class="hero-actions">
+      <a href="/getting-started/quick-start-vue/" class="hero-btn btn-primary">
+        Get Started <span class="btn-arrow">→</span>
+      </a>
+      <a href="https://github.com/usefluenti/fluenti" class="hero-btn btn-secondary">
+        View on GitHub
+      </a>
+    </div>
+  </div>
+
+  {/* Compile flow */}
+  <div class="compile-flow">
+    <div class="flow-step">
+      <div class="flow-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m18 16 4-4-4-4"/><path d="m6 8-4 4 4 4"/><path d="m14.5 4-5 16"/></svg>
+      </div>
+      <div class="flow-title">Your Templates</div>
+      <div class="flow-desc">Write natural HTML<br/>with v-t directives</div>
+    </div>
+
+    <div class="flow-arrow">→</div>
+
+    <div class="flow-step flow-step-accent">
+      <div class="flow-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+      </div>
+      <div class="flow-title">Fluenti Compiler</div>
+      <div class="flow-desc">ICU parsing, hash IDs,<br/>tree-shaking at build</div>
+    </div>
+
+    <div class="flow-arrow">→</div>
+
+    <div class="flow-step">
+      <div class="flow-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>
+      </div>
+      <div class="flow-title">Zero Runtime</div>
+      <div class="flow-desc">Optimized output,<br/>no parser in bundle</div>
+    </div>
+  </div>
+
+</div>
+
+<style>
+  .hero-wrapper {
+    position: relative;
+    overflow: hidden;
+    clip-path: inset(0);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    flex: 1;
+    padding: 1rem 2rem 2rem;
+  }
+
+  /* ---------- Gradient Background ---------- */
+  .hero-bg {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    clip-path: inset(0);
+    pointer-events: none;
+  }
+
+  .orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.12;
+  }
+
+  :root[data-theme='dark'] .orb {
+    opacity: 0.25;
+  }
+
+  .orb-1 {
+    width: 600px;
+    height: 600px;
+    background: #6366f1;
+    top: -280px;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  .orb-2 {
+    width: 400px;
+    height: 400px;
+    background: #7c3aed;
+    top: -180px;
+    right: 10%;
+  }
+
+  .orb-3 {
+    width: 300px;
+    height: 300px;
+    background: #a78bfa;
+    bottom: -50px;
+    left: 15%;
+  }
+
+  /* ---------- Content ---------- */
+  .hero-content {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+    max-width: 56rem;
+    margin: 0 auto;
+    text-align: center;
+  }
+
+  /* Badge */
+  .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.375rem 1.125rem;
+    border-radius: 100px;
+    font-size: 0.8125rem;
+    font-family: var(--sl-font);
+  }
+
+  :root[data-theme='dark'] .hero-badge {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(99, 102, 241, 0.2);
+    color: #c4b5fd;
+  }
+
+  :root:not([data-theme='dark']) .hero-badge {
+    background: #eef2ff;
+    border: 1px solid #c7d2fe;
+    color: #4f46e5;
+  }
+
+  .badge-icon {
+    font-size: 0.75rem;
+  }
+
+  :root[data-theme='dark'] .badge-icon {
+    color: #a78bfa;
+  }
+
+  :root:not([data-theme='dark']) .badge-icon {
+    color: #6366f1;
+  }
+
+  /* Title */
+  .hero-title {
+    font-family: var(--sl-font);
+    font-size: clamp(2.5rem, 5vw, 4rem);
+    font-weight: 700;
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+    margin: 0;
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  :root[data-theme='dark'] .hero-title {
+    background-image: linear-gradient(180deg, #ffffff 0%, #a78bfa 50%, #6366f1 100%);
+  }
+
+  :root:not([data-theme='dark']) .hero-title {
+    background-image: linear-gradient(180deg, #18181b 0%, #4f46e5 60%, #7c3aed 100%);
+  }
+
+  /* Tagline */
+  .hero-tagline {
+    font-size: 1.125rem;
+    line-height: 1.7;
+    max-width: 40rem;
+    margin: 0;
+  }
+
+  :root[data-theme='dark'] .hero-tagline {
+    color: #8b8b9e;
+  }
+
+  :root:not([data-theme='dark']) .hero-tagline {
+    color: #71717a;
+  }
+
+  /* CTA Buttons */
+  .hero-actions {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .hero-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.875rem 1.75rem;
+    border-radius: 0.75rem;
+    font-size: 1rem;
+    font-weight: 600;
+    font-family: var(--sl-font);
+    text-decoration: none;
+    transition: all 0.2s ease;
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, #6366f1, #7c3aed);
+    color: #ffffff;
+    box-shadow: 0 4px 24px rgba(99, 102, 241, 0.25);
+  }
+
+  .btn-primary:hover {
+    box-shadow: 0 8px 32px rgba(99, 102, 241, 0.35);
+    transform: translateY(-1px);
+  }
+
+  :root[data-theme='dark'] .btn-secondary {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: #c4b5fd;
+  }
+
+  :root:not([data-theme='dark']) .btn-secondary {
+    background: transparent;
+    border: 1px solid #e4e4e7;
+    color: #4f46e5;
+  }
+
+  .btn-secondary:hover {
+    border-color: rgba(99, 102, 241, 0.4);
+  }
+
+  .btn-arrow {
+    font-size: 1rem;
+    transition: transform 0.2s;
+  }
+
+  .btn-primary:hover .btn-arrow {
+    transform: translateX(2px);
+  }
+
+  /* ---------- Compile Flow ---------- */
+  .compile-flow {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    margin-top: 2.5rem;
+    padding: 0 2rem;
+  }
+
+  .flow-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 2rem 1.75rem;
+    border-radius: 1rem;
+    width: 18rem;
+    text-align: center;
+  }
+
+  :root[data-theme='dark'] .flow-step {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  :root:not([data-theme='dark']) .flow-step {
+    background: #fafafa;
+    border: 1px solid #e4e4e7;
+  }
+
+  :root[data-theme='dark'] .flow-step-accent {
+    background: rgba(99, 102, 241, 0.05);
+    border-color: rgba(99, 102, 241, 0.2);
+    box-shadow: 0 0 40px rgba(99, 102, 241, 0.08);
+  }
+
+  :root:not([data-theme='dark']) .flow-step-accent {
+    background: #eef2ff;
+    border-color: #c7d2fe;
+    box-shadow: 0 4px 30px rgba(99, 102, 241, 0.08);
+  }
+
+  .flow-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  :root[data-theme='dark'] .flow-step .flow-icon {
+    color: #a78bfa;
+  }
+
+  :root:not([data-theme='dark']) .flow-step .flow-icon {
+    color: #6366f1;
+  }
+
+  :root[data-theme='dark'] .flow-step-accent .flow-icon {
+    color: #6366f1;
+  }
+
+  :root:not([data-theme='dark']) .flow-step-accent .flow-icon {
+    color: #4f46e5;
+  }
+
+  .flow-title {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    font-family: var(--sl-font);
+  }
+
+  :root[data-theme='dark'] .flow-step .flow-title {
+    color: #e2e2e2;
+  }
+
+  :root:not([data-theme='dark']) .flow-step .flow-title {
+    color: #18181b;
+  }
+
+  :root[data-theme='dark'] .flow-step-accent .flow-title {
+    color: #c4b5fd;
+  }
+
+  :root:not([data-theme='dark']) .flow-step-accent .flow-title {
+    color: #4f46e5;
+  }
+
+  .flow-desc {
+    font-size: 0.8125rem;
+    line-height: 1.5;
+    font-family: var(--sl-font);
+  }
+
+  :root[data-theme='dark'] .flow-desc {
+    color: #71717a;
+  }
+
+  :root:not([data-theme='dark']) .flow-desc {
+    color: #71717a;
+  }
+
+  :root:not([data-theme='dark']) .flow-step-accent .flow-desc {
+    color: #6366f1;
+  }
+
+  .flow-arrow {
+    font-size: 1.5rem;
+    padding: 0 1rem;
+    color: #6366f1;
+    flex-shrink: 0;
+  }
+
+  /* ---------- Responsive ---------- */
+  @media (max-width: 768px) {
+    .hero-wrapper {
+      padding: 0.5rem 1.25rem 1.5rem;
+    }
+
+    .hero-title {
+      font-size: 2.25rem;
+    }
+
+    .hero-tagline {
+      font-size: 1rem;
+    }
+
+    .hero-tagline br {
+      display: none;
+    }
+
+    .compile-flow {
+      flex-direction: column;
+      gap: 0.75rem;
+      margin-top: 2rem;
+    }
+
+    .flow-step {
+      width: 100%;
+      max-width: 20rem;
+    }
+
+    .flow-arrow {
+      transform: rotate(90deg);
+      padding: 0;
+    }
+  }
+</style>

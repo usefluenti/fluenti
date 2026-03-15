@@ -1,0 +1,51 @@
+{
+  "name": "@fluenti/cli",
+  "version": "0.0.1",
+  "type": "module",
+  "description": "Fluenti CLI — message extraction from Vue SFC & TSX, PO/JSON catalog compilation",
+  "homepage": "https://fluenti.dev",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/usefluenti/fluenti.git",
+    "directory": "packages/cli"
+  },
+  "bugs": {
+    "url": "https://github.com/usefluenti/fluenti/issues"
+  },
+  "license": "MIT",
+  "keywords": ["i18n", "internationalization", "compile-time", "icu", "messageformat", "extraction", "po", "gettext", "catalog"],
+  "bin": {
+    "fluenti": "./dist/cli.js"
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": { "types": "./dist/index.d.ts", "default": "./dist/index.js" },
+      "require": { "types": "./dist/index.d.cts", "default": "./dist/index.cjs" }
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@fluenti/core": "workspace:*",
+    "citty": "^0.2",
+    "consola": "^3",
+    "fast-glob": "^3",
+    "gettext-parser": "^9",
+    "jiti": "^2"
+  },
+  "devDependencies": {
+    "typescript": "^5.9",
+    "vitest": "^4",
+    "tsup": "^8",
+    "@vitest/coverage-v8": "^4",
+    "@vue/compiler-sfc": "^3.5"
+  }
+}

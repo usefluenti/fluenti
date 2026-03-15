@@ -1,0 +1,215 @@
+---
+title: Locale Management
+description: Switching locales, lazy loading, code splitting, and fallback chains
+---
+
+## Switching Locales
+
+### Vue
+
+```vue
+<script setup>
+import { useI18n } from '@fluenti/vue'
+
+const { locale, setLocale, getLocales, isLoading, preloadLocale } = useI18n()
+</script>
+
+<template>
+  <div class="locale-switcher">
+    <button
+      v-for="l in getLocales()"
+      :key="l"
+      :class="{ active: locale === l }"
+      @click="setLocale(l)"
+      @mouseenter="preloadLocale(l)"
+    >
+      {{ l }}
+    </button>
+    <span v-if="isLoading">Loading...</span>
+  </div>
+</template>
+```
+
+### Solid
+
+```tsx
+function LocaleSwitcher() {
+  const { locale, setLocale, getLocales, isLoading, preloadLocale } = useI18n()
+
+  return (
+    <div>
+      {getLocales().map(l => (
+        <button
+          classList={{ active: locale() === l }}
+          onClick={() => setLocale(l)}
+          onMouseEnter={() => preloadLocale(l)}
+        >
+          {l}
+        </button>
+      ))}
+      {isLoading() && <span>Loading...</span>}
+    </div>
+  )
+}
+```
+
+### Reactivity
+
+When you call `setLocale()`:
+- **Vue:** All `t()` calls in templates re-evaluate (they read `locale.value`). All `t` tagged templates (ComputedRefs) recompute.
+- **Solid:** All components reading `locale()` re-render. `createMemo` values recompute.
+
+Every `$d()` and `$n()` call also updates automatically.
+
+## Lazy Loading
+
+Use `msg` for translations that need to be defined outside of components — in constants, stores, or route definitions.
+
+### The Problem
+
+```typescript
+// This won't work — t`` needs a component context
+const ROLES = {
+  admin: t`Administrator`,  // Error: no component context
+}
+```
+
+### The Solution: msg\`\`
+
+```typescript
+import { msg } from '@fluenti/core'
+
+const ROLES = {
+  admin: msg`Administrator`,
+  user: msg`Regular User`,
+}
+```
+
+`msg` returns a `MessageDescriptor` — it records the message text without translating it. Resolve it at render time with `t()`:
+
+```vue
+<template>
+  <span>{{ t(ROLES.admin) }}</span>
+</template>
+```
+
+### Use Cases
+
+- **Route meta:** `{ meta: { title: msg`Dashboard` } }`
+- **Store constants:** Error messages, role names, status labels
+- **Config objects:** Menu items, navigation labels
+- **Enum-like maps:** Any mapping where values need translation
+
+## Code Splitting
+
+By default, all locale messages are bundled together. For apps with many locales or large catalogs, code splitting loads locale data on demand.
+
+### How It Works
+
+1. Run `fluenti compile --split` to generate per-locale ES modules with named exports
+2. Each message becomes a `/* @__PURE__ */` annotated export — unused messages are tree-shaken
+3. Configure `chunkLoader` to dynamically import locale chunks
+4. When `setLocale()` is called, the chunk is loaded before switching
+
+### Setup
+
+Compile with split mode:
+
+```bash
+npx fluenti compile --split
+```
+
+This generates:
+- `locales/compiled/en.js` — named exports per message
+- `locales/compiled/zh-CN.js` — same exports, translated
+- `locales/compiled/index.js` — locale list and lazy loaders
+
+Configure the plugin:
+
+```typescript
+// Vue
+const i18n = createFluentVue({
+  locale: 'en',
+  messages: { en },
+  splitting: true,
+  chunkLoader: (locale) => import(`./locales/compiled/${locale}.js`),
+})
+
+// Solid
+<I18nProvider
+  locale="en"
+  messages={{ en }}
+  splitting={true}
+  chunkLoader={(locale) => import(`./locales/compiled/${locale}.js`)}
+>
+  <App />
+</I18nProvider>
+```
+
+### Static vs Dynamic Splitting
+
+| Strategy | `splitting: 'static'` | `splitting: 'dynamic'` |
+|----------|----------------------|----------------------|
+| Bundle | All locales in bundle, tree-shaken | Only default locale bundled |
+| Loading | Sync — no loading states | Async — needs `isLoading` handling |
+| Best for | Few locales, small catalogs | Many locales, large catalogs |
+
+Configure in `fluenti.config.ts`:
+
+```typescript
+export default {
+  splitting: 'dynamic',
+  defaultBuildLocale: 'en',
+}
+```
+
+### Build vs Dev Mode
+
+| Mode | Behavior |
+|------|----------|
+| **Dev** | All locales loaded eagerly for instant HMR |
+| **Build** | Only `defaultBuildLocale` is bundled; others are lazy chunks |
+
+## Fallback Chain
+
+When a message is not found in the current locale, Fluenti tries:
+1. Current locale
+2. Fallback chain (if configured)
+3. `fallbackLocale` (if set)
+4. Returns the message ID
+
+### Configuration
+
+```typescript
+const i18n = createFluentVue({
+  locale: 'zh-TW',
+  fallbackLocale: 'en',
+  messages: { en, 'zh-CN': zhCN, 'zh-TW': zhTW },
+  fallbackChain: {
+    'zh-TW': ['zh-CN', 'en'],
+    'pt-BR': ['pt', 'en'],
+    '*': ['en'],
+  },
+})
+```
+
+With this config, when locale is `zh-TW`:
+1. Try `zh-TW` catalog
+2. Try `zh-CN` catalog (from fallbackChain)
+3. Try `en` catalog (from fallbackChain)
+4. Try `en` catalog (from fallbackLocale)
+
+### Missing Handler
+
+For custom behavior when a message is not found:
+
+```typescript
+const i18n = createFluentVue({
+  locale: 'en',
+  messages,
+  missing: (locale, id) => {
+    console.warn(`Missing translation: ${locale}/${id}`)
+    return undefined // or return a fallback string
+  },
+})
+```

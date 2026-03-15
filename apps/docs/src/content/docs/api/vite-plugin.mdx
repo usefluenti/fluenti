@@ -1,0 +1,65 @@
+---
+title: "@fluenti/vite-plugin"
+description: Vite plugin API reference
+---
+
+## Usage
+
+```typescript
+// vite.config.ts
+import { defineConfig } from 'vite'
+import fluenti from '@fluenti/vite-plugin'
+
+export default defineConfig({
+  plugins: [fluenti()],
+})
+```
+
+## Options
+
+```typescript
+fluenti({
+  framework: 'auto',     // 'vue' | 'solid' | 'auto'
+  catalogDir: 'src/locales/compiled',
+  configPath: './fluenti.config.ts',
+})
+```
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `framework` | `'vue' \| 'solid' \| 'auto'` | `'auto'` | Framework detection mode |
+| `catalogDir` | `string` | `'src/locales/compiled'` | Compiled catalogs directory |
+| `configPath` | `string?` | — | Path to fluenti config |
+
+## What it does
+
+The plugin provides five sub-plugins:
+
+1. **fluenti:virtual** — Resolves `virtual:fluenti/messages/{locale}` imports
+2. **fluenti:vue-template** — Pre-transforms `v-t` directives in Vue SFCs
+3. **fluenti:script-transform** — Transforms `t\`\`` and `t()` macros in scripts
+4. **fluenti:build-split** — Code-splitting transforms for production builds
+5. **fluenti:dev** — HMR support for catalog changes
+
+## Virtual modules
+
+```typescript
+import messages from 'virtual:fluenti/messages/en'
+import messages from 'virtual:fluenti/messages/zh-CN'
+```
+
+## Script transforms
+
+The plugin transforms tagged template and function call macros at build time.
+
+**Vue mode:**
+
+```
+t`Hello ${name}` → computed(() => __i18n.t('hash', { name: unref(name) }))
+```
+
+**Solid mode:**
+
+```
+t`Hello ${name()}` → createMemo(() => __i18n.t('hash', { name: name() }))
+```

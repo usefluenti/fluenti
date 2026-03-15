@@ -1,0 +1,80 @@
+---
+title: "@fluenti/core"
+description: Core API reference
+---
+
+The framework-agnostic core engine. Zero runtime dependencies.
+
+## `createFluent(config)`
+
+Create a Fluenti instance.
+
+```typescript
+import { createFluent } from '@fluenti/core'
+
+const i18n = createFluent({
+  locale: 'en',
+  fallbackLocale: 'en',
+  messages: {
+    en: { greeting: 'Hello {name}!' },
+  },
+})
+
+i18n.t('greeting', { name: 'World' }) // "Hello World!"
+```
+
+### Config
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `locale` | `string` | Current locale |
+| `fallbackLocale` | `string?` | Fallback locale |
+| `messages` | `AllMessages` | Locale-to-messages map |
+| `missing` | `(locale, id) => string?` | Missing message handler |
+| `dateFormats` | `DateFormatOptions?` | Named date format styles |
+| `numberFormats` | `NumberFormatOptions?` | Named number format styles |
+
+### Instance methods
+
+| Method | Description |
+|--------|-------------|
+| `t(id, values?)` | Translate a message |
+| `format(message, values?)` | Direct ICU interpolation without catalog lookup |
+| `d(value, style?)` | Format a date |
+| `n(value, style?)` | Format a number |
+| `tRaw(message, values?)` | @deprecated Use `format()` instead |
+| `setLocale(locale)` | Change active locale |
+| `loadMessages(locale, msgs)` | Add messages at runtime |
+| `getLocales()` | List available locales |
+
+## `parse(message)`
+
+Parse an ICU MessageFormat string into an AST.
+
+```typescript
+import { parse } from '@fluenti/core'
+const ast = parse('{count, plural, one {# item} other {# items}}')
+```
+
+## `compile(ast, locale?)`
+
+Compile an AST into a `CompiledMessage`.
+
+## `interpolate(message, values?, locale?)`
+
+Parse, compile, and execute a message string in one call. Results are cached.
+
+## `msg`
+
+Tagged template for lazy message descriptors:
+
+```typescript
+import { msg } from '@fluenti/core'
+const desc = msg`Hello ${name}` // { id: 'abc123', message: 'Hello {0}' }
+```
+
+## SSR Utilities
+
+- `detectLocale(options)` — Detect locale from request context
+- `getSSRLocaleScript(locale)` — Generate script tag for hydration
+- `getHydratedLocale(fallback?)` — Read locale on client

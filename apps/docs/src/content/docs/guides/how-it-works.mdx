@@ -1,0 +1,61 @@
+---
+title: How It Works
+description: Architecture and compilation pipeline
+---
+
+## Pipeline Overview
+
+```
+Source Code → Extract → Catalog → Compile → Bundle
+     ↓           ↓         ↓          ↓         ↓
+  .vue/.tsx   fluenti    .po       .js module   Vite
+              extract    catalog   per locale   build
+```
+
+## v-t Directive Compilation
+
+The `v-t` directive is a **compile-time nodeTransform**, not a runtime directive.
+
+```
+Input:  <p v-t>Hello {{ name }}</p>
+   ↓ (Vue compiler nodeTransform)
+Output: <p>{{ $t('Hello {{ name }}') }}</p>
+```
+
+## t\`\` Tagged Template Compilation
+
+```
+Input:  const greeting = t`Hello ${name}`
+   ↓ (Vite transform hook)
+Output: const greeting = computed(() => __i18n.t('Hello {name}', { name: unref(name) }))
+```
+
+The Vite plugin also auto-injects the necessary imports.
+
+## Message Extraction
+
+`fluenti extract` scans source files for all translatable patterns and outputs a catalog:
+
+```json
+{
+  "Hello {name}": {
+    "message": "Hello {name}",
+    "origin": { "file": "src/App.vue", "line": 5 }
+  }
+}
+```
+
+## Message Compilation
+
+`fluenti compile` converts ICU messages into optimized JavaScript:
+
+```javascript
+export const _a1b2c3 = (v) => `Hello ${v.name}`
+export const _d4e5f6 = 'Welcome to Fluenti'
+```
+
+Static messages become plain strings (zero overhead). Dynamic messages become small functions.
+
+## ICU Parser
+
+The core uses a hand-written recursive descent parser for ICU MessageFormat. It handles variables, plurals, selects, nested messages, number/date functions, and quote escaping.

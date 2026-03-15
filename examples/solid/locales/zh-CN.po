@@ -1,0 +1,148 @@
+msgid ""
+msgstr "Content-Type: text/plain; charset=utf-8\n"
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/CompileTime.tsx:12
+msgid "Compile-Time Transforms"
+msgstr "编译时转换"
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/CompileTime.tsx:14
+msgid ""
+"These demos showcase compile-time features: function calls and tagged "
+"templates — all transformed at build time by the Vite plugin."
+msgstr ""
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/CompileTime.tsx:28
+msgid "source text"
+msgstr ""
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/CompileTime.tsx:34
+msgid "Hello, {"
+msgstr ""
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/Home.tsx:13
+msgid "Hello, {name}!"
+msgstr "你好，{name}！"
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/CompileTime.tsx:41
+msgid "You have {"
+msgstr ""
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/CompileTime.tsx:43
+msgid "You have {count} items."
+msgstr "你有 {count} 个项目。"
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/CompileTime.tsx:48
+msgid "Current locale: {"
+msgstr ""
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/Home.tsx:16
+msgid "Current locale: {locale}"
+msgstr "当前语言：{locale}"
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/CompileTime.tsx:91
+msgid "You have {count} items in your cart."
+msgstr "你的购物车中有 {count} 件商品。"
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/CompileTime.tsx:105
+msgid "Total: {price}"
+msgstr "总计：{price}"
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/Home.tsx:9
+msgid "Welcome to Fluenti"
+msgstr "欢迎使用 Fluenti"
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/Home.tsx:10
+msgid "A type-safe i18n library for Solid"
+msgstr "为 Solid 打造的类型安全国际化库"
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/Home.tsx:14
+msgid "This playground demonstrates the features of @fluenti/solid."
+msgstr "此示例展示了 @fluenti/solid 的各项功能。"
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/Home.tsx:30
+msgid "Username"
+msgstr "用户名"
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/Home.tsx:34
+msgid "Email"
+msgstr "邮箱"
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/Home.tsx:38
+msgid "Password"
+msgstr "密码"
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/Home.tsx:40
+msgid "This field is required"
+msgstr "此字段为必填项"
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/Home.tsx:42
+msgid "Submit"
+msgstr "提交"
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/Home.tsx:43
+msgid "Cancel"
+msgstr "取消"
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/Plurals.tsx:10
+msgid "Plurals"
+msgstr "复数"
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/Plurals.tsx:34
+msgid "Your cart is empty."
+msgstr "你的购物车是空的。"
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/Plurals.tsx:35
+msgid "You have # item in your cart."
+msgstr "你的购物车中有 # 件商品。"
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/Plurals.tsx:36
+msgid "You have # items in your cart."
+msgstr "你的购物车中有 # 件商品。"
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/Reactivity.tsx:36
+msgid "Reset"
+msgstr "重置"
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/Plurals.tsx:32
+msgid ""
+"{count, plural, zero {t('Your cart is empty.')} one {t('You have # item in "
+"your cart.')} other {t('You have # items in your cart.')}}"
+msgstr ""
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/Reactivity.tsx:12
+msgid "Reactivity Demo"
+msgstr "响应性演示"
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/Reactivity.tsx:14
+msgid "In SolidJS, the component body runs only once. Text nodes update reactively."
+msgstr "在 SolidJS 中，组件函数体只执行一次。文本节点会响应式更新。"
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/Reactivity.tsx:26
+msgid "Counter value: {count}"
+msgstr "计数器值：{count}"
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/Reactivity.tsx:30
+msgid "Decrement"
+msgstr "减少"
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/Reactivity.tsx:33
+msgid "Increment"
+msgstr "增加"
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/RichText.tsx:23
+msgid "Rich Text"
+msgstr "富文本"
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/RichText.tsx:42
+msgid "Welcome to <bold>Fluenti</bold> for <italic>SolidJS</italic>!"
+msgstr "欢迎使用 <bold>Fluenti</bold> 的 <italic>SolidJS</italic> 版本！"
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/RichText.tsx:57
+msgid "Supports <bold>bold</bold>, <italic>italic</italic>, and <link>links</link>."
+msgstr "支持 <bold>粗体</bold>、<italic>斜体</italic> 和 <link>链接</link>。"
+
+#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/RichText.tsx:72
+msgid ""
+"You can even <bold>nest <italic>components</italic> inside</bold> each "
+"other."
+msgstr ""

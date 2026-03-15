@@ -1,0 +1,47 @@
+{
+  "name": "@fluenti/vite-plugin",
+  "version": "0.0.1",
+  "type": "module",
+  "description": "Vite plugin for Fluenti — build-time transforms, virtual modules, code splitting",
+  "homepage": "https://fluenti.dev",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/usefluenti/fluenti.git",
+    "directory": "packages/vite-plugin"
+  },
+  "bugs": {
+    "url": "https://github.com/usefluenti/fluenti/issues"
+  },
+  "license": "MIT",
+  "keywords": ["i18n", "internationalization", "compile-time", "icu", "messageformat", "vite", "vite-plugin", "build-time", "code-splitting"],
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": { "types": "./dist/index.d.ts", "default": "./dist/index.js" },
+      "require": { "types": "./dist/index.d.cts", "default": "./dist/index.cjs" }
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@fluenti/core": "workspace:*"
+  },
+  "peerDependencies": {
+    "vite": "^5 || ^6 || ^8"
+  },
+  "devDependencies": {
+    "typescript": "^5.9",
+    "vitest": "^4",
+    "tsup": "^8",
+    "@vitest/coverage-v8": "^4",
+    "vite": "^8",
+    "@vue/compiler-sfc": "^3.5"
+  }
+}

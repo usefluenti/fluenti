@@ -1,0 +1,39 @@
+---
+title: Configuration
+description: fluenti.config.ts reference
+---
+
+Fluenti uses a `fluenti.config.ts` file (auto-loaded via jiti).
+
+## Full Reference
+
+```typescript
+// fluenti.config.ts
+export default {
+  sourceLocale: 'en',
+  locales: ['en', 'zh-CN', 'ja'],
+  catalogDir: './locales',
+  format: 'po',
+  include: ['./src/**/*.vue', './src/**/*.tsx', './src/**/*.ts'],
+  exclude: ['./src/**/*.test.*'],
+  compileOutDir: './src/locales/compiled',
+  fallbackChain: { 'zh-TW': ['zh-CN', 'en'], '*': ['en'] },
+  splitting: 'dynamic',
+  defaultBuildLocale: 'en',
+}
+```
+
+## Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `sourceLocale` | `string` | `'en'` | The locale used in source code |
+| `locales` | `string[]` | `['en']` | All target locales |
+| `catalogDir` | `string` | `'./locales'` | Directory for translation catalogs |
+| `format` | `'json' \| 'po'` | `'po'` | Catalog file format. PO is recommended — compatible with Poedit, Weblate, Crowdin and other translation tools |
+| `include` | `string[]` | `['./src/**/*.vue', './src/**/*.tsx']` | Glob patterns for source files |
+| `exclude` | `string[]` | `['./src/**/*.test.*']` | Glob patterns to exclude |
+| `compileOutDir` | `string` | `'./src/locales/compiled'` | Output directory for compiled messages |
+| `fallbackChain` | `Record<string, string[]>` | `{}` | Locale fallback chains |
+| `splitting` | `'dynamic' \| 'static' \| false` | `false` | Code-splitting strategy |
+| `defaultBuildLocale` | `string?` | — | Default locale embedded in the bundle |

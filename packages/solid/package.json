@@ -1,0 +1,62 @@
+{
+  "name": "@fluenti/solid",
+  "version": "0.0.1",
+  "type": "module",
+  "description": "SolidJS compile-time i18n — Trans/Plural/Select components, I18nProvider, useI18n",
+  "homepage": "https://fluenti.dev",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/usefluenti/fluenti.git",
+    "directory": "packages/solid"
+  },
+  "bugs": {
+    "url": "https://github.com/usefluenti/fluenti/issues"
+  },
+  "license": "MIT",
+  "keywords": ["i18n", "internationalization", "compile-time", "icu", "messageformat", "solid", "solidjs", "signals"],
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "solid": {
+        "types": "./dist/index.d.ts",
+        "default": "./src/index.ts"
+      },
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    }
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "solid-js": "^1.8"
+  },
+  "dependencies": {
+    "@fluenti/core": "workspace:*"
+  },
+  "devDependencies": {
+    "@solidjs/testing-library": "^0.8",
+    "@vitest/coverage-v8": "^4",
+    "happy-dom": "^20",
+    "solid-js": "^1.9",
+    "tsup": "^8",
+    "typescript": "^5.9",
+    "vite-plugin-solid": "^2.11.11",
+    "vitest": "^4"
+  }
+}

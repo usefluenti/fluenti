@@ -1,0 +1,43 @@
+{
+  "name": "fluenti",
+  "private": true,
+  "type": "module",
+  "description": "Compile-time i18n for modern frameworks",
+  "homepage": "https://fluenti.dev",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/usefluenti/fluenti.git"
+  },
+  "bugs": {
+    "url": "https://github.com/usefluenti/fluenti/issues"
+  },
+  "license": "MIT",
+  "scripts": {
+    "build": "pnpm -r --filter './packages/*' run build",
+    "dev": "pnpm -r --filter './packages/*' run dev --parallel",
+    "test": "pnpm --filter @fluenti/core --filter @fluenti/vue --filter @fluenti/solid --filter @fluenti/cli --filter @fluenti/vite-plugin run test",
+    "test:watch": "vitest",
+    "typecheck": "pnpm -r run typecheck",
+    "docs:dev": "pnpm --filter @fluenti/docs dev",
+    "lint": "oxlint --fix",
+    "docs:build": "pnpm --filter @fluenti/docs build",
+    "playground:vue": "pnpm --filter playground-vue dev",
+    "playground:solid": "pnpm --filter playground-solid dev",
+    "playground": "pnpm --filter @fluenti/playground dev",
+    "playground:nuxt": "pnpm --filter playground-nuxt dev",
+    "playground:solid-start": "pnpm --filter playground-solid-start dev",
+    "test:e2e": "playwright test",
+    "test:e2e:vue": "playwright test --project=vue",
+    "test:e2e:solid": "playwright test --project=solid",
+    "test:e2e:nuxt": "playwright test --project=nuxt",
+    "test:e2e:solid-start": "playwright test --project=solid-start"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.58.2",
+    "@vitest/coverage-v8": "^4",
+    "oxlint": "^1",
+    "tsup": "^8",
+    "typescript": "^5.9",
+    "vitest": "^4"
+  }
+}

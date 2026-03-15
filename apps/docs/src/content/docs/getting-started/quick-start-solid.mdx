@@ -1,0 +1,136 @@
+---
+title: Quick Start (SolidJS)
+description: Get started with Fluenti in a SolidJS project
+---
+
+import { Steps } from '@astrojs/starlight/components'
+
+<Steps>
+
+1. **Install packages**
+
+   ```bash
+   pnpm add @fluenti/core @fluenti/solid
+   pnpm add -D @fluenti/cli @fluenti/vite-plugin
+   ```
+
+2. **Configure Vite**
+
+   ```typescript
+   // vite.config.ts
+   import { defineConfig } from 'vite'
+   import solidPlugin from 'vite-plugin-solid'
+   import fluenti from '@fluenti/vite-plugin'
+
+   export default defineConfig({
+     plugins: [
+       solidPlugin(),
+       fluenti({ framework: 'solid' }),
+     ],
+   })
+   ```
+
+3. **Create `fluenti.config.ts`**
+
+   ```typescript
+   // fluenti.config.ts
+   export default {
+     sourceLocale: 'en',
+     locales: ['en', 'zh-CN'],
+     catalogDir: './locales',
+     format: 'po',
+     include: ['./src/**/*.{tsx,ts}'],
+     compileOutDir: './src/locales/compiled',
+   }
+   ```
+
+4. **Write your component — use `t()` with source text**
+
+   ```tsx
+   // src/Home.tsx
+   import { useI18n } from '@fluenti/solid'
+
+   export function Home() {
+     const { t, setLocale } = useI18n()
+
+     return (
+       <div>
+         <h1>{t('Welcome to my app')}</h1>
+         <p>{t('Hello, {name}!', { name: 'World' })}</p>
+
+         <button onClick={() => setLocale('en')}>English</button>
+         <button onClick={() => setLocale('zh-CN')}>中文</button>
+       </div>
+     )
+   }
+   ```
+
+5. **Extract messages**
+
+   ```bash
+   npx fluenti extract
+   ```
+
+   This scans your source files and generates catalog files in `./locales/`.
+
+6. **Add translations**
+
+   Open `locales/zh-CN.po` and fill in `msgstr` fields:
+
+   ```po
+   msgid "Welcome to my app"
+   msgstr "欢迎使用我的应用"
+
+   msgid "Hello, {name}!"
+   msgstr "你好，{name}！"
+   ```
+
+7. **Compile messages**
+
+   ```bash
+   npx fluenti compile
+   ```
+
+8. **Initialize from compiled output**
+
+   ```tsx
+   // src/App.tsx
+   import { I18nProvider } from '@fluenti/solid'
+   import { Home } from './Home'
+   import en from './locales/compiled/en'
+   import zhCN from './locales/compiled/zh-CN'
+
+   export function App() {
+     return (
+       <I18nProvider
+         locale="en"
+         fallbackLocale="en"
+         messages={{ en, 'zh-CN': zhCN }}
+       >
+         <Home />
+       </I18nProvider>
+     )
+   }
+   ```
+
+</Steps>
+
+## Key differences from Vue
+
+- Uses `<I18nProvider>` instead of a plugin
+- Signals (`name()`) instead of refs (`name.value`)
+- JSX instead of templates — use `t()` directly in JSX expressions
+- Naturally reactive — `t()` reads the `locale()` signal, so JSX auto-tracks it
+
+## Rich text with `<Trans>`
+
+```tsx
+<Trans>Click <a href="/next">here</a> to continue.</Trans>
+<Trans>This is <strong>important</strong> information.</Trans>
+```
+
+## Plurals with `<Plural>`
+
+```tsx
+<Plural value={count()} zero="No items" one="# item" other="# items" />
+```
