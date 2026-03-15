@@ -184,13 +184,13 @@ test.describe('Next.js App Router e2e', () => {
   })
 
   test('query param overrides cookie on RSC page', async ({ page }) => {
-    // Set cookie to English
+    // Set cookie to Japanese
     await page.context().addCookies([
-      { name: 'locale', value: 'en', url: 'http://localhost:5183' },
+      { name: 'locale', value: 'ja', url: 'http://localhost:5183' },
     ])
-    // But use query param for Japanese
-    await page.goto('/rsc?lang=ja')
-    await expect(page.getByTestId('rsc-title')).toContainText('サーバーレンダリング')
-    await expect(page.getByTestId('rsc-locale')).toContainText('現在のサーバーロケール：ja')
+    // But use query param for English — query should win
+    await page.goto('/rsc?lang=en')
+    await expect(page.getByTestId('rsc-title')).toContainText('Server rendered')
+    await expect(page.getByTestId('rsc-locale')).toContainText('Current server locale: en')
   })
 })

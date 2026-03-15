@@ -10,8 +10,7 @@ test.describe('React Router e2e', () => {
   })
 
   test('about page renders with interpolation', async ({ page }) => {
-    await page.goto('/')
-    await page.getByTestId('nav-about').click()
+    await page.goto('/about')
     await expect(page.getByTestId('about-page')).toBeVisible()
     await expect(page.getByTestId('about-title')).toContainText('About our project')
     await expect(page.getByTestId('about-desc')).toContainText('Learn more about Fluenti.')
@@ -48,15 +47,20 @@ test.describe('React Router e2e', () => {
     await expect(page.getByTestId('home-page')).toBeVisible()
   })
 
-  test('locale switching to Japanese updates all pages', async ({ page }) => {
+  test('locale switching to Japanese persists across routes', async ({ page }) => {
     await page.goto('/')
     await page.getByTestId('lang-ja').click()
     await expect(page.getByTestId('welcome')).toContainText('Fluenti へようこそ')
     await expect(page.getByTestId('home-desc')).toContainText('こちらはホームページです。')
     await expect(page.getByTestId('greeting')).toContainText('こんにちは、Worldさん！')
 
+    // Verify locale persists when navigating to another page
     await page.getByTestId('nav-about').click()
     await expect(page.getByTestId('about-title')).toContainText('私たちのプロジェクトについて')
+
+    // And back to home
+    await page.getByTestId('nav-home').click()
+    await expect(page.getByTestId('welcome')).toContainText('Fluenti へようこそ')
   })
 
   test('switching back to English restores original text', async ({ page }) => {
@@ -66,24 +70,6 @@ test.describe('React Router e2e', () => {
 
     await page.getByTestId('lang-en').click()
     await expect(page.getByTestId('welcome')).toContainText('Welcome to Fluenti')
-  })
-
-  test('direct URL navigation works', async ({ page }) => {
-    await page.goto('/about')
-    await expect(page.getByTestId('about-page')).toBeVisible()
-    await expect(page.getByTestId('about-title')).toContainText('About our project')
-  })
-
-  test('locale persists across route navigation', async ({ page }) => {
-    await page.goto('/')
-    await page.getByTestId('lang-ja').click()
-    await expect(page.getByTestId('welcome')).toContainText('Fluenti へようこそ')
-
-    await page.getByTestId('nav-plurals').click()
-    await expect(page.getByTestId('nav-home')).toContainText('ホーム')
-
-    await page.getByTestId('nav-home').click()
-    await expect(page.getByTestId('welcome')).toContainText('Fluenti へようこそ')
   })
 
   test('query-based locale sets Japanese via ?lang=ja', async ({ page }) => {

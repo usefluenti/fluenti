@@ -39,6 +39,11 @@ export default defineConfig({
       testMatch: '**/splitting-vue.spec.ts',
     },
     {
+      name: 'splitting-react',
+      use: { baseURL: 'http://localhost:5184' },
+      testMatch: '**/splitting-react.spec.ts',
+    },
+    {
       name: 'react-router',
       use: { baseURL: 'http://localhost:5181' },
       testMatch: '**/react-router.spec.ts',
@@ -88,6 +93,12 @@ export default defineConfig({
     {
       command: 'cd e2e/fixtures/vue-splitting && pnpm build && pnpm preview --port 5180',
       port: 5180,
+      reuseExistingServer: true,
+      timeout: 60_000,
+    },
+    {
+      command: 'cd e2e/fixtures/react-splitting && pnpm build && pnpm preview --port 5184',
+      port: 5184,
       reuseExistingServer: true,
       timeout: 60_000,
     },
