@@ -29,7 +29,7 @@ describe('createServerI18n', () => {
     })
   })
 
-  it('should throw if getI18n is called before setLocale', async () => {
+  it('should throw if getI18n is called before setLocale without resolveLocale', async () => {
     const { getI18n } = createServerI18n({ loadMessages })
     await expect(getI18n()).rejects.toThrow('No locale set')
   })
@@ -138,5 +138,71 @@ describe('createServerI18n', () => {
 
     expect(i18n.t('nonexistent.key')).toBe('MISSING')
     expect(missing).toHaveBeenCalledWith('en', 'nonexistent.key')
+  })
+
+  // ─── Server Action / resolveLocale scenarios ───────────────────────
+
+  describe('resolveLocale (Server Action support)', () => {
+    it('should auto-resolve locale when setLocale was not called', async () => {
+      const resolveLocale = vi.fn(() => 'de')
+      const { getI18n } = createServerI18n({ loadMessages, resolveLocale })
+      const i18n = await getI18n()
+
+      expect(resolveLocale).toHaveBeenCalledTimes(1)
+      expect(i18n.locale).toBe('de')
+      expect(i18n.t('greeting')).toBe('Hallo')
+    })
+
+    it('should support async resolveLocale (e.g. reading cookies)', async () => {
+      const resolveLocale = vi.fn(async () => {
+        // Simulate async cookie/header/DB read
+        return 'en'
+      })
+      const { getI18n } = createServerI18n({ loadMessages, resolveLocale })
+      const i18n = await getI18n()
+
+      expect(i18n.locale).toBe('en')
+      expect(i18n.t('greeting')).toBe('Hello')
+    })
+
+    it('should prefer setLocale over resolveLocale when both available', async () => {
+      const resolveLocale = vi.fn(() => 'en')
+      const { setLocale, getI18n } = createServerI18n({ loadMessages, resolveLocale })
+      setLocale('de')
+      const i18n = await getI18n()
+
+      // resolveLocale should NOT be called since setLocale was used
+      expect(resolveLocale).not.toHaveBeenCalled()
+      expect(i18n.locale).toBe('de')
+    })
+
+    it('should cache resolved locale for subsequent getI18n calls', async () => {
+      const resolveLocale = vi.fn(() => 'en')
+      const { getI18n } = createServerI18n({ loadMessages, resolveLocale })
+
+      await getI18n()
+      await getI18n()
+
+      // resolveLocale called once, then store.locale is set
+      expect(resolveLocale).toHaveBeenCalledTimes(1)
+    })
+
+    it('should include resolveLocale hint in error message when not configured', async () => {
+      const { getI18n } = createServerI18n({ loadMessages })
+      await expect(getI18n()).rejects.toThrow('resolveLocale')
+    })
+  })
+
+  // ─── Instance caching ─────────────────────────────────────────────
+
+  describe('instance caching', () => {
+    it('should return the same instance for repeated getI18n calls', async () => {
+      const { setLocale, getI18n } = createServerI18n({ loadMessages })
+      setLocale('en')
+      const i18n1 = await getI18n()
+      const i18n2 = await getI18n()
+
+      expect(i18n1).toBe(i18n2)
+    })
   })
 })

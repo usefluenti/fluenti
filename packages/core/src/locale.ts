@@ -106,3 +106,52 @@ export function negotiateLocale(
 
   return fallback ?? available[0]!
 }
+
+/**
+ * RTL (right-to-left) language codes.
+ *
+ * Covers all living languages with significant digital presence that use
+ * RTL scripts: Arabic, Hebrew, Persian/Dari, Urdu, Pashto, Sindhi,
+ * Uyghur, Kurdish (Sorani), Dhivehi/Maldivian, Yiddish, and N'Ko.
+ */
+const RTL_LANGUAGES = new Set([
+  'ar',  // Arabic
+  'he',  // Hebrew
+  'fa',  // Persian (Farsi) / Dari
+  'ur',  // Urdu
+  'ps',  // Pashto
+  'sd',  // Sindhi
+  'ug',  // Uyghur
+  'ckb', // Central Kurdish (Sorani)
+  'dv',  // Dhivehi / Maldivian
+  'yi',  // Yiddish
+  'nqo', // N'Ko
+])
+
+/**
+ * Check whether a locale uses a right-to-left script.
+ *
+ * @example
+ * ```ts
+ * isRTL('ar')    // true
+ * isRTL('ar-SA') // true
+ * isRTL('en')    // false
+ * isRTL('he')    // true
+ * ```
+ */
+export function isRTL(locale: Locale): boolean {
+  const language = parseLocale(locale).language
+  return RTL_LANGUAGES.has(language)
+}
+
+/**
+ * Get the text direction for a locale: `'rtl'` or `'ltr'`.
+ *
+ * @example
+ * ```tsx
+ * <html lang={locale} dir={getDirection(locale)}>
+ * ```
+ */
+export function getDirection(locale: Locale): 'rtl' | 'ltr' {
+  return isRTL(locale) ? 'rtl' : 'ltr'
+}

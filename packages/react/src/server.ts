@@ -10,7 +10,7 @@ import type {
 } from '@fluenti/core'
 
 // Re-export SSR utilities from core for convenience
-export { detectLocale, getSSRLocaleScript, getHydratedLocale } from '@fluenti/core'
+export { detectLocale, getSSRLocaleScript, getHydratedLocale, isRTL, getDirection } from '@fluenti/core'
 export type { DetectLocaleOptions } from '@fluenti/core'
 
 /**
@@ -21,6 +21,29 @@ export interface ServerI18nConfig {
   loadMessages: (locale: string) => Promise<Messages | { default: Messages }>
   /** Fallback locale when a translation is missing */
   fallbackLocale?: string
+  /**
+   * Auto-resolve locale when `setLocale()` was not called.
+   *
+   * This is the fallback for contexts where the layout doesn't run — most
+   * notably **Server Actions** (`'use server'`), which are independent
+   * requests that skip the layout tree entirely.
+   *
+   * Common patterns:
+   * - Read from a cookie (Next.js: `cookies().get('locale')`)
+   * - Read from a request header set by middleware
+   * - Query the database for the authenticated user's preference
+   *
+   * If omitted and `setLocale()` was not called, `getI18n()` will throw.
+   *
+   * @example
+   * ```ts
+   * resolveLocale: async () => {
+   *   const { cookies } = await import('next/headers')
+   *   return (await cookies()).get('locale')?.value ?? 'en'
+   * }
+   * ```
+   */
+  resolveLocale?: () => string | Promise<string>
   /** Custom fallback chains per locale */
   fallbackChain?: Record<string, Locale[]>
   /** Custom date format styles */
@@ -98,8 +121,12 @@ export interface ServerI18n {
 export function createServerI18n(config: ServerI18nConfig): ServerI18n {
   // Request-scoped store using React.cache()
   // Each server request gets its own isolated state
-  const getRequestStore = cache((): { locale: string | null } => ({
+  const getRequestStore = cache((): {
+    locale: string | null
+    instance: (FluentInstanceExtended & { locale: string }) | null
+  } => ({
     locale: null,
+    instance: null,
   }))
 
   // Cache loaded messages per-request to avoid redundant imports
@@ -126,15 +153,26 @@ export function createServerI18n(config: ServerI18nConfig): ServerI18n {
 
   async function getI18n(): Promise<FluentInstanceExtended & { locale: string }> {
     const store = getRequestStore()
+
+    // If setLocale() was never called (e.g. Server Action — independent request
+    // that skips the layout), try the resolveLocale fallback.
+    if (!store.locale && config.resolveLocale) {
+      store.locale = await config.resolveLocale()
+    }
+
     const locale = store.locale
 
     if (!locale) {
       throw new Error(
-        '[fluenti] No locale set. Call setLocale(locale) in your layout before using getI18n().\n' +
-          'Example:\n' +
-          '  import { setLocale } from "@/lib/i18n.server"\n' +
-          '  setLocale(locale)',
+        '[fluenti] No locale set. Call setLocale(locale) in your layout before using getI18n(), ' +
+          'or provide a resolveLocale function in createServerI18n config to auto-detect locale ' +
+          'in Server Actions and other contexts where the layout does not run.',
       )
+    }
+
+    // Return cached instance if locale hasn't changed
+    if (store.instance && store.instance.locale === locale) {
+      return store.instance
     }
 
     // Load messages for current locale (and fallback if configured)
@@ -155,7 +193,8 @@ export function createServerI18n(config: ServerI18nConfig): ServerI18n {
     if (config.numberFormats !== undefined) fluentConfig.numberFormats = config.numberFormats
     if (config.missing !== undefined) fluentConfig.missing = config.missing
 
-    return createFluent(fluentConfig)
+    store.instance = createFluent(fluentConfig)
+    return store.instance
   }
 
   return { setLocale, getI18n }
