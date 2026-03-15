@@ -6,6 +6,7 @@ export default defineConfig({
       'packages/core',
       'packages/vue',
       'packages/solid',
+      'packages/svelte',
       'packages/cli',
       'packages/vite-plugin',
     ],

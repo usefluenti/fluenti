@@ -1,0 +1,60 @@
+{
+  "name": "@fluenti/svelte",
+  "version": "0.0.1",
+  "type": "module",
+  "description": "Svelte 5 compile-time i18n — Trans/Plural/Select components, setI18nContext/getI18n, runes-based reactivity",
+  "homepage": "https://fluenti.dev",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/usefluenti/fluenti.git",
+    "directory": "packages/svelte"
+  },
+  "bugs": {
+    "url": "https://github.com/usefluenti/fluenti/issues"
+  },
+  "license": "MIT",
+  "keywords": ["i18n", "internationalization", "compile-time", "icu", "messageformat", "svelte", "svelte5", "runes"],
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "svelte": {
+        "types": "./dist/index.d.ts",
+        "default": "./src/index.ts"
+      },
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      }
+    }
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "svelte": "./dist/index.js",
+  "scripts": {
+    "build": "svelte-package -i src -o dist",
+    "dev": "svelte-package -i src -o dist --watch",
+    "test": "vitest run",
+    "typecheck": "svelte-check --tsconfig ./tsconfig.json"
+  },
+  "peerDependencies": {
+    "svelte": "^5.0.0"
+  },
+  "dependencies": {
+    "@fluenti/core": "workspace:*"
+  },
+  "devDependencies": {
+    "@sveltejs/package": "^2",
+    "@sveltejs/vite-plugin-svelte": "^5",
+    "@testing-library/svelte": "^5",
+    "@vitest/coverage-v8": "^4",
+    "happy-dom": "^20",
+    "svelte": "^5",
+    "svelte-check": "^4",
+    "tsup": "^8",
+    "typescript": "^5.9",
+    "vitest": "^4"
+  }
+}

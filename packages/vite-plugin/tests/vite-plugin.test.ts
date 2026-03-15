@@ -6,16 +6,17 @@ describe('fluentiPlugin', () => {
   it('returns an array of plugins', () => {
     const plugins = fluentiPlugin()
     expect(Array.isArray(plugins)).toBe(true)
-    expect(plugins.length).toBe(6)
+    expect(plugins.length).toBe(7)
   })
 
-  it('includes virtual, vue-template, solid-jsx, script-transform, build-split, and dev plugins', () => {
+  it('includes virtual, vue-template, solid-jsx, svelte, script-transform, build-split, and dev plugins', () => {
     const plugins = fluentiPlugin()
     const names = plugins.map((p) => p.name)
 
     expect(names).toContain('fluenti:virtual')
     expect(names).toContain('fluenti:vue-template')
     expect(names).toContain('fluenti:solid-jsx')
+    expect(names).toContain('fluenti:svelte')
     expect(names).toContain('fluenti:script-transform')
     expect(names).toContain('fluenti:build-split')
     expect(names).toContain('fluenti:dev')
@@ -432,7 +433,7 @@ describe('fluentiPlugin', () => {
         framework: 'solid',
       })
 
-      expect(plugins.length).toBe(6)
+      expect(plugins.length).toBe(7)
     })
 
     // ─── New t`` tagged template tests ──────────────────────────────────────
@@ -1794,9 +1795,9 @@ describe('solidJsxPlugin', () => {
     expect(result).toBeUndefined()
   })
 
-  it('returns 6 plugins (including solid-jsx)', () => {
+  it('returns 7 plugins (including solid-jsx and svelte)', () => {
     const plugins = fluentiPlugin()
-    expect(plugins.length).toBe(6)
+    expect(plugins.length).toBe(7)
   })
 })
 

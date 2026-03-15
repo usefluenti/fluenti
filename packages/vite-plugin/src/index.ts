@@ -11,8 +11,9 @@ export type { FluentiPluginOptions } from './types'
 const VIRTUAL_PREFIX = 'virtual:fluenti/messages/'
 const RESOLVED_PREFIX = '\0virtual:fluenti/messages/'
 
-function detectFramework(id: string, code: string): 'vue' | 'solid' {
+function detectFramework(id: string, code: string): 'vue' | 'solid' | 'svelte' {
   if (id.endsWith('.vue')) return 'vue'
+  if (id.endsWith('.svelte')) return 'svelte'
   if (code.includes('solid-js') || code.includes('createSignal') || code.includes('createMemo')) {
     return 'solid'
   }
@@ -819,7 +820,7 @@ function transformPluralSFC(template: string): string {
 
 function transformTaggedTemplate(
   code: string,
-  framework: 'vue' | 'solid',
+  framework: 'vue' | 'solid' | 'svelte',
 ): { code: string; needsImport: boolean } {
   let result = code
   let needsImport = false
@@ -935,8 +936,8 @@ function classifyExpression(expr: string): string {
   return ''
 }
 
-function injectImport(code: string, framework: 'vue' | 'solid'): string {
-  const pkg = framework === 'vue' ? '@fluenti/vue' : '@fluenti/solid'
+function injectImport(code: string, framework: 'vue' | 'solid' | 'svelte'): string {
+  const pkg = framework === 'vue' ? '@fluenti/vue' : framework === 'svelte' ? '@fluenti/svelte' : '@fluenti/solid'
 
   // For Vue, <script setup> runs inside the setup function, so eager call is safe.
   // For Solid, module-level code runs at import time — before createI18n() —
@@ -1060,6 +1061,194 @@ export function transformSolidJsx(code: string): SolidJsxTransformResult {
   return { code: result, changed }
 }
 
+// ─── Svelte compile-time transform ──────────────────────────────────────────
+// Handles t`` and t() in .svelte files.
+// In <script>: variable assignments get $derived() wrapper.
+// In template: direct __i18n.t() calls (Svelte 5 re-evaluates template expressions reactively).
+
+interface SvelteTransformResult {
+  code: string
+  changed: boolean
+}
+
+export function transformSvelte(code: string): SvelteTransformResult {
+  // Only process .svelte files that contain t`` or t()
+  if (!/\bt[`(]/.test(code)) return { code, changed: false }
+
+  // Find <script> block boundaries
+  const scriptMatch = code.match(/<script(\s[^>]*)?>/)
+  if (!scriptMatch) return { code, changed: false }
+
+  const scriptOpenEnd = scriptMatch.index! + scriptMatch[0].length
+
+  // Find matching </script>
+  const scriptCloseIdx = code.indexOf('</script>', scriptOpenEnd)
+  if (scriptCloseIdx < 0) return { code, changed: false }
+
+  const beforeScript = code.slice(0, scriptOpenEnd)
+  let scriptContent = code.slice(scriptOpenEnd, scriptCloseIdx)
+  const afterScript = code.slice(scriptCloseIdx)
+
+  let changed = false
+  let needsImport = false
+
+  // --- Transform t`` in <script> ---
+  // For variable assignments: const/let/var x = t`...` → $derived(...)
+  // For other uses in script: direct __i18n.t() call
+
+  const taggedRegex = /\bt`((?:[^`\\]|\\.|(\$\{(?:[^}]|\{[^}]*\})*\}))*)`/g
+  let match: RegExpExecArray | null
+
+  // First pass: find all t`` in script and replace
+  const scriptTaggedMatches: Array<{ fullMatch: string; replacement: string; index: number }> = []
+  while ((match = taggedRegex.exec(scriptContent)) !== null) {
+    needsImport = true
+    changed = true
+    const fullMatch = match[0]
+    const content = match[1]!
+    const { icuMessage, valuesObj } = parseTTaggedContent(content)
+    scriptTaggedMatches.push({
+      fullMatch,
+      replacement: `__i18n.t('${icuMessage}'${valuesObj})`,
+      index: match.index,
+    })
+  }
+
+  // Replace in reverse order to preserve indices
+  for (let i = scriptTaggedMatches.length - 1; i >= 0; i--) {
+    const { fullMatch, replacement, index } = scriptTaggedMatches[i]!
+
+    // Check if this is a variable assignment: const/let/var x = (with optional TS type annotation)
+    const beforeMatch = scriptContent.slice(0, index)
+    const isAssignment = /(?:const|let|var)\s+\w+(?:\s*:\s*[^=]+?)?\s*=\s*$/.test(beforeMatch)
+
+    const finalReplacement = isAssignment
+      ? `$derived(${replacement})`
+      : replacement
+
+    scriptContent = scriptContent.slice(0, index) + finalReplacement + scriptContent.slice(index + fullMatch.length)
+  }
+
+  // Transform standalone t() calls in script
+  const funcRegex = /(?<![.\w$])t\(\s*(['"])((?:[^\\]|\\.)*?)\1\s*(?:,\s*([^)]+))?\)/g
+  const scriptFuncReplacements: Array<{ start: number; end: number; replacement: string }> = []
+  while ((match = funcRegex.exec(scriptContent)) !== null) {
+    needsImport = true
+    changed = true
+    const message = match[2]!
+    const values = match[3]?.trim()
+    const replacement = values
+      ? `__i18n.t('${message}', ${values})`
+      : `__i18n.t('${message}')`
+    scriptFuncReplacements.push({ start: match.index, end: match.index + match[0].length, replacement })
+  }
+  for (let i = scriptFuncReplacements.length - 1; i >= 0; i--) {
+    const { start, end, replacement } = scriptFuncReplacements[i]!
+    scriptContent = scriptContent.slice(0, start) + replacement + scriptContent.slice(end)
+  }
+
+  // --- Transform t`` in template (afterScript) ---
+  let templatePart = afterScript
+  const templateTaggedRegex = /\bt`((?:[^`\\]|\\.|(\$\{(?:[^}]|\{[^}]*\})*\}))*)`/g
+  templatePart = templatePart.replace(templateTaggedRegex, (_fullMatch, content: string) => {
+    needsImport = true
+    changed = true
+    const { icuMessage, valuesObj } = parseTTaggedContent(content)
+    return `__i18n.t('${icuMessage}'${valuesObj})`
+  })
+
+  // Transform standalone t() calls in template
+  const templateFuncRegex = /(?<![.\w$])t\(\s*(['"])((?:[^\\]|\\.)*?)\1\s*(?:,\s*([^)]+))?\)/g
+  templatePart = templatePart.replace(templateFuncRegex, (_fullMatch, _q: string, message: string, values?: string) => {
+    needsImport = true
+    changed = true
+    const v = values?.trim()
+    return v
+      ? `__i18n.t('${message}', ${v})`
+      : `__i18n.t('${message}')`
+  })
+
+  if (!changed) return { code, changed: false }
+
+  // Inject import at the top of <script>
+  let injection = ''
+  if (needsImport) {
+    injection = `\n  import { __getI18n as __getI18n } from '@fluenti/svelte';\n  const __i18n = __getI18n();\n`
+  }
+
+  return {
+    code: beforeScript + injection + scriptContent + templatePart,
+    changed: true,
+  }
+}
+
+/**
+ * Parse a t`` tagged template content string into an ICU message and values object.
+ * Shared helper for script and template transforms.
+ * @internal
+ */
+function parseTTaggedContent(content: string): { icuMessage: string; valuesObj: string } {
+  const expressions: string[] = []
+  const strings: string[] = []
+  let current = ''
+  let i = 0
+
+  while (i < content.length) {
+    if (content[i] === '\\' && i + 1 < content.length) {
+      current += content[i]! + content[i + 1]!
+      i += 2
+    } else if (content[i] === '$' && content[i + 1] === '{') {
+      strings.push(current)
+      current = ''
+      i += 2
+      let depth = 1
+      let expr = ''
+      while (i < content.length && depth > 0) {
+        if (content[i] === '{') depth++
+        else if (content[i] === '}') {
+          depth--
+          if (depth === 0) break
+        }
+        expr += content[i]
+        i++
+      }
+      expressions.push(expr)
+      i++
+    } else {
+      current += content[i]
+      i++
+    }
+  }
+  strings.push(current)
+
+  let icuMessage = ''
+  const valueEntries: string[] = []
+  let positionalIndex = 0
+
+  for (let j = 0; j < strings.length; j++) {
+    icuMessage += strings[j]!
+    if (j < expressions.length) {
+      const expr = expressions[j]!.trim()
+      const varName = classifyExpression(expr)
+
+      if (varName === '') {
+        icuMessage += `{${positionalIndex}}`
+        valueEntries.push(`${positionalIndex}: ${expr}`)
+        positionalIndex++
+      } else {
+        icuMessage += `{${varName}}`
+        valueEntries.push(`${varName}: ${expr}`)
+      }
+    }
+  }
+
+  const valuesObj = valueEntries.length > 0
+    ? `, { ${valueEntries.join(', ')} }`
+    : ''
+
+  return { icuMessage, valuesObj }
+}
+
 // ─── Plugin entry ────────────────────────────────────────────────────────────
 
 /** Fluenti Vite plugin */
@@ -1070,7 +1259,7 @@ export default function fluentiPlugin(options?: FluentiPluginOptions): Plugin[] 
   const sourceLocale = options?.sourceLocale ?? 'en'
   const locales = options?.locales ?? [sourceLocale]
   const defaultBuildLocale = options?.defaultBuildLocale ?? sourceLocale
-  let detectedFramework: 'vue' | 'solid' = 'vue'
+  let detectedFramework: 'vue' | 'solid' | 'svelte' = 'vue'
 
   const virtualPlugin: Plugin = {
     name: 'fluenti:virtual',
@@ -1141,6 +1330,9 @@ export default function fluentiPlugin(options?: FluentiPluginOptions): Plugin[] 
         ? detectFramework(id, code)
         : frameworkOption
 
+      // Svelte files are handled by the dedicated fluenti:svelte plugin
+      if (framework === 'svelte') return undefined
+
       const transformed = transformTaggedTemplate(code, framework)
       if (!transformed.needsImport) return undefined
 
@@ -1150,6 +1342,28 @@ export default function fluentiPlugin(options?: FluentiPluginOptions): Plugin[] 
         code: finalCode,
         map: null,
       }
+    },
+  }
+
+  const sveltePlugin: Plugin = {
+    name: 'fluenti:svelte',
+    enforce: 'pre',
+    transform(code, id) {
+      if (!id.endsWith('.svelte')) return undefined
+      if (id.includes('node_modules')) return undefined
+
+      // Check if framework is svelte or auto-detected as svelte
+      const framework = frameworkOption === 'auto'
+        ? detectFramework(id, code)
+        : frameworkOption
+      if (framework !== 'svelte') return undefined
+
+      if (!/\bt[`(]/.test(code)) return undefined
+
+      const transformed = transformSvelte(code)
+      if (!transformed.changed) return undefined
+
+      return { code: transformed.code, map: null }
     },
   }
 
@@ -1165,16 +1379,16 @@ export default function fluentiPlugin(options?: FluentiPluginOptions): Plugin[] 
       if (!splitting) return undefined
       if (!isBuildMode((this as any).environment)) return undefined
       if (id.includes('node_modules')) return undefined
-      if (!id.match(/\.(vue|tsx|jsx|ts|js)(\?|$)/)) return undefined
+      if (!id.match(/\.(vue|svelte|tsx|jsx|ts|js)(\?|$)/)) return undefined
 
-      // Only transform compiled template output (contains $t calls)
-      if (!code.includes('$t(')) return undefined
+      // Only transform compiled template output (contains $t or __i18n.t calls)
+      if (!code.includes('$t(') && !code.includes('__i18n.t(')) return undefined
 
       // Detect framework for this file
       if (frameworkOption === 'auto') {
         detectedFramework = detectFramework(id, code)
       } else {
-        detectedFramework = frameworkOption
+        detectedFramework = frameworkOption as 'vue' | 'solid' | 'svelte'
       }
 
       // per-route uses the same transform as dynamic ($t → __catalog._hash)
@@ -1311,5 +1525,5 @@ export default function fluentiPlugin(options?: FluentiPluginOptions): Plugin[] 
     },
   }
 
-  return [virtualPlugin, vueTemplatePlugin, solidJsxPlugin, scriptTransformPlugin, buildSplitPlugin, devPlugin]
+  return [virtualPlugin, vueTemplatePlugin, solidJsxPlugin, sveltePlugin, scriptTransformPlugin, buildSplitPlugin, devPlugin]
 }

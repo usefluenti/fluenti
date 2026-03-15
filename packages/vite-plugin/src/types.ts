@@ -1,8 +1,8 @@
 export interface FluentiPluginOptions {
   /** Path to fluenti config file */
   configPath?: string
-  /** Framework mode: 'vue' | 'solid' | 'auto' */
-  framework?: 'vue' | 'solid' | 'auto'
+  /** Framework mode: 'vue' | 'solid' | 'svelte' | 'auto' */
+  framework?: 'vue' | 'solid' | 'svelte' | 'auto'
   /** Directory containing compiled message catalogs */
   catalogDir?: string
   /** Source locale */
