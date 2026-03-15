@@ -3,13 +3,13 @@
    ========================================================================== */
 
 /* ---------- Fonts ---------- */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap');
+@import '@fontsource-variable/inter';
+@import '@fontsource-variable/jetbrains-mono';
 
 /* ---------- Light Theme (default) ---------- */
 :root {
-  --sl-font: 'Inter', system-ui, -apple-system, sans-serif;
-  --sl-font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  --sl-font: 'Inter Variable', 'Inter', system-ui, -apple-system, sans-serif;
+  --sl-font-mono: 'JetBrains Mono Variable', 'JetBrains Mono', ui-monospace, monospace;
 
   --sl-color-accent-low: hsl(239, 80%, 93%);
   --sl-color-accent: hsl(239, 70%, 55%);
