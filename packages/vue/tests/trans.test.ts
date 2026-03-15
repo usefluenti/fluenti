@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { defineComponent, h, nextTick } from 'vue'
+import { h } from 'vue'
 import { mount } from '@vue/test-utils'
 import { createFluentVue } from '../src/plugin'
 import { Trans } from '../src/components/Trans'

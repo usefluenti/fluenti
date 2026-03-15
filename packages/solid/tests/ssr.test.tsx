@@ -2,7 +2,6 @@
  * @vitest-environment node
  */
 import { describe, it, expect, vi } from 'vitest'
-import { renderToString } from 'solid-js/web'
 import { createI18nContext, createI18n, resetGlobalI18nContext } from '../src/context'
 
 const messages = {

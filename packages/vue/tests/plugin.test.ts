@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import { createApp, defineComponent, h, nextTick, ref, resolveDirective, withDirectives } from 'vue'
 import { createFluentVue, FLUENTI_KEY } from '../src/plugin'
 import type { FluentVueContext } from '../src/plugin'

@@ -19,7 +19,7 @@ describe('formatNumber', () => {
 
   it('formats with function style', () => {
     const result = formatNumber(1000, 'en', 'custom', {
-      custom: (locale) => ({ minimumFractionDigits: 2 }),
+      custom: (_locale) => ({ minimumFractionDigits: 2 }),
     })
     expect(result).toContain('1')
     expect(result).toContain('00')
@@ -34,7 +34,7 @@ describe('formatNumber', () => {
   })
 
   it('formats number for different locales', () => {
-    const en = formatNumber(1234.5, 'en')
+    const _en = formatNumber(1234.5, 'en')
     const de = formatNumber(1234.5, 'de')
     // German uses comma as decimal separator
     expect(de).toContain(',')

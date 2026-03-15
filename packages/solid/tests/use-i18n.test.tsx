@@ -1,5 +1,4 @@
 import { describe, it, expect, vi } from 'vitest'
-import { createSignal } from 'solid-js'
 import { render } from '@solidjs/testing-library'
 import { I18nProvider, useI18n } from '../src'
 
@@ -62,11 +61,11 @@ describe('useI18n reactivity', () => {
   })
 
   it('loadMessages adds messages dynamically', async () => {
-    let load: (loc: string, msgs: Record<string, any>) => void
+    let _load: (loc: string, msgs: Record<string, any>) => void
 
     function Child() {
       const { t, loadMessages } = useI18n()
-      load = loadMessages
+      _load = loadMessages
       return <span data-testid="text">{t('dynamic')}</span>
     }
 

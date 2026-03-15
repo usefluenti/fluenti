@@ -1,5 +1,4 @@
 import { describe, it, expect, vi } from 'vitest'
-import { nextTick } from 'vue'
 import { createFluentVue } from '../src/plugin'
 
 function createSplitPlugin(chunkLoader: (locale: string) => Promise<Record<string, any>>) {

@@ -4,7 +4,7 @@ import { Suspense, type Component, type JSX } from 'solid-js'
 import { isServer } from 'solid-js/web'
 import { I18nProvider, useI18n } from '@fluenti/solid'
 import { getSSRLocaleScript } from '@fluenti/core'
-import { allMessages, DEFAULT_LOCALE, getInitialLocale, detectLocaleFromCookie } from './lib/i18n'
+import { allMessages, DEFAULT_LOCALE, getInitialLocale } from './lib/i18n'
 
 const LanguageSwitcher: Component = () => {
   const { locale, setLocale } = useI18n()

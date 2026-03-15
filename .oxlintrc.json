@@ -1,0 +1,9 @@
+{
+  "$schema": "https://raw.githubusercontent.com/nicepkg/oxlint/main/npm/oxlint/configuration_schema.json",
+  "ignorePatterns": [
+    "**/*.astro",
+    "node_modules",
+    "dist",
+    ".astro"
+  ]
+}
