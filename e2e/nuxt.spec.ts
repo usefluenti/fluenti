@@ -103,3 +103,42 @@ test.describe('Nuxt Playground (SSR)', () => {
     await expect(page.locator('text=Reactive locale switching')).toBeVisible()
   })
 })
+
+test.describe('Nuxt SSR — Accept-Language Header Detection', () => {
+  test('detects Japanese from Accept-Language header', async ({ browser }) => {
+    const context = await browser.newContext({
+      extraHTTPHeaders: { 'Accept-Language': 'ja,en;q=0.5' },
+    })
+    const page = await context.newPage()
+    await page.goto('/')
+    await page.waitForLoadState('networkidle')
+    await expect(page.locator('header h1')).toContainText('Fluenti Nuxt プレイグラウンド')
+    await context.close()
+  })
+
+  test('falls back to English when Accept-Language is unsupported', async ({ browser }) => {
+    const context = await browser.newContext({
+      extraHTTPHeaders: { 'Accept-Language': 'fr,de;q=0.5' },
+    })
+    const page = await context.newPage()
+    await page.goto('/')
+    await page.waitForLoadState('networkidle')
+    await expect(page.locator('header h1')).toContainText('Fluenti Nuxt Playground')
+    await context.close()
+  })
+
+  test('cookie takes priority over Accept-Language header', async ({ browser }) => {
+    const context = await browser.newContext({
+      extraHTTPHeaders: { 'Accept-Language': 'ja,en;q=0.5' },
+    })
+    await context.addCookies([
+      { name: 'fluenti_locale', value: 'en', domain: 'localhost', path: '/' },
+    ])
+    const page = await context.newPage()
+    await page.goto('/')
+    await page.waitForLoadState('networkidle')
+    // Cookie (en) should take priority over header (ja)
+    await expect(page.locator('header h1')).toContainText('Fluenti Nuxt Playground')
+    await context.close()
+  })
+})

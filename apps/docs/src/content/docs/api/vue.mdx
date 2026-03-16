@@ -34,6 +34,7 @@ app.use(i18n)
 | `fallbackChain` | `Record<string, string[]>?` | Locale fallback chains |
 | `splitting` | `boolean?` | Enable code-splitting mode |
 | `chunkLoader` | `(locale: string) => Promise<Messages>?` | Async locale loader for splitting |
+| `componentPrefix` | `string?` | Prefix for global components (e.g. `'I18n'` → `I18nTrans`, `I18nPlural`, `I18nSelect`) |
 
 ## `useI18n()`
 
@@ -76,6 +77,39 @@ const { format } = useI18n()
 <template>
   <p>{{ format('Hello {name}!', { name: 'World' }) }}</p>
 </template>
+```
+
+## Component Naming Conflicts
+
+If `Trans`, `Plural`, or `Select` conflicts with another library (e.g. a UI framework), use `componentPrefix`:
+
+```typescript
+const i18n = createFluentVue({
+  locale: 'en',
+  messages: { en },
+  componentPrefix: 'I18n',
+})
+```
+
+Components will be registered as `I18nTrans`, `I18nPlural`, `I18nSelect`:
+
+```vue
+<template>
+  <I18nTrans>Visit our <a href="/docs">docs</a></I18nTrans>
+  <I18nPlural :value="count" one="# item" other="# items" />
+  <I18nSelect :value="role" :options="{ admin: 'Admin', user: 'User' }" other="Unknown" />
+</template>
+```
+
+For Nuxt, set `componentPrefix` in `nuxt.config.ts` — it applies to `NuxtLinkLocale` as well:
+
+```typescript
+export default defineNuxtConfig({
+  fluenti: {
+    componentPrefix: 'I18n',
+    // → I18nNuxtLinkLocale
+  },
+})
 ```
 
 ## `<Trans>`
