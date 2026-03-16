@@ -25,16 +25,17 @@
   },
   "files": ["dist"],
   "scripts": {
-    "build": "tsup",
-    "dev": "tsup --watch",
+    "build": "vite build",
+    "dev": "vite build --watch",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "bench": "vitest bench"
   },
   "devDependencies": {
     "typescript": "^5.9",
+    "vite": "^8",
+    "vite-plugin-dts": "^4",
     "vitest": "^4",
-    "tsup": "^8",
     "@vitest/coverage-v8": "^4"
   }
 }

@@ -44,7 +44,6 @@
     "@playwright/test": "^1.58.2",
     "@vitest/coverage-v8": "^4",
     "oxlint": "^1",
-    "tsup": "^8",
     "typescript": "^5.9",
     "vitest": "^4"
   }

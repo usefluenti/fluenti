@@ -38,8 +38,8 @@
     "src"
   ],
   "scripts": {
-    "build": "tsup",
-    "dev": "tsup --watch",
+    "build": "vite build",
+    "dev": "vite build --watch",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
@@ -54,8 +54,9 @@
     "@vitest/coverage-v8": "^4",
     "happy-dom": "^20",
     "solid-js": "^1.9",
-    "tsup": "^8",
     "typescript": "^5.9",
+    "vite": "^8",
+    "vite-plugin-dts": "^4",
     "vite-plugin-solid": "^2.11.11",
     "vitest": "^4"
   }
