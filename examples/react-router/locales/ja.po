@@ -1,0 +1,90 @@
+msgid ""
+msgstr "Content-Type: text/plain; charset=utf-8\n"
+
+msgid "Fluenti React Router Playground"
+msgstr "Fluenti React Router プレイグラウンド"
+
+msgid "Write text. Fluenti translates it. Zero config."
+msgstr "テキストを書くだけ。Fluenti が翻訳。設定不要。"
+
+msgid "Built with Fluenti and React Router"
+msgstr "Fluenti と React Router で構築"
+
+msgid "Welcome to Fluenti"
+msgstr "Fluenti へようこそ"
+
+msgid "A modern i18n library for React"
+msgstr "React のためのモダンな i18n ライブラリ"
+
+msgid "Hello, {name}!"
+msgstr "こんにちは、{name}さん！"
+
+msgid "You have {count} items in your cart."
+msgstr "カートに {count} 個のアイテムがあります。"
+
+msgid "Current locale: {locale}"
+msgstr "現在のロケール：{locale}"
+
+msgid "Features"
+msgstr "機能"
+
+msgid "Reactive locale switching"
+msgstr "リアクティブなロケール切り替え"
+
+msgid "Rich text with React components"
+msgstr "React コンポーネント付きリッチテキスト"
+
+msgid "Built-in plural support"
+msgstr "組み込みの複数形サポート"
+
+msgid "Type-safe message catalogs"
+msgstr "型安全なメッセージカタログ"
+
+msgid "Home"
+msgstr "ホーム"
+
+msgid "Plurals"
+msgstr "複数形"
+
+msgid "Rich Text"
+msgstr "リッチテキスト"
+
+msgid "Add"
+msgstr "追加"
+
+msgid "Remove"
+msgstr "削除"
+
+msgid "Reset"
+msgstr "リセット"
+
+msgid "Select Demo"
+msgstr "セレクトデモ"
+
+#. msg`Administrator`
+msgid "1d03gh6"
+msgstr "管理者"
+
+#. msg`Regular User`
+msgid "154355u"
+msgstr "一般ユーザー"
+
+#. msg`Rich Text Demos`
+msgid "1x4v5ca"
+msgstr "リッチテキストデモ"
+
+#. msg`Components for complex translations`
+msgid "1kjrwe6"
+msgstr "複雑な翻訳のためのコンポーネント"
+
+#. Trans: Read the <a>documentation</a> for more info.
+msgid "18r06yp"
+msgstr "<0>ドキュメント</0>で詳細をご覧ください。"
+
+#. Trans: This is <strong>important</strong> information.
+msgid "p3nupq"
+msgstr "これは<0>重要な</0>情報です。"
+
+#. Trans: Please <a>sign in</a> or <strong>register</strong> to continue.
+msgid "166utyv"
+msgstr "<0>サインイン</0>するか、<1>登録</1>して続けてください。"

@@ -1,0 +1,30 @@
+{
+  "name": "playground-tanstack-start",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite dev",
+    "compile": "fluenti compile",
+    "build": "fluenti compile && vite build",
+    "start": "node .output/server/index.mjs",
+    "preview": "node .output/server/index.mjs"
+  },
+  "dependencies": {
+    "@fluenti/cli": "workspace:*",
+    "@fluenti/core": "workspace:*",
+    "@fluenti/react": "workspace:*",
+    "@fluenti/vite-plugin": "workspace:*",
+    "@tanstack/react-router": "^1",
+    "@tanstack/react-start": "^1",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^4",
+    "typescript": "^5.9",
+    "vite": "^8",
+    "vite-tsconfig-paths": "^4"
+  }
+}
