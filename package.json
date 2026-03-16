@@ -42,6 +42,7 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.58.2",
+    "@types/node": "^22.19.15",
     "@vitest/coverage-v8": "^4",
     "oxlint": "^1",
     "typescript": "^5.9",
