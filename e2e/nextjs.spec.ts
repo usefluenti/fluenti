@@ -252,4 +252,49 @@ test.describe('Next.js App Router e2e', () => {
     // Key NOT in ja — should fall back to English
     await expect(page.getByTestId('fallback-only-en')).toContainText('This text is only translated in English')
   })
+
+  // ─── RSC Rich Text (Server Components with Trans, Plural, DateTime, NumberFormat) ───
+
+  test('RSC richtext page renders Trans with link', async ({ page }) => {
+    await page.goto('/rsc-richtext')
+    await expect(page.getByTestId('rsc-richtext-page')).toBeVisible()
+    const link = page.getByTestId('rsc-trans-link').locator('a')
+    await expect(link).toHaveAttribute('href', '/docs')
+    await expect(link).toContainText('documentation')
+  })
+
+  test('RSC richtext page renders Trans with bold', async ({ page }) => {
+    await page.goto('/rsc-richtext')
+    const bold = page.getByTestId('rsc-trans-bold').locator('strong')
+    await expect(bold).toContainText('important')
+  })
+
+  test('RSC richtext page renders Plural', async ({ page }) => {
+    await page.goto('/rsc-richtext')
+    await expect(page.getByTestId('rsc-plural')).toContainText('5 items')
+    await expect(page.getByTestId('rsc-plural-zero')).toContainText('No items')
+  })
+
+  test('RSC richtext page renders DateTime', async ({ page }) => {
+    await page.goto('/rsc-richtext')
+    await expect(page.getByTestId('rsc-date')).not.toBeEmpty()
+  })
+
+  test('RSC richtext page renders NumberFormat', async ({ page }) => {
+    await page.goto('/rsc-richtext')
+    const text = await page.getByTestId('rsc-number').textContent()
+    expect(text).toContain('1')
+    expect(text).toContain('234')
+  })
+
+  test('RSC richtext page translates Trans when locale is Japanese', async ({ page }) => {
+    // Set Japanese locale via cookie
+    await page.context().addCookies([{ name: 'locale', value: 'ja', url: 'http://localhost:3000' }])
+    await page.goto('/rsc-richtext')
+    await expect(page.getByTestId('rsc-richtext-page')).toBeVisible()
+    // Japanese translation of "Read the <0>documentation</0> for more info."
+    // is "<0>ドキュメント</0>で詳細をご覧ください。"
+    const link = page.getByTestId('rsc-trans-link').locator('a')
+    await expect(link).toContainText('ドキュメント')
+  })
 })

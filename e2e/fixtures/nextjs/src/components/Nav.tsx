@@ -25,6 +25,7 @@ export function Nav() {
         <Link href="/streaming" data-testid="nav-streaming">{i18n.t('Streaming')}</Link>
         <Link href="/server-action" data-testid="nav-actions">{i18n.t('Actions')}</Link>
         <Link href="/richtext" data-testid="nav-richtext">{i18n.t('Rich Text')}</Link>
+        <Link href="/rsc-richtext" data-testid="nav-rsc-richtext">{i18n.t('RSC Rich Text')}</Link>
         <Link href="/fallback" data-testid="nav-fallback">{i18n.t('Fallback')}</Link>
       </nav>
 

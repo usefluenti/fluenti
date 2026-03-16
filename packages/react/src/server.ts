@@ -8,6 +8,9 @@ import type {
   DateFormatOptions,
   NumberFormatOptions,
 } from '@fluenti/core'
+import { createElement, Fragment, type ReactNode, type ReactElement } from 'react'
+import { hashMessage, extractMessage, reconstruct } from './components/trans-core'
+import { resolveCategory, replaceHash, type PluralCategory } from './components/plural-core'
 
 // Re-export SSR utilities from core for convenience
 export { detectLocale, getSSRLocaleScript, getHydratedLocale, isRTL, getDirection } from '@fluenti/core'
@@ -54,6 +57,59 @@ export interface ServerI18nConfig {
   missing?: (locale: Locale, id: string) => string | undefined
 }
 
+// ─── Server Component Props ──────────────────────────────────────────────────
+
+export interface ServerTransProps {
+  /** Source text with embedded components */
+  children: ReactNode
+  /** Override auto-generated hash ID */
+  id?: string
+  /** Context comment for translators */
+  comment?: string
+  /** Custom render wrapper */
+  render?: (translation: ReactNode) => ReactNode
+}
+
+export interface ServerPluralProps {
+  /** The count value */
+  value: number
+  /** Text for zero (if language supports) */
+  zero?: ReactNode
+  /** Singular form. `#` replaced with value */
+  one?: ReactNode
+  /** Dual form (Arabic, etc.) */
+  two?: ReactNode
+  /** Few form (Slavic languages, etc.) */
+  few?: ReactNode
+  /** Many form */
+  many?: ReactNode
+  /** Default plural form */
+  other: ReactNode
+  /** Offset from value before selecting form */
+  offset?: number
+}
+
+export interface ServerDateTimeProps {
+  /** Date value to format */
+  value: Date | number
+  /** Named format style */
+  style?: string
+}
+
+export interface ServerNumberProps {
+  /** Number value to format */
+  value: number
+  /** Named format style */
+  style?: string
+}
+
+// ─── Server Component Types ──────────────────────────────────────────────────
+
+type ServerTransComponent = (props: ServerTransProps) => Promise<ReactElement>
+type ServerPluralComponent = (props: ServerPluralProps) => Promise<ReactElement>
+type ServerDateTimeComponent = (props: ServerDateTimeProps) => Promise<ReactElement>
+type ServerNumberComponent = (props: ServerNumberProps) => Promise<ReactElement>
+
 /**
  * The object returned by `createServerI18n`.
  */
@@ -78,6 +134,47 @@ export interface ServerI18n {
    * ```
    */
   getI18n: () => Promise<FluentInstanceExtended & { locale: string }>
+
+  /**
+   * `<Trans>` for React Server Components.
+   * Async component — automatically resolves the i18n instance.
+   *
+   * @example
+   * ```tsx
+   * <Trans>Read the <a href="/docs">documentation</a>.</Trans>
+   * ```
+   */
+  Trans: ServerTransComponent
+
+  /**
+   * `<Plural>` for React Server Components.
+   *
+   * @example
+   * ```tsx
+   * <Plural value={count} one="# item" other="# items" />
+   * ```
+   */
+  Plural: ServerPluralComponent
+
+  /**
+   * `<DateTime>` for React Server Components.
+   *
+   * @example
+   * ```tsx
+   * <DateTime value={new Date()} style="long" />
+   * ```
+   */
+  DateTime: ServerDateTimeComponent
+
+  /**
+   * `<NumberFormat>` for React Server Components.
+   *
+   * @example
+   * ```tsx
+   * <NumberFormat value={1234.56} style="currency" />
+   * ```
+   */
+  NumberFormat: ServerNumberComponent
 }
 
 /**
@@ -91,7 +188,7 @@ export interface ServerI18n {
  * // lib/i18n.server.ts — define once
  * import { createServerI18n } from '@fluenti/react/server'
  *
- * export const { setLocale, getI18n } = createServerI18n({
+ * export const { setLocale, getI18n, Trans, Plural, DateTime, NumberFormat } = createServerI18n({
  *   loadMessages: (locale) => import(`../messages/${locale}.json`),
  *   fallbackLocale: 'en',
  * })
@@ -109,12 +206,16 @@ export interface ServerI18n {
  * ```
  *
  * ```tsx
- * // app/[locale]/page.tsx — use anywhere
- * import { getI18n } from '@/lib/i18n.server'
+ * // app/[locale]/page.tsx — use Trans, Plural, etc. directly
+ * import { Trans, Plural } from '@/lib/i18n.server'
  *
  * export default async function Page() {
- *   const { t, d, n } = await getI18n()
- *   return <h1>{t('welcome')}</h1>
+ *   return (
+ *     <div>
+ *       <Trans>Read the <a href="/docs">documentation</a>.</Trans>
+ *       <Plural value={5} one="# item" other="# items" />
+ *     </div>
+ *   )
  * }
  * ```
  */
@@ -197,5 +298,56 @@ export function createServerI18n(config: ServerI18nConfig): ServerI18n {
     return store.instance
   }
 
-  return { setLocale, getI18n }
+  // ─── Async Server Components ─────────────────────────────────────────────
+
+  async function Trans({ children, id, render }: ServerTransProps): Promise<ReactElement> {
+    const i18n = await getI18n()
+    const { message, components } = extractMessage(children)
+    const messageId = id ?? hashMessage(message)
+    const translated = i18n.t({ id: messageId, message })
+    const result = reconstruct(translated, components)
+    return createElement(Fragment, null, render ? render(result) : result)
+  }
+
+  async function Plural({ value, zero, one, two, few, many, other, offset }: ServerPluralProps): Promise<ReactElement> {
+    const i18n = await getI18n()
+    const adjustedValue = offset ? value - offset : value
+
+    const available: Record<string, boolean> = {
+      zero: zero !== undefined,
+      one: one !== undefined,
+      two: two !== undefined,
+      few: few !== undefined,
+      many: many !== undefined,
+      other: true,
+    }
+
+    const category = resolveCategory(adjustedValue, i18n.locale, available)
+
+    const forms: Record<PluralCategory, ReactNode | undefined> = {
+      zero,
+      one,
+      two,
+      few,
+      many,
+      other,
+    }
+
+    const selected = forms[category] ?? other
+    const formatted = i18n.n(value)
+
+    return createElement(Fragment, null, replaceHash(selected, formatted))
+  }
+
+  async function DateTime({ value, style }: ServerDateTimeProps): Promise<ReactElement> {
+    const i18n = await getI18n()
+    return createElement(Fragment, null, i18n.d(value, style))
+  }
+
+  async function NumberFormat({ value, style }: ServerNumberProps): Promise<ReactElement> {
+    const i18n = await getI18n()
+    return createElement(Fragment, null, i18n.n(value, style))
+  }
+
+  return { setLocale, getI18n, Trans, Plural, DateTime, NumberFormat }
 }
