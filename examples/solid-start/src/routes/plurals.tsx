@@ -1,13 +1,12 @@
 import { createSignal } from 'solid-js'
-import { useI18n, Plural } from '@fluenti/solid'
+import { Plural } from '@fluenti/solid'
 
 export default function PluralsPage() {
-  const { t } = useI18n()
   const [count, setCount] = createSignal(0)
 
   return (
     <div>
-      <h1>{t('Plurals')}</h1>
+      <h1>{t`Plurals`}</h1>
       <p style={{ color: '#666', 'margin-bottom': '16px' }}>
         The Plural component selects the correct plural form based on Intl.PluralRules.
       </p>
@@ -31,9 +30,9 @@ export default function PluralsPage() {
         <p style={{ 'font-size': '18px', 'margin-bottom': '24px' }}>
           <Plural
             value={count()}
-            zero={t('Your cart is empty.')}
-            one={t('You have # item in your cart.')}
-            other={t('You have # items in your cart.')}
+            zero={t`Your cart is empty.`}
+            one={t`You have # item in your cart.`}
+            other={t`You have # items in your cart.`}
           />
         </p>
 
@@ -72,7 +71,7 @@ export default function PluralsPage() {
               cursor: 'pointer',
             }}
           >
-            {t('Reset')}
+            {t`Reset`}
           </button>
         </div>
       </div>
