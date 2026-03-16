@@ -9,7 +9,7 @@ export default defineConfig({
       fileName: 'index',
     },
     rollupOptions: {
-      external: ['vite', '@fluenti/core', '@vue/compiler-sfc'],
+      external: ['vite', '@fluenti/core', '@vue/compiler-sfc', /^node:/],
     },
     sourcemap: true,
     emptyOutDir: true,

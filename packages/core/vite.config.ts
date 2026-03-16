@@ -8,6 +8,9 @@ export default defineConfig({
       formats: ['es', 'cjs'],
       fileName: 'index',
     },
+    rollupOptions: {
+      external: [/^node:/],
+    },
     sourcemap: true,
     emptyOutDir: true,
   },

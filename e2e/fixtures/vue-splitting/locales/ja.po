@@ -1,0 +1,29 @@
+msgid ""
+msgstr "Content-Type: text/plain; charset=UTF-8\n"
+
+msgid "Welcome to Fluenti"
+msgstr "Fluentiへようこそ"
+
+msgid "Hello, {name}!"
+msgstr "こんにちは、{name}さん！"
+
+msgid "Home"
+msgstr "ホーム"
+
+msgid "About"
+msgstr "概要"
+
+msgid "This is the home page."
+msgstr "これはホームページです。"
+
+msgid "About our project"
+msgstr "プロジェクトについて"
+
+msgid "Learn more about Fluenti."
+msgstr "Fluentiの詳細をご覧ください。"
+
+msgid "Contact us at {email}"
+msgstr "{email}にお問い合わせください"
+
+msgid "Switch Language"
+msgstr "言語を切り替え"

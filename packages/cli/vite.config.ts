@@ -19,6 +19,7 @@ export default defineConfig({
         'consola',
         'fast-glob',
         'jiti',
+        /^node:/,
       ],
     },
     sourcemap: true,

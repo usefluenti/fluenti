@@ -8,6 +8,7 @@
     "preview": "nuxt preview --port 5175"
   },
   "dependencies": {
+    "@fluenti/cli": "workspace:*",
     "@fluenti/core": "workspace:*",
     "@fluenti/vue": "workspace:*",
     "@fluenti/vite-plugin": "workspace:*",
