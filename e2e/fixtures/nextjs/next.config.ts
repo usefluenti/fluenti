@@ -1,7 +1,10 @@
-import type { NextConfig } from 'next'
+import { withFluenti } from '@fluenti/next'
 
-const nextConfig: NextConfig = {
+export default withFluenti({
+  locales: ['en', 'ja', 'ar'],
+  catalogDir: './locales',
+  compileOutDir: './src/locales/compiled',
+  format: 'po',
+})({
   reactStrictMode: true,
-}
-
-export default nextConfig
+})
