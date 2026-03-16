@@ -191,7 +191,7 @@ export default function Page() {
 }
 ```
 
-With `@fluenti/next`, the loader auto-injects everything: `t``\`\`` is rewritten to `__getServerI18n().t(...)`, and `<Trans>`, `<Plural>`, `<DateTime>`, `<NumberFormat>` are auto-imported from the singleton. No manual imports needed.
+With `@fluenti/next`, the loader auto-injects everything: `` t`\`` `` is rewritten to `__getServerI18n().t(...)`, and `Trans`, `Plural`, `DateTime`, `NumberFormat` components are auto-imported from the singleton. No manual imports needed.
 
 If you're using `@fluenti/react/server` directly (without Next.js), you still need to import from your server module:
 
