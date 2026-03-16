@@ -21,7 +21,7 @@ export default {
   plugins: [
     vue(),
     fluenti({
-      framework: 'vue',      // 'vue' | 'solid' | 'auto'
+      framework: 'vue',      // 'vue' | 'react' | 'solid' | 'auto'
       splitting: 'dynamic',  // 'dynamic' | 'static' | 'per-route' | false
     }),
   ],
@@ -60,7 +60,7 @@ The plugin serves compiled catalogs through Vite virtual modules — no manual i
 
 ```ts
 interface FluentiPluginOptions {
-  framework?: 'vue' | 'solid' | 'auto'
+  framework?: 'vue' | 'react' | 'solid' | 'auto'
   catalogDir?: string           // default: 'src/locales/compiled'
   sourceLocale?: string         // default: 'en'
   locales?: string[]            // default: [sourceLocale]

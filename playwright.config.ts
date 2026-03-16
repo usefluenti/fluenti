@@ -29,6 +29,11 @@ export default defineConfig({
       testMatch: '**/solid-start.spec.ts',
     },
     {
+      name: 'react',
+      use: { baseURL: 'http://localhost:5177' },
+      testMatch: '**/react.spec.ts',
+    },
+    {
       name: 'splitting-vue',
       use: { baseURL: 'http://localhost:5180' },
       testMatch: '**/splitting-vue.spec.ts',
@@ -63,6 +68,26 @@ export default defineConfig({
       use: { baseURL: 'http://localhost:5186' },
       testMatch: '**/nuxt-prefix.spec.ts',
     },
+    {
+      name: 'splitting-react',
+      use: { baseURL: 'http://localhost:5187' },
+      testMatch: '**/splitting-react.spec.ts',
+    },
+    {
+      name: 'react-router',
+      use: { baseURL: 'http://localhost:5188' },
+      testMatch: '**/react-router.spec.ts',
+    },
+    {
+      name: 'remix',
+      use: { baseURL: 'http://localhost:5189' },
+      testMatch: '**/remix.spec.ts',
+    },
+    {
+      name: 'nextjs',
+      use: { baseURL: 'http://localhost:5190' },
+      testMatch: '**/nextjs.spec.ts',
+    },
   ],
   webServer: [
     {
@@ -86,6 +111,12 @@ export default defineConfig({
     {
       command: 'cd examples/solid-start && pnpm build && pnpm preview',
       port: 5176,
+      reuseExistingServer: true,
+      timeout: 60_000,
+    },
+    {
+      command: 'cd examples/react && pnpm build && pnpm preview --port 5177',
+      port: 5177,
       reuseExistingServer: true,
       timeout: 60_000,
     },
@@ -128,6 +159,30 @@ export default defineConfig({
     {
       command: 'cd e2e/fixtures/nuxt-prefix && pnpm build && pnpm preview --port 5186',
       port: 5186,
+      reuseExistingServer: true,
+      timeout: 120_000,
+    },
+    {
+      command: 'cd e2e/fixtures/react-splitting && pnpm build && pnpm preview --port 5187',
+      port: 5187,
+      reuseExistingServer: true,
+      timeout: 60_000,
+    },
+    {
+      command: 'cd e2e/fixtures/react-router && pnpm build && pnpm preview --port 5188',
+      port: 5188,
+      reuseExistingServer: true,
+      timeout: 60_000,
+    },
+    {
+      command: 'cd e2e/fixtures/remix && pnpm build && pnpm preview --port 5189',
+      port: 5189,
+      reuseExistingServer: true,
+      timeout: 60_000,
+    },
+    {
+      command: 'cd e2e/fixtures/nextjs && pnpm build && pnpm start -p 5190',
+      port: 5190,
       reuseExistingServer: true,
       timeout: 120_000,
     },

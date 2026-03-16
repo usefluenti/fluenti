@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { negotiateLocale, parseLocale } from '../src/locale'
+import { negotiateLocale, parseLocale, isRTL, getDirection } from '../src/locale'
 
 describe('parseLocale', () => {
   it('parses language only', () => {
@@ -61,5 +61,57 @@ describe('negotiateLocale', () => {
 
   it('handles zh-Hans vs zh-CN', () => {
     expect(negotiateLocale('zh', ['zh-CN', 'en'])).toBe('zh-CN')
+  })
+})
+
+describe('isRTL', () => {
+  it('returns true for Arabic', () => {
+    expect(isRTL('ar')).toBe(true)
+  })
+
+  it('returns true for Arabic with region', () => {
+    expect(isRTL('ar-SA')).toBe(true)
+    expect(isRTL('ar-EG')).toBe(true)
+  })
+
+  it('returns true for Hebrew', () => {
+    expect(isRTL('he')).toBe(true)
+    expect(isRTL('he-IL')).toBe(true)
+  })
+
+  it('returns true for Persian', () => {
+    expect(isRTL('fa')).toBe(true)
+    expect(isRTL('fa-IR')).toBe(true)
+  })
+
+  it('returns true for Urdu', () => {
+    expect(isRTL('ur')).toBe(true)
+  })
+
+  it('returns true for Central Kurdish', () => {
+    expect(isRTL('ckb')).toBe(true)
+  })
+
+  it('returns false for LTR languages', () => {
+    expect(isRTL('en')).toBe(false)
+    expect(isRTL('en-US')).toBe(false)
+    expect(isRTL('de')).toBe(false)
+    expect(isRTL('zh-CN')).toBe(false)
+    expect(isRTL('ja')).toBe(false)
+    expect(isRTL('fr')).toBe(false)
+  })
+})
+
+describe('getDirection', () => {
+  it('returns rtl for RTL locales', () => {
+    expect(getDirection('ar')).toBe('rtl')
+    expect(getDirection('he')).toBe('rtl')
+    expect(getDirection('fa-IR')).toBe('rtl')
+  })
+
+  it('returns ltr for LTR locales', () => {
+    expect(getDirection('en')).toBe('ltr')
+    expect(getDirection('de-DE')).toBe('ltr')
+    expect(getDirection('ja')).toBe('ltr')
   })
 })

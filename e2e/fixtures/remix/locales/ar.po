@@ -1,0 +1,35 @@
+msgid ""
+msgstr "Content-Type: text/plain; charset=utf-8\n"
+
+msgid "Home"
+msgstr "الرئيسية"
+
+msgid "About"
+msgstr "حول"
+
+msgid "Plurals"
+msgstr "جمع"
+
+msgid "Welcome to Fluenti"
+msgstr "مرحباً بكم في Fluenti"
+
+msgid "This is the home page."
+msgstr "هذه هي الصفحة الرئيسية."
+
+msgid "Hello, {name}!"
+msgstr "مرحباً، {name}!"
+
+msgid "About our project"
+msgstr "حول مشروعنا"
+
+msgid "Learn more about Fluenti."
+msgstr "تعرف على المزيد عن Fluenti."
+
+msgid "Contact us at {email}"
+msgstr "اتصل بنا على {email}"
+
+msgid "Add"
+msgstr "إضافة"
+
+msgid "Reset"
+msgstr "إعادة تعيين"

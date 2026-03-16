@@ -1,0 +1,158 @@
+---
+title: Quick Start (React)
+description: Get started with Fluenti in a React project
+---
+
+import { Steps } from '@astrojs/starlight/components'
+
+<Steps>
+
+1. **Install packages**
+
+   ```bash
+   pnpm add @fluenti/core @fluenti/react
+   pnpm add -D @fluenti/cli @fluenti/vite-plugin
+   ```
+
+2. **Configure Vite**
+
+   ```typescript
+   // vite.config.ts
+   import { defineConfig } from 'vite'
+   import react from '@vitejs/plugin-react'
+   import fluenti from '@fluenti/vite-plugin'
+
+   export default defineConfig({
+     plugins: [
+       fluenti({ framework: 'react' }),
+       react(),
+     ],
+   })
+   ```
+
+3. **Create `fluenti.config.ts`**
+
+   ```typescript
+   // fluenti.config.ts
+   export default {
+     sourceLocale: 'en',
+     locales: ['en', 'zh-CN'],
+     catalogDir: './locales',
+     format: 'po',
+     include: ['./src/**/*.{tsx,ts,jsx}'],
+     compileOutDir: './src/locales/compiled',
+   }
+   ```
+
+4. **Write your component — use `t()` with source text**
+
+   ```tsx
+   // src/Home.tsx
+   import { useI18n } from '@fluenti/react'
+
+   export function Home() {
+     const { i18n, setLocale } = useI18n()
+
+     return (
+       <div>
+         <h1>{i18n.t('Welcome to my app')}</h1>
+         <p>{i18n.t('Hello, {name}!', { name: 'World' })}</p>
+
+         <button onClick={() => setLocale('en')}>English</button>
+         <button onClick={() => setLocale('zh-CN')}>中文</button>
+       </div>
+     )
+   }
+   ```
+
+5. **Extract messages**
+
+   ```bash
+   npx fluenti extract
+   ```
+
+   This scans your source files and generates catalog files in `./locales/`.
+
+6. **Add translations**
+
+   Open `locales/zh-CN.po` and fill in `msgstr` fields:
+
+   ```po
+   msgid "Welcome to my app"
+   msgstr "欢迎使用我的应用"
+
+   msgid "Hello, {name}!"
+   msgstr "你好，{name}！"
+   ```
+
+7. **Compile messages**
+
+   ```bash
+   npx fluenti compile
+   ```
+
+8. **Initialize from compiled output**
+
+   ```tsx
+   // src/main.tsx
+   import { createRoot } from 'react-dom/client'
+   import { I18nProvider } from '@fluenti/react'
+   import { Home } from './Home'
+   import en from './locales/compiled/en'
+   import zhCN from './locales/compiled/zh-CN'
+
+   function App() {
+     return (
+       <I18nProvider
+         locale="en"
+         fallbackLocale="en"
+         messages={{ en, 'zh-CN': zhCN }}
+       >
+         <Home />
+       </I18nProvider>
+     )
+   }
+
+   createRoot(document.getElementById('root')!).render(<App />)
+   ```
+
+</Steps>
+
+## Key differences from Vue
+
+- Uses `<I18nProvider>` instead of a plugin
+- Access i18n via `useI18n()` hook — returns `{ i18n, locale, setLocale, ... }`
+- Call `i18n.t()` directly in JSX — no `useMemo` needed, it's an O(1) hash lookup
+- No `v-t` directive — use `i18n.t()` calls or `<Trans>` component
+
+## Key differences from Solid
+
+- No signals — React's re-render cycle handles reactivity
+- `i18n.t()` is called directly (no `createMemo` wrapper)
+- `locale` is a string, not an accessor
+
+## Rich text with `<Trans>`
+
+```tsx
+import { Trans } from '@fluenti/react'
+
+<Trans>Click <a href="/next">here</a> to continue.</Trans>
+<Trans>This is <strong>important</strong> information.</Trans>
+```
+
+## Plurals with `<Plural>`
+
+```tsx
+import { Plural } from '@fluenti/react'
+
+<Plural value={count} zero="No items" one="# item" other="# items" />
+```
+
+## Framework compatibility
+
+`@fluenti/react` works with any React-based framework:
+
+- **React SPA** (Vite) — full Vite plugin support
+- **React Router** — client-side routing with locale persistence
+- **Remix** — file-based routing with Vite SPA mode
+- **Next.js** — App Router with `'use client'` components (without Vite plugin)

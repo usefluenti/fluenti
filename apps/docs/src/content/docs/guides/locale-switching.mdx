@@ -30,6 +30,30 @@ const { locale, setLocale, getLocales, isLoading, preloadLocale } = useI18n()
 </template>
 ```
 
+### React
+
+```tsx
+function LocaleSwitcher() {
+  const { i18n, locale, setLocale, isLoading, loadedLocales, preloadLocale } = useI18n()
+
+  return (
+    <div>
+      {loadedLocales.map(l => (
+        <button
+          key={l}
+          className={locale === l ? 'active' : ''}
+          onClick={() => setLocale(l)}
+          onMouseEnter={() => preloadLocale(l)}
+        >
+          {l}
+        </button>
+      ))}
+      {isLoading && <span>Loading...</span>}
+    </div>
+  )
+}
+```
+
 ### Solid
 
 ```tsx
@@ -57,6 +81,7 @@ function LocaleSwitcher() {
 
 When you call `setLocale()`:
 - **Vue:** All `t()` calls in templates re-evaluate (they read `locale.value`). All `t` tagged templates (ComputedRefs) recompute.
+- **React:** The provider creates a new `createFluent()` instance, triggering re-renders for all children consuming the context.
 - **Solid:** All components reading `locale()` re-render. `createMemo` values recompute.
 
 Every `$d()` and `$n()` call also updates automatically.
@@ -134,6 +159,15 @@ const i18n = createFluentVue({
   splitting: true,
   chunkLoader: (locale) => import(`./locales/compiled/${locale}.js`),
 })
+
+// React
+<I18nProvider
+  locale="en"
+  messages={{ en }}
+  loadMessages={(locale) => import(`./locales/compiled/${locale}.js`)}
+>
+  <App />
+</I18nProvider>
 
 // Solid
 <I18nProvider

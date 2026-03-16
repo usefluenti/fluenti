@@ -100,6 +100,143 @@ routeRules: {
 | `enabled` | `boolean` | — | Enable ISR route rules generation |
 | `ttl` | `number?` | `3600` | Cache TTL in seconds |
 
+## React (Next.js)
+
+### Client Components
+
+For client components, wrap your layout with `I18nProvider`:
+
+```tsx
+// src/components/I18nClientProvider.tsx
+'use client'
+
+import { I18nProvider } from '@fluenti/react'
+import en from '@/locales/compiled/en'
+import ja from '@/locales/compiled/ja'
+
+const allMessages = { en, ja }
+
+export function I18nClientProvider({ children, locale = 'en' }) {
+  return (
+    <I18nProvider locale={locale} fallbackLocale="en" messages={allMessages}>
+      {children}
+    </I18nProvider>
+  )
+}
+```
+
+```tsx
+// src/app/layout.tsx
+import { cookies } from 'next/headers'
+import { I18nClientProvider } from '@/components/I18nClientProvider'
+
+export default async function RootLayout({ children }) {
+  const locale = (await cookies()).get('locale')?.value ?? 'en'
+  return (
+    <html lang={locale}>
+      <body>
+        <I18nClientProvider locale={locale}>{children}</I18nClientProvider>
+      </body>
+    </html>
+  )
+}
+```
+
+Client components use `useI18n()` and `<Trans>` from `@fluenti/react` as usual.
+
+### React Server Components (RSC)
+
+For Server Components, use `createServerI18n` from `@fluenti/react/server`. It returns pre-bound async components that work without React Context:
+
+```ts
+// lib/i18n.server.ts
+import { createServerI18n } from '@fluenti/react/server'
+
+export const { setLocale, getI18n, Trans, Plural, DateTime, NumberFormat } = createServerI18n({
+  loadMessages: (locale) => import(`../locales/compiled/${locale}.ts`),
+  fallbackLocale: 'en',
+  resolveLocale: async () => {
+    const { cookies } = await import('next/headers')
+    return (await cookies()).get('locale')?.value ?? 'en'
+  },
+})
+```
+
+Set the locale once in your layout:
+
+```tsx
+// app/layout.tsx
+import { setLocale } from '@/lib/i18n.server'
+import { cookies } from 'next/headers'
+
+export default async function RootLayout({ children }) {
+  const locale = (await cookies()).get('locale')?.value ?? 'en'
+  setLocale(locale)
+  return <html lang={locale}><body>{children}</body></html>
+}
+```
+
+Then use components directly in any Server Component — no `i18n` prop needed:
+
+```tsx
+// app/page.tsx
+import { getI18n, Trans, Plural } from '@/lib/i18n.server'
+
+export default async function Page() {
+  const { t } = await getI18n()
+  return (
+    <div>
+      <h1>{t('Welcome')}</h1>
+      <Trans>Read the <a href="/docs">documentation</a>.</Trans>
+      <Plural value={5} one="# item" other="# items" />
+    </div>
+  )
+}
+```
+
+### Hybrid: Client + Server in the same app
+
+You can use both patterns together. The root layout sets the locale for both:
+
+```tsx
+// app/layout.tsx
+import { cookies } from 'next/headers'
+import { setLocale } from '@/lib/i18n.server'
+import { I18nClientProvider } from '@/components/I18nClientProvider'
+
+export default async function RootLayout({ children }) {
+  const locale = (await cookies()).get('locale')?.value ?? 'en'
+  setLocale(locale) // for RSC pages
+  return (
+    <html lang={locale}>
+      <body>
+        <I18nClientProvider locale={locale}> {/* for client pages */}
+          {children}
+        </I18nClientProvider>
+      </body>
+    </html>
+  )
+}
+```
+
+- **Server Components** import from `@/lib/i18n.server`
+- **Client Components** import from `@fluenti/react`
+
+### Server Actions
+
+Server Actions are independent requests that skip the layout. Provide `resolveLocale` in `createServerI18n` to auto-detect the locale:
+
+```ts
+// app/actions.ts
+'use server'
+import { getI18n } from '@/lib/i18n.server'
+
+export async function greetAction() {
+  const i18n = await getI18n() // resolveLocale called automatically
+  return i18n.t('Hello from server action')
+}
+```
+
 ## Key Rules
 
 1. **No shared global state** — Every SSR request gets its own Fluenti instance

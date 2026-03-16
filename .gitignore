@@ -7,6 +7,8 @@ coverage
 .astro
 .output
 .nuxt
+.next
+build
 .claude
 .idea
 CLAUDE.md

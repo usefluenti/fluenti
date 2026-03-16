@@ -1,0 +1,83 @@
+msgid ""
+msgstr "Content-Type: text/plain; charset=utf-8\n"
+
+msgid "Home"
+msgstr "الرئيسية"
+
+msgid "About"
+msgstr "حول"
+
+msgid "Plurals"
+msgstr "جمع"
+
+msgid "Welcome to Fluenti"
+msgstr "مرحباً بكم في Fluenti"
+
+msgid "This is the home page."
+msgstr "هذه هي الصفحة الرئيسية."
+
+msgid "Hello, {name}!"
+msgstr "مرحباً، {name}!"
+
+msgid "About our project"
+msgstr "حول مشروعنا"
+
+msgid "Learn more about Fluenti."
+msgstr "تعرف على المزيد عن Fluenti."
+
+msgid "Contact us at {email}"
+msgstr "اتصل بنا على {email}"
+
+msgid "Add"
+msgstr "إضافة"
+
+msgid "Reset"
+msgstr "إعادة تعيين"
+
+msgid "RSC"
+msgstr "RSC"
+
+msgid "Metadata"
+msgstr "بيانات"
+
+msgid "Streaming"
+msgstr "بث"
+
+msgid "Actions"
+msgstr "إجراءات"
+
+msgid "Server rendered"
+msgstr "عرض من الخادم"
+
+msgid "This page is a React Server Component."
+msgstr "هذه الصفحة هي مكون خادم React."
+
+msgid "Current server locale: {locale}"
+msgstr "لغة الخادم الحالية: {locale}"
+
+msgid "Metadata Page"
+msgstr "صفحة البيانات الوصفية"
+
+msgid "This page has translated metadata."
+msgstr "هذه الصفحة تحتوي على بيانات وصفية مترجمة."
+
+msgid "Streamed content loaded!"
+msgstr "تم تحميل المحتوى!"
+
+msgid "Server Action Demo"
+msgstr "عرض إجراء الخادم"
+
+msgid "Submit"
+msgstr "إرسال"
+
+msgid "Server says: {message}"
+msgstr "الخادم يقول: {message}"
+
+msgid "Hello from server action"
+msgstr "مرحباً من إجراء الخادم"
+
+msgid "Rich Text"
+msgstr "نص منسق"
+
+msgid "Fallback"
+msgstr "احتياطي"
