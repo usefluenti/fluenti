@@ -63,7 +63,9 @@ function readPoCatalog(filePath: string): CatalogData {
     }
 
     if (msgid) {
-      catalog[msgid] = { message: msgid, translation: msgstr || undefined, obsolete }
+      const entry: CatalogEntry = { message: msgid, obsolete }
+      if (msgstr) entry.translation = msgstr
+      catalog[msgid] = entry
     }
   }
 
