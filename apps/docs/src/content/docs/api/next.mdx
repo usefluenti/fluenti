@@ -119,7 +119,7 @@ const msg = __getServerI18n().t('Hello {name}', { name: name })
 
 #### Auto-injected components
 
-`<Trans>`, `<Plural>`, `<DateTime>`, and `<NumberFormat>` in server files are automatically rewritten to singleton versions from `@fluenti/next/server`:
+`Trans`, `Plural`, `DateTime`, and `NumberFormat` components in server files are automatically rewritten to singleton versions from `@fluenti/next/server`:
 
 ```tsx
 // Input — no imports needed
@@ -189,7 +189,7 @@ Only standalone `t()` calls are transformed. Method calls like `i18n.t()` or `$t
 The loader only processes files that:
 - Match `.tsx`, `.jsx`, `.ts`, or `.js` extensions
 - Are **not** inside `node_modules`
-- Contain `t``\`\``, `t(`, or `<Trans>`/`<Plural>`/`<DateTime>`/`<NumberFormat>` patterns (quick regex check — files without these patterns are passed through unchanged)
+- Contain `` t`\`` ``, `t()`, or component tags (`Trans`, `Plural`, `DateTime`, `NumberFormat`) (quick regex check — files without these patterns are passed through unchanged)
 
 ---
 
