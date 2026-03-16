@@ -175,6 +175,13 @@ export interface ServerI18n {
    * ```
    */
   NumberFormat: ServerNumberComponent
+
+  /**
+   * Synchronous accessor for the cached i18n instance.
+   * Used internally by @fluenti/next webpack loader.
+   * @internal
+   */
+  __getSyncInstance: () => FluentInstanceExtended & { locale: string }
 }
 
 /**
@@ -233,8 +240,16 @@ export function createServerI18n(config: ServerI18nConfig): ServerI18n {
   // Cache loaded messages per-request to avoid redundant imports
   const getMessageCache = cache((): Map<string, Messages> => new Map())
 
+  // Module-level fallback for server actions where React.cache()
+  // may not share state with the page render.
+  let _lastInstance: (FluentInstanceExtended & { locale: string }) | null = null
+  let _requestId = 0
+  let _lastRequestId = 0
+
   function setLocale(locale: string): void {
     getRequestStore().locale = locale
+    _requestId++
+    _lastInstance = null
   }
 
   async function loadLocaleMessages(locale: string): Promise<Messages> {
@@ -295,6 +310,8 @@ export function createServerI18n(config: ServerI18nConfig): ServerI18n {
     if (config.missing !== undefined) fluentConfig.missing = config.missing
 
     store.instance = createFluent(fluentConfig)
+    _lastInstance = store.instance
+    _lastRequestId = _requestId
     return store.instance
   }
 
@@ -349,5 +366,48 @@ export function createServerI18n(config: ServerI18nConfig): ServerI18n {
     return createElement(Fragment, null, i18n.n(value, style))
   }
 
-  return { setLocale, getI18n, Trans, Plural, DateTime, NumberFormat }
+  /**
+   * Synchronous accessor for the cached i18n instance.
+   * Used by @fluenti/next webpack loader for t`` in RSC.
+   * Throws if getI18n() hasn't been called yet in this request.
+   * @internal
+   */
+  function __getSyncInstance(): FluentInstanceExtended & { locale: string } {
+    const store = getRequestStore()
+    if (store.instance) {
+      return store.instance
+    }
+
+    // Module-level fallback for server actions where React.cache()
+    // may not share state across different call contexts.
+    // Only use within the same request (tracked by _requestId).
+    if (_lastInstance && _lastRequestId === _requestId) {
+      return _lastInstance
+    }
+
+    // Final fallback: create instance synchronously with the default locale.
+    // This handles Suspense boundaries and streamed components where
+    // the React.cache store may not have been populated yet.
+    const locale = store.locale ?? config.fallbackLocale ?? 'en'
+    const messageCache = getMessageCache()
+    const messages: Record<string, Messages> = {}
+    const cached = messageCache.get(locale)
+    if (cached) messages[locale] = cached
+    if (config.fallbackLocale && config.fallbackLocale !== locale) {
+      const fallback = messageCache.get(config.fallbackLocale)
+      if (fallback) messages[config.fallbackLocale] = fallback
+    }
+
+    const fluentConfig: FluentConfigExtended = { locale, messages }
+    if (config.fallbackLocale !== undefined) fluentConfig.fallbackLocale = config.fallbackLocale
+    if (config.fallbackChain !== undefined) fluentConfig.fallbackChain = config.fallbackChain
+    if (config.dateFormats !== undefined) fluentConfig.dateFormats = config.dateFormats
+    if (config.numberFormats !== undefined) fluentConfig.numberFormats = config.numberFormats
+    if (config.missing !== undefined) fluentConfig.missing = config.missing
+
+    store.instance = createFluent(fluentConfig)
+    return store.instance
+  }
+
+  return { setLocale, getI18n, __getSyncInstance, Trans, Plural, DateTime, NumberFormat }
 }
