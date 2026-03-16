@@ -22,9 +22,8 @@ export default {
   'Streamed content loaded!': 'تم تحميل المحتوى!',
   'Server Action Demo': 'عرض إجراء الخادم',
   'Submit': 'إرسال',
-  'Server says: {message}': (v) => `الخادم يقول: ${v.message}`,
+  'Server says: {result}': (v) => `الخادم يقول: ${v.result}`,
   'Hello from server action': 'مرحباً من إجراء الخادم',
   'Rich Text': 'نص منسق',
-  'RSC Rich Text': 'نص منسق RSC',
   'Fallback': 'احتياطي',
 } satisfies Record<string, string | ((v?: any) => string)>

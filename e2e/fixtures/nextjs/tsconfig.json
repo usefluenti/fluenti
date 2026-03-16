@@ -24,6 +24,9 @@
     "paths": {
       "@/*": [
         "./src/*"
+      ],
+      "@fluenti/next/__generated": [
+        "./node_modules/.fluenti/server"
       ]
     },
     "target": "ES2017"

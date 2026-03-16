@@ -70,8 +70,8 @@ msgstr "عرض إجراء الخادم"
 msgid "Submit"
 msgstr "إرسال"
 
-msgid "Server says: {message}"
-msgstr "الخادم يقول: {message}"
+msgid "Server says: {result}"
+msgstr "الخادم يقول: {result}"
 
 msgid "Hello from server action"
 msgstr "مرحباً من إجراء الخادم"

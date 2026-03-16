@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useI18n } from '@fluenti/react'
 
 export function Nav() {
-  const { i18n, locale, setLocale } = useI18n()
+  const { locale, setLocale } = useI18n()
   const router = useRouter()
 
   const switchLocale = async (loc: string) => {
@@ -17,16 +17,16 @@ export function Nav() {
   return (
     <div>
       <nav style={{ display: 'flex', gap: '16px', marginBottom: '20px', flexWrap: 'wrap' }}>
-        <Link href="/" data-testid="nav-home">{i18n.t('Home')}</Link>
-        <Link href="/about" data-testid="nav-about">{i18n.t('About')}</Link>
-        <Link href="/plurals" data-testid="nav-plurals">{i18n.t('Plurals')}</Link>
-        <Link href="/rsc" data-testid="nav-rsc">{i18n.t('RSC')}</Link>
-        <Link href="/metadata" data-testid="nav-metadata">{i18n.t('Metadata')}</Link>
-        <Link href="/streaming" data-testid="nav-streaming">{i18n.t('Streaming')}</Link>
-        <Link href="/server-action" data-testid="nav-actions">{i18n.t('Actions')}</Link>
-        <Link href="/richtext" data-testid="nav-richtext">{i18n.t('Rich Text')}</Link>
-        <Link href="/rsc-richtext" data-testid="nav-rsc-richtext">{i18n.t('RSC Rich Text')}</Link>
-        <Link href="/fallback" data-testid="nav-fallback">{i18n.t('Fallback')}</Link>
+        <Link href="/" data-testid="nav-home">{t`Home`}</Link>
+        <Link href="/about" data-testid="nav-about">{t`About`}</Link>
+        <Link href="/plurals" data-testid="nav-plurals">{t`Plurals`}</Link>
+        <Link href="/rsc" data-testid="nav-rsc">{t`RSC`}</Link>
+        <Link href="/metadata" data-testid="nav-metadata">{t`Metadata`}</Link>
+        <Link href="/streaming" data-testid="nav-streaming">{t`Streaming`}</Link>
+        <Link href="/server-action" data-testid="nav-actions">{t`Actions`}</Link>
+        <Link href="/richtext" data-testid="nav-richtext">{t`Rich Text`}</Link>
+        <Link href="/rsc-richtext" data-testid="nav-rsc-richtext">{t`RSC Rich Text`}</Link>
+        <Link href="/fallback" data-testid="nav-fallback">{t`Fallback`}</Link>
       </nav>
 
       <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>

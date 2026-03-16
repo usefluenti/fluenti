@@ -70,7 +70,7 @@ msgstr ""
 msgid "Submit"
 msgstr ""
 
-msgid "Server says: {message}"
+msgid "Server says: {result}"
 msgstr ""
 
 msgid "Hello from server action"
