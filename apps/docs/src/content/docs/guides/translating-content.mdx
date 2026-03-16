@@ -1,0 +1,184 @@
+---
+title: Translating Content
+description: Overview of all translation APIs — v-t, t(), tagged templates, Trans, and msg
+---
+
+import { Tabs, TabItem, Aside } from '@astrojs/starlight/components'
+
+Fluenti offers multiple ways to translate content, all processed at **compile time** for zero runtime parsing overhead. Choose the right API for each situation:
+
+| Priority | API | Where | Framework |
+|---|---|---|---|
+| 1 | `v-t` directive | Vue templates | Vue only |
+| 2 | `` t`…` `` tagged template | `<script setup>` / JSX / JS modules | Vue, React, Solid |
+| 3 | `<Trans>` / `<Plural>` / `<Select>` | Templates (all frameworks) | All |
+| 4 | `msg` tagged template | Outside components (routes, stores) | All |
+| 5 | `t()` function call | Fallback | All |
+
+<Aside type="tip">
+The `` t`…` `` tagged template and `v-t` directive are **not imported** — the Vite plugin injects them automatically. Just use them.
+</Aside>
+
+## v-t Directive (Vue)
+
+The `v-t` directive is a compile-time `nodeTransform` — it rewrites your template during Vue's SFC compilation, producing zero runtime overhead:
+
+```vue
+<template>
+  <h1 v-t>Welcome back, {{ name }}!</h1>
+  <p v-t>Read the <a href="/terms">terms</a> and <strong>conditions</strong></p>
+  <img v-t.alt src="/hero.jpg" alt="Welcome banner" />
+</template>
+```
+
+For the full v-t reference (interpolation, explicit IDs, pluralization, attributes), see [v-t Directive](/frameworks/vue/v-t-directive/).
+
+## t() Function
+
+The `t()` function is available in all frameworks. It looks up messages from the compiled catalog by hash:
+
+<Tabs>
+<TabItem label="Vue">
+```vue
+<script setup>
+import { useI18n } from '@fluenti/vue'
+const { t } = useI18n()
+</script>
+
+<template>
+  <p>{{ t('Welcome to Fluenti') }}</p>
+  <p>{{ t('Hello, {name}!', { name: userName }) }}</p>
+</template>
+```
+</TabItem>
+
+<TabItem label="React">
+```tsx
+import { useI18n } from '@fluenti/react'
+
+function Greeting() {
+  const { i18n } = useI18n()
+  const name = 'World'
+  return (
+    <div>
+      <p>{i18n.t('Welcome to Fluenti')}</p>
+      <p>{i18n.t('Hello, {name}!', { name })}</p>
+    </div>
+  )
+}
+```
+
+Prefer `` t`…` `` tagged template over `i18n.t()` — see the [Tagged Templates](#tagged-templates) section below.
+</TabItem>
+
+<TabItem label="Solid">
+```tsx
+import { useI18n } from '@fluenti/solid'
+
+function Greeting() {
+  const { t } = useI18n()
+  return (
+    <div>
+      <p>{t('Welcome to Fluenti')}</p>
+      <p>{t('Hello, {name}!', { name: 'World' })}</p>
+    </div>
+  )
+}
+```
+</TabItem>
+</Tabs>
+
+### Compile-Time Transform
+
+The Vite plugin transforms `t()` calls at build time:
+
+```typescript
+// Input
+const greeting = t('Hello, {name}!', { name })
+
+// Output (Vue)
+const greeting = __i18n.t('_hash123', { name: unref(name) })
+
+// Output (Solid)
+const greeting = __i18n.t('_hash123', { name: name() })
+```
+
+## Tagged Templates
+
+The `` t` ` `` tagged template is a compiler macro for reactive translations. You never import it — the Vite plugin injects the necessary imports automatically.
+
+<Tabs>
+<TabItem label="Vue">
+```vue
+<script setup>
+const pageTitle = t`Welcome to Fluenti`
+const greeting = t`Hello ${name}, you have ${count} items`
+</script>
+
+<template>
+  <h1>{{ pageTitle }}</h1>
+  <p>{{ greeting }}</p>
+</template>
+```
+
+Returns a `ComputedRef` — automatically updates when any referenced reactive value changes.
+</TabItem>
+
+<TabItem label="React">
+```tsx
+function Dashboard() {
+  const name = 'World'
+  const count = 5
+
+  return (
+    <div>
+      <h1>{t`Welcome to Fluenti`}</h1>
+      <p>{t`Hello ${name}, you have ${count} items`}</p>
+    </div>
+  )
+}
+```
+
+Returns a plain value — React's re-render cycle handles reactivity. Works in both Client Components and Server Components (with `withFluenti()`).
+</TabItem>
+
+<TabItem label="Solid">
+```tsx
+const pageTitle = t`Welcome to Fluenti`
+const greeting = t`Hello ${name}, you have ${count} items`
+
+return (
+  <div>
+    <h1>{pageTitle()}</h1>
+    <p>{greeting()}</p>
+  </div>
+)
+```
+
+Returns a `createMemo` — similarly reactive.
+</TabItem>
+</Tabs>
+
+### Variable Naming
+
+| Expression | ICU Placeholder | Value |
+|-----------|----------------|-------|
+| `${name}` | `{name}` | `unref(name)` |
+| `${user.name}` | `{name}` | `unref(user.name)` |
+| `${user.profile.displayName}` | `{displayName}` | `unref(user.profile.displayName)` |
+| `${getName()}` | `{0}` | `getName()` |
+| `${a + b}` | `{0}` | `a + b` |
+
+**Rules:** Simple identifier uses the name as placeholder. Property access uses the last segment. Everything else gets positional `{0}`, `{1}`, etc.
+
+## When to Use What
+
+| Situation | Best API |
+|-----------|----------|
+| Vue template text | `v-t` directive |
+| Reactive value in `<script setup>` | `` t`…` `` tagged template |
+| JSX expression (React/Solid) | `` t`…` `` tagged template |
+| Rich text with embedded HTML | `<Trans>` component |
+| Plural forms | `<Plural>` component |
+| Outside component lifecycle (routes, stores) | `msg` tagged template |
+| Dynamic message IDs from API | `t()` / `i18n.t()` function |

@@ -1,0 +1,129 @@
+---
+title: SolidStart
+description: Using Fluenti with SolidStart — SSR, hydration, and file-based routing
+---
+
+import { Aside } from '@astrojs/starlight/components'
+
+SolidStart is a full-stack SolidJS framework with SSR and file-based routing. See [Quick Start (SolidStart)](/getting-started/quick-start-solidstart/) for initial setup.
+
+## App Setup with SSR Hydration
+
+SolidStart requires a hydration script to pass the server-detected locale to the client:
+
+```tsx
+// src/app.tsx
+import { Router } from '@solidjs/router'
+import { FileRoutes } from '@solidjs/start/router'
+import { Suspense } from 'solid-js'
+import { isServer } from 'solid-js/web'
+import { I18nProvider } from '@fluenti/solid'
+import { getSSRLocaleScript } from '@fluenti/core'
+import { allMessages, DEFAULT_LOCALE, getInitialLocale } from './lib/i18n'
+
+export default function App() {
+  const initialLocale = isServer ? DEFAULT_LOCALE : getInitialLocale()
+
+  return (
+    <Router
+      root={(props) => (
+        <I18nProvider
+          locale={initialLocale}
+          fallbackLocale={DEFAULT_LOCALE}
+          messages={allMessages}
+        >
+          {isServer && (
+            <script innerHTML={getSSRLocaleScript(initialLocale).replace(/<\/?script>/g, '')} />
+          )}
+          <Suspense>{props.children}</Suspense>
+        </I18nProvider>
+      )}
+    >
+      <FileRoutes />
+    </Router>
+  )
+}
+```
+
+## I18n Helpers
+
+Create a shared module for locale utilities:
+
+```typescript
+// src/lib/i18n.ts
+import { getHydratedLocale } from '@fluenti/core'
+import en from '../locales/compiled/en'
+import ja from '../locales/compiled/ja'
+
+export const DEFAULT_LOCALE = 'en'
+export const allMessages = { en, ja }
+
+export function getInitialLocale(): string {
+  return getHydratedLocale(DEFAULT_LOCALE)
+}
+```
+
+## File-Based Routes
+
+SolidStart uses file-based routing via `<FileRoutes />`:
+
+```tsx
+// src/routes/index.tsx
+import { useI18n } from '@fluenti/solid'
+
+export default function Home() {
+  const { t } = useI18n()
+  return <h1>{t('Welcome')}</h1>
+}
+```
+
+## Locale Switching with Cookie Persistence
+
+```tsx
+import { useI18n } from '@fluenti/solid'
+
+function LocaleSwitcher() {
+  const { locale, setLocale } = useI18n()
+
+  const switchTo = (loc: string) => {
+    document.cookie = `locale=${loc};path=/;max-age=31536000`
+    setLocale(loc)
+  }
+
+  return (
+    <div>
+      <button
+        style={{ 'font-weight': locale() === 'en' ? 'bold' : 'normal' }}
+        onClick={() => switchTo('en')}
+      >English</button>
+      <button
+        style={{ 'font-weight': locale() === 'ja' ? 'bold' : 'normal' }}
+        onClick={() => switchTo('ja')}
+      >日本語</button>
+    </div>
+  )
+}
+```
+
+## How SSR Hydration Works
+
+```
+Server                                  Client
+──────                                  ──────
+1. Render with DEFAULT_LOCALE           1. getHydratedLocale() reads
+2. Inject getSSRLocaleScript()             window.__FLUENTI_LOCALE__
+   into HTML <head>                     2. I18nProvider starts with
+3. HTML sent to browser                    the correct locale
+                                        3. No hydration mismatch
+```
+
+<Aside type="caution">
+  On the server, `isServer` is `true` and `document` is not available, so locale detection falls back to `DEFAULT_LOCALE`. For server-side cookie detection, you would need to read from the request headers in a server middleware.
+</Aside>
+
+## Key Differences from SolidJS SPA
+
+- `isServer` guard for SSR-only hydration script injection
+- `getSSRLocaleScript` + `getHydratedLocale` for mismatch-free hydration
+- File-based routing via `<FileRoutes />`
+- `vinxi` as the dev server instead of plain Vite

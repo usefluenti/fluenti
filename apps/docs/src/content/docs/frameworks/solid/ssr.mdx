@@ -1,0 +1,59 @@
+---
+title: SolidJS Manual SSR
+description: Server-side rendering with SolidJS and Fluenti without SolidStart
+---
+
+SolidJS is naturally SSR-safe because each `renderToString()` creates a new component tree with isolated signals.
+
+For general SSR concepts and utilities, see the [SSR guide](/guides/ssr/). For SolidStart setup, see [SolidStart](/frameworks/solid/solidstart/).
+
+## Server Setup
+
+```tsx
+import { detectLocale } from '@fluenti/core'
+import { I18nProvider } from '@fluenti/solid'
+
+function Server() {
+  const locale = detectLocale({
+    cookie: getCookie(event, 'lang'),
+    headers: event?.headers,
+    available: ['en', 'zh-CN', 'ja'],
+    fallback: 'en',
+  })
+
+  return (
+    <I18nProvider locale={locale} messages={allMessages}>
+      <App />
+    </I18nProvider>
+  )
+}
+```
+
+## Client Hydration
+
+Use `getSSRLocaleScript` to inject the locale into the HTML and `getHydratedLocale` to read it back:
+
+```tsx
+import { getSSRLocaleScript, getHydratedLocale } from '@fluenti/core'
+import { I18nProvider } from '@fluenti/solid'
+
+// Server: inject into HTML
+const script = getSSRLocaleScript(locale)
+
+// Client: read it back
+const locale = getHydratedLocale('en')
+
+function Client() {
+  return (
+    <I18nProvider locale={locale} messages={allMessages}>
+      <App />
+    </I18nProvider>
+  )
+}
+```
+
+## Key Points
+
+1. **Isolated signals** — Each `renderToString()` creates a new component tree, so there's no shared state between requests
+2. **Hydration consistency** — Use `getSSRLocaleScript` + `getHydratedLocale` to prevent mismatch
+3. **Cookie-based detection** — Use cookies (not `localStorage`) so the server can detect locale on the first request

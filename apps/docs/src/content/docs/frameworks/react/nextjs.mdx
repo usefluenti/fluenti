@@ -1,0 +1,186 @@
+---
+title: Next.js
+description: Using Fluenti with Next.js App Router — withFluenti, FluentProvider, RSC, and server actions
+---
+
+import { Aside } from '@astrojs/starlight/components'
+
+Fluenti integrates with Next.js App Router via `@fluenti/next`, supporting both Client Components and React Server Components (RSC). For general SSR concepts, see the [SSR guide](/guides/ssr/).
+
+## Recommended Setup with `withFluenti`
+
+The `withFluenti()` wrapper in `next.config.ts` is the recommended way to set up Fluenti in Next.js. It adds the compiler plugin and generates the modules your app needs:
+
+```typescript
+// next.config.ts
+import { withFluenti } from '@fluenti/next'
+
+export default withFluenti()({
+  reactStrictMode: true,
+})
+```
+
+### FluentProvider
+
+`withFluenti()` generates a `FluentProvider` component that wraps both the client `I18nProvider` and server locale setup:
+
+```tsx
+// src/app/layout.tsx
+import { cookies } from 'next/headers'
+import { getDirection } from '@fluenti/core'
+// @ts-expect-error — generated at build time by withFluenti()
+import { FluentProvider } from '@fluenti/next/__generated'
+
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const locale = (await cookies()).get('locale')?.value ?? 'en'
+  return (
+    <html lang={locale} dir={getDirection(locale)}>
+      <body>
+        <FluentProvider locale={locale}>
+          {children}
+        </FluentProvider>
+      </body>
+    </html>
+  )
+}
+```
+
+<Aside type="tip">
+  The `@fluenti/next/__generated` module is created at build time. Use `// @ts-expect-error` on the import until the first build generates it.
+</Aside>
+
+## Client Components
+
+Client components use `` t`...` `` for translations. The `withFluenti()` plugin injects the macro automatically:
+
+```tsx
+// src/app/page.tsx
+'use client'
+
+import { useRouter } from 'next/navigation'
+import { useI18n } from '@fluenti/react'
+
+export default function Home() {
+  const { setLocale, preloadLocale } = useI18n()
+  const router = useRouter()
+
+  const switchLocale = async (loc: string) => {
+    document.cookie = `locale=${loc};path=/;max-age=31536000`
+    await setLocale(loc)
+    router.refresh()
+  }
+
+  return (
+    <div>
+      <h1>{t`Welcome to my app`}</h1>
+      <button
+        onMouseEnter={() => preloadLocale('zh-CN')}
+        onClick={() => switchLocale('zh-CN')}
+      >中文</button>
+    </div>
+  )
+}
+```
+
+<Aside type="caution">
+  **Locale switching requires `router.refresh()`.** After updating the locale cookie and calling `setLocale()`, call `router.refresh()` from `next/navigation` to trigger the server layout to re-read the cookie and update `<html lang>`.
+</Aside>
+
+## React Server Components (RSC)
+
+Server Components use the same `` t`...` `` syntax. The `withFluenti()` plugin detects the component type and applies the correct server-side transform:
+
+```tsx
+// src/app/about/page.tsx
+export default async function AboutPage() {
+  return (
+    <div>
+      <h1>{t`About us`}</h1>
+      <p>{t`We build great software.`}</p>
+    </div>
+  )
+}
+```
+
+For advanced RSC patterns, you can also use `getI18n()` and the server-side components directly:
+
+```tsx
+// src/app/dashboard/page.tsx
+import { getI18n, Trans, Plural } from '@/lib/i18n.server'
+
+export default async function DashboardPage() {
+  const { t } = await getI18n()
+  return (
+    <div>
+      <h1>{t('Dashboard')}</h1>
+      <Trans>Read the <a href="/docs">documentation</a>.</Trans>
+      <Plural value={5} one="# item" other="# items" />
+    </div>
+  )
+}
+```
+
+### Generated Server Module
+
+`withFluenti()` also generates a server module for advanced use cases. You can create your own if you need custom `resolveLocale` logic:
+
+```ts
+// lib/i18n.server.ts
+import { createServerI18n } from '@fluenti/react/server'
+
+export const { setLocale, getI18n, Trans, Plural, DateTime, NumberFormat } = createServerI18n({
+  loadMessages: (locale) => import(`../locales/compiled/${locale}.ts`),
+  fallbackLocale: 'en',
+  resolveLocale: async () => {
+    const { cookies } = await import('next/headers')
+    return (await cookies()).get('locale')?.value ?? 'en'
+  },
+})
+```
+
+## Hybrid: Client + Server in the same app
+
+You can use both patterns together. The `FluentProvider` in your layout handles both:
+
+```tsx
+// app/layout.tsx
+import { cookies } from 'next/headers'
+import { getDirection } from '@fluenti/core'
+// @ts-expect-error — generated at build time
+import { FluentProvider } from '@fluenti/next/__generated'
+
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const locale = (await cookies()).get('locale')?.value ?? 'en'
+  return (
+    <html lang={locale} dir={getDirection(locale)}>
+      <body>
+        <FluentProvider locale={locale}>
+          {children}
+        </FluentProvider>
+      </body>
+    </html>
+  )
+}
+```
+
+- **Server Components** use `` t`...` `` (auto-transformed) or import from `@/lib/i18n.server`
+- **Client Components** use `` t`...` `` (auto-transformed) or import from `@fluenti/react`
+
+## Server Actions
+
+Server Actions are independent requests that skip the layout. Use `` t`...` `` or provide `resolveLocale` in `createServerI18n` to auto-detect the locale:
+
+```ts
+// app/actions.ts
+'use server'
+import { getI18n } from '@/lib/i18n.server'
+
+export async function greetAction() {
+  const i18n = await getI18n() // resolveLocale called automatically
+  return i18n.t('Hello from server action')
+}
+```
+
+<Aside type="tip">
+  See the [Quick Start (Next.js)](/getting-started/quick-start-nextjs/) for the full setup walkthrough.
+</Aside>

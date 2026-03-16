@@ -1,0 +1,47 @@
+---
+title: Vue Manual SSR
+description: Server-side rendering with Vue and Fluenti without Nuxt
+---
+
+If you're using Vue without Nuxt, you can set up SSR manually using the core utilities.
+
+For general SSR concepts and utilities, see the [SSR guide](/guides/ssr/).
+
+## Server Setup
+
+```typescript
+// server.ts
+import { detectLocale, getSSRLocaleScript } from '@fluenti/core'
+import { createFluentVue } from '@fluenti/vue'
+
+const locale = detectLocale({
+  cookie: getCookie(event, 'lang'),
+  headers: event?.headers,
+  available: ['en', 'zh-CN', 'ja'],
+  fallback: 'en',
+})
+const i18n = createFluentVue({ locale, messages: allMessages })
+app.use(i18n)
+
+// Inject into HTML head:
+const script = getSSRLocaleScript(locale)
+// → <script>window.__FLUENTI_LOCALE__="zh-CN"</script>
+```
+
+## Client Hydration
+
+```typescript
+// client.ts
+import { getHydratedLocale } from '@fluenti/core'
+import { createFluentVue } from '@fluenti/vue'
+
+const locale = getHydratedLocale('en')
+const i18n = createFluentVue({ locale, messages: allMessages })
+app.use(i18n)
+```
+
+## Key Points
+
+1. **No shared global state** — Create a new `createFluentVue()` instance per request on the server
+2. **Hydration consistency** — Use `getSSRLocaleScript` + `getHydratedLocale` to ensure the client starts with the same locale the server rendered
+3. **Cookie-based detection** — Use cookies (not `localStorage`) so the server can detect locale on the first request

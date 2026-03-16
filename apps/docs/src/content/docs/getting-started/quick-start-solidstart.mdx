@@ -1,0 +1,139 @@
+---
+title: Quick Start (SolidStart)
+description: Get started with Fluenti in a SolidStart project
+---
+
+import { Steps, Aside } from '@astrojs/starlight/components'
+
+<Steps>
+
+1. **Install packages**
+
+   ```bash
+   pnpm add @fluenti/core @fluenti/solid @solidjs/router @solidjs/start solid-js vinxi
+   ```
+
+   <Aside type="note">
+     SolidStart uses vinxi as its dev server. No separate Vite plugin is needed.
+   </Aside>
+
+2. **Configure SolidStart**
+
+   ```typescript
+   // app.config.ts
+   import { defineConfig } from '@solidjs/start/config'
+
+   export default defineConfig({
+     server: { preset: 'node-server' },
+   })
+   ```
+
+3. **Create i18n helpers**
+
+   ```typescript
+   // src/lib/i18n.ts
+   import { getHydratedLocale } from '@fluenti/core'
+   import en from '../locales/compiled/en'
+   import ja from '../locales/compiled/ja'
+
+   export const DEFAULT_LOCALE = 'en'
+   export const allMessages = { en, ja }
+
+   export function getInitialLocale(): string {
+     return getHydratedLocale(DEFAULT_LOCALE)
+   }
+   ```
+
+4. **Set up the app with I18nProvider and SSR hydration**
+
+   ```tsx
+   // src/app.tsx
+   import { Router } from '@solidjs/router'
+   import { FileRoutes } from '@solidjs/start/router'
+   import { Suspense } from 'solid-js'
+   import { isServer } from 'solid-js/web'
+   import { I18nProvider, useI18n } from '@fluenti/solid'
+   import { getSSRLocaleScript } from '@fluenti/core'
+   import { allMessages, DEFAULT_LOCALE, getInitialLocale } from './lib/i18n'
+
+   export default function App() {
+     const initialLocale = isServer ? DEFAULT_LOCALE : getInitialLocale()
+
+     return (
+       <Router
+         root={(props) => (
+           <I18nProvider
+             locale={initialLocale}
+             fallbackLocale={DEFAULT_LOCALE}
+             messages={allMessages}
+           >
+             {isServer && (
+               <script innerHTML={getSSRLocaleScript(initialLocale).replace(/<\/?script>/g, '')} />
+             )}
+             <Nav />
+             <Suspense>{props.children}</Suspense>
+           </I18nProvider>
+         )}
+       >
+         <FileRoutes />
+       </Router>
+     )
+   }
+
+   function Nav() {
+     const { t, locale, setLocale } = useI18n()
+     return (
+       <nav>
+         <button
+           style={{ 'font-weight': locale() === 'en' ? 'bold' : 'normal' }}
+           onClick={() => {
+             document.cookie = `locale=en;path=/;max-age=31536000`
+             setLocale('en')
+           }}
+         >English</button>
+         <button
+           style={{ 'font-weight': locale() === 'ja' ? 'bold' : 'normal' }}
+           onClick={() => {
+             document.cookie = `locale=ja;path=/;max-age=31536000`
+             setLocale('ja')
+           }}
+         >日本語</button>
+       </nav>
+     )
+   }
+   ```
+
+5. **Write a page route**
+
+   ```tsx
+   // src/routes/index.tsx
+   import { useI18n } from '@fluenti/solid'
+
+   export default function Home() {
+     const { t } = useI18n()
+     return (
+       <div>
+         <h1>{t('Welcome to my app')}</h1>
+         <p>{t('Hello, {name}!', { name: 'World' })}</p>
+       </div>
+     )
+   }
+   ```
+
+6. **Extract, translate, and compile**
+
+   ```bash
+   npx fluenti extract
+   # ... translate the .po files ...
+   npx fluenti compile
+   ```
+
+</Steps>
+
+## Key differences from SolidJS SPA
+
+- Uses `@solidjs/start` with vinxi as the dev server
+- File-based routing with `<FileRoutes />`
+- SSR hydration via `getSSRLocaleScript` + `getHydratedLocale`
+- `isServer` guard to inject locale script only during SSR
+- Cookie-based locale persistence for server-side detection

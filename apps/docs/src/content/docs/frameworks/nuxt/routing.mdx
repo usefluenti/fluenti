@@ -1,0 +1,137 @@
+---
+title: Nuxt Routing
+description: Locale-prefixed routes, NuxtLinkLocale, switchLocalePath, and routing strategies
+---
+
+import { Aside } from '@astrojs/starlight/components'
+
+`@fluenti/nuxt` provides locale-prefixed routing, navigation composables, and SEO metadata out of the box.
+
+## Routing Strategies
+
+The `strategy` option controls how locale prefixes appear in URLs:
+
+| Strategy | Default locale | Other locales |
+|----------|---------------|---------------|
+| `prefix_except_default` | `/about` | `/ja/about` |
+| `prefix` | `/en/about` | `/ja/about` |
+| `prefix_and_default` | `/about` + `/en/about` | `/ja/about` |
+| `no_prefix` | `/about` | `/about` |
+
+```typescript
+// nuxt.config.ts
+export default defineNuxtConfig({
+  modules: ['@fluenti/nuxt'],
+  fluenti: {
+    locales: ['en', 'ja', 'zh'],
+    defaultLocale: 'en',
+    strategy: 'prefix_except_default', // recommended
+  },
+})
+```
+
+<Aside type="tip">
+  `prefix_except_default` is the most common strategy — it keeps clean URLs for your default locale while giving other locales a clear URL prefix.
+</Aside>
+
+## NuxtLinkLocale
+
+Use `<NuxtLinkLocale>` instead of `<NuxtLink>` for locale-aware navigation. It automatically adds the correct locale prefix:
+
+```vue
+<template>
+  <nav>
+    <!-- Automatically prefixed: /about (en), /ja/about (ja) -->
+    <NuxtLinkLocale to="/about">About</NuxtLinkLocale>
+    <NuxtLinkLocale to="/contact">Contact</NuxtLinkLocale>
+  </nav>
+</template>
+```
+
+## Navigation Composables
+
+### `useLocalePath()`
+
+Returns a function that generates locale-prefixed paths:
+
+```vue
+<script setup>
+const localePath = useLocalePath()
+</script>
+
+<template>
+  <NuxtLink :to="localePath('/')">Home</NuxtLink>
+  <NuxtLink :to="localePath('/about')">About</NuxtLink>
+</template>
+```
+
+### `useSwitchLocalePath()`
+
+Returns a function that generates a path to the current page in a different locale:
+
+```vue
+<script setup>
+const switchLocalePath = useSwitchLocalePath()
+</script>
+
+<template>
+  <NuxtLink :to="switchLocalePath('en')">English</NuxtLink>
+  <NuxtLink :to="switchLocalePath('ja')">日本語</NuxtLink>
+  <NuxtLink :to="switchLocalePath('zh')">中文</NuxtLink>
+</template>
+```
+
+### `useLocaleHead()`
+
+Generates SEO-friendly `<head>` metadata including `hreflang` links and `og:locale` tags:
+
+```vue
+<script setup>
+const head = useLocaleHead({
+  addSeoAttributes: true,
+  baseUrl: 'https://example.com',
+})
+
+useHead(head.value)
+</script>
+```
+
+This generates:
+
+```html
+<html lang="en">
+<head>
+  <link rel="alternate" hreflang="en" href="https://example.com/about" />
+  <link rel="alternate" hreflang="ja" href="https://example.com/ja/about" />
+  <link rel="alternate" hreflang="zh" href="https://example.com/zh/about" />
+  <link rel="alternate" hreflang="x-default" href="https://example.com/about" />
+  <meta property="og:locale" content="en" />
+  <meta property="og:locale:alternate" content="ja" />
+  <meta property="og:locale:alternate" content="zh" />
+</head>
+```
+
+## Programmatic Locale Switching
+
+Use `setLocale()` from `useI18n()` for programmatic switching (e.g., from a dropdown):
+
+```vue
+<script setup>
+import { useI18n } from '@fluenti/vue'
+
+const { setLocale } = useI18n()
+</script>
+
+<template>
+  <select @change="setLocale($event.target.value)">
+    <option value="en">English</option>
+    <option value="ja">日本語</option>
+    <option value="zh">中文</option>
+  </select>
+</template>
+```
+
+The module automatically:
+- Updates the URL path to include/remove the locale prefix
+- Syncs the cookie for future visits
+- Updates `<html lang>` attribute

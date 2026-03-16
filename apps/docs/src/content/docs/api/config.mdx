@@ -9,7 +9,9 @@ Fluenti uses a `fluenti.config.ts` file (auto-loaded via jiti).
 
 ```typescript
 // fluenti.config.ts
-export default {
+import { defineConfig } from '@fluenti/cli'
+
+export default defineConfig({
   sourceLocale: 'en',
   locales: ['en', 'zh-CN', 'ja'],
   catalogDir: './locales',
@@ -20,8 +22,10 @@ export default {
   fallbackChain: { 'zh-TW': ['zh-CN', 'en'], '*': ['en'] },
   splitting: 'dynamic',
   defaultBuildLocale: 'en',
-}
+})
 ```
+
+`defineConfig` is an identity function that provides full type inference and IDE autocompletion for all config options.
 
 ## Options
 

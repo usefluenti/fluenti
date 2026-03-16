@@ -1,0 +1,118 @@
+---
+title: TanStack Start
+description: Using Fluenti with TanStack Start — file-based routing and SSR
+---
+
+import { Aside } from '@astrojs/starlight/components'
+
+TanStack Start is a full-stack React framework with file-based routing and SSR support. See [Quick Start (TanStack Start)](/getting-started/quick-start-tanstack-start/) for initial setup.
+
+## Root Route Setup
+
+TanStack Start uses `createRootRoute()` to define the root layout. Wrap your app with `I18nProvider` here:
+
+```tsx
+// src/routes/__root.tsx
+import { Outlet, createRootRoute, HeadContent, Scripts } from '@tanstack/react-router'
+import { useState } from 'react'
+import { I18nProvider } from '@fluenti/react'
+import { getDirection } from '@fluenti/core'
+import en from '../locales/compiled/en'
+import zhCN from '../locales/compiled/zh-CN'
+import ja from '../locales/compiled/ja'
+
+const messages = { en, 'zh-CN': zhCN, ja }
+
+export const Route = createRootRoute({
+  component: RootComponent,
+})
+
+function RootComponent() {
+  const [locale, setLocaleState] = useState(getInitialLocale)
+
+  const handleLocaleChange = (loc: string) => {
+    document.cookie = `locale=${loc};path=/;max-age=31536000`
+    document.documentElement.lang = loc
+    document.documentElement.dir = getDirection(loc)
+    setLocaleState(loc)
+  }
+
+  return (
+    <html lang={locale} dir={getDirection(locale)}>
+      <head><HeadContent /></head>
+      <body>
+        <I18nProvider locale={locale} fallbackLocale="en" messages={messages}>
+          <Outlet />
+        </I18nProvider>
+        <Scripts />
+      </body>
+    </html>
+  )
+}
+
+function getInitialLocale(): string {
+  if (typeof document === 'undefined') return 'en'
+  const match = document.cookie.match(/(?:^|;\s*)locale=([^;]*)/)
+  if (match) return decodeURIComponent(match[1])
+  return 'en'
+}
+```
+
+## File-Based Routes
+
+Create page routes using `createFileRoute()`. The `` t`...` `` tagged template is injected by the Vite plugin — no import needed:
+
+```tsx
+// src/routes/index.tsx
+import { createFileRoute } from '@tanstack/react-router'
+
+export const Route = createFileRoute('/')({
+  component: Home,
+})
+
+function Home() {
+  return <h1>{t`Welcome`}</h1>
+}
+```
+
+```tsx
+// src/routes/about.tsx
+import { createFileRoute } from '@tanstack/react-router'
+
+export const Route = createFileRoute('/about')({
+  component: About,
+})
+
+function About() {
+  return <h1>{t`About Us`}</h1>
+}
+```
+
+## Navigation
+
+Use TanStack Router's `Link` component for client-side navigation:
+
+```tsx
+import { Link } from '@tanstack/react-router'
+
+function Nav() {
+  return (
+    <nav>
+      <Link to="/">{t`Home`}</Link>
+      <Link to="/about">{t`About`}</Link>
+    </nav>
+  )
+}
+```
+
+## SSR Considerations
+
+TanStack Start supports SSR out of the box. The cookie-based locale detection pattern works on both client and server:
+
+- On the **server**, cookies are available via the request headers
+- On the **client**, `document.cookie` is read directly
+- The `typeof document === 'undefined'` guard in `getInitialLocale` handles the server case
+
+<Aside type="tip">
+  Cookie-based locale persistence ensures the server and client always agree on the locale, preventing hydration mismatches.
+</Aside>
