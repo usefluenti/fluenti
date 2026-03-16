@@ -8,7 +8,7 @@ export { extendPages } from './runtime/page-extend'
 export type { PageRoute } from './runtime/page-extend'
 export { buildLocaleHead } from './runtime/locale-head'
 export type { LocaleHeadMeta, LocaleHeadOptions } from './runtime/locale-head'
-export { useLocalePath, useSwitchLocalePath, useLocaleHead } from './runtime/composables'
+export { useLocalePath, useSwitchLocalePath, useLocaleHead } from './runtime/standalone-composables'
 
 export const MODULE_NAME = '@fluenti/nuxt'
 export const CONFIG_KEY = 'fluenti'
