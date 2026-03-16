@@ -455,7 +455,7 @@ const gender = ref('female')
     </main>
 
     <footer>
-      <p v-t:footer.builtWith>Built with Fluenti and Vue 3</p>
+      <p v-t>Built with Fluenti and Vue 3</p>
     </footer>
   </div>
 </template>

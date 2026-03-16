@@ -479,7 +479,7 @@ describe('fluentiPlugin', () => {
       const result = transformPlugin.transform("const msg = t('Hello')", 'App.vue?type=script')
 
       expect(result.code).toContain("import { useI18n as __useI18n } from '@fluenti/vue'")
-      expect(result.code).toContain('const __i18n = __useI18n()')
+      expect(result.code).toContain('const __i18n = new Proxy(')
     })
 
     it('injects Solid imports when needed', () => {
@@ -694,13 +694,14 @@ describe('fluentiPlugin', () => {
       expect(result.code).toContain('unref(name)')
     })
 
-    it('Vue: injects exact __useI18n() declaration', () => {
+    it('Vue: injects lazy __useI18n() via Proxy', () => {
       const plugins = fluentiPlugin({ framework: 'vue' })
       const tp = plugins.find((p) => p.name === 'fluenti:script-transform') as any
 
       const result = tp.transform("const x = t('hi')", 'App.vue?type=script')
 
-      expect(result.code).toContain('const __i18n = __useI18n();')
+      expect(result.code).toContain('const __i18n = new Proxy(')
+      expect(result.code).toContain('__useI18n()')
     })
 
     it('Solid: injects from @fluenti/solid not @fluenti/vue', () => {
@@ -732,7 +733,7 @@ describe('fluentiPlugin', () => {
       const importMatches = result.code.match(/import \{ useI18n as __useI18n \}/g)
       expect(importMatches!.length).toBe(1)
 
-      const constMatches = result.code.match(/const __i18n = __useI18n\(\)/g)
+      const constMatches = result.code.match(/const __i18n = new Proxy/g)
       expect(constMatches!.length).toBe(1)
     })
 

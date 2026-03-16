@@ -951,15 +951,13 @@ function injectImport(code: string, framework: 'vue' | 'solid' | 'react'): strin
   const pkg = pkgMap[framework]
 
   // For React, we import __useI18n (internal hook) and call it at component top level.
-  // The Vite plugin injects this at the top of the component function body.
-  // For Vue, <script setup> runs inside the setup function, so eager call is safe.
-  // For Solid, module-level code runs at import time — before createI18n() —
-  // so we must lazily resolve the context on first property access.
+  // The Vite plugin injects this at the top of the compiled module.
+  // For Vue/Solid, this is module-level code that runs before setup/createI18n,
+  // so we must lazily resolve the context on first property access via Proxy.
+  // For React, __useI18n is a hook called inside the component function body.
   let importLine: string
   if (framework === 'react') {
     importLine = `import { __useI18n } from '${pkg}';\nconst __i18n = __useI18n();\n`
-  } else if (framework === 'vue') {
-    importLine = `import { useI18n as __useI18n } from '${pkg}';\nconst __i18n = __useI18n();\n`
   } else {
     importLine = `import { useI18n as __useI18n } from '${pkg}';\nlet __i18n_v;\nconst __i18n = new Proxy({}, { get: (_, p) => { __i18n_v ??= __useI18n(); return __i18n_v[p]; } });\n`
   }
