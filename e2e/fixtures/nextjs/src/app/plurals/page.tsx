@@ -1,10 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import { useI18n, Plural } from '@fluenti/react'
+import { Plural } from '@fluenti/react'
 
 export default function Plurals() {
-  const { i18n } = useI18n()
   const [count, setCount] = useState(0)
 
   return (
@@ -20,10 +19,10 @@ export default function Plurals() {
       </div>
       <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
         <button data-testid="btn-add" onClick={() => setCount(c => c + 1)}>
-          {i18n.t('Add')}
+          {t`Add`}
         </button>
         <button data-testid="btn-reset" onClick={() => setCount(0)}>
-          {i18n.t('Reset')}
+          {t`Reset`}
         </button>
       </div>
     </div>

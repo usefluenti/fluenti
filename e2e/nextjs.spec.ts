@@ -3,6 +3,13 @@ import { test, expect } from '@playwright/test'
 test.describe('Next.js App Router e2e', () => {
   // === Existing tests (preserved) ===
 
+  test('streaming page shows fallback then content', async ({ page }) => {
+    await page.goto('/streaming')
+    await expect(page.getByTestId('streaming-page')).toBeVisible()
+    await expect(page.getByTestId('streaming-title')).toContainText('Streaming')
+    await expect(page.getByTestId('streamed-content')).toContainText('Streamed content loaded!')
+  })
+
   test('home page renders welcome and greeting', async ({ page }) => {
     await page.goto('/')
     await expect(page.getByTestId('home-page')).toBeVisible()
@@ -93,7 +100,7 @@ test.describe('Next.js App Router e2e', () => {
 
   test('cookie-based locale on RSC page', async ({ page }) => {
     await page.context().addCookies([
-      { name: 'locale', value: 'ja', url: 'http://localhost:5183' },
+      { name: 'locale', value: 'ja', url: 'http://localhost:5190' },
     ])
     await page.goto('/rsc')
     await expect(page.getByTestId('rsc-title')).toContainText('サーバーレンダリング')
@@ -108,18 +115,11 @@ test.describe('Next.js App Router e2e', () => {
 
     // Switch to Japanese via cookie and reload
     await page.context().addCookies([
-      { name: 'locale', value: 'ja', url: 'http://localhost:5183' },
+      { name: 'locale', value: 'ja', url: 'http://localhost:5190' },
     ])
     await page.reload()
     await expect(page.getByTestId('metadata-title')).toContainText('メタデータページ')
     await expect(page).toHaveTitle('メタデータページ')
-  })
-
-  test('streaming page shows fallback then content', async ({ page }) => {
-    await page.goto('/streaming')
-    await expect(page.getByTestId('streaming-page')).toBeVisible()
-    await expect(page.getByTestId('streaming-title')).toContainText('Streaming')
-    await expect(page.getByTestId('streamed-content')).toContainText('Streamed content loaded!')
   })
 
   test('server action returns translated result', async ({ page }) => {
@@ -133,7 +133,7 @@ test.describe('Next.js App Router e2e', () => {
 
   test('server action respects locale cookie', async ({ page }) => {
     await page.context().addCookies([
-      { name: 'locale', value: 'ja', url: 'http://localhost:5183' },
+      { name: 'locale', value: 'ja', url: 'http://localhost:5190' },
     ])
     await page.goto('/server-action')
     await expect(page.getByTestId('action-title')).toContainText('サーバーアクションデモ')
@@ -144,7 +144,7 @@ test.describe('Next.js App Router e2e', () => {
 
   test('RTL direction is set for Arabic locale', async ({ page }) => {
     await page.context().addCookies([
-      { name: 'locale', value: 'ar', url: 'http://localhost:5183' },
+      { name: 'locale', value: 'ar', url: 'http://localhost:5190' },
     ])
     await page.goto('/')
     const dir = await page.locator('html').getAttribute('dir')
@@ -156,7 +156,7 @@ test.describe('Next.js App Router e2e', () => {
 
   test('RTL switches back to LTR when changing to English', async ({ page }) => {
     await page.context().addCookies([
-      { name: 'locale', value: 'ar', url: 'http://localhost:5183' },
+      { name: 'locale', value: 'ar', url: 'http://localhost:5190' },
     ])
     await page.goto('/')
     expect(await page.locator('html').getAttribute('dir')).toBe('rtl')
@@ -186,7 +186,7 @@ test.describe('Next.js App Router e2e', () => {
   test('query param overrides cookie on RSC page', async ({ page }) => {
     // Set cookie to Japanese
     await page.context().addCookies([
-      { name: 'locale', value: 'ja', url: 'http://localhost:5183' },
+      { name: 'locale', value: 'ja', url: 'http://localhost:5190' },
     ])
     // But use query param for English — query should win
     await page.goto('/rsc?lang=en')
@@ -289,12 +289,51 @@ test.describe('Next.js App Router e2e', () => {
 
   test('RSC richtext page translates Trans when locale is Japanese', async ({ page }) => {
     // Set Japanese locale via cookie
-    await page.context().addCookies([{ name: 'locale', value: 'ja', url: 'http://localhost:3000' }])
+    await page.context().addCookies([{ name: 'locale', value: 'ja', url: 'http://localhost:5190' }])
     await page.goto('/rsc-richtext')
     await expect(page.getByTestId('rsc-richtext-page')).toBeVisible()
-    // Japanese translation of "Read the <0>documentation</0> for more info."
-    // is "<0>ドキュメント</0>で詳細をご覧ください。"
     const link = page.getByTestId('rsc-trans-link').locator('a')
     await expect(link).toContainText('ドキュメント')
+  })
+
+  // ─── t`` tagged template verification (via @fluenti/next webpack loader) ───
+
+  test('t`` with interpolation in client component translates on locale switch', async ({ page }) => {
+    await page.goto('/')
+    await page.getByTestId('lang-ja').click()
+    await expect(page.getByTestId('welcome')).toContainText('Fluenti へようこそ')
+    await expect(page.getByTestId('home-desc')).toContainText('こちらはホームページです。')
+    await expect(page.getByTestId('greeting')).toContainText('こんにちは、Worldさん！')
+  })
+
+  test('t`` works in RSC without explicit hook import', async ({ page }) => {
+    // Verifies webpack loader server injection path (__getServerI18n via Proxy)
+    await page.goto('/rsc')
+    await expect(page.getByTestId('rsc-title')).toContainText('Server rendered')
+    await expect(page.getByTestId('rsc-desc')).toContainText('This page is a React Server Component.')
+  })
+
+  test('t`` in server action returns translated text', async ({ page }) => {
+    await page.goto('/server-action')
+    await page.getByTestId('action-submit').click()
+    await expect(page.getByTestId('action-result')).toContainText('Server says: Hello from server action')
+  })
+
+  // ─── FluentProvider verification ───
+
+  test('FluentProvider sets up both server and client i18n', async ({ page }) => {
+    // Client page and RSC page both work via FluentProvider
+    await page.goto('/')
+    await expect(page.getByTestId('welcome')).toContainText('Welcome to Fluenti')
+    await page.getByTestId('nav-rsc').click()
+    await expect(page.getByTestId('rsc-title')).toContainText('Server rendered')
+  })
+
+  test('FluentProvider passes locale to client components via cookie', async ({ page }) => {
+    await page.context().addCookies([
+      { name: 'locale', value: 'ja', url: 'http://localhost:5190' },
+    ])
+    await page.goto('/')
+    await expect(page.getByTestId('welcome')).toContainText('Fluenti へようこそ')
   })
 })

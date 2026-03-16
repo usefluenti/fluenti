@@ -70,8 +70,8 @@ msgstr "サーバーアクションデモ"
 msgid "Submit"
 msgstr "送信"
 
-msgid "Server says: {message}"
-msgstr "サーバーの応答：{message}"
+msgid "Server says: {result}"
+msgstr "サーバーの応答：{result}"
 
 msgid "Hello from server action"
 msgstr "サーバーアクションからこんにちは"

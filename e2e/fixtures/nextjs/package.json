@@ -9,6 +9,7 @@
   "dependencies": {
     "@fluenti/cli": "workspace:*",
     "@fluenti/core": "workspace:*",
+    "@fluenti/next": "workspace:*",
     "@fluenti/react": "workspace:*",
     "next": "^15",
     "react": "^19.0.0",
