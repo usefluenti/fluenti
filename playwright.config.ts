@@ -58,6 +58,11 @@ export default defineConfig({
       use: { baseURL: 'http://localhost:5185' },
       testMatch: '**/nuxt-custom-detect.spec.ts',
     },
+    {
+      name: 'nuxt-prefix',
+      use: { baseURL: 'http://localhost:5186' },
+      testMatch: '**/nuxt-prefix.spec.ts',
+    },
   ],
   webServer: [
     {
@@ -117,6 +122,12 @@ export default defineConfig({
     {
       command: 'cd e2e/fixtures/nuxt-custom-detect && pnpm build && pnpm preview --port 5185',
       port: 5185,
+      reuseExistingServer: true,
+      timeout: 120_000,
+    },
+    {
+      command: 'cd e2e/fixtures/nuxt-prefix && pnpm build && pnpm preview --port 5186',
+      port: 5186,
       reuseExistingServer: true,
       timeout: 120_000,
     },

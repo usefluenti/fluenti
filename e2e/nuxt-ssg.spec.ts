@@ -157,6 +157,42 @@ test.describe('Nuxt SSG — Path-based Locale Detection', () => {
   })
 })
 
+test.describe('Nuxt SSG — NuxtLinkLocale Component', () => {
+  test('NuxtLinkLocale generates correct hrefs for default locale', async ({ page }) => {
+    await page.goto('/')
+    // prefix_except_default: default locale has no prefix
+    await expect(page.getByTestId('nav-home')).toHaveAttribute('href', '/')
+    await expect(page.getByTestId('nav-about')).toHaveAttribute('href', '/about')
+  })
+
+  test('NuxtLinkLocale hrefs update after switching locale', async ({ page }) => {
+    await page.goto('/')
+    await page.getByTestId('lang-ja').click()
+    await expect(page.getByTestId('current-locale')).toContainText('ja')
+    // After switching to ja, links should be prefixed
+    await expect(page.getByTestId('nav-home')).toHaveAttribute('href', '/ja')
+    await expect(page.getByTestId('nav-about')).toHaveAttribute('href', '/ja/about')
+  })
+
+  test('NuxtLinkLocale locale prop overrides current locale', async ({ page }) => {
+    await page.goto('/')
+    // link-about-ja should always point to /ja/about regardless of current locale
+    await expect(page.getByTestId('link-about-ja')).toHaveAttribute('href', '/ja/about')
+
+    // Switch to zh — the ja override link should still point to /ja/about
+    await page.getByTestId('lang-zh').click()
+    await expect(page.getByTestId('link-about-ja')).toHaveAttribute('href', '/ja/about')
+  })
+
+  test('NuxtLinkLocale performs client-side navigation with correct locale', async ({ page }) => {
+    await page.goto('/ja')
+    await page.getByTestId('nav-about').click()
+    await expect(page.getByTestId('page-about')).toBeVisible()
+    await expect(page.getByTestId('page-title')).toContainText('私たちについて')
+    await expect(page.getByTestId('current-path')).toContainText('/ja/about')
+  })
+})
+
 test.describe('Nuxt SSG — Cookie Locale Persistence', () => {
   test('locale switch sets cookie', async ({ page, context }) => {
     await page.goto('/')

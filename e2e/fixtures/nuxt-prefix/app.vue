@@ -5,12 +5,6 @@ const { t, locale } = useI18n()
 const localePath = useLocalePath()
 const switchLocalePath = useSwitchLocalePath()
 const route = useRoute()
-const localeHead = useLocaleHead({
-  addSeoAttributes: true,
-  baseUrl: 'https://example.com',
-})
-
-useHead(localeHead.value)
 </script>
 
 <template>
@@ -19,8 +13,9 @@ useHead(localeHead.value)
       <nav>
         <NuxtLinkLocale to="/" data-testid="nav-home">{{ t('nav.home') }}</NuxtLinkLocale>
         <NuxtLinkLocale to="/about" data-testid="nav-about">{{ t('nav.about') }}</NuxtLinkLocale>
-        <!-- locale prop override for testing -->
+        <!-- NuxtLinkLocale with explicit locale prop override -->
         <NuxtLinkLocale to="/about" locale="ja" data-testid="link-about-ja">{{ t('nav.about') }} (JA)</NuxtLinkLocale>
+        <NuxtLinkLocale to="/about" locale="zh" data-testid="link-about-zh">{{ t('nav.about') }} (ZH)</NuxtLinkLocale>
       </nav>
       <div class="locale-switcher">
         <NuxtLink
@@ -34,12 +29,6 @@ useHead(localeHead.value)
 
     <div data-testid="current-locale">{{ locale }}</div>
     <div data-testid="current-path">{{ route.path }}</div>
-
-    <!-- SEO data exposed for testing -->
-    <div data-testid="html-lang" style="display:none">{{ localeHead.htmlAttrs.lang }}</div>
-    <template v-for="link in localeHead.link" :key="link.hreflang">
-      <div :data-testid="`hreflang-${link.hreflang}`" style="display:none">{{ link.href }}</div>
-    </template>
 
     <NuxtPage />
   </div>

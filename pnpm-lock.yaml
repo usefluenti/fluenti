@@ -110,6 +110,24 @@ importers:
         specifier: ^3.5
         version: 3.5.30(typescript@5.9.3)
 
+  e2e/fixtures/nuxt-prefix:
+    dependencies:
+      '@fluenti/core':
+        specifier: workspace:*
+        version: link:../../../packages/core
+      '@fluenti/nuxt':
+        specifier: workspace:*
+        version: link:../../../packages/nuxt
+      '@fluenti/vue':
+        specifier: workspace:*
+        version: link:../../../packages/vue
+      nuxt:
+        specifier: ^3.16
+        version: 3.21.2(@parcel/watcher@2.5.6)(@types/node@24.12.0)(@vue/compiler-sfc@3.5.30)(cac@6.7.14)(db0@0.3.4)(ioredis@5.10.0)(lightningcss@1.32.0)(magicast@0.5.2)(oxlint@1.55.0)(rolldown@1.0.0-rc.9)(rollup-plugin-visualizer@6.0.11(rolldown@1.0.0-rc.9)(rollup@4.59.0))(rollup@4.59.0)(terser@5.46.0)(typescript@5.9.3)(vite@8.0.0(@types/node@24.12.0)(esbuild@0.27.4)(jiti@2.6.1)(terser@5.46.0)(yaml@2.8.2))(vue-tsc@3.2.5(typescript@5.9.3))(yaml@2.8.2)
+      vue:
+        specifier: ^3.5
+        version: 3.5.30(typescript@5.9.3)
+
   e2e/fixtures/nuxt-routes:
     dependencies:
       '@fluenti/core':
