@@ -153,4 +153,26 @@ describe('formatRelativeTime', () => {
     expect(result).toContain('5')
     expect(result.toLowerCase()).toContain('day')
   })
+
+  // ─── Edge values ───────────────────────────────────────────────────────
+
+  it('handles NaN without crashing', () => {
+    const result = formatRelativeTime(NaN, 'en')
+    expect(result).toBe('')
+  })
+
+  it('handles Infinity without crashing', () => {
+    const result = formatRelativeTime(Infinity, 'en')
+    expect(result).toBe('')
+  })
+
+  it('handles -Infinity without crashing', () => {
+    const result = formatRelativeTime(-Infinity, 'en')
+    expect(result).toBe('')
+  })
+
+  it('handles invalid Date object without crashing', () => {
+    const result = formatRelativeTime(new Date('invalid'), 'en')
+    expect(result).toBe('')
+  })
 })
