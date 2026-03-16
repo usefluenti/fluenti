@@ -173,11 +173,67 @@ describe('compile', () => {
     expect(result).toBeTruthy()
   })
 
-  it('handles unknown function type by returning string value', () => {
+  it('handles unknown function type by returning placeholder for missing', () => {
     const ast = parse('{x, customfn}')
     const fn = compile(ast, 'en') as Function
     expect(fn({ x: 'hello' })).toBe('hello')
     expect(fn({ x: 42 })).toBe('42')
-    expect(fn({})).toBe('')
+    expect(fn({})).toBe('{x}')
+  })
+
+  // ─── Function node edge cases ─────────────────────────────────────────
+
+  describe('function node edge cases', () => {
+    it('shows placeholder when number function variable is missing', () => {
+      const ast = parse('{amount, number}')
+      const fn = compile(ast, 'en') as Function
+      expect(fn({})).toBe('{amount}')
+    })
+
+    it('shows placeholder when date function variable is missing', () => {
+      const ast = parse('{d, date}')
+      const fn = compile(ast, 'en') as Function
+      expect(fn({})).toBe('{d}')
+    })
+
+    it('shows placeholder when time function variable is missing', () => {
+      const ast = parse('{d, time}')
+      const fn = compile(ast, 'en') as Function
+      expect(fn({})).toBe('{d}')
+    })
+
+    it('handles invalid date in date function without throwing', () => {
+      const ast = parse('{d, date}')
+      const fn = compile(ast, 'en') as Function
+      const result = fn({ d: 'not-a-date' })
+      expect(typeof result).toBe('string')
+    })
+
+    it('handles NaN in number function', () => {
+      const ast = parse('{n, number}')
+      const fn = compile(ast, 'en') as Function
+      const result = fn({ n: NaN })
+      expect(result).toBe('NaN')
+    })
+  })
+
+  // ─── Selectordinal in compile ─────────────────────────────────────────
+
+  describe('selectordinal compilation', () => {
+    it('uses ordinal rules for selectordinal', () => {
+      const ast = parse('{n, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}')
+      const fn = compile(ast, 'en') as Function
+      expect(fn({ n: 1 })).toBe('1st')
+      expect(fn({ n: 2 })).toBe('2nd')
+      expect(fn({ n: 3 })).toBe('3rd')
+      expect(fn({ n: 4 })).toBe('4th')
+      expect(fn({ n: 11 })).toBe('11th')
+      expect(fn({ n: 12 })).toBe('12th')
+      expect(fn({ n: 13 })).toBe('13th')
+      expect(fn({ n: 21 })).toBe('21st')
+      expect(fn({ n: 22 })).toBe('22nd')
+      expect(fn({ n: 23 })).toBe('23rd')
+    })
   })
 })
+
