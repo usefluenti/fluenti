@@ -191,10 +191,12 @@ const i18n = createFluentVue({
 Configure in `fluenti.config.ts`:
 
 ```typescript
-export default {
+import { defineConfig } from '@fluenti/cli'
+
+export default defineConfig({
   splitting: 'dynamic',
   defaultBuildLocale: 'en',
-}
+})
 ```
 
 ### Build vs Dev Mode

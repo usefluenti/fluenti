@@ -34,14 +34,16 @@ import { Steps } from '@astrojs/starlight/components'
 
    ```typescript
    // fluenti.config.ts
-   export default {
+   import { defineConfig } from '@fluenti/cli'
+
+   export default defineConfig({
      sourceLocale: 'en',
      locales: ['en', 'zh-CN'],
      catalogDir: './locales',
      format: 'po',
      include: ['./src/**/*.{tsx,ts}'],
      compileOutDir: './src/locales/compiled',
-   }
+   })
    ```
 
 4. **Write your component — use `t()` with source text**

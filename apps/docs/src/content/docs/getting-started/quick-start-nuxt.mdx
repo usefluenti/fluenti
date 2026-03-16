@@ -32,14 +32,16 @@ import { Steps, Tabs, TabItem, Aside } from '@astrojs/starlight/components'
 
    ```typescript
    // fluenti.config.ts
-   export default {
+   import { defineConfig } from '@fluenti/cli'
+
+   export default defineConfig({
      sourceLocale: 'en',
      locales: ['en', 'ja', 'zh'],
      catalogDir: './locales',
      format: 'po',
      include: ['./pages/**/*.vue', './components/**/*.vue', './layouts/**/*.vue'],
      compileOutDir: './locales/compiled',
-   }
+   })
    ```
 
 4. **Write a page with translations**

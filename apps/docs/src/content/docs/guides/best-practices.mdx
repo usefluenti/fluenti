@@ -1,0 +1,581 @@
+---
+title: Best Practices
+description: Production patterns for message authoring, project structure, code splitting, performance, SSR, testing, and translation workflows.
+---
+
+import { Tabs, TabItem, Aside } from '@astrojs/starlight/components'
+
+Fluenti's compile-time architecture gives you a head start on performance,
+but the way you organise messages, structure catalogs, and wire up SSR
+still matters at scale. This guide collects the patterns that work best
+in production.
+
+## Prefer Compile-Time APIs
+
+Fluenti's core advantage is **compile-time message transformation** — the
+Vite plugin rewrites your code at build time so no ICU parsing happens in
+the browser. Always reach for compile-time APIs first:
+
+| Priority | API | Where | Why |
+|---|---|---|---|
+| 1 | `v-t` directive | Vue templates | Zero-runtime — compiled away entirely |
+| 2 | `` t`…` `` tagged template | `<script setup>` / JS modules | Auto-reactive, auto-extracted, natural syntax |
+| 3 | `<Trans>` / `<Plural>` / `<Select>` | Templates (all frameworks) | Rich text with embedded elements |
+| 4 | `msg` tagged template | Outside components (routes, stores) | Lazy descriptor — resolved later by `t()` |
+| 5 | `t()` function call | Fallback | Manual — use only when the above don't fit |
+
+<Aside type="tip">
+The `` t`…` `` tagged template and `v-t` directive are **not imported** —
+the Vite plugin injects them automatically. Just use them.
+</Aside>
+
+### Vue: use `v-t` in templates, `` t`…` `` in script
+
+`v-t` is a compile-time `nodeTransform`, not a runtime directive.
+It rewrites your template during Vue's SFC compilation — nothing reaches
+the browser:
+
+```vue
+<template>
+  <!-- ✅ v-t: compiled away, zero runtime cost -->
+  <h1 v-t>Welcome back, {{ name }}!</h1>
+  <p v-t>Read the <a href="/terms">terms</a> and <strong>conditions</strong></p>
+  <img v-t.alt src="/hero.jpg" alt="Welcome banner" />
+
+  <!-- ❌ Avoid: manual t() in templates -->
+  <h1>{{ t('Welcome back, {name}!', { name }) }}</h1>
+</template>
+
+<script setup>
+// ✅ t`` tagged template: auto-reactive (wrapped in computed)
+const pageTitle = t`Welcome back, ${name}!`
+
+// ❌ Avoid: manual t() requires you to manage reactivity yourself
+const pageTitle = computed(() => t('Welcome back, {name}!', { name: name.value }))
+</script>
+```
+
+### React & Solid: use `` t`…` `` and `<Trans>`
+
+```tsx
+function Greeting({ name, count }) {
+  // ✅ t`` tagged template — natural syntax, auto-extracted
+  const greeting = t`Welcome back, ${name}!`
+  const itemLabel = t`${count} items in your cart`
+
+  return (
+    <div>
+      <h1>{greeting}</h1>
+      <p>{itemLabel}</p>
+
+      {/* ✅ <Trans> for rich text with embedded elements */}
+      <Trans>Read the <a href="/terms">terms</a> and <strong>conditions</strong></Trans>
+
+      {/* ✅ <Plural> for plural forms */}
+      <Plural value={count} one="# item" other="# items" />
+    </div>
+  )
+}
+```
+
+### When `t()` is appropriate
+
+Use `t()` only in situations where compile-time APIs don't apply:
+
+```ts
+// Dynamic message IDs (rare — avoid if possible)
+const key = getMessageKeyFromAPI()
+t(key)
+
+// Inside non-component utility functions
+function formatError(code: number) {
+  return t(`Error ${code}: something went wrong`)
+}
+```
+
+## Message Authoring
+
+### Use natural language as keys
+
+Natural-language keys are self-documenting and let the source locale work
+without a catalog lookup:
+
+```vue
+<!-- ✅ Natural key — readable, self-documenting -->
+<p v-t>Welcome back, {{ name }}!</p>
+
+<!-- ❌ Dot-path key — requires a catalog just to understand the UI -->
+<p>{{ t('home.welcome_back', { name }) }}</p>
+```
+
+### Keep messages close to where they are used
+
+Colocate messages with the component that renders them.
+When a message lives three directories away, nobody updates it when the
+UI changes.
+
+### Use `msg` for messages outside components
+
+Route metadata, constants, and store definitions run outside the component
+lifecycle. Wrap them with `msg` so the CLI can still extract them:
+
+```ts
+import { msg } from '@fluenti/core'
+
+export const routes = [
+  { path: '/', meta: { title: msg`Home` } },
+  { path: '/about', meta: { title: msg`About Us` } },
+]
+```
+
+### Never concatenate translated strings
+
+<Aside type="caution">
+String concatenation breaks in every language with different word order.
+Use ICU placeholders instead.
+</Aside>
+
+```ts
+// ❌ Breaks in Japanese, Arabic, German…
+t`Hello` + ' ' + name + ', ' + t`you have` + ' ' + count + ' ' + t`items`
+
+// ✅ One message, one translation unit
+t`Hello ${name}, you have ${count} items`
+```
+
+For plurals, use `<Plural>` or ICU `{count, plural, …}` syntax instead of
+hand-rolling `count === 1 ? … : …` conditionals.
+
+## Project Structure
+
+### Recommended directory layout
+
+| Project size | Layout |
+|---|---|
+| **Small** (1–3 locales, under 200 messages) | Single `locales/` dir at root, one file per locale |
+| **Medium** (3–8 locales, 200–2 000 messages) | `locales/` with PO format, compiled output in `locales/compiled/` |
+| **Large** (8+ locales or 2 000+ messages) | Namespace-split catalogs (`locales/{namespace}/{locale}.po`), per-route splitting |
+
+### PO vs JSON
+
+| | PO | JSON |
+|---|---|---|
+| **Best for** | Teams with translators, Crowdin/Weblate | Solo devs, programmatic manipulation |
+| **Tooling** | Poedit, Crowdin, Weblate, Lokalise | Any text editor, `jq` |
+| **Comments** | First-class `#. translator comment` | Not supported |
+| **Recommendation** | Default choice for production | Quick prototyping |
+
+### Compiled output: gitignore it
+
+Compiled catalogs are build artifacts. Regenerate them in CI instead of
+committing them:
+
+```txt
+# .gitignore
+locales/compiled/
+```
+
+Then in your CI pipeline:
+
+```bash
+fluenti compile        # or: fluenti compile --split
+```
+
+## Code Splitting
+
+### Decision table
+
+| Splitting | When to use | Trade-off |
+|---|---|---|
+| `false` | ≤ 3 locales, small catalog | Simplest — everything bundled |
+| `'static'` | Known set of locales, moderate catalog | Locale loaded at startup, no lazy requests |
+| `'dynamic'` | Many locales or large catalog | Smallest initial bundle, async locale switch |
+
+Configure in your Vite plugin:
+
+```ts
+import FluentiPlugin from '@fluenti/vite-plugin'
+
+export default {
+  plugins: [
+    FluentiPlugin({
+      splitting: 'dynamic',
+    }),
+  ],
+}
+```
+
+### Preload on hover for instant switching
+
+<Aside type="tip">
+Call `preloadLocale()` on hover so the catalog is already cached when
+the user clicks. The switch feels instant.
+</Aside>
+
+<Tabs>
+<TabItem label="Vue">
+```vue
+<template>
+  <button
+    v-for="loc in locales"
+    :key="loc"
+    @mouseenter="preloadLocale(loc)"
+    @click="setLocale(loc)"
+  >
+    {{ loc }}
+  </button>
+</template>
+
+<script setup>
+import { useI18n } from '@fluenti/vue'
+const { setLocale, preloadLocale } = useI18n()
+const locales = ['en', 'ja', 'zh-CN']
+</script>
+```
+</TabItem>
+
+<TabItem label="React">
+```tsx
+import { useI18n } from '@fluenti/react'
+
+function LocaleSwitcher() {
+  const { setLocale, preloadLocale } = useI18n()
+  const locales = ['en', 'ja', 'zh-CN']
+
+  return locales.map((loc) => (
+    <button
+      key={loc}
+      onMouseEnter={() => preloadLocale(loc)}
+      onClick={() => setLocale(loc)}
+    >
+      {loc}
+    </button>
+  ))
+}
+```
+</TabItem>
+
+<TabItem label="Solid">
+```tsx
+import { useI18n } from '@fluenti/solid'
+
+function LocaleSwitcher() {
+  const { setLocale, preloadLocale } = useI18n()
+  const locales = ['en', 'ja', 'zh-CN']
+
+  return locales.map((loc) => (
+    <button
+      onMouseEnter={() => preloadLocale(loc)}
+      onClick={() => setLocale(loc)}
+    >
+      {loc}
+    </button>
+  ))
+}
+```
+</TabItem>
+</Tabs>
+
+## Performance
+
+### Compile-time advantage
+
+Fluenti compiles ICU messages at **build time**, producing plain functions
+that execute with no parsing overhead at runtime. This is the single
+biggest performance win and it happens automatically — no configuration
+needed.
+
+```
+Build time                Runtime
+┌──────────────┐         ┌──────────────────────┐
+│ ICU source   │──compile──►  (values) => string │
+│ "{count,     │         │  // no parsing, just  │
+│  plural,…}"  │         │  // string concat     │
+└──────────────┘         └──────────────────────┘
+```
+
+### Lazy-load non-default locales
+
+Only the source locale should be bundled. All others should load on demand:
+
+```ts
+// vite.config.ts
+FluentiPlugin({
+  sourceLocale: 'en',
+  splitting: 'dynamic', // non-en locales loaded on demand
+})
+```
+
+### Cache translations in tight loops
+
+Avoid calling translation functions inside render-hot paths when the
+result doesn't change:
+
+```ts
+// ❌ Resolves on every iteration
+items.map((item) => `${t`Item`}: ${item.name}`)
+
+// ✅ Resolve once outside the loop, reuse the value
+const label = t`Item`
+items.map((item) => `${label}: ${item.name}`)
+```
+
+### Use `fallbackChain` for regional variants
+
+Instead of duplicating an entire catalog for `en-GB`, let it fall back
+to `en` and only translate the differences:
+
+```ts
+createFluent({
+  locale: 'en-GB',
+  fallbackLocale: 'en',
+  fallbackChain: {
+    'en-GB': ['en'],
+    'zh-TW': ['zh-CN'],
+    'pt-BR': ['pt'],
+  },
+  messages,
+})
+```
+
+## SSR & Hydration
+
+### Detection priority
+
+Use `detectLocale` from core with a clear priority chain:
+
+```
+cookie → query → path → Accept-Language → fallback
+```
+
+```ts
+import { detectLocale } from '@fluenti/core'
+
+const locale = detectLocale({
+  cookie: req.headers.cookie,
+  query: url.searchParams.get('lang'),
+  path: url.pathname,
+  headers: req.headers,
+  available: ['en', 'ja', 'zh-CN'],
+  fallback: 'en',
+})
+```
+
+### Always set `<html lang>` and `<html dir>`
+
+```ts
+import { getDirection } from '@fluenti/core'
+
+const dir = getDirection(locale) // 'ltr' or 'rtl'
+// <html lang="${locale}" dir="${dir}">
+```
+
+### Persist with a cookie
+
+After the user explicitly switches locale, store the preference in a
+cookie so `detectLocale` picks it up on the next server request.
+
+<Aside type="caution">
+**Hydration mismatch:** If the server renders locale A but the client
+reads locale B from `localStorage`, React/Vue/Solid will warn about
+mismatched HTML. Always let the server be the source of truth — use
+cookies (visible to both server and client), not `localStorage`.
+</Aside>
+
+### Framework-specific SSR
+
+<Tabs>
+<TabItem label="Next.js">
+In Next.js App Router, use `createServerI18n` for React Server Components.
+Client components use the regular `useI18n` hook via `I18nProvider`.
+
+```tsx
+// app/layout.tsx (server)
+import { createServerI18n } from '@fluenti/react/rsc'
+
+export default async function RootLayout({ children }) {
+  const locale = detectLocaleFromCookies()
+  const i18n = await createServerI18n({ locale, messages })
+
+  return (
+    <html lang={locale} dir={getDirection(locale)}>
+      <body>
+        <I18nProvider locale={locale} messages={messages}>
+          {children}
+        </I18nProvider>
+      </body>
+    </html>
+  )
+}
+```
+</TabItem>
+
+<TabItem label="Nuxt">
+Nuxt handles everything automatically via the Fluenti module —
+locale detection, cookie persistence, `<html lang>`, and SSR hydration
+all work out of the box with zero configuration.
+</TabItem>
+
+<TabItem label="Vue / Solid (manual)">
+Use `getSSRLocaleScript` to inject the server-detected locale into the
+HTML so the client hydrates with the same value:
+
+```ts
+import { getSSRLocaleScript, getHydratedLocale } from '@fluenti/core'
+
+// Server: inject into HTML <head>
+const script = getSSRLocaleScript(locale)
+// → <script>window.__FLUENTI_LOCALE__="ja"</script>
+
+// Client: read it back
+const locale = getHydratedLocale('en')
+```
+</TabItem>
+</Tabs>
+
+## Testing
+
+### Mock catalogs in unit tests
+
+Import real catalogs only in integration / E2E tests.
+Unit tests should supply minimal inline messages:
+
+<Tabs>
+<TabItem label="Vue">
+```ts
+import { mount } from '@vue/test-utils'
+import { createFluentVue } from '@fluenti/vue'
+
+const i18n = createFluentVue({
+  locale: 'en',
+  messages: {
+    en: { greeting: 'Hello {name}' },
+  },
+})
+
+const wrapper = mount(MyComponent, {
+  global: { plugins: [i18n] },
+})
+```
+</TabItem>
+
+<TabItem label="React">
+```tsx
+import { render } from '@testing-library/react'
+import { I18nProvider } from '@fluenti/react'
+
+function renderWithI18n(ui, { locale = 'en', messages = {} } = {}) {
+  return render(
+    <I18nProvider locale={locale} messages={{ [locale]: messages }}>
+      {ui}
+    </I18nProvider>
+  )
+}
+
+renderWithI18n(<Greeting name="Alice" />, {
+  messages: { greeting: 'Hello {name}' },
+})
+```
+</TabItem>
+
+<TabItem label="Solid">
+```tsx
+import { render } from '@solidjs/testing-library'
+import { I18nProvider } from '@fluenti/solid'
+
+render(() => (
+  <I18nProvider config={{
+    locale: 'en',
+    messages: { en: { greeting: 'Hello {name}' } },
+  }}>
+    <Greeting name="Alice" />
+  </I18nProvider>
+))
+```
+</TabItem>
+</Tabs>
+
+### Verify locale switching updates all translations
+
+```ts
+// After switching locale, re-query the DOM to confirm
+// every translated element updated:
+await setLocale('ja')
+expect(screen.getByText('こんにちは Alice')).toBeTruthy()
+```
+
+### Snapshot rich-text translations
+
+`<Trans>` output contains nested elements. Snapshot tests catch
+unintended structural changes:
+
+```ts
+const { container } = render(<Trans>Read the <a href="/docs">docs</a></Trans>)
+expect(container.innerHTML).toMatchSnapshot()
+```
+
+## Translation Workflow
+
+### The extract → translate → compile loop
+
+```
+┌─────────────────────────────────────────┐
+│  1. fluenti extract                     │
+│     Scan source → update PO/JSON files  │
+│                                         │
+│  2. Translate                           │
+│     Translators edit PO files           │
+│     (or sync via Crowdin / Weblate)     │
+│                                         │
+│  3. fluenti compile                     │
+│     PO → optimised JS modules           │
+└─────────────────────────────────────────┘
+```
+
+### Track progress with `fluenti stats`
+
+```bash
+$ fluenti stats
+
+Locale    Total   Translated   %
+──────    ─────   ──────────   ──────
+en        142     142          100%
+ja        142     128           90%
+zh-CN     142      97           68%
+```
+
+### Run compilation in CI, not locally
+
+Developers should only run `fluenti extract`. Compilation happens in CI
+to guarantee the checked-in catalogs are the single source of truth.
+
+<Aside type="tip">
+Add this to your CI pipeline:
+
+```yaml
+- name: Compile translations
+  run: |
+    pnpm fluenti compile
+    # Fail if any locale is below threshold
+    pnpm fluenti stats --strict --threshold 90
+```
+</Aside>
+
+### Integrate with translation platforms
+
+PO is the native format for Crowdin, Weblate, Lokalise, and Transifex.
+Point them at your `locales/` directory and they will round-trip
+cleanly — no format conversion needed.
+
+## Common Mistakes
+
+| Anti-pattern | Fix |
+|---|---|
+| Using `t()` function calls everywhere | Use `v-t`, `` t`…` ``, `<Trans>` — compile-time first |
+| Concatenating translated strings | One message per translation unit: `` t`Hello ${name}` `` |
+| Global mutable i18n state in SSR | Create a new instance per request |
+| Runtime ICU parsing | Use `fluenti compile` — parsing is build-only |
+| Eagerly importing every locale | Use `splitting: 'dynamic'` for lazy loading |
+| Hardcoding `dir="ltr"` | Use `getDirection(locale)` to handle RTL |
+| Storing locale in `localStorage` for SSR apps | Use cookies — visible to both server and client |
+| Committing compiled output | Gitignore `locales/compiled/`, compile in CI |

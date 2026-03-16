@@ -1,0 +1,69 @@
+---
+title: v-t Directive
+description: Vue compile-time directive for translating template content
+---
+
+The `v-t` directive is the primary API for translating Vue template content. It's a compile-time `nodeTransform`, not a runtime directive — it never reaches the browser.
+
+## Plain Text
+
+```vue
+<h1 v-t>Welcome to Fluenti</h1>
+```
+
+Transformed at build time into:
+```vue
+<h1>{{ $t('Welcome to Fluenti') }}</h1>
+```
+
+## Variable Interpolation
+
+Vue template expressions inside `v-t` elements are extracted as ICU variables:
+
+```vue
+<p v-t>Hello {{ name }}, welcome back!</p>
+<p v-t>{{ greeting }} {{ name }}, you have {{ count }} items</p>
+```
+
+## Explicit IDs
+
+Use the argument syntax to set a custom message ID:
+
+```vue
+<p v-t:nav.home>Home</p>
+<p v-t:app.checkout.title>Checkout</p>
+```
+
+Output: `<p>{{ $t('nav.home') }}</p>`
+
+## Pluralization
+
+Use the `.plural` modifier with pipe-separated forms:
+
+```vue
+<p v-t.plural="count">no items | one item | {{ count }} items</p>
+```
+
+This extracts an ICU plural message: `{count, plural, one {one item} other {{count} items}}`
+
+## Rich Text
+
+Child HTML elements are preserved:
+
+```vue
+<p v-t>Read the <a href="/terms">terms</a> and <strong>conditions</strong></p>
+```
+
+## Attribute Translation
+
+Use modifiers to translate element attributes:
+
+```vue
+<img v-t.alt src="/hero.jpg" alt="Welcome banner image" />
+<input v-t.placeholder placeholder="Search products..." />
+<a v-t v-t.title href="/terms" title="Read our terms">Terms of Service</a>
+```
+
+## How It Works
+
+The `v-t` directive is processed at compile time by the Vite plugin's `nodeTransform`. It never reaches the browser — it's converted to `$t()` calls during the build. See [How It Works](/guides/how-it-works/) for the full compilation pipeline.

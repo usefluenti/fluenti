@@ -1,0 +1,139 @@
+---
+title: React Router
+description: Using Fluenti with React Router v7 — client-side routing, code splitting, and locale persistence
+---
+
+import { Aside } from '@astrojs/starlight/components'
+
+Fluenti works with React Router v7 as a client-side SPA with full Vite plugin support. See [Quick Start (React Router)](/getting-started/quick-start-react-router/) for initial setup.
+
+## Locale Detection
+
+React Router apps detect locale on the client. A common pattern reads from URL query params first, then falls back to cookies:
+
+```typescript
+function getInitialLocale(): string {
+  // Check URL query param: ?lang=zh-CN
+  const urlParams = new URLSearchParams(window.location.search)
+  const queryLang = urlParams.get('lang')
+  if (queryLang) {
+    document.cookie = `locale=${queryLang};path=/;max-age=31536000`
+    return queryLang
+  }
+
+  // Fall back to cookie
+  const match = document.cookie.match(/(?:^|;\s*)locale=([^;]*)/)
+  if (match) return decodeURIComponent(match[1])
+
+  return 'en'
+}
+```
+
+## Code Splitting with Lazy Routes
+
+React Router works well with `React.lazy()` for route-level code splitting. The Vite plugin tree-shakes messages per chunk:
+
+```tsx
+import { lazy, Suspense } from 'react'
+import { BrowserRouter, Routes, Route } from 'react-router-dom'
+
+const About = lazy(() => import('./pages/About'))
+const Contact = lazy(() => import('./pages/Contact'))
+
+function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/about" element={
+          <Suspense fallback={<p>Loading...</p>}>
+            <About />
+          </Suspense>
+        } />
+        <Route path="/contact" element={
+          <Suspense fallback={<p>Loading...</p>}>
+            <Contact />
+          </Suspense>
+        } />
+      </Routes>
+    </BrowserRouter>
+  )
+}
+```
+
+## Translations with `` t`...` ``
+
+The `` t`...` `` tagged template is the primary translation API. The Vite plugin injects it automatically — no import needed:
+
+```tsx
+function ProductCard({ product }: { product: Product }) {
+  return (
+    <div>
+      <h2>{t`${product.name}`}</h2>
+      <p>{t`In stock: ${product.quantity} items`}</p>
+    </div>
+  )
+}
+```
+
+For dynamic keys or non-component contexts, fall back to `i18n.t()`:
+
+```tsx
+import { useI18n } from '@fluenti/react'
+
+function DynamicContent({ messageKey }: { messageKey: string }) {
+  const { i18n } = useI18n()
+  return <p>{i18n.t(messageKey)}</p>
+}
+```
+
+## Preloading Locales on Hover
+
+Use `preloadLocale()` so the locale catalog is cached before the user clicks:
+
+```tsx
+import { useI18n } from '@fluenti/react'
+
+function LocaleSwitcher({ onLocaleChange }) {
+  const { locale, preloadLocale } = useI18n()
+
+  return (
+    <div>
+      {['en', 'zh-CN', 'ja'].map((loc) => (
+        <button
+          key={loc}
+          className={locale === loc ? 'active' : ''}
+          onMouseEnter={() => preloadLocale(loc)}
+          onClick={() => onLocaleChange(loc)}
+        >
+          {loc}
+        </button>
+      ))}
+    </div>
+  )
+}
+```
+
+## Setting `<html>` Attributes
+
+Update the `lang` and `dir` attributes when the locale changes:
+
+```tsx
+import { useEffect } from 'react'
+import { getDirection } from '@fluenti/core'
+
+function Root() {
+  const [locale, setLocale] = useState(getInitialLocale)
+
+  useEffect(() => {
+    document.documentElement.lang = locale
+    document.documentElement.dir = getDirection(locale)
+  }, [locale])
+
+  // ...
+}
+```
+
+<Aside type="tip">
+  React Router apps are client-side SPAs. If you need SSR, consider [Next.js](/frameworks/react/nextjs/) or [TanStack Start](/frameworks/react/tanstack-start/).
+</Aside>

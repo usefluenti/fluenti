@@ -1,0 +1,101 @@
+---
+title: Nuxt SSR, SSG & ISR
+description: Server-side rendering, static generation, and incremental static regeneration with Nuxt
+---
+
+import { Aside } from '@astrojs/starlight/components'
+
+`@fluenti/nuxt` supports all Nuxt rendering modes out of the box. For general SSR concepts, see the [SSR guide](/guides/ssr/).
+
+| Mode | How it works |
+|------|-------------|
+| **SSR** | Server detects locale per-request, injects into payload, client hydrates |
+| **SSG** (`nuxt generate`) | Each locale route is pre-rendered with the correct locale from its URL path |
+| **ISR** | Pre-rendered with configurable TTL, re-validated on demand |
+| **SPA** (`ssr: false`) | Client-side path detection, cookie fallback |
+
+## Zero Config
+
+With `@fluenti/nuxt`, SSR/SSG/ISR work automatically:
+
+```typescript
+// nuxt.config.ts — this is all you need
+export default defineNuxtConfig({
+  modules: ['@fluenti/nuxt'],
+  fluenti: {
+    locales: ['en', 'ja', 'zh'],
+    defaultLocale: 'en',
+  },
+})
+```
+
+### How Hydration Works
+
+```
+Server (SSR/SSG)                     Client
+─────────────────                    ──────
+1. Run detector chain                1. Read locale from Nuxt payload
+   (path → cookie → header)         2. Skip detection — use server value
+2. Store locale in Nuxt payload      3. Watch route.path for nav changes
+3. Render HTML with correct locale   4. Sync cookie on locale change
+```
+
+The plugin stores the detected locale in `nuxtApp.payload`, which Nuxt serializes into the HTML. The client reads it back on hydration — no mismatch.
+
+## Static Site Generation (SSG)
+
+`nuxt generate` pre-renders all locale routes:
+
+```
+dist/
+├── index.html          ← en (default, no prefix)
+├── about/index.html    ← en
+├── ja/index.html       ← ja
+├── ja/about/index.html ← ja
+├── zh/index.html       ← zh
+└── zh/about/index.html ← zh
+```
+
+During SSG build:
+- **Path detector** extracts locale from each route's URL (`/ja/about` → `ja`)
+- Cookie and header detectors silently fail (no HTTP context) — this is by design
+- Each page is rendered in the correct locale
+
+<Aside type="tip">
+  The module enables `nitro.prerender.crawlLinks` automatically, so all locale-prefixed routes are discovered from your `<NuxtLinkLocale>` links.
+</Aside>
+
+## Incremental Static Regeneration (ISR)
+
+Add one config option:
+
+```typescript
+export default defineNuxtConfig({
+  fluenti: {
+    locales: ['en', 'ja', 'zh'],
+    defaultLocale: 'en',
+    isr: {
+      enabled: true,
+      ttl: 3600, // re-validate every hour
+    },
+  },
+})
+```
+
+This auto-generates `routeRules` for all locale patterns:
+
+```typescript
+// Generated automatically:
+routeRules: {
+  '/**': { isr: 3600 },       // default locale (prefix_except_default)
+  '/ja/**': { isr: 3600 },
+  '/zh/**': { isr: 3600 },
+}
+```
+
+### ISR Options
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `enabled` | `boolean` | — | Enable ISR route rules generation |
+| `ttl` | `number?` | `3600` | Cache TTL in seconds |

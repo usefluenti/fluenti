@@ -1,0 +1,139 @@
+---
+title: React Server Components
+description: Deep dive into using Fluenti with React Server Components (RSC)
+---
+
+import { Aside } from '@astrojs/starlight/components'
+
+React Server Components render on the server and never ship JavaScript to the client. Fluenti supports RSC via the `` t`...` `` tagged template (when using `withFluenti()`) or `createServerI18n` from `@fluenti/react/server`.
+
+For a general overview of Next.js integration, see [Next.js](/frameworks/react/nextjs/).
+
+## Recommended: `` t`...` `` with `withFluenti()`
+
+When using `withFluenti()` in your `next.config.ts`, Server Components can use the same `` t`...` `` syntax as Client Components. The plugin detects the component type and applies the correct transform:
+
+```tsx
+// app/page.tsx (Server Component — no 'use client')
+export default async function Page() {
+  return (
+    <div>
+      <h1>{t`Welcome to our app`}</h1>
+      <p>{t`We have been building great things.`}</p>
+    </div>
+  )
+}
+```
+
+No imports needed — `withFluenti()` handles the setup automatically.
+
+## Advanced: `createServerI18n`
+
+For advanced patterns (custom locale resolution, server-bound components, streaming), use `createServerI18n` from `@fluenti/react/server`:
+
+### How It Works
+
+1. **`setLocale(locale)`** — stores the locale in a request-scoped async context (Node.js `AsyncLocalStorage`)
+2. **`getI18n()`** — reads the locale from the async context and returns a bound i18n instance
+3. **Pre-bound components** (`Trans`, `Plural`, etc.) — automatically resolve their locale from the async context
+
+```ts
+// lib/i18n.server.ts
+import { createServerI18n } from '@fluenti/react/server'
+
+export const { setLocale, getI18n, Trans, Plural, DateTime, NumberFormat } = createServerI18n({
+  loadMessages: (locale) => import(`../locales/compiled/${locale}.ts`),
+  fallbackLocale: 'en',
+  resolveLocale: async () => {
+    const { cookies } = await import('next/headers')
+    return (await cookies()).get('locale')?.value ?? 'en'
+  },
+})
+```
+
+## Usage in Server Components
+
+### Translation function
+
+```tsx
+import { getI18n } from '@/lib/i18n.server'
+
+export default async function Page() {
+  const { t } = await getI18n()
+  return <h1>{t('Welcome to our app')}</h1>
+}
+```
+
+### Rich text with Trans
+
+```tsx
+import { Trans } from '@/lib/i18n.server'
+
+export default async function Page() {
+  return <Trans>Read the <a href="/docs">documentation</a> to get started.</Trans>
+}
+```
+
+### Plurals
+
+```tsx
+import { Plural } from '@/lib/i18n.server'
+
+export default async function Page({ count }) {
+  return <Plural value={count} one="# result found" other="# results found" />
+}
+```
+
+### Date and number formatting
+
+```tsx
+import { DateTime, NumberFormat } from '@/lib/i18n.server'
+
+export default async function Page() {
+  return (
+    <div>
+      <DateTime value={new Date()} style="long" />
+      <NumberFormat value={1234.5} style="currency" />
+    </div>
+  )
+}
+```
+
+## `resolveLocale` for Server Actions
+
+Server Actions are separate requests that don't go through the layout's `setLocale()` call. The `resolveLocale` option in `createServerI18n` handles this — it's called automatically when `getI18n()` is invoked without a prior `setLocale()`:
+
+```ts
+// app/actions.ts
+'use server'
+import { getI18n } from '@/lib/i18n.server'
+
+export async function searchAction(query: string) {
+  const { t } = await getI18n() // resolveLocale auto-detects from cookie
+  if (!query) return { error: t('Please enter a search term') }
+  // ...
+}
+```
+
+## Streaming & Suspense
+
+RSC components work with Next.js streaming. Each component independently resolves its locale and messages:
+
+```tsx
+import { Suspense } from 'react'
+
+export default async function Page() {
+  return (
+    <div>
+      <h1>{t`Dashboard`}</h1>
+      <Suspense fallback={<p>Loading...</p>}>
+        <AsyncWidget />
+      </Suspense>
+    </div>
+  )
+}
+```
+
+<Aside type="caution">
+  **Don't mix imports.** When using `createServerI18n` directly, Server Components must import from `@/lib/i18n.server`. Client Components must import from `@fluenti/react`. The `` t`...` `` macro avoids this issue entirely — `withFluenti()` routes the transform to the correct module automatically.
+</Aside>

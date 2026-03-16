@@ -1,0 +1,165 @@
+---
+title: Quick Start (TanStack Start)
+description: Get started with Fluenti in a TanStack Start project
+---
+
+import { Steps } from '@astrojs/starlight/components'
+
+<Steps>
+
+1. **Install packages**
+
+   ```bash
+   pnpm add @fluenti/core @fluenti/react @tanstack/react-router @tanstack/react-start
+   pnpm add -D @fluenti/cli @vitejs/plugin-react vite-tsconfig-paths
+   ```
+
+2. **Configure Vite**
+
+   ```typescript
+   // vite.config.ts
+   import { defineConfig } from 'vite'
+   import { tanstackStart } from '@tanstack/react-start/plugin/vite'
+   import react from '@vitejs/plugin-react'
+   import tsConfigPaths from 'vite-tsconfig-paths'
+
+   export default defineConfig({
+     plugins: [
+       tsConfigPaths(),
+       tanstackStart(),
+       react(),
+     ],
+   })
+   ```
+
+3. **Create `fluenti.config.ts`**
+
+   ```typescript
+   // fluenti.config.ts
+   import { defineConfig } from '@fluenti/cli'
+
+   export default defineConfig({
+     sourceLocale: 'en',
+     locales: ['en', 'zh-CN', 'ja'],
+     catalogDir: './locales',
+     format: 'po',
+     include: ['./src/**/*.{tsx,ts}'],
+     compileOutDir: './src/locales/compiled',
+   })
+   ```
+
+4. **Set up the root route with I18nProvider**
+
+   ```tsx
+   // src/routes/__root.tsx
+   import { Outlet, createRootRoute, HeadContent, Scripts } from '@tanstack/react-router'
+   import { useState } from 'react'
+   import { I18nProvider, useI18n } from '@fluenti/react'
+   import { getDirection } from '@fluenti/core'
+   import type { ReactNode } from 'react'
+   import en from '../locales/compiled/en'
+   import zhCN from '../locales/compiled/zh-CN'
+   import ja from '../locales/compiled/ja'
+
+   const messages = { en, 'zh-CN': zhCN, ja }
+
+   function getInitialLocale(): string {
+     if (typeof document === 'undefined') return 'en'
+     const match = document.cookie.match(/(?:^|;\s*)locale=([^;]*)/)
+     if (match) return decodeURIComponent(match[1])
+     return 'en'
+   }
+
+   export const Route = createRootRoute({
+     component: RootComponent,
+   })
+
+   function RootComponent() {
+     const [locale, setLocaleState] = useState(getInitialLocale)
+
+     const handleLocaleChange = (loc: string) => {
+       document.cookie = `locale=${loc};path=/;max-age=31536000`
+       document.documentElement.lang = loc
+       document.documentElement.dir = getDirection(loc)
+       setLocaleState(loc)
+     }
+
+     return (
+       <RootDocument locale={locale}>
+         <I18nProvider locale={locale} fallbackLocale="en" messages={messages}>
+           <Nav onLocaleChange={handleLocaleChange} />
+           <Outlet />
+         </I18nProvider>
+       </RootDocument>
+     )
+   }
+
+   function RootDocument({ locale, children }: { locale: string; children: ReactNode }) {
+     return (
+       <html lang={locale} dir={getDirection(locale)}>
+         <head><HeadContent /></head>
+         <body>
+           {children}
+           <Scripts />
+         </body>
+       </html>
+     )
+   }
+
+   function Nav({ onLocaleChange }: { onLocaleChange: (l: string) => void }) {
+     const { preloadLocale } = useI18n()
+     return (
+       <div>
+         <button onClick={() => onLocaleChange('en')}>English</button>
+         <button
+           onMouseEnter={() => preloadLocale('zh-CN')}
+           onClick={() => onLocaleChange('zh-CN')}
+         >中文</button>
+         <button
+           onMouseEnter={() => preloadLocale('ja')}
+           onClick={() => onLocaleChange('ja')}
+         >日本語</button>
+       </div>
+     )
+   }
+   ```
+
+5. **Write a page route**
+
+   ```tsx
+   // src/routes/index.tsx
+   import { createFileRoute } from '@tanstack/react-router'
+
+   export const Route = createFileRoute('/')({
+     component: Home,
+   })
+
+   function Home() {
+     const name = 'World'
+     return (
+       <div>
+         <h1>{t`Welcome to my app`}</h1>
+         <p>{t`Hello, ${name}!`}</p>
+       </div>
+     )
+   }
+   ```
+
+   The `` t`...` `` tagged template is a compiler macro — no import needed. The Vite plugin injects it automatically.
+
+6. **Extract, translate, and compile**
+
+   ```bash
+   npx fluenti extract
+   # ... translate the .po files ...
+   npx fluenti compile
+   ```
+
+</Steps>
+
+## Key differences from React SPA
+
+- File-based routing with `createFileRoute()` and `createRootRoute()`
+- `HeadContent` and `Scripts` components for proper SSR document structure
+- SSR support built-in via TanStack Start
+- Cookie-based locale detection (works on both client and server)
