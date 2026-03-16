@@ -107,6 +107,7 @@ test.describe('Nuxt Playground (SSR)', () => {
 test.describe('Nuxt SSR — Accept-Language Header Detection', () => {
   test('detects Japanese from Accept-Language header', async ({ browser }) => {
     const context = await browser.newContext({
+      locale: 'ja',
       extraHTTPHeaders: { 'Accept-Language': 'ja,en;q=0.5' },
     })
     const page = await context.newPage()

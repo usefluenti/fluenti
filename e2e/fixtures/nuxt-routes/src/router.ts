@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import { extendPages, type PageRoute } from '@fluenti/nuxt'
+import { extendPages, type PageRoute } from '@fluenti/nuxt/client'
 import Home from './pages/Home.vue'
 import About from './pages/About.vue'
 import Contact from './pages/Contact.vue'

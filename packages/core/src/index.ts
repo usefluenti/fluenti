@@ -123,6 +123,11 @@ export function createFluent(config: FluentConfigExtended): FluentInstanceExtend
       }
     }
 
+    // If the id looks like an ICU message, interpolate it directly
+    // (compile-time transforms like <Plural> emit inline ICU as t() arguments)
+    if (id.includes('{')) {
+      return interpolate(id, values, currentLocale)
+    }
     return id
   }
 

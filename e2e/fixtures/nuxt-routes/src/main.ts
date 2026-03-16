@@ -5,8 +5,8 @@ import {
   useSwitchLocalePath,
   useLocaleHead,
   extractLocaleFromPath,
-} from '@fluenti/nuxt'
-import type { FluentNuxtRuntimeConfig } from '@fluenti/nuxt'
+} from '@fluenti/nuxt/client'
+import type { FluentNuxtRuntimeConfig } from '@fluenti/nuxt/client'
 import App from './App.vue'
 import router from './router'
 import { messages } from './locales/messages'

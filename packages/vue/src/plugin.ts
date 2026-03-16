@@ -180,7 +180,11 @@ export function createFluentVue(options: FluentVueOptions): FluentVuePlugin {
       return interpolate(fallbackMessage, values, currentLocale)
     }
 
-    // Final fallback — return the id itself
+    // Final fallback — if the id looks like an ICU message, interpolate it
+    // (compile-time transforms like <Plural> emit inline ICU as t() arguments)
+    if (messageId.includes('{')) {
+      return interpolate(messageId, values, currentLocale)
+    }
     return messageId
   }
 

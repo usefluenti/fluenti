@@ -8,6 +8,7 @@ export default defineConfig({
         module: 'src/module.ts',
         'runtime/index': 'src/runtime/index.ts',
         'runtime/plugin': 'src/runtime/plugin.ts',
+        'runtime/client': 'src/runtime/client.ts',
         'runtime/composables': 'src/runtime/composables.ts',
         'runtime/components/NuxtLinkLocale': 'src/runtime/components/NuxtLinkLocale.ts',
         'runtime/middleware/locale-redirect': 'src/runtime/middleware/locale-redirect.ts',

@@ -1,5 +1,5 @@
 import { createSignal, createRoot, type Accessor } from 'solid-js'
-import { formatDate, formatNumber } from '@fluenti/core'
+import { formatDate, formatNumber, interpolate as coreInterpolate } from '@fluenti/core'
 import type { FluentConfig, Locale, Messages, CompiledMessage, MessageDescriptor, DateFormatOptions, NumberFormatOptions } from '@fluenti/core'
 
 /** Chunk loader for code-splitting mode */
@@ -99,6 +99,11 @@ export function createI18nContext(config: FluentConfig | I18nConfig): I18nContex
       const result = config.missing(loc, id)
       if (result !== undefined) return result
     }
+    // If the id looks like an ICU message, interpolate it directly
+    // (compile-time transforms like <Plural> emit inline ICU as t() arguments)
+    if (id.includes('{')) {
+      return coreInterpolate(id, values, loc)
+    }
     return id
   }
 
@@ -175,8 +180,7 @@ export function createI18nContext(config: FluentConfig | I18nConfig): I18nContex
     formatNumber(value, locale(), style, i18nConfig.numberFormats)
 
   const format = (message: string, values?: Record<string, unknown>): string => {
-    if (!values) return message
-    return interpolate(message, values)
+    return coreInterpolate(message, values, locale())
   }
 
   /** @deprecated Use `format()` instead. */

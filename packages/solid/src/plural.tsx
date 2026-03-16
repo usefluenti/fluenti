@@ -98,29 +98,44 @@ export interface PluralProps {
 export const Plural: Component<PluralProps> = (props) => {
   const { t, locale } = useI18n()
 
+  /** Resolve a category prop value — handles string, accessor function, and JSX */
+  function resolveProp(val: string | JSX.Element | undefined): string | JSX.Element | undefined {
+    if (typeof val === 'function') return (val as () => string | JSX.Element)()
+    return val
+  }
+
   return (() => {
     const currentLocale = locale()
 
+    // Resolve all category values (handles Solid accessors from createMemo)
+    const resolvedValues: Partial<Record<PluralCategory, string | JSX.Element>> = {}
+    for (const cat of PLURAL_CATEGORIES) {
+      const resolved = resolveProp(props[cat])
+      if (resolved !== undefined) {
+        resolvedValues[cat] = resolved
+      }
+    }
+
     // Check if any category prop contains JSX (non-string) content
     const hasRichContent = PLURAL_CATEGORIES.some(cat => {
-      const val = props[cat]
+      const val = resolvedValues[cat]
       return val !== undefined && typeof val !== 'string'
     })
 
     if (hasRichContent) {
-      const cat = resolveCategory(props.value, currentLocale, c => props[c] !== undefined)
-      const content = props[cat] ?? props.other
+      const cat = resolveCategory(props.value, currentLocale, c => resolvedValues[c] !== undefined)
+      const content = resolvedValues[cat] ?? resolvedValues.other ?? props.other
       return (<Dynamic component={props.tag ?? 'span'}>{content}</Dynamic>) as JSX.Element
     }
 
-    // Existing string ICU path (unchanged)
+    // Existing string ICU path
     const forms: Partial<Record<PluralCategory, string>> & { other: string } = {
-      ...(props.zero !== undefined && { zero: props.zero as string }),
-      ...(props.one !== undefined && { one: props.one as string }),
-      ...(props.two !== undefined && { two: props.two as string }),
-      ...(props.few !== undefined && { few: props.few as string }),
-      ...(props.many !== undefined && { many: props.many as string }),
-      other: props.other as string,
+      ...(resolvedValues.zero !== undefined && { zero: resolvedValues.zero as string }),
+      ...(resolvedValues.one !== undefined && { one: resolvedValues.one as string }),
+      ...(resolvedValues.two !== undefined && { two: resolvedValues.two as string }),
+      ...(resolvedValues.few !== undefined && { few: resolvedValues.few as string }),
+      ...(resolvedValues.many !== undefined && { many: resolvedValues.many as string }),
+      other: (resolvedValues.other ?? props.other) as string,
     }
 
     // Build the ICU message key from source-language props
@@ -128,14 +143,8 @@ export const Plural: Component<PluralProps> = (props) => {
 
     // Use t() for catalog lookup — if a translation exists for this ICU key,
     // it will be returned (as a compiled function result). If not found, t()
-    // returns the id string itself, so we fall back to core interpolate.
-    const translated = t(icuMessage, { count: props.value })
-
-    // If t() returned the raw ICU message (no catalog match), use core
-    // interpolate which handles ICU plural/select syntax properly.
-    const text = translated === icuMessage
-      ? interpolate(icuMessage, { count: props.value }, currentLocale)
-      : translated
+    // now falls back to interpolating inline ICU via core's interpolate.
+    const text = t(icuMessage, { count: props.value })
 
     return (<Dynamic component={props.tag ?? 'span'}>{text}</Dynamic>) as JSX.Element
   }) as unknown as JSX.Element

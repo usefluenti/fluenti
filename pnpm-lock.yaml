@@ -598,6 +598,9 @@ importers:
       '@fluenti/solid':
         specifier: workspace:*
         version: link:../../packages/solid
+      '@fluenti/vite-plugin':
+        specifier: workspace:*
+        version: link:../../packages/vite-plugin
       '@solidjs/router':
         specifier: ^0.15
         version: 0.15.4(solid-js@1.9.11)

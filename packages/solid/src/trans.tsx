@@ -63,8 +63,14 @@ export const Trans: Component<TransProps> = (props) => {
   let warned = false
 
   return (() => {
+    // Resolve message prop — handles Solid accessor functions from createMemo
+    const rawMessage = props.message
+    const resolvedMessage = typeof rawMessage === 'function'
+      ? (rawMessage as () => string)()
+      : rawMessage
+
     // No message → render children directly (recommended API)
-    if (!props.message) {
+    if (!resolvedMessage) {
       const children = props.children
       if (!children) return null
 
@@ -87,8 +93,8 @@ export const Trans: Component<TransProps> = (props) => {
     }
 
     const message = props.values
-      ? format(props.message, props.values)
-      : props.message
+      ? format(resolvedMessage, props.values)
+      : resolvedMessage
 
     if (!props.components) {
       return message as unknown as JSX.Element

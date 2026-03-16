@@ -6,8 +6,8 @@ import {
   useLocalePath,
   useSwitchLocalePath,
   useLocaleHead,
-} from '@fluenti/nuxt'
-import type { FluentNuxtRuntimeConfig } from '@fluenti/nuxt'
+} from '@fluenti/nuxt/client'
+import type { FluentNuxtRuntimeConfig } from '@fluenti/nuxt/client'
 import { RUNTIME_CONFIG_KEY } from './main'
 
 const { t, locale, setLocale } = useI18n()
