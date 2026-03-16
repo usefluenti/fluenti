@@ -36,7 +36,9 @@
     "test:e2e:react": "playwright test --project=react",
     "test:e2e:react-router": "playwright test --project=react-router",
     "test:e2e:remix": "playwright test --project=remix",
-    "test:e2e:nextjs": "playwright test --project=nextjs"
+    "test:e2e:nextjs": "playwright test --project=nextjs",
+    "bench": "vitest bench",
+    "bench:core": "pnpm --filter @fluenti/core bench"
   },
   "devDependencies": {
     "@playwright/test": "^1.58.2",

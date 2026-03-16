@@ -1,0 +1,79 @@
+name: E2E
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  e2e:
+    name: E2E (${{ matrix.shard }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        shard:
+          - vue
+          - solid
+          - react
+          - nuxt
+          - vue-fixtures
+          - react-fixtures
+
+        include:
+          # examples
+          - shard: vue
+            projects: vue
+          - shard: solid
+            projects: solid
+          - shard: react
+            projects: react
+          - shard: nuxt
+            projects: nuxt,nuxt-ssg,nuxt-spa,nuxt-custom-detect,nuxt-prefix
+
+          # fixtures
+          - shard: vue-fixtures
+            projects: splitting-vue,vue-i18n-bridge,vue-routes,solid-start
+          - shard: react-fixtures
+            projects: splitting-react,react-router,remix,nextjs
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Build packages
+        run: pnpm build
+
+      - name: Run E2E tests
+        run: |
+          IFS=',' read -ra PROJECTS <<< "${{ matrix.projects }}"
+          ARGS=""
+          for proj in "${PROJECTS[@]}"; do
+            ARGS+="--project=$proj "
+          done
+          pnpm exec playwright test $ARGS
+
+      - name: Upload test results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-results-${{ matrix.shard }}
+          path: test-results/
+          retention-days: 7
