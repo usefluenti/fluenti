@@ -1,6 +1,6 @@
 import { createServerI18n } from '@fluenti/react/server'
 
-export const { setLocale, getI18n } = createServerI18n({
+export const { setLocale, getI18n, Trans, Plural, DateTime, NumberFormat } = createServerI18n({
   loadMessages: async (locale: string) => {
     switch (locale) {
       case 'ja': return import('@/locales/compiled/ja')
