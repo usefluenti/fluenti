@@ -26,7 +26,12 @@ const UNITS: TimeUnit[] = [
  * @returns Relative time string
  */
 export function formatRelativeTime(value: Date | number, locale: Locale): string {
-  const ms = (value instanceof Date ? value.getTime() : value) - Date.now()
+  const timestamp = value instanceof Date ? value.getTime() : value
+  if (!Number.isFinite(timestamp)) {
+    return ''
+  }
+
+  const ms = timestamp - Date.now()
   const absMs = Math.abs(ms)
 
   const rtf = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' })

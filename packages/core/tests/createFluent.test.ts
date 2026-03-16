@@ -180,4 +180,75 @@ describe('createFluent', () => {
     i18n.locale = 'fr'
     expect(i18n.locale).toBe('fr')
   })
+
+  // ─── Edge cases ──────────────────────────────────────────────────────
+
+  describe('edge cases', () => {
+    it('missing handler that throws does not crash', () => {
+      const i18n = createFluent({
+        locale: 'en',
+        messages: { en: {} },
+        missing: () => {
+          throw new Error('boom')
+        },
+      })
+      expect(i18n.t('unknown')).toBe('unknown')
+    })
+
+    it('locale not in messages returns id', () => {
+      const i18n = createFluent({
+        locale: 'ja',
+        messages: { en: { greeting: 'Hello' } },
+      })
+      expect(i18n.t('greeting')).toBe('greeting')
+    })
+
+    it('fallbackChain with wildcard *', () => {
+      const i18n = createFluent({
+        locale: 'de',
+        messages: {
+          de: {},
+          en: { greeting: 'Hello' },
+        },
+        fallbackChain: {
+          '*': ['en'],
+        },
+      })
+      expect(i18n.t('greeting')).toBe('Hello')
+    })
+
+    it('d() handles NaN without throwing', () => {
+      const i18n = createFluent({
+        locale: 'en',
+        messages: { en: {} },
+      })
+      expect(() => i18n.d(NaN)).not.toThrow()
+    })
+
+    it('n() handles NaN', () => {
+      const i18n = createFluent({
+        locale: 'en',
+        messages: { en: {} },
+      })
+      expect(i18n.n(NaN)).toBe('NaN')
+    })
+
+    it('t() with MessageDescriptor without message uses catalog', () => {
+      const i18n = createFluent({
+        locale: 'en',
+        messages: { en: { test: 'From catalog' } },
+      })
+      expect(i18n.t({ id: 'test' })).toBe('From catalog')
+    })
+
+    it('loadMessages then translate works', () => {
+      const i18n = createFluent({
+        locale: 'en',
+        messages: { en: {} },
+      })
+      i18n.loadMessages('fr', { greeting: 'Bonjour' })
+      i18n.setLocale('fr')
+      expect(i18n.t('greeting')).toBe('Bonjour')
+    })
+  })
 })

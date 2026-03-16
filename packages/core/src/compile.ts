@@ -111,48 +111,55 @@ function renderFunction(
   locale: string,
 ): string {
   const val = values[node.variable]
+  if (val === undefined || val === null) {
+    return `{${node.variable}}`
+  }
 
-  switch (node.fn) {
-    case 'number': {
-      const num = typeof val === 'number' ? val : Number(val)
-      if (node.style === 'currency') {
-        return new Intl.NumberFormat(locale, { style: 'currency', currency: 'USD' }).format(num)
+  try {
+    switch (node.fn) {
+      case 'number': {
+        const num = typeof val === 'number' ? val : Number(val)
+        if (node.style === 'currency') {
+          return new Intl.NumberFormat(locale, { style: 'currency', currency: 'USD' }).format(num)
+        }
+        if (node.style === 'percent') {
+          return new Intl.NumberFormat(locale, { style: 'percent' }).format(num)
+        }
+        if (node.style) {
+          return new Intl.NumberFormat(locale, {}).format(num)
+        }
+        return new Intl.NumberFormat(locale).format(num)
       }
-      if (node.style === 'percent') {
-        return new Intl.NumberFormat(locale, { style: 'percent' }).format(num)
+
+      case 'date': {
+        const date = val instanceof Date ? val : new Date(val as number)
+        if (node.style === 'short') {
+          return new Intl.DateTimeFormat(locale, { dateStyle: 'short' }).format(date)
+        }
+        if (node.style === 'long') {
+          return new Intl.DateTimeFormat(locale, { dateStyle: 'long' }).format(date)
+        }
+        if (node.style === 'full') {
+          return new Intl.DateTimeFormat(locale, { dateStyle: 'full' }).format(date)
+        }
+        return new Intl.DateTimeFormat(locale).format(date)
       }
-      if (node.style) {
-        return new Intl.NumberFormat(locale, {}).format(num)
+
+      case 'time': {
+        const date = val instanceof Date ? val : new Date(val as number)
+        if (node.style === 'short') {
+          return new Intl.DateTimeFormat(locale, { timeStyle: 'short' }).format(date)
+        }
+        if (node.style === 'long') {
+          return new Intl.DateTimeFormat(locale, { timeStyle: 'long' }).format(date)
+        }
+        return new Intl.DateTimeFormat(locale, { timeStyle: 'medium' }).format(date)
       }
-      return new Intl.NumberFormat(locale).format(num)
+
+      default:
+        return String(val ?? '')
     }
-
-    case 'date': {
-      const date = val instanceof Date ? val : new Date(val as number)
-      if (node.style === 'short') {
-        return new Intl.DateTimeFormat(locale, { dateStyle: 'short' }).format(date)
-      }
-      if (node.style === 'long') {
-        return new Intl.DateTimeFormat(locale, { dateStyle: 'long' }).format(date)
-      }
-      if (node.style === 'full') {
-        return new Intl.DateTimeFormat(locale, { dateStyle: 'full' }).format(date)
-      }
-      return new Intl.DateTimeFormat(locale).format(date)
-    }
-
-    case 'time': {
-      const date = val instanceof Date ? val : new Date(val as number)
-      if (node.style === 'short') {
-        return new Intl.DateTimeFormat(locale, { timeStyle: 'short' }).format(date)
-      }
-      if (node.style === 'long') {
-        return new Intl.DateTimeFormat(locale, { timeStyle: 'long' }).format(date)
-      }
-      return new Intl.DateTimeFormat(locale, { timeStyle: 'medium' }).format(date)
-    }
-
-    default:
-      return String(val ?? '')
+  } catch {
+    return `{${node.variable}}`
   }
 }

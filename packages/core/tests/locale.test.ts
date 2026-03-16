@@ -115,3 +115,49 @@ describe('getDirection', () => {
     expect(getDirection('ja')).toBe('ltr')
   })
 })
+
+// ─── Edge cases ────────────────────────────────────────────────────────
+
+describe('parseLocale edge cases', () => {
+  it('handles empty string', () => {
+    const result = parseLocale('')
+    expect(result.language).toBe('')
+  })
+
+  it('handles trailing dash', () => {
+    const result = parseLocale('en-')
+    expect(result.language).toBe('en')
+    expect(result.region).toBe('')
+  })
+
+  it('handles numeric region codes', () => {
+    const result = parseLocale('en-001')
+    expect(result.language).toBe('en')
+    expect(result.region).toBe('001')
+  })
+
+  it('handles locale with 4+ parts (extension subtags)', () => {
+    const result = parseLocale('zh-Hans-CN-extra')
+    expect(result.language).toBe('zh')
+    expect(result.script).toBe('Hans')
+    expect(result.region).toBe('CN')
+  })
+})
+
+describe('negotiateLocale edge cases', () => {
+  it('handles empty requested array with fallback', () => {
+    expect(negotiateLocale([], ['en', 'fr'], 'en')).toBe('en')
+  })
+
+  it('handles empty requested array without fallback', () => {
+    expect(negotiateLocale([], ['en', 'fr'])).toBe('en')
+  })
+
+  it('handles single string locale (not array)', () => {
+    expect(negotiateLocale('fr', ['en', 'fr'])).toBe('fr')
+  })
+
+  it('matches script-based locale zh-Hans to zh-CN', () => {
+    expect(negotiateLocale('zh-Hans', ['zh-CN', 'en'])).toBe('zh-CN')
+  })
+})
