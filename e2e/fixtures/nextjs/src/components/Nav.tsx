@@ -27,6 +27,7 @@ export function Nav() {
         <Link href="/richtext" data-testid="nav-richtext">{i18n.t('Rich Text')}</Link>
         <Link href="/rsc-richtext" data-testid="nav-rsc-richtext">{i18n.t('RSC Rich Text')}</Link>
         <Link href="/fallback" data-testid="nav-fallback">{i18n.t('Fallback')}</Link>
+        <Link href="/rsc-tagged" data-testid="nav-rsc-tagged">{i18n.t('RSC Tagged')}</Link>
       </nav>
 
       <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>

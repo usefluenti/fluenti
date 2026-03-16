@@ -14,8 +14,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const locale = cookieStore.get('locale')?.value ?? 'en'
   const dir = getDirection(locale)
 
-  // Set locale for RSC pages that use getI18n()
-  setLocale(locale)
+  // Set locale and pre-load messages for RSC pages
+  await setLocale(locale)
 
   return (
     <html lang={locale} dir={dir}>

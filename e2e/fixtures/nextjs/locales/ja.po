@@ -85,6 +85,15 @@ msgstr "フォールバック"
 msgid "Fallback Demo"
 msgstr "フォールバックデモ"
 
+msgid "RSC Tagged"
+msgstr "RSC タグ付き"
+
+msgid "Welcome to {framework}"
+msgstr "{framework} へようこそ"
+
+msgid "This page uses tagged templates in a Server Component."
+msgstr "このページはサーバーコンポーネントでタグ付きテンプレートを使用しています。"
+
 #. msg`Rich Text Demos`
 msgid "1x4v5ca"
 msgstr "リッチテキストデモ"

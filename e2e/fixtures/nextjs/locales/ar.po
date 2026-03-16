@@ -81,3 +81,12 @@ msgstr "نص منسق"
 
 msgid "Fallback"
 msgstr "احتياطي"
+
+msgid "RSC Tagged"
+msgstr "RSC مع قوالب"
+
+msgid "Welcome to {framework}"
+msgstr "مرحباً بكم في {framework}"
+
+msgid "This page uses tagged templates in a Server Component."
+msgstr "تستخدم هذه الصفحة قوالب مميزة في مكون خادم."

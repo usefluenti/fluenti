@@ -297,4 +297,28 @@ test.describe('Next.js App Router e2e', () => {
     const link = page.getByTestId('rsc-trans-link').locator('a')
     await expect(link).toContainText('ドキュメント')
   })
+
+  // ─── RSC Tagged Templates (t`` in Server Components) ────────────────────────
+
+  test('RSC tagged page renders with t`` tagged templates', async ({ page }) => {
+    await page.goto('/rsc-tagged')
+    await expect(page.getByTestId('rsc-tagged-page')).toBeVisible()
+    await expect(page.getByTestId('rsc-tagged-title')).toContainText('Server rendered')
+    await expect(page.getByTestId('rsc-tagged-interpolation')).toContainText('Welcome to Next.js')
+    await expect(page.getByTestId('rsc-tagged-simple')).toContainText('tagged templates in a Server Component')
+  })
+
+  test('RSC tagged page translates when locale is Japanese', async ({ page }) => {
+    await page.context().addCookies([{ name: 'locale', value: 'ja', url: 'http://localhost:3000' }])
+    await page.goto('/rsc-tagged')
+    await expect(page.getByTestId('rsc-tagged-title')).toContainText('サーバーレンダリング')
+    await expect(page.getByTestId('rsc-tagged-interpolation')).toContainText('Next.js へようこそ')
+  })
+
+  test('RSC tagged page translates when locale is Arabic', async ({ page }) => {
+    await page.context().addCookies([{ name: 'locale', value: 'ar', url: 'http://localhost:3000' }])
+    await page.goto('/rsc-tagged')
+    await expect(page.getByTestId('rsc-tagged-title')).toContainText('عرض من الخادم')
+    await expect(page.getByTestId('rsc-tagged-interpolation')).toContainText('مرحباً بكم في Next.js')
+  })
 })

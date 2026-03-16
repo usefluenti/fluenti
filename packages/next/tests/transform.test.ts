@@ -204,3 +204,83 @@ describe('transform (server mode)', () => {
     expect(result!.code).toContain("import { __useI18n } from '@fluenti/react'")
   })
 })
+
+// ─── Edge cases ─────────────────────────────────────────────────────────────
+
+describe('transform edge cases', () => {
+  it('handles "use client" with double quotes', () => {
+    const code = `"use client"\nconst msg = t\`Hello\``
+    const result = transform(code, 'App.tsx')
+    expect(result!.code).toContain("import { __useI18n } from '@fluenti/react'")
+  })
+
+  it('handles "use client" preceded by a comment', () => {
+    const code = `// some comment\n'use client'\nconst msg = t\`Hello\``
+    const result = transform(code, 'App.tsx')
+    expect(result!.code).toContain("import { __useI18n } from '@fluenti/react'")
+  })
+
+  it('handles "use client" preceded by a block comment', () => {
+    const code = `/* license */\n'use client'\nconst msg = t\`Hello\``
+    const result = transform(code, 'App.tsx')
+    expect(result!.code).toContain("import { __useI18n } from '@fluenti/react'")
+  })
+
+  it('does not match use client in a string literal', () => {
+    const code = `const x = 'use client'\nconst msg = t\`Hello\``
+    // 'use client' is in a variable assignment, not a directive
+    // The regex checks start of file, so this should NOT match as a client file
+    // Since it starts with 'const', not 'use client', it's a server file
+    // But we need serverModule to be set for server mode
+    const result = transform(code, 'App.tsx')
+    expect(result).not.toBeNull()
+    // Without serverModule set, falls back to client mode
+    expect(result!.code).toContain('__i18n.t')
+  })
+
+  it('transforms nested property access in template (a.b.c)', () => {
+    const result = transformTaggedTemplate('const msg = t`Hello ${user.profile.name}`')
+    expect(result.needsImport).toBe(true)
+    // Last segment used as var name
+    expect(result.code).toContain("__i18n.t('Hello {name}', { name: user.profile.name })")
+  })
+
+  it('handles escaped backslash in template', () => {
+    const result = transformTaggedTemplate('const msg = t`Hello\\\\World`')
+    expect(result.needsImport).toBe(true)
+    expect(result.code).toContain("__i18n.t('Hello\\\\World')")
+  })
+
+  it('does not transform t inside a word like "const" or "let"', () => {
+    const result = transformTaggedTemplate('const setContext = (ctx) => ctx')
+    expect(result.needsImport).toBe(false)
+  })
+
+  it('transforms multiple t`` in one file', () => {
+    const code = 'const a = t`Hello`\nconst b = t`World`'
+    const result = transformTaggedTemplate(code)
+    expect(result.needsImport).toBe(true)
+    expect(result.code).toContain("__i18n.t('Hello')")
+    expect(result.code).toContain("__i18n.t('World')")
+  })
+
+  it('transforms mixed t`` and t() in one file', () => {
+    const code = "const a = t`Hello`\nconst b = t('World')"
+    const result = transformTaggedTemplate(code)
+    expect(result.needsImport).toBe(true)
+    expect(result.code).toContain("__i18n.t('Hello')")
+    expect(result.code).toContain("__i18n.t('World')")
+  })
+
+  it('handles t() with double-quoted strings', () => {
+    const result = transformTaggedTemplate('const msg = t("Hello World")')
+    expect(result.needsImport).toBe(true)
+    expect(result.code).toContain("__i18n.t('Hello World')")
+  })
+
+  it('handles empty template', () => {
+    const result = transformTaggedTemplate('const msg = t``')
+    expect(result.needsImport).toBe(true)
+    expect(result.code).toContain("__i18n.t('')")
+  })
+})

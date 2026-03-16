@@ -205,4 +205,42 @@ describe('createServerI18n', () => {
       expect(i18n1).toBe(i18n2)
     })
   })
+
+  // ─── getI18nSync ───────────────────────────────────────────────────
+
+  describe('getI18nSync', () => {
+    it('should throw when no instance is available', () => {
+      const { getI18nSync } = createServerI18n({ loadMessages })
+
+      expect(() => getI18nSync()).toThrow('[fluenti] No i18n instance available synchronously')
+    })
+
+    it('should throw when only setLocale (sync) was called without getI18n', () => {
+      const { setLocale, getI18nSync } = createServerI18n({ loadMessages })
+      setLocale('en')
+
+      // setLocale only sets locale, doesn't load messages
+      expect(() => getI18nSync()).toThrow()
+    })
+
+    it('should return instance after getI18n has been awaited', async () => {
+      const { setLocale, getI18n, getI18nSync } = createServerI18n({ loadMessages })
+      setLocale('en')
+      await getI18n()
+
+      const i18n = getI18nSync()
+      expect(i18n).toBeDefined()
+      expect(i18n.locale).toBe('en')
+      expect(i18n.t('greeting')).toBe('Hello')
+    })
+
+    it('should return the same instance as getI18n', async () => {
+      const { setLocale, getI18n, getI18nSync } = createServerI18n({ loadMessages })
+      setLocale('en')
+      const asyncInstance = await getI18n()
+      const syncInstance = getI18nSync()
+
+      expect(syncInstance).toBe(asyncInstance)
+    })
+  })
 })

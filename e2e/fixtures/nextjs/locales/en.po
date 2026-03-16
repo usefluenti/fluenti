@@ -88,6 +88,15 @@ msgstr ""
 msgid "This text is only translated in English"
 msgstr ""
 
+msgid "RSC Tagged"
+msgstr ""
+
+msgid "Welcome to {framework}"
+msgstr ""
+
+msgid "This page uses tagged templates in a Server Component."
+msgstr ""
+
 #. msg`Rich Text Demos`
 msgid "1x4v5ca"
 msgstr "Rich Text Demos"
