@@ -13,6 +13,7 @@ import { readPoCatalog, writePoCatalog } from './po-format'
 import { compileCatalog, compileCatalogSplit, compileIndex, collectAllIds } from './compile'
 import { translateCatalog } from './translate'
 import type { AIProvider } from './translate'
+import { runMigrate } from './migrate'
 import type { ExtractedMessage, FluentiConfig } from '@fluenti/core'
 
 const defaultConfig: FluentiConfig = {
@@ -243,13 +244,35 @@ const translate = defineCommand({
   },
 })
 
+const migrate = defineCommand({
+  meta: { name: 'migrate', description: 'Migrate from another i18n library using AI' },
+  args: {
+    from: { type: 'string', description: 'Source library: vue-i18n, nuxt-i18n, react-i18next, next-intl, next-i18next, lingui', required: true },
+    provider: { type: 'string', description: 'AI provider: claude or codex', default: 'claude' },
+    write: { type: 'boolean', description: 'Write generated files to disk', default: false },
+  },
+  async run({ args }) {
+    const provider = args.provider as AIProvider
+    if (provider !== 'claude' && provider !== 'codex') {
+      consola.error(`Invalid provider "${provider}". Use "claude" or "codex".`)
+      return
+    }
+
+    await runMigrate({
+      from: args.from!,
+      provider,
+      write: args.write ?? false,
+    })
+  },
+})
+
 const main = defineCommand({
   meta: {
     name: 'fluenti',
     version: '0.0.1',
     description: 'Compile-time i18n for modern frameworks',
   },
-  subCommands: { extract, compile, stats, translate },
+  subCommands: { extract, compile, stats, translate, migrate },
 })
 
 runMain(main)
