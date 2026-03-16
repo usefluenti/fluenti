@@ -1,0 +1,199 @@
+# Migrating to @fluenti/vue from vue-i18n
+
+> Step-by-step guide to migrate a Vue 3 app from vue-i18n (v9/v10) to Fluenti.
+
+## Overview
+
+Fluenti is a **compile-time** i18n library — translations are compiled to optimized JS at build time, resulting in zero runtime overhead and smaller bundles. vue-i18n is a runtime library that parses messages on every render.
+
+Key differences:
+- Fluenti uses ICU MessageFormat; vue-i18n uses its own syntax
+- Fluenti requires a Vite plugin for build-time compilation
+- Fluenti catalog files use PO (gettext) or JSON format, managed by the CLI
+- No runtime parser needed — messages become plain strings or template functions
+
+## Gradual Migration with @fluenti/vue-i18n-compat
+
+For large projects, use the compatibility bridge to run both libraries side by side:
+
+```bash
+pnpm add @fluenti/vue-i18n-compat @fluenti/core @fluenti/vue
+```
+
+```ts
+import { createI18n } from 'vue-i18n'
+import { createFluentVue } from '@fluenti/vue'
+import { createFluentBridge } from '@fluenti/vue-i18n-compat'
+
+const i18n = createI18n({ legacy: false, locale: 'en', messages: { en: legacyMessages } })
+const fluenti = createFluentVue({ locale: 'en', fallbackLocale: 'en', messages: { en: newMessages } })
+const bridge = createFluentBridge({ vueI18n: i18n, fluenti, priority: 'fluenti-first' })
+
+app.use(bridge) // installs both, syncs locale, falls through on lookups
+```
+
+Then migrate messages one at a time. When done, remove the bridge and use @fluenti/vue directly.
+
+## Step-by-step Migration (Direct)
+
+### 1. Install Fluenti packages
+
+```bash
+pnpm add @fluenti/core @fluenti/vue
+pnpm add -D @fluenti/cli @fluenti/vite-plugin
+```
+
+### 2. Update Vite config
+
+```ts
+// vite.config.ts
+import vue from '@vitejs/plugin-vue'
+import fluenti from '@fluenti/vite-plugin'
+
+export default {
+  plugins: [vue(), fluenti({ framework: 'vue' })],
+}
+```
+
+### 3. Replace plugin setup
+
+Before (vue-i18n):
+```ts
+import { createI18n } from 'vue-i18n'
+const i18n = createI18n({ locale: 'en', messages: { en, ja } })
+app.use(i18n)
+```
+
+After (Fluenti):
+```ts
+import { createFluentVue } from '@fluenti/vue'
+const fluent = createFluentVue({ locale: 'en', fallbackLocale: 'en', messages: { en, ja } })
+app.use(fluent)
+```
+
+### 4. Update composable usage
+
+Before (vue-i18n):
+```ts
+import { useI18n } from 'vue-i18n'
+const { t, locale } = useI18n()
+```
+
+After (Fluenti):
+```ts
+import { useI18n } from '@fluenti/vue'
+const { t, locale, setLocale } = useI18n()
+```
+
+### 5. Convert message syntax
+
+vue-i18n named interpolation → ICU MessageFormat:
+```
+# vue-i18n
+"hello": "Hello, {name}!"
+
+# Fluenti (same for simple cases)
+"hello": "Hello, {name}!"
+```
+
+vue-i18n pluralization → ICU plural:
+```
+# vue-i18n (pipe syntax)
+"items": "no items | one item | {count} items"
+
+# Fluenti (ICU MessageFormat)
+"items": "{count, plural, =0 {no items} one {one item} other {{count} items}}"
+```
+
+vue-i18n linked messages → not supported (use message functions):
+```
+# vue-i18n
+"greeting": "@:hello, welcome!"
+
+# Fluenti — inline the full message or use code
+"greeting": "Hello, {name}, welcome!"
+```
+
+### 6. Update template syntax
+
+Before (vue-i18n):
+```vue
+<template>
+  <p>{{ $t('hello', { name: 'World' }) }}</p>
+  <i18n-t keypath="terms" tag="p">
+    <template #link><a href="/terms">terms</a></template>
+  </i18n-t>
+</template>
+```
+
+After (Fluenti):
+```vue
+<template>
+  <p>{{ t('hello', { name: 'World' }) }}</p>
+  <Trans message="Read the {0}terms{1}">
+    <template #0><a href="/terms"></template>
+    <template #1></a></template>
+  </Trans>
+  <!-- Or use v-t directive for simple text -->
+  <p v-t>Hello</p>
+</template>
+```
+
+### 7. Remove vue-i18n
+
+```bash
+pnpm remove vue-i18n
+```
+
+## API Mapping Table
+
+| vue-i18n | Fluenti |
+|----------|---------|
+| `createI18n()` | `createFluentVue()` |
+| `useI18n()` | `useI18n()` |
+| `t(key, values)` | `t(key, values)` |
+| `tc(key, count)` | `t(key, { count })` (ICU plural) |
+| `te(key)` | `te(key)` |
+| `tm(key)` | `tm(key)` |
+| `d(value, format)` | `d(value, style)` |
+| `n(value, format)` | `n(value, style)` |
+| `locale.value = 'ja'` | `setLocale('ja')` |
+| `$t()` in template | `t()` in template (via useI18n) |
+| `<i18n-t>` component | `<Trans>` component |
+| `v-t` directive | `v-t` directive (same syntax) |
+| `@:key` linked messages | Not supported — inline messages |
+| Pipe plurals `a \| b \| c` | ICU `{n, plural, ...}` |
+| `numberFormats` option | `numberFormats` option |
+| `datetimeFormats` option | `dateFormats` option |
+
+## Translation File Conversion
+
+Use the Fluenti CLI to manage catalogs:
+
+```bash
+# Create config
+cat > fluenti.config.ts << 'EOF'
+export default {
+  sourceLocale: 'en',
+  locales: ['en', 'ja'],
+  catalogDir: './locales',
+  format: 'po',
+  include: ['./src/**/*.{vue,ts}'],
+  compileOutDir: './locales/compiled',
+}
+EOF
+
+# Extract messages from source
+npx fluenti extract
+
+# Compile catalogs to JS
+npx fluenti compile
+```
+
+## Key Behavioral Differences
+
+1. **No runtime parser** — messages are compiled at build time, so syntax errors are caught early
+2. **No lazy locale loading by default** — use `loadMessages` callback with code splitting for dynamic loading
+3. **No global `$t`** — use `useI18n()` composable or `v-t` directive
+4. **ICU MessageFormat** — standard plural/select/number/date formatting, not custom vue-i18n syntax
+5. **PO file support** — compatible with professional translation tools (Poedit, Crowdin, Weblate)

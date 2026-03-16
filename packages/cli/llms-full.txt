@@ -1,0 +1,269 @@
+# @fluenti/cli — Full API Reference
+
+> CLI tool for Fluenti — message extraction from Vue SFC & TSX/JSX, PO/JSON catalog compilation, translation stats, and AI-powered translation.
+
+- Package: @fluenti/cli
+- Binary: `fluenti`
+- Docs: https://fluenti.dev
+- Repository: https://github.com/usefluenti/fluenti/tree/main/packages/cli
+- License: MIT
+
+## Install
+
+```bash
+pnpm add -D @fluenti/cli
+```
+
+## Configuration
+
+The CLI loads config from `fluenti.config.ts`, `fluenti.config.js`, or `fluenti.config.mjs` in the project root.
+
+```ts
+// fluenti.config.ts
+export default {
+  sourceLocale: 'en',
+  locales: ['en', 'ja', 'zh-CN'],
+  catalogDir: './locales',
+  format: 'po',
+  include: ['./src/**/*.{vue,tsx,jsx,ts,js}'],
+  compileOutDir: './locales/compiled',
+}
+```
+
+### Config Options (FluentiConfig)
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| sourceLocale | string | 'en' | Source language code |
+| locales | string[] | ['en'] | All supported locale codes |
+| catalogDir | string | './locales' | Directory for catalog files |
+| format | 'po' \| 'json' | 'po' | Catalog file format |
+| include | string[] | ['./src/**/*.{vue,tsx,jsx,ts,js}'] | Glob patterns for source files |
+| compileOutDir | string | './locales/compiled' | Output directory for compiled JS |
+
+---
+
+## Commands
+
+### `fluenti extract`
+
+Scan source files for translatable messages and update catalog files.
+
+```bash
+fluenti extract [--config path]
+```
+
+**Extraction sources:**
+
+Vue SFC files (`.vue`):
+- `v-t` directive: `<div v-t>Hello</div>` → extracts "Hello"
+- `v-t` with explicit ID: `<div v-t:greeting>Hello</div>`
+- `v-t.plural` modifier: pipe-separated plural forms → ICU plural syntax
+- `<Trans>` component: `message` prop or rich text children
+- `<Plural>` component: category props (zero, one, other, etc.)
+- Template expressions: `{{ t('message') }}`
+
+TSX/JSX files:
+- Tagged templates: `` t`Hello ${name}` `` → `Hello {name}`
+- Function calls: `t('Hello')` → literal extraction
+- `<Trans>` component with `message` prop or children
+- `<Plural>` component with category props
+- Rich text with automatic placeholder mapping (`<0>text</0>`)
+
+**Variable naming in tagged templates:**
+- Simple: `${name}` → `{name}`
+- Property access: `${user.name}` → `{name}` (last segment)
+- Complex expression: `${getTotal()}` → `{0}` (positional)
+
+**Catalog update behavior:**
+- New messages: added to catalog
+- Existing messages: preserved with updated origin
+- Removed messages: marked as obsolete (not deleted)
+
+---
+
+### `fluenti compile`
+
+Compile PO/JSON catalogs to optimized ES modules.
+
+```bash
+fluenti compile [--config path] [--split]
+```
+
+**Default mode** — generates TypeScript files with default export:
+```ts
+// locales/compiled/en.ts
+export default {
+  'greeting': 'Hello',
+  'welcome': (v) => `Hello, ${v.name}!`,
+  'items': (v) => ((c) => {
+    const __cat = new Intl.PluralRules('en').select(c);
+    if (__cat === 'one') return `${c} item`;
+    return `${c} items`;
+  })(v.count)
+}
+```
+
+**Split mode** (`--split`) — named exports with tree-shaking annotations:
+```js
+// locales/compiled/en.js
+/* @__PURE__ */ export const _a1b2c3 = 'Hello'
+/* @__PURE__ */ export const _d4e5f6 = (v) => `Hello, ${v.name}!`
+```
+
+Plus an index module:
+```js
+// locales/compiled/index.js
+export const locales = ['en', 'ja']
+export const loaders = {
+  'en': () => import('./en.js'),
+  'ja': () => import('./ja.js'),
+}
+```
+
+**Message ID hashing:** Uses FNV-1a algorithm for deterministic hash-based export names in split mode.
+
+---
+
+### `fluenti stats`
+
+Show translation progress for all locales.
+
+```bash
+fluenti stats [--config path]
+```
+
+Output example:
+```
+  Locale  │ Total │ Translated │ Progress
+  ────────┼───────┼────────────┼─────────
+  en      │    42 │         42 │ 100.0%
+  ja      │    42 │         38 │ 90.5%
+  zh-CN   │    42 │         20 │ 47.6%
+```
+
+Filters out obsolete entries from counts.
+
+---
+
+### `fluenti translate`
+
+AI-powered translation using local CLI tools.
+
+```bash
+fluenti translate [--provider claude|codex] [--locale ja] [--batch-size 50] [--config path]
+```
+
+**Options:**
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| --provider | 'claude' \| 'codex' | 'claude' | AI CLI tool to use |
+| --locale | string | (all non-source) | Translate specific locale only |
+| --batch-size | number | 50 | Messages per AI call |
+| --config | string | (auto-detect) | Path to config file |
+
+**Providers:**
+- `claude`: Uses Claude Code CLI (`claude -p "prompt"`)
+- `codex`: Uses OpenAI Codex CLI (`codex -p "prompt" --full-auto`)
+
+**Behavior:**
+1. Reads catalog for each target locale
+2. Finds untranslated entries (empty or missing `translation` field)
+3. Batches messages by `--batch-size`
+4. Sends prompt to AI CLI with source messages as JSON
+5. Parses JSON response and writes translations back to catalog
+6. Preserves ICU MessageFormat placeholders ({name}, {count}, etc.)
+7. Preserves HTML tags
+
+**Prerequisites:** The chosen AI CLI tool must be installed and available in PATH.
+
+---
+
+## Catalog Formats
+
+### PO Format (Gettext)
+
+```po
+msgid ""
+msgstr "Content-Type: text/plain; charset=UTF-8\n"
+
+#: App.vue:3
+msgid "Hello"
+msgstr "Bonjour"
+
+#: App.vue:5
+#, fuzzy
+msgid "Goodbye"
+msgstr ""
+```
+
+Compatible with: Poedit, Crowdin, Weblate, Transifex.
+
+### JSON Format
+
+```json
+{
+  "Hello": {
+    "message": "Hello",
+    "translation": "Bonjour",
+    "origin": "App.vue:3"
+  },
+  "Goodbye": {
+    "message": "Goodbye",
+    "translation": "",
+    "origin": "App.vue:5",
+    "obsolete": false
+  }
+}
+```
+
+---
+
+## Programmatic API
+
+The CLI also exports functions for programmatic use:
+
+```ts
+import { extractFromVue } from '@fluenti/cli'
+import { extractFromTsx } from '@fluenti/cli'
+import { updateCatalog } from '@fluenti/cli'
+import { readJsonCatalog, writeJsonCatalog } from '@fluenti/cli'
+import { readPoCatalog, writePoCatalog } from '@fluenti/cli'
+import { compileCatalog, compileCatalogSplit } from '@fluenti/cli'
+import { translateCatalog } from '@fluenti/cli'
+```
+
+### translateCatalog(options)
+
+```ts
+import { translateCatalog } from '@fluenti/cli'
+
+const { catalog, translated } = await translateCatalog({
+  provider: 'claude',
+  sourceLocale: 'en',
+  targetLocale: 'ja',
+  catalog: existingCatalog,
+  batchSize: 50,
+})
+```
+
+---
+
+## Typical Workflow
+
+```bash
+# 1. Extract messages from source code
+fluenti extract
+
+# 2. Translate using AI
+fluenti translate --provider claude
+
+# 3. Review and edit translations (optional, use Poedit or similar)
+
+# 4. Compile to JS modules
+fluenti compile --split
+
+# 5. Check progress
+fluenti stats
+```

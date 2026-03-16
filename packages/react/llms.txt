@@ -1,0 +1,66 @@
+# @fluenti/react
+
+> React bindings for Fluenti — compile-time i18n with zero runtime overhead.
+
+## Overview
+
+@fluenti/react provides React components, hooks, and a context provider for internationalization. It supports both client-side React and React Server Components (RSC). Built on @fluenti/core.
+
+- Package: @fluenti/react
+- Docs: https://fluenti.dev
+- Repository: https://github.com/usefluenti/fluenti/tree/main/packages/react
+- Peer dependency: react >=18.0.0
+- License: MIT
+
+## Exports
+
+Main entry (`@fluenti/react`):
+- I18nProvider: Context provider wrapping the component tree
+- useI18n(): Hook returning {i18n, locale, setLocale, isLoading, loadedLocales, preloadLocale}
+- Trans: Rich text with component interpolation
+- Plural: Locale-aware pluralization via Intl.PluralRules
+- Select: Categorical value selection (gender, role, etc.)
+- DateTime: Date formatting via Intl.DateTimeFormat
+- NumberFormat: Number formatting via Intl.NumberFormat
+- msg: Lazy message descriptor for use outside the component tree
+- I18nContext: Raw React context (advanced use)
+
+Server entry (`@fluenti/react/server`):
+- createServerI18n(config): Create request-scoped i18n utilities for RSC
+  - Returns: {setLocale, getI18n, Trans, Plural, DateTime, NumberFormat}
+  - Uses React.cache() for per-request isolation
+- SSR utilities re-exported from @fluenti/core: detectLocale, getSSRLocaleScript, getHydratedLocale, isRTL, getDirection
+
+## Quick Start
+
+```tsx
+import { I18nProvider, useI18n, Trans, Plural } from '@fluenti/react'
+
+function App() {
+  return (
+    <I18nProvider locale="en" fallbackLocale="en" messages={{ en, zhCN }}>
+      <MyApp />
+    </I18nProvider>
+  )
+}
+
+function Home() {
+  const { i18n, locale, setLocale } = useI18n()
+  return <h1>{i18n.t('Hello, {name}!', { name: 'World' })}</h1>
+}
+```
+
+## Server Components (RSC)
+
+```ts
+import { createServerI18n } from '@fluenti/react/server'
+
+export const { setLocale, getI18n, Trans, Plural, DateTime, NumberFormat } = createServerI18n({
+  loadMessages: (locale) => import(`../locales/compiled/${locale}.ts`),
+  fallbackLocale: 'en',
+  resolveLocale: async () => {
+    const { cookies } = await import('next/headers')
+    return (await cookies()).get('locale')?.value ?? 'en'
+  },
+})
+```

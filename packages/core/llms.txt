@@ -1,0 +1,42 @@
+# @fluenti/core
+
+> Framework-agnostic compile-time i18n core for JavaScript/TypeScript. Provides ICU MessageFormat parsing, compilation, interpolation, CLDR plural rules, date/number/relative-time formatters via Intl APIs, locale negotiation, RTL detection, and SSR utilities. Used as the foundation for @fluenti/vue and @fluenti/solid.
+
+Install: `pnpm add @fluenti/core` (usually included automatically via framework packages).
+
+## Key Exports
+
+- `createFluent(config)`: Create a full i18n instance with `t()`, `d()`, `n()`, `format()`, locale switching, fallback chains, and missing message handlers
+- `parse(message)`: Parse an ICU MessageFormat string into an AST (supports plurals, selects, nested arguments, ordinals, offsets, `#` substitution, escaping)
+- `compile(ast, locale?)`: Compile an AST into a `CompiledMessage` -- returns a plain string for static text or a function for dynamic messages
+- `interpolate(message, values?, locale?)`: One-step parse + compile + execute with LRU caching (500 entries)
+- `resolvePlural(count, options, locale, ordinal?)`: Resolve plural category with exact-match (`=0`, `=1`) checked first, then CLDR categories via `Intl.PluralRules`
+- `formatDate(value, locale, style?, styles?)`: Format dates with named styles (default, short, long, time, datetime, relative) or custom `Intl.DateTimeFormatOptions`
+- `formatNumber(value, locale, style?, styles?)`: Format numbers with named styles (currency, percent, decimal) or custom options; currency auto-detected from locale
+- `formatRelativeTime(value, locale)`: Auto-selects best unit and formats via `Intl.RelativeTimeFormat` (e.g. "2 days ago", "in 3 hours")
+- `detectLocale(options)`: SSR locale detection with priority: cookie > query > path > Accept-Language header > fallback
+- `getSSRLocaleScript(locale)`: Generate XSS-safe `<script>` tag setting `window.__FLUENTI_LOCALE__`
+- `getHydratedLocale(fallback?)`: Read SSR-injected locale from `window.__FLUENTI_LOCALE__` on the client
+- `negotiateLocale(requested, available, fallback?)`: BCP 47 locale negotiation (exact > language+region > language-only)
+- `isRTL(locale)` / `getDirection(locale)`: Check if a locale uses RTL script; returns `'rtl'` or `'ltr'`
+- `parseLocale(locale)`: Parse BCP 47 string into `{ language, script?, region? }`
+- `msg`: Tagged template literal for creating lazy message descriptors with auto-generated FNV-1a hash IDs
+- `Catalog`: In-memory message catalog with namespace-aware lookup, locale enumeration, and merge-on-load
+
+## Key Types
+
+- `Locale`: string alias for BCP 47 locale codes
+- `Messages` / `AllMessages`: `Record<string, CompiledMessage>` / `Record<Locale, Messages>`
+- `CompiledMessage`: `string | ((values?) => string)`
+- `FluentConfig` / `FluentConfigExtended`: Configuration with locale, messages, fallbackLocale, fallbackChain, missing handler, dateFormats, numberFormats
+- `FluentInstance` / `FluentInstanceExtended`: Instance with `t()`, `setLocale()`, `loadMessages()`, `getLocales()`, plus `d()`, `n()`, `format()`
+- `MessageDescriptor`: `{ id, message?, comment?, context? }`
+- `FluentiConfig`: CLI/build config (sourceLocale, locales, catalogDir, format, include, compileOutDir, splitting, fallbackChain)
+- `ASTNode`: Union of TextNode, VariableNode, PluralNode, SelectNode, FunctionNode
+- `DetectLocaleOptions`: SSR detection options (cookie, query, path, headers, available, fallback)
+- `DateFormatOptions` / `NumberFormatOptions`: Named style maps for formatters
+
+## Documentation
+
+- Full docs: [fluenti.dev](https://fluenti.dev)
+- Repository: [GitHub](https://github.com/usefluenti/fluenti)

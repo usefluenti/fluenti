@@ -1,0 +1,82 @@
+# @fluenti/cli
+
+> CLI tool for Fluenti — message extraction, catalog compilation, translation stats, and AI-powered translation.
+
+## Overview
+
+@fluenti/cli provides the command-line workflow for Fluenti projects: extract translatable messages from source code, compile catalogs to optimized JS modules, view translation progress, and translate using AI.
+
+- Package: @fluenti/cli
+- Binary: `fluenti`
+- Docs: https://fluenti.dev
+- Repository: https://github.com/usefluenti/fluenti/tree/main/packages/cli
+- License: MIT
+
+## Install
+
+```bash
+pnpm add -D @fluenti/cli
+```
+
+## Configuration
+
+Create `fluenti.config.ts` in your project root:
+
+```ts
+export default {
+  sourceLocale: 'en',
+  locales: ['en', 'ja', 'zh-CN'],
+  catalogDir: './locales',
+  format: 'po',                          // 'po' or 'json'
+  include: ['./src/**/*.{vue,tsx,jsx,ts,js}'],
+  compileOutDir: './locales/compiled',
+}
+```
+
+## Commands
+
+### `fluenti extract`
+Scan source files for translatable messages and update catalog files.
+
+```bash
+fluenti extract [--config path]
+```
+
+Extracts from: Vue SFC (`v-t`, `<Trans>`, `<Plural>`, `t()`), TSX/JSX (`t```, `t()`, `<Trans>`, `<Plural>`).
+
+### `fluenti compile`
+Compile PO/JSON catalogs to optimized ES modules.
+
+```bash
+fluenti compile [--config path] [--split]
+```
+
+- Default mode: generates `.ts` files with `export default { ... }`
+- Split mode (`--split`): named exports with `@__PURE__` annotations for tree-shaking
+
+### `fluenti stats`
+Show translation progress for all locales.
+
+```bash
+fluenti stats [--config path]
+```
+
+### `fluenti translate`
+AI-powered translation using local CLI tools.
+
+```bash
+fluenti translate [--provider claude|codex] [--locale ja] [--batch-size 50] [--config path]
+```
+
+- `--provider`: `claude` (Claude Code CLI) or `codex` (OpenAI Codex CLI). Default: `claude`
+- `--locale`: translate specific locale only; omit for all non-source locales
+- `--batch-size`: messages per AI call. Default: `50`
+
+## Typical Workflow
+
+```bash
+fluenti extract          # Extract messages from source
+fluenti translate        # AI-translate untranslated messages
+fluenti compile --split  # Compile to tree-shakeable JS
+fluenti stats            # Check translation progress
+```

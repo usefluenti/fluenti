@@ -11,6 +11,8 @@ import type { CatalogData } from './catalog'
 import { readJsonCatalog, writeJsonCatalog } from './json-format'
 import { readPoCatalog, writePoCatalog } from './po-format'
 import { compileCatalog, compileCatalogSplit, compileIndex, collectAllIds } from './compile'
+import { translateCatalog } from './translate'
+import type { AIProvider } from './translate'
 import type { ExtractedMessage, FluentiConfig } from '@fluenti/core'
 
 const defaultConfig: FluentiConfig = {
@@ -183,13 +185,71 @@ const stats = defineCommand({
   },
 })
 
+const translate = defineCommand({
+  meta: { name: 'translate', description: 'Translate messages using AI (Claude Code or Codex CLI)' },
+  args: {
+    config: { type: 'string', description: 'Path to config file' },
+    provider: { type: 'string', description: 'AI provider: claude or codex', default: 'claude' },
+    locale: { type: 'string', description: 'Translate a specific locale only' },
+    'batch-size': { type: 'string', description: 'Messages per batch', default: '50' },
+  },
+  async run({ args }) {
+    const config = await loadConfig(args.config)
+    const provider = args.provider as AIProvider
+
+    if (provider !== 'claude' && provider !== 'codex') {
+      consola.error(`Invalid provider "${provider}". Use "claude" or "codex".`)
+      return
+    }
+
+    const batchSize = parseInt(args['batch-size'] ?? '50', 10)
+    if (isNaN(batchSize) || batchSize < 1) {
+      consola.error('Invalid batch-size. Must be a positive integer.')
+      return
+    }
+
+    const targetLocales = args.locale
+      ? [args.locale]
+      : config.locales.filter((l: string) => l !== config.sourceLocale)
+
+    if (targetLocales.length === 0) {
+      consola.warn('No target locales to translate.')
+      return
+    }
+
+    consola.info(`Translating with ${provider} (batch size: ${batchSize})`)
+    const ext = config.format === 'json' ? '.json' : '.po'
+
+    for (const locale of targetLocales) {
+      consola.info(`\n[${locale}]`)
+      const catalogPath = resolve(config.catalogDir, `${locale}${ext}`)
+      const catalog = readCatalog(catalogPath, config.format)
+
+      const { catalog: updated, translated } = await translateCatalog({
+        provider,
+        sourceLocale: config.sourceLocale,
+        targetLocale: locale,
+        catalog,
+        batchSize,
+      })
+
+      if (translated > 0) {
+        writeCatalog(catalogPath, updated, config.format)
+        consola.success(`  ${locale}: ${translated} messages translated`)
+      } else {
+        consola.success(`  ${locale}: already fully translated`)
+      }
+    }
+  },
+})
+
 const main = defineCommand({
   meta: {
     name: 'fluenti',
     version: '0.0.1',
     description: 'Compile-time i18n for modern frameworks',
   },
-  subCommands: { extract, compile, stats },
+  subCommands: { extract, compile, stats, translate },
 })
 
 runMain(main)

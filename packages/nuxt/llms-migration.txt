@@ -1,0 +1,201 @@
+# Migrating to @fluenti/nuxt from @nuxtjs/i18n
+
+> Step-by-step guide to migrate a Nuxt 3 app from @nuxtjs/i18n to Fluenti.
+
+## Overview
+
+Fluenti is a **compile-time** i18n library — translations are compiled to optimized JS at build time. @nuxtjs/i18n wraps vue-i18n with Nuxt-specific routing and detection. Fluenti's Nuxt module provides similar routing capabilities but with zero-overhead compiled messages.
+
+Key differences:
+- Compile-time compilation vs runtime message parsing
+- ICU MessageFormat vs vue-i18n syntax
+- PO or JSON catalogs managed by CLI vs JSON locale files
+- Built-in Vite plugin for build-time transforms
+- Same routing strategies (prefix, prefix_except_default, etc.)
+
+## Step-by-step Migration
+
+### 1. Install Fluenti
+
+```bash
+pnpm add @fluenti/core @fluenti/vue @fluenti/nuxt
+pnpm add -D @fluenti/cli
+```
+
+### 2. Update Nuxt config
+
+Before (@nuxtjs/i18n):
+```ts
+// nuxt.config.ts
+export default defineNuxtConfig({
+  modules: ['@nuxtjs/i18n'],
+  i18n: {
+    locales: [
+      { code: 'en', file: 'en.json' },
+      { code: 'ja', file: 'ja.json' },
+    ],
+    defaultLocale: 'en',
+    langDir: 'locales',
+    strategy: 'prefix_except_default',
+    detectBrowserLanguage: {
+      useCookie: true,
+      cookieKey: 'i18n_redirected',
+    },
+  },
+})
+```
+
+After (Fluenti):
+```ts
+// nuxt.config.ts
+export default defineNuxtConfig({
+  modules: ['@fluenti/nuxt'],
+  fluenti: {
+    locales: ['en', 'ja'],
+    defaultLocale: 'en',
+    strategy: 'prefix_except_default',
+    detectBrowserLanguage: {
+      useCookie: true,
+      cookieKey: 'fluenti_locale',
+    },
+    catalogDir: './locales',
+    format: 'po',
+  },
+})
+```
+
+### 3. Update composable usage
+
+Before (@nuxtjs/i18n):
+```ts
+const { t, locale, setLocale, locales } = useI18n()
+const localePath = useLocalePath()
+const switchLocalePath = useSwitchLocalePath()
+```
+
+After (Fluenti):
+```ts
+const { t, locale, setLocale } = useI18n()
+const localePath = useLocalePath()
+const switchLocalePath = useSwitchLocalePath()
+```
+
+Most composables have the same API. Key differences in `useI18n()`:
+
+### 4. Update template usage
+
+Before (@nuxtjs/i18n):
+```vue
+<template>
+  <NuxtLink :to="localePath('/about')">{{ t('about') }}</NuxtLink>
+  <NuxtLink :to="switchLocalePath('ja')">日本語</NuxtLink>
+  <i18n-t keypath="welcome" tag="p">
+    <template #name><strong>User</strong></template>
+  </i18n-t>
+</template>
+```
+
+After (Fluenti):
+```vue
+<template>
+  <NuxtLinkLocale to="/about">{{ t('about') }}</NuxtLinkLocale>
+  <NuxtLink :to="switchLocalePath('ja')">日本語</NuxtLink>
+  <Trans message="Welcome, {0}{1}{2}">
+    <template #0><strong></template>
+    <template #1>User</template>
+    <template #2></strong></template>
+  </Trans>
+  <!-- Or simpler with v-t -->
+  <p v-t>Welcome</p>
+</template>
+```
+
+### 5. Convert translation files
+
+@nuxtjs/i18n JSON format:
+```json
+{
+  "hello": "Hello, {name}!",
+  "items": "no items | one item | {count} items"
+}
+```
+
+Fluenti PO format:
+```po
+msgid "hello"
+msgstr "Hello, {name}!"
+
+msgid "items"
+msgstr "{count, plural, =0 {no items} one {one item} other {{count} items}}"
+```
+
+Use the CLI to manage catalogs:
+```bash
+# Create fluenti.config.ts
+npx fluenti extract    # Extract from source
+npx fluenti compile    # Compile to JS
+```
+
+### 6. Update SEO/head meta
+
+Before (@nuxtjs/i18n):
+```ts
+const head = useLocaleHead({ addSeoAttributes: true })
+useHead({ htmlAttrs: { lang: head.value.htmlAttrs?.lang }, link: head.value.link, meta: head.value.meta })
+```
+
+After (Fluenti):
+```ts
+const head = useLocaleHead()
+useHead(head)
+```
+
+### 7. Remove old library
+
+```bash
+pnpm remove @nuxtjs/i18n
+```
+
+## API Mapping Table
+
+| @nuxtjs/i18n | @fluenti/nuxt |
+|--------------|---------------|
+| `useI18n()` | `useI18n()` |
+| `useLocalePath()` | `useLocalePath()` |
+| `useSwitchLocalePath()` | `useSwitchLocalePath()` |
+| `useLocaleHead()` | `useLocaleHead()` |
+| `<NuxtLink :to="localePath(...)">` | `<NuxtLinkLocale to="...">` |
+| `$t(key)` | `t(key)` (via useI18n) |
+| `$tc(key, count)` | `t(key, { count })` (ICU plural) |
+| `strategy: 'prefix_except_default'` | `strategy: 'prefix_except_default'` (same) |
+| `strategy: 'prefix'` | `strategy: 'prefix'` (same) |
+| `strategy: 'prefix_and_default'` | `strategy: 'prefix_and_default'` (same) |
+| `strategy: 'no_prefix'` | `strategy: 'no_prefix'` (same) |
+| `detectBrowserLanguage` | `detectBrowserLanguage` (similar config) |
+| `<i18n-t>` component | `<Trans>` component |
+| Lazy loading via `file` in locales | `loadMessages` callback |
+| `langDir` option | `catalogDir` option |
+
+## Routing Strategy Compatibility
+
+All four routing strategies from @nuxtjs/i18n are supported with the same names:
+- `prefix_except_default` — `/about` for default, `/ja/about` for others
+- `prefix` — `/en/about`, `/ja/about`
+- `prefix_and_default` — both `/about` and `/en/about` work for default
+- `no_prefix` — no locale in URL, detection via cookie/header
+
+## Locale Detection
+
+@nuxtjs/i18n detection order: cookie → navigator → header
+Fluenti detection chain: path → cookie → header → fallback
+
+Both support cookie-based persistence. Configure via `detectBrowserLanguage` option.
+
+## Key Behavioral Differences
+
+1. **Compile-time** — messages compiled at build time, no runtime parser in bundle
+2. **ICU MessageFormat** — standard plural/select syntax instead of vue-i18n pipe syntax
+3. **CLI workflow** — extract → translate → compile pipeline
+4. **PO file support** — compatible with Poedit, Crowdin, Weblate
+5. **NuxtLinkLocale** — dedicated component instead of wrapping NuxtLink with localePath
+6. **AI translation** — `npx fluenti translate --provider claude` for automated translation

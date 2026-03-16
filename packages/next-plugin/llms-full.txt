@@ -1,0 +1,107 @@
+# @fluenti/next
+
+> Next.js plugin for Fluenti — withFluenti config wrapper, webpack loader for t`` transforms, and server component generation.
+
+## Overview
+
+@fluenti/next integrates Fluenti into Next.js projects. It wraps next.config with a webpack loader that transforms `t``` template literals and `t()` calls at build time, and generates a server module for React Server Component (RSC) i18n support. It works with both App Router and Pages Router.
+
+- Package: @fluenti/next
+- Docs: https://fluenti.dev
+- Repository: https://github.com/usefluenti/fluenti/tree/main/packages/next-plugin
+- Peer dependencies: next >=14.0.0, react >=18.0.0
+- Dependencies: @fluenti/core, @fluenti/react
+- License: MIT
+
+## Installation
+
+```bash
+pnpm add @fluenti/core @fluenti/react @fluenti/next
+```
+
+## Exports
+
+### Main entry (`@fluenti/next`)
+
+- withFluenti: Function to wrap next.config.ts with Fluenti support
+- WithFluentConfig (type): Configuration for withFluenti()
+- FluentProviderProps (type): Props for the generated FluentProvider server component
+
+### Additional entries
+
+- `@fluenti/next/server`: Server-side utilities for RSC
+- `@fluenti/next/provider`: FluentProvider async server component (generated)
+- `@fluenti/next/client`: Client-side type definitions
+
+## withFluenti()
+
+Wraps your Next.js config with Fluenti support. Adds a webpack loader that transforms `t``` and `t()` calls, and generates a server module for RSC i18n.
+
+### Calling Styles
+
+Function style (recommended):
+```ts
+import { withFluenti } from '@fluenti/next'
+export default withFluenti()({ reactStrictMode: true })
+```
+
+With Fluenti config:
+```ts
+import { withFluenti } from '@fluenti/next'
+export default withFluenti({
+  locales: ['en', 'ja', 'zh-CN'],
+  defaultLocale: 'en',
+})({ reactStrictMode: true })
+```
+
+Direct style:
+```ts
+import { withFluenti } from '@fluenti/next'
+export default withFluenti({ reactStrictMode: true })
+```
+
+### WithFluentConfig
+
+Configuration object passed to `withFluenti()`. Reads defaults from `fluenti.config.ts` in the project root. All options override config file values.
+
+- locales (string[], optional): Override fluenti.config.ts locales
+- defaultLocale (string, optional): Override fluenti.config.ts sourceLocale (used as defaultLocale)
+- compiledDir (string, optional): Override fluenti.config.ts compileOutDir
+- serverModule (string, optional): Custom serverModule path (skips auto-generation)
+- serverModuleOutDir (string, optional): Where to generate the serverModule (default: node_modules/.fluenti)
+- resolveLocale ((() => string | Promise<string>), optional): Resolve locale in contexts where FluentProvider doesn't run (e.g. Server Actions). FluentProvider's locale is passed via prop, not configured here.
+- dateFormats (DateFormatOptions, optional): Custom date format styles
+- numberFormats (NumberFormatOptions, optional): Custom number format styles
+- fallbackChain (Record<string, Locale[]>, optional): Fallback chain per locale
+
+### FluentProviderProps
+
+Props for the generated FluentProvider server component:
+- locale (string, optional): Active locale. If omitted, uses defaultLocale from config.
+- children (React.ReactNode, required): App content
+
+## How It Works
+
+1. **Config resolution**: Merges fluenti.config.ts with withFluenti() overrides to produce a ResolvedFluentConfig with locales, defaultLocale, compiledDir, and other settings.
+
+2. **Server module generation**: Calls `generateServerModule()` to create a server-side module at the configured output directory (default: node_modules/.fluenti). This module provides the FluentProvider and server i18n utilities.
+
+3. **Webpack loader injection**: Adds a webpack loader (enforce: "pre") that runs before other loaders on all .js/.ts/.jsx/.tsx files (excluding node_modules and .next). The loader transforms `t``` template literals and `t()` calls in both RSC and client components.
+
+4. **Resolve alias**: Sets `@fluenti/next/__generated` as a webpack resolve alias pointing to the generated server module, so the loader can import from it.
+
+5. **Existing webpack config preservation**: If the user's next.config already has a webpack function, it is called after Fluenti's modifications.
+
+## Integration with @fluenti/react
+
+@fluenti/next depends on @fluenti/react. The webpack loader injects `globalThis.__fluenti_i18n.t(...)` into client components. The I18nProvider from @fluenti/react sets `globalThis.__fluenti_i18n` to make this work, avoiding React module boundary issues in Next.js RSC.
+
+## ResolvedFluentConfig (Internal)
+
+After merging fluenti.config.ts and withFluenti() overrides:
+- locales (string[]): All supported locales
+- defaultLocale (string): The source/default locale
+- compiledDir (string): Directory containing compiled message catalogs
+- serverModule (string | null): Path to custom server module, or null for auto-generation
+- serverModuleOutDir (string): Output directory for the generated server module
+- resolveLocale, dateFormats, numberFormats, fallbackChain: Optional overrides

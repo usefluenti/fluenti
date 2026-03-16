@@ -1,0 +1,176 @@
+# Migrating to @fluenti/solid from @solid-primitives/i18n
+
+> Step-by-step guide to migrate a SolidJS app from @solid-primitives/i18n (or manual i18n) to Fluenti.
+
+## Overview
+
+Fluenti is a **compile-time** i18n library — translations are compiled to optimized JS at build time. @solid-primitives/i18n provides a runtime dictionary-based approach. Fluenti offers ICU MessageFormat support, PO/JSON catalog management, and zero runtime overhead.
+
+Key differences:
+- Compile-time compilation vs runtime dictionary lookup
+- ICU MessageFormat (plurals, selects, date/number formatting) vs flat key-value strings
+- CLI-managed extraction and catalog workflow
+- Vite plugin for build-time transforms
+
+## Step-by-step Migration
+
+### 1. Install Fluenti
+
+```bash
+pnpm add @fluenti/core @fluenti/solid
+pnpm add -D @fluenti/cli @fluenti/vite-plugin
+```
+
+### 2. Replace provider setup
+
+Before (@solid-primitives/i18n):
+```tsx
+import { I18nContext, createI18nContext } from '@solid-primitives/i18n'
+
+const dict = { en: { hello: 'Hello!' }, ja: { hello: 'こんにちは！' } }
+const value = createI18nContext(dict, 'en')
+
+<I18nContext.Provider value={value}>
+  <App />
+</I18nContext.Provider>
+```
+
+After (Fluenti):
+```tsx
+import { I18nProvider } from '@fluenti/solid'
+import en from './locales/compiled/en'
+import ja from './locales/compiled/ja'
+
+<I18nProvider locale="en" fallbackLocale="en" messages={{ en, ja }}>
+  <App />
+</I18nProvider>
+```
+
+### 3. Update translation usage
+
+Before (@solid-primitives/i18n):
+```tsx
+import { useI18n } from '@solid-primitives/i18n'
+const [t, { locale, add }] = useI18n()
+t('hello')
+locale('ja') // switch locale
+```
+
+After (Fluenti):
+```tsx
+import { useI18n } from '@fluenti/solid'
+const { i18n, locale, setLocale } = useI18n()
+i18n.t('hello')
+setLocale('ja')
+```
+
+### 4. Add rich formatting
+
+@solid-primitives/i18n only supports flat strings. Fluenti adds ICU MessageFormat:
+
+```tsx
+// Pluralization
+<Plural value={count} one="# item" other="# items" />
+
+// Gender select
+<Select value={gender} male="He" female="She" other="They" />
+
+// Date/number formatting
+<DateTime value={new Date()} style="long" />
+<NumberFormat value={1234.5} style="currency" />
+
+// Rich text
+<Trans message="Read the {0}docs{1}">
+  {(text) => <a href="/docs">{text}</a>}
+</Trans>
+```
+
+### 5. Set up Vite plugin
+
+```ts
+// vite.config.ts
+import solid from 'vite-plugin-solid'
+import fluenti from '@fluenti/vite-plugin'
+
+export default {
+  plugins: [solid(), fluenti({ framework: 'solid' })],
+}
+```
+
+### 6. Set up CLI config and catalogs
+
+```ts
+// fluenti.config.ts
+export default {
+  sourceLocale: 'en',
+  locales: ['en', 'ja'],
+  catalogDir: './locales',
+  format: 'po',
+  include: ['./src/**/*.{tsx,jsx,ts,js}'],
+  compileOutDir: './locales/compiled',
+}
+```
+
+```bash
+npx fluenti extract    # Extract messages from source
+npx fluenti compile    # Compile to JS modules
+```
+
+### 7. Remove old library
+
+```bash
+pnpm remove @solid-primitives/i18n
+```
+
+## API Mapping Table
+
+| @solid-primitives/i18n | Fluenti |
+|------------------------|---------|
+| `createI18nContext(dict, locale)` | `createI18nContext(config)` or `<I18nProvider>` |
+| `I18nContext.Provider` | `I18nProvider` |
+| `useI18n()` → `[t, { locale, add }]` | `useI18n()` → `{ i18n, locale, setLocale, isLoading }` |
+| `t('key')` | `i18n.t('key')` |
+| `t('key', { name: 'X' })` | `i18n.t('key', { name: 'X' })` |
+| `locale('ja')` (setter) | `setLocale('ja')` |
+| `locale()` (getter) | `locale` (signal) |
+| `add(locale, dict)` | `loadMessages` callback on provider |
+| N/A | `<Trans>` component |
+| N/A | `<Plural>` component |
+| N/A | `<Select>` component |
+| N/A | `<DateTime>` component |
+| N/A | `<NumberFormat>` component |
+| N/A | `i18n.d(date, style)` — date formatting |
+| N/A | `i18n.n(number, style)` — number formatting |
+| N/A | `msg()` — lazy message descriptor |
+
+## Message Format Conversion
+
+@solid-primitives/i18n uses flat key-value dictionaries:
+```ts
+// Before: flat dictionary
+const dict = {
+  en: {
+    hello: 'Hello, {{name}}!',
+    items: '{{count}} items',
+  }
+}
+```
+
+Fluenti uses ICU MessageFormat in PO or JSON catalogs:
+```
+# PO format (locales/en.po)
+msgid "hello"
+msgstr "Hello, {name}!"
+
+msgid "items"
+msgstr "{count, plural, one {{count} item} other {{count} items}}"
+```
+
+## Key Behavioral Differences
+
+1. **Compile-time** — messages compiled to JS functions at build time, no runtime parser
+2. **ICU MessageFormat** — standard format for plurals, selects, date/number formatting
+3. **CLI workflow** — extract → translate → compile pipeline
+4. **Signals-based reactivity** — Fluenti uses SolidJS signals internally for locale state
+5. **PO file support** — compatible with professional translation tools (Poedit, Crowdin, Weblate)
+6. **AI translation** — `npx fluenti translate --provider claude` for automated translation

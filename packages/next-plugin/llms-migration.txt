@@ -1,0 +1,262 @@
+# Migrating to @fluenti/next from next-intl / next-i18next
+
+> Step-by-step guide to migrate a Next.js app from next-intl or next-i18next to Fluenti.
+
+## Overview
+
+Fluenti is a **compile-time** i18n library — translations are compiled to optimized JS at build time. next-intl and next-i18next are runtime libraries. Fluenti's Next.js plugin provides webpack loader integration, React Server Component support, and zero-overhead compiled messages.
+
+Key differences:
+- Compile-time compilation vs runtime message parsing
+- ICU MessageFormat (same as next-intl, different from next-i18next)
+- Webpack loader for build-time `t` tag transforms
+- PO or JSON catalogs managed by CLI
+- RSC-native with server and client component support
+
+---
+
+## Migrating from next-intl
+
+### 1. Install Fluenti
+
+```bash
+pnpm add @fluenti/core @fluenti/react @fluenti/next
+pnpm add -D @fluenti/cli
+```
+
+### 2. Update Next.js config
+
+Before (next-intl):
+```ts
+// next.config.ts
+import createNextIntlPlugin from 'next-intl/plugin'
+const withNextIntl = createNextIntlPlugin()
+export default withNextIntl({ /* next config */ })
+```
+
+After (Fluenti):
+```ts
+// next.config.ts
+import { withFluenti } from '@fluenti/next'
+export default withFluenti({ /* next config */ })
+```
+
+### 3. Replace provider
+
+Before (next-intl):
+```tsx
+// app/[locale]/layout.tsx
+import { NextIntlClientProvider } from 'next-intl'
+import { getMessages } from 'next-intl/server'
+
+export default async function Layout({ children, params }) {
+  const messages = await getMessages()
+  return (
+    <NextIntlClientProvider messages={messages}>
+      {children}
+    </NextIntlClientProvider>
+  )
+}
+```
+
+After (Fluenti):
+```tsx
+// app/[locale]/layout.tsx
+import { I18nProvider } from '@fluenti/react'
+import en from '@/locales/compiled/en'
+
+export default function Layout({ children, params }) {
+  return (
+    <I18nProvider locale={params.locale} fallbackLocale="en" messages={{ en }}>
+      {children}
+    </I18nProvider>
+  )
+}
+```
+
+### 4. Update usage in components
+
+Before (next-intl):
+```tsx
+import { useTranslations } from 'next-intl'
+const t = useTranslations('namespace')
+t('hello', { name: 'World' })
+```
+
+After (Fluenti):
+```tsx
+import { useI18n } from '@fluenti/react'
+const { i18n } = useI18n()
+i18n.t('hello', { name: 'World' })
+```
+
+### 5. Server components
+
+Before (next-intl):
+```tsx
+import { getTranslations } from 'next-intl/server'
+const t = await getTranslations('namespace')
+```
+
+After (Fluenti):
+```tsx
+import { createServerI18n } from '@fluenti/react/server'
+const i18n = createServerI18n({ locale: 'en', messages: { en } })
+i18n.t('hello')
+```
+
+### API Mapping: next-intl → Fluenti
+
+| next-intl | Fluenti |
+|-----------|---------|
+| `useTranslations()` | `useI18n()` |
+| `t(key, values)` | `i18n.t(key, values)` |
+| `t.rich(key, { bold: (text) => ... })` | `<Trans>` component |
+| `useFormatter()` | `i18n.d()`, `i18n.n()` |
+| `<NextIntlClientProvider>` | `<I18nProvider>` |
+| `getTranslations()` (server) | `createServerI18n()` |
+| `getMessages()` (server) | Import compiled messages directly |
+| `createNextIntlPlugin()` | `withFluenti()` |
+| Namespace-based `t('ns.key')` | Flat key `i18n.t('key')` |
+| ICU MessageFormat | ICU MessageFormat (compatible) |
+
+---
+
+## Migrating from next-i18next
+
+### 1. Install Fluenti
+
+```bash
+pnpm add @fluenti/core @fluenti/react @fluenti/next
+pnpm add -D @fluenti/cli
+```
+
+### 2. Update Next.js config
+
+Before (next-i18next):
+```ts
+// next.config.js
+const { i18n } = require('./next-i18next.config')
+module.exports = { i18n }
+```
+
+After (Fluenti):
+```ts
+// next.config.ts
+import { withFluenti } from '@fluenti/next'
+export default withFluenti({})
+```
+
+### 3. Remove next-i18next.config.js
+
+The old config file is no longer needed. Create a Fluenti config instead:
+
+```ts
+// fluenti.config.ts
+export default {
+  sourceLocale: 'en',
+  locales: ['en', 'ja'],
+  catalogDir: './locales',
+  format: 'po',
+  include: ['./src/**/*.{tsx,jsx,ts,js}', './app/**/*.{tsx,jsx,ts,js}'],
+  compileOutDir: './locales/compiled',
+}
+```
+
+### 4. Replace serverSideTranslations
+
+Before (next-i18next):
+```tsx
+import { serverSideTranslations } from 'next-i18next/serverSideTranslations'
+
+export async function getStaticProps({ locale }) {
+  return { props: { ...(await serverSideTranslations(locale, ['common'])) } }
+}
+```
+
+After (Fluenti — App Router):
+```tsx
+// No getStaticProps needed — messages are compiled and imported directly
+import { I18nProvider } from '@fluenti/react'
+import en from '@/locales/compiled/en'
+```
+
+### 5. Update hook usage
+
+Before (next-i18next):
+```tsx
+import { useTranslation } from 'next-i18next'
+const { t, i18n } = useTranslation('common')
+t('hello', { name: 'World' })
+```
+
+After (Fluenti):
+```tsx
+import { useI18n } from '@fluenti/react'
+const { i18n } = useI18n()
+i18n.t('hello', { name: 'World' })
+```
+
+### 6. Convert message syntax
+
+next-i18next interpolation → ICU:
+```
+# next-i18next (i18next syntax)
+"hello": "Hello, {{name}}!"
+"items": "{{count}} item"
+"items_plural": "{{count}} items"
+
+# Fluenti (ICU MessageFormat)
+"hello": "Hello, {name}!"
+"items": "{count, plural, one {{count} item} other {{count} items}}"
+```
+
+### API Mapping: next-i18next → Fluenti
+
+| next-i18next | Fluenti |
+|--------------|---------|
+| `useTranslation()` | `useI18n()` |
+| `t(key, options)` | `i18n.t(key, values)` |
+| `i18n.changeLanguage()` | `setLocale()` |
+| `serverSideTranslations()` | Import compiled messages directly |
+| `<Trans>` (react-i18next) | `<Trans>` (@fluenti/react) |
+| `appWithTranslation()` HOC | `<I18nProvider>` |
+| `next-i18next.config.js` | `fluenti.config.ts` |
+| `{{var}}` interpolation | `{var}` interpolation |
+| `_plural` suffix | ICU `{n, plural, ...}` |
+| Namespaces | Flat message IDs |
+| `/public/locales/` JSON files | PO/JSON catalogs in `./locales/` |
+
+---
+
+## Common Steps
+
+### Extract and compile catalogs
+
+```bash
+npx fluenti extract    # Extract messages from source
+npx fluenti compile    # Compile to JS modules
+```
+
+### Locale routing
+
+For App Router, use `[locale]` dynamic segment in your route structure:
+
+```
+app/
+  [locale]/
+    layout.tsx    ← I18nProvider here
+    page.tsx
+    about/
+      page.tsx
+```
+
+## Key Behavioral Differences
+
+1. **Compile-time** — no runtime parser, messages are pre-compiled JS functions
+2. **No namespaces** — flat message IDs instead of namespace-based organization
+3. **No serverSideTranslations** — compiled messages imported directly, no serialization needed
+4. **ICU MessageFormat** — standard format for plurals, selects, formatting
+5. **PO file support** — compatible with Poedit, Crowdin, Weblate
+6. **Webpack loader** — transforms `t` tagged templates at build time
+7. **AI translation** — `npx fluenti translate --provider claude` for automated translation

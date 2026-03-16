@@ -1,0 +1,75 @@
+# @fluenti/nuxt
+
+> Nuxt 3 module for Fluenti — locale-prefixed routing, locale detection, SEO head helpers, and NuxtLinkLocale component.
+
+@fluenti/nuxt integrates Fluenti i18n into Nuxt 3 with four routing strategies, an ordered locale detection chain, automatic vite-plugin registration, and SSR/SSG/SPA/ISR support.
+
+## Install
+
+```bash
+pnpm add @fluenti/nuxt @fluenti/core @fluenti/vue
+```
+
+## Quick Start
+
+```ts
+// nuxt.config.ts
+export default defineNuxtConfig({
+  modules: ['@fluenti/nuxt'],
+  fluenti: {
+    locales: ['en', 'ja', 'zh'],
+    defaultLocale: 'en',
+    strategy: 'prefix_except_default',
+  },
+})
+```
+
+## Module Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `locales` | `string[]` | — | Supported locale codes (required) |
+| `defaultLocale` | `string` | `'en'` | Default locale (required) |
+| `strategy` | `Strategy` | `'prefix_except_default'` | URL routing strategy |
+| `detectOrder` | `string[]` | `['path','cookie','header']` | Ordered locale detectors |
+| `detectBrowserLanguage` | `object` | — | Cookie and fallback settings |
+| `autoVitePlugin` | `boolean` | `true` | Auto-register vite-plugin |
+| `componentPrefix` | `string` | `''` | Prefix for i18n components |
+| `isr` | `{ enabled, ttl? }` | — | ISR route rules generation |
+| `compat` | `boolean` | `false` | vue-i18n bridge mode |
+
+## Routing Strategies
+
+| Strategy | Default locale | Other locales |
+|----------|---------------|---------------|
+| `prefix_except_default` | `/about` | `/ja/about` |
+| `prefix` | `/en/about` | `/ja/about` |
+| `prefix_and_default` | `/about` + `/en/about` | `/ja/about` |
+| `no_prefix` | `/about` | `/about` |
+
+## Locale Detection
+
+Detection chain runs in order: path -> cookie -> header -> fallback. First match wins. Custom detectors via `fluenti:detect-locale` hook.
+
+## Auto-imported APIs
+
+| API | Source |
+|-----|--------|
+| `useI18n()` | `@fluenti/vue` |
+| `useLocalePath()` | `@fluenti/nuxt` |
+| `useSwitchLocalePath()` | `@fluenti/nuxt` |
+| `useLocaleHead()` | `@fluenti/nuxt` |
+| `<NuxtLinkLocale>` | `@fluenti/nuxt` |
+
+## Route Utilities
+
+- `localePath(path, locale, defaultLocale, strategy)` — Add locale prefix
+- `switchLocalePath(path, targetLocale, locales, defaultLocale, strategy)` — Switch locale in path
+- `extractLocaleFromPath(path, locales)` — Extract locale from path
+- `extendPages(pages, options)` — Extend Nuxt pages with locale variants
+
+## Documentation
+
+- Full docs: https://fluenti.dev
+- llms-full.txt: Detailed reference with examples and advanced configuration
+- Source: https://github.com/usefluenti/fluenti
