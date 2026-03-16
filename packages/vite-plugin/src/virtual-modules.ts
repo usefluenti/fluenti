@@ -21,7 +21,7 @@ export interface VirtualModuleOptions {
   locales: string[]
   sourceLocale: string
   defaultBuildLocale: string
-  framework: 'vue' | 'solid'
+  framework: 'vue' | 'solid' | 'react'
 }
 
 export function resolveVirtualSplitId(id: string): string | undefined {
@@ -51,6 +51,53 @@ function generateRuntimeModule(options: VirtualModuleOptions): string {
   const { catalogDir, locales, sourceLocale, defaultBuildLocale, framework } = options
   const defaultLocale = defaultBuildLocale || sourceLocale
   const absoluteCatalogDir = resolve(process.cwd(), catalogDir)
+
+  if (framework === 'react') {
+    // React uses I18nProvider for state management, so the virtual runtime
+    // module just provides a simple mutable object + async loaders.
+    return `
+import * as __defaultMsgs from '${absoluteCatalogDir}/${defaultLocale}.js'
+
+const __catalog = { ...__defaultMsgs }
+let __currentLocale = '${defaultLocale}'
+const __loadedLocales = new Set(['${defaultLocale}'])
+let __loading = false
+const __cache = new Map()
+
+const __loaders = {
+${locales.map((l) => `  '${l}': () => import('${absoluteCatalogDir}/${l}.js'),`).join('\n')}
+}
+
+async function __switchLocale(locale) {
+  if (__loadedLocales.has(locale)) {
+    Object.assign(__catalog, __cache.get(locale) || __defaultMsgs)
+    __currentLocale = locale
+    return
+  }
+  __loading = true
+  try {
+    const mod = await __loaders[locale]()
+    __cache.set(locale, mod)
+    __loadedLocales.add(locale)
+    Object.assign(__catalog, mod)
+    __currentLocale = locale
+  } finally {
+    __loading = false
+  }
+}
+
+async function __preloadLocale(locale) {
+  if (__loadedLocales.has(locale) || !__loaders[locale]) return
+  try {
+    const mod = await __loaders[locale]()
+    __cache.set(locale, mod)
+    __loadedLocales.add(locale)
+  } catch {}
+}
+
+export { __catalog, __switchLocale, __preloadLocale, __currentLocale, __loading, __loadedLocales }
+`
+  }
 
   if (framework === 'vue') {
     return `

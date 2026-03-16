@@ -1,0 +1,67 @@
+msgid ""
+msgstr "Content-Type: text/plain; charset=utf-8\n"
+
+msgid "Fluenti React Playground"
+msgstr "Fluenti React 练习场"
+
+msgid "Write text. Fluenti translates it. Zero config."
+msgstr "只需编写文本。Fluenti 为你翻译。零配置。"
+
+msgid "Built with Fluenti and React"
+msgstr "使用 Fluenti 和 React 构建"
+
+msgid "Welcome to Fluenti"
+msgstr "欢迎使用 Fluenti"
+
+msgid "A modern i18n library for React"
+msgstr "React 的现代国际化库"
+
+msgid "Hello, {name}!"
+msgstr "你好，{name}！"
+
+msgid "You have {count} items in your cart."
+msgstr "购物车中有 {count} 件商品。"
+
+msgid "Current locale: {locale}"
+msgstr "当前语言：{locale}"
+
+msgid "Features"
+msgstr "特性"
+
+msgid "Reactive locale switching"
+msgstr "响应式语言切换"
+
+msgid "Rich text with React components"
+msgstr "使用 React 组件的富文本"
+
+msgid "Built-in plural support"
+msgstr "内置复数支持"
+
+msgid "Type-safe message catalogs"
+msgstr "类型安全的消息目录"
+
+msgid "Home"
+msgstr "首页"
+
+msgid "Plurals"
+msgstr "复数"
+
+msgid "Rich Text"
+msgstr "富文本"
+
+msgid "Add"
+msgstr "添加"
+
+msgid "Remove"
+msgstr "移除"
+
+msgid "Reset"
+msgstr "重置"
+
+#. msg`Administrator`
+msgid "1d03gh6"
+msgstr "管理员"
+
+#. msg`Regular User`
+msgid "154355u"
+msgstr "普通用户"

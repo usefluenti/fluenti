@@ -1,0 +1,392 @@
+---
+title: "@fluenti/react"
+description: React bindings API reference
+---
+
+## `<I18nProvider>`
+
+Provide i18n context to the component tree.
+
+```tsx
+import { I18nProvider } from '@fluenti/react'
+import en from './locales/compiled/en'
+import zhCN from './locales/compiled/zh-CN'
+
+<I18nProvider
+  locale="en"
+  fallbackLocale="en"
+  messages={{ en, 'zh-CN': zhCN }}
+>
+  <App />
+</I18nProvider>
+```
+
+### Props
+
+| Prop | Type | Description |
+|------|------|-------------|
+| `locale` | `string` | Initial locale |
+| `fallbackLocale` | `string?` | Fallback locale |
+| `messages` | `AllMessages` | Compiled message catalogs (from `fluenti compile`) |
+| `loadMessages` | `(locale) => Promise<Messages>?` | Async locale loader for lazy loading |
+| `fallbackChain` | `Record<string, string[]>?` | Locale fallback chains |
+| `dateFormats` | `DateFormatOptions?` | Custom date format presets |
+| `numberFormats` | `NumberFormatOptions?` | Custom number format presets |
+| `missing` | `(locale, id) => string?` | Missing message handler |
+
+### Lazy loading
+
+```tsx
+<I18nProvider
+  locale="en"
+  fallbackLocale="en"
+  messages={{ en }}
+  loadMessages={(locale) => import(`./locales/compiled/${locale}.ts`)}
+>
+  <App />
+</I18nProvider>
+```
+
+## `useI18n()`
+
+Access the i18n context from the nearest provider. Throws if used outside an `<I18nProvider>`.
+
+```tsx
+import { useI18n } from '@fluenti/react'
+
+function MyComponent() {
+  const { i18n, locale, setLocale, isLoading, loadedLocales, preloadLocale } = useI18n()
+  return <p>{i18n.t('Hello, {name}!', { name: 'World' })}</p>
+}
+```
+
+### Return values
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `i18n` | `FluentInstanceExtended` | Fluent instance with `t()`, `d()`, `n()`, `format()` methods |
+| `locale` | `string` | Current locale |
+| `setLocale` | `(locale) => Promise<void>` | Change locale (async if loading is needed) |
+| `isLoading` | `boolean` | Whether a locale is being loaded |
+| `loadedLocales` | `string[]` | Array of loaded locale codes |
+| `preloadLocale` | `(locale) => Promise<void>` | Preload a locale without switching |
+
+### `i18n.t(message, values?)`
+
+Translate a message. O(1) hash lookup — safe to call directly in JSX without `useMemo`.
+
+```tsx
+i18n.t('Welcome to my app')
+i18n.t('Hello, {name}!', { name: 'World' })
+i18n.t('You have {count} items', { count: 5 })
+```
+
+### `i18n.d(value, style?)`
+
+Format a date.
+
+```tsx
+i18n.d(new Date())          // default format
+i18n.d(new Date(), 'long')  // named preset
+```
+
+### `i18n.n(value, style?)`
+
+Format a number.
+
+```tsx
+i18n.n(1234.5)              // default format
+i18n.n(1234.5, 'currency')  // named preset
+```
+
+### `i18n.format(message, values?)`
+
+Direct ICU interpolation without catalog lookup.
+
+```tsx
+i18n.format('Hello {name}!', { name: 'World' })
+```
+
+## `<Trans>`
+
+Rich text with component interpolation. Write native HTML — no indexed placeholders.
+
+```tsx
+import { Trans } from '@fluenti/react'
+
+<Trans>Click <a href="/next">here</a> to continue.</Trans>
+<Trans>This is <strong>important</strong> and <em>urgent</em>.</Trans>
+```
+
+The component extracts text content as the source message (e.g., `Click <0>here</0> to continue.`), looks up the translation, and reconstructs the React elements with `cloneElement`.
+
+### Props
+
+| Prop | Type | Description |
+|------|------|-------------|
+| `children` | `ReactNode` | Source-language content with HTML elements |
+| `tag` | `string?` | Wrapper element (default: `'span'`) |
+
+## `<Plural>`
+
+Locale-aware pluralization using `Intl.PluralRules`.
+
+```tsx
+import { Plural } from '@fluenti/react'
+
+<Plural value={count} zero="No items" one="# item" other="# items" />
+```
+
+Use `#` as a placeholder for the numeric value.
+
+### Props
+
+| Prop | Type | Description |
+|------|------|-------------|
+| `value` | `number` | **(required)** The numeric value to pluralize on |
+| `zero` | `string?` | Exact zero match |
+| `one` | `string?` | CLDR "one" category |
+| `two` | `string?` | CLDR "two" category |
+| `few` | `string?` | CLDR "few" category |
+| `many` | `string?` | CLDR "many" category |
+| `other` | `string` | **(required)** Fallback for all other values |
+| `offset` | `number?` | Offset to subtract before selecting category |
+| `tag` | `string?` | Wrapper element (default: `'span'`) |
+
+## `<Select>`
+
+Categorical value selection (gender, role, etc.).
+
+```tsx
+import { Select } from '@fluenti/react'
+
+<Select value={gender} male="He liked this" female="She liked this" other="They liked this" />
+```
+
+### Props
+
+| Prop | Type | Description |
+|------|------|-------------|
+| `value` | `string` | **(required)** The value to select on |
+| `other` | `string` | **(required)** Fallback when no match |
+| `tag` | `string?` | Wrapper element (default: `'span'`) |
+| `[key]` | `string` | Any additional props are treated as case options |
+
+## `<DateTime>`
+
+Date formatting component.
+
+```tsx
+import { DateTime } from '@fluenti/react'
+
+<DateTime value={new Date()} style="long" />
+```
+
+## `<NumberFormat>`
+
+Number formatting component.
+
+```tsx
+import { NumberFormat } from '@fluenti/react'
+
+<NumberFormat value={1234.5} style="decimal" />
+```
+
+## `msg`
+
+Re-exported from `@fluenti/core`. Create lazy message descriptors for module-level constants.
+
+```tsx
+import { msg } from '@fluenti/react'
+
+const ROLES = {
+  admin: msg`Administrator`,
+  user: msg`Regular User`,
+}
+
+// Resolve at render time:
+function RoleBadge({ role }) {
+  const { i18n } = useI18n()
+  return <span>{i18n.t(ROLES[role])}</span>
+}
+```
+
+---
+
+## Server Components (`@fluenti/react/server`)
+
+For React Server Components (Next.js App Router), Fluenti provides a server entry point that works without React Context.
+
+### `createServerI18n(config)`
+
+Create request-scoped i18n utilities. Uses `React.cache()` to isolate state per server request.
+
+```ts
+import { createServerI18n } from '@fluenti/react/server'
+
+export const { setLocale, getI18n, Trans, Plural, DateTime, NumberFormat } = createServerI18n({
+  loadMessages: (locale) => import(`../locales/compiled/${locale}.ts`),
+  fallbackLocale: 'en',
+  resolveLocale: async () => {
+    const { cookies } = await import('next/headers')
+    return (await cookies()).get('locale')?.value ?? 'en'
+  },
+})
+```
+
+#### Config
+
+| Option | Type | Description |
+|--------|------|-------------|
+| `loadMessages` | `(locale) => Promise<Messages>` | **(required)** Async message loader |
+| `fallbackLocale` | `string?` | Fallback when a key is missing |
+| `resolveLocale` | `() => string \| Promise<string>?` | Auto-detect locale when `setLocale()` wasn't called (e.g. in Server Actions) |
+| `fallbackChain` | `Record<string, string[]>?` | Custom fallback chains per locale |
+| `dateFormats` | `DateFormatOptions?` | Custom date format presets |
+| `numberFormats` | `NumberFormatOptions?` | Custom number format presets |
+| `missing` | `(locale, id) => string?` | Missing message handler |
+
+#### Returns
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `setLocale` | `(locale: string) => void` | Set locale for the current request |
+| `getI18n` | `() => Promise<FluentInstanceExtended>` | Get the i18n instance |
+| `Trans` | async component | Rich text with component interpolation |
+| `Plural` | async component | Locale-aware pluralization |
+| `DateTime` | async component | Date formatting |
+| `NumberFormat` | async component | Number formatting |
+
+### `setLocale(locale)`
+
+Set the locale for the current server request. Call once in your root layout before rendering.
+
+```tsx
+// app/layout.tsx
+import { setLocale } from '@/lib/i18n.server'
+import { cookies } from 'next/headers'
+
+export default async function RootLayout({ children }) {
+  const locale = (await cookies()).get('locale')?.value ?? 'en'
+  setLocale(locale)
+  return <html lang={locale}><body>{children}</body></html>
+}
+```
+
+### `getI18n()`
+
+Get a fully configured i18n instance for the current request. Messages are loaded lazily and cached per-request.
+
+```tsx
+// app/page.tsx
+import { getI18n } from '@/lib/i18n.server'
+
+export default async function Page() {
+  const { t, d, n } = await getI18n()
+  return <h1>{t('Welcome')}</h1>
+}
+```
+
+### Server `<Trans>`
+
+Async server component for rich text. Same syntax as the client `<Trans>` — no `i18n` prop needed.
+
+```tsx
+import { Trans } from '@/lib/i18n.server'
+
+export default async function Page() {
+  return <Trans>Read the <a href="/docs">documentation</a> for more info.</Trans>
+}
+```
+
+| Prop | Type | Description |
+|------|------|-------------|
+| `children` | `ReactNode` | Source-language content with HTML elements |
+| `id` | `string?` | Override auto-generated hash ID |
+| `comment` | `string?` | Context comment for translators |
+| `render` | `(translation: ReactNode) => ReactNode?` | Custom render wrapper |
+
+### Server `<Plural>`
+
+```tsx
+import { Plural } from '@/lib/i18n.server'
+
+<Plural value={count} zero="No items" one="# item" other="# items" />
+```
+
+Props are identical to the client `<Plural>`: `value`, `zero`, `one`, `two`, `few`, `many`, `other`, `offset`.
+
+### Server `<DateTime>`
+
+```tsx
+import { DateTime } from '@/lib/i18n.server'
+
+<DateTime value={new Date()} style="long" />
+```
+
+### Server `<NumberFormat>`
+
+```tsx
+import { NumberFormat } from '@/lib/i18n.server'
+
+<NumberFormat value={1234.56} style="currency" />
+```
+
+### `resolveLocale` (Server Actions)
+
+Server Actions are independent requests that skip the layout tree, so `setLocale()` is never called. Provide `resolveLocale` to auto-detect the locale:
+
+```ts
+export const { setLocale, getI18n } = createServerI18n({
+  loadMessages: (locale) => import(`../locales/compiled/${locale}.ts`),
+  resolveLocale: async () => {
+    const { cookies } = await import('next/headers')
+    return (await cookies()).get('locale')?.value ?? 'en'
+  },
+})
+```
+
+```ts
+// app/actions.ts
+'use server'
+import { getI18n } from '@/lib/i18n.server'
+
+export async function greetAction() {
+  const i18n = await getI18n() // resolveLocale is called automatically
+  return i18n.t('Hello from server action')
+}
+```
+
+### SSR Utilities
+
+Re-exported from `@fluenti/core` for convenience:
+
+| Export | Description |
+|--------|-------------|
+| `detectLocale(options)` | Detect locale from cookie, header, query, etc. |
+| `getSSRLocaleScript(locale)` | Generate `<script>` tag to inject locale into HTML |
+| `getHydratedLocale(fallback)` | Read the injected locale on the client |
+| `isRTL(locale)` | Check if a locale is right-to-left |
+| `getDirection(locale)` | Return `'rtl'` or `'ltr'` |
+
+---
+
+## Reactivity
+
+React's re-render cycle handles reactivity automatically. When `setLocale()` is called:
+
+1. The provider updates its internal state
+2. A new `createFluent()` instance is created with the new locale
+3. All child components re-render with updated translations
+
+Since `i18n.t()` is an O(1) hash lookup, calling it directly in JSX is efficient — no `useMemo` needed.
+
+## Vite Plugin Integration
+
+When using `@fluenti/vite-plugin` with `framework: 'react'`, the tagged template `t`` ` `` is transformed at build time:
+
+```
+t`Hello ${name}` → __i18n.t('Hello {name}', { name })
+```
+
+The plugin auto-injects the `__useI18n()` internal hook. Unlike Vue (`computed`) and Solid (`createMemo`), React uses direct calls since re-renders handle reactivity.

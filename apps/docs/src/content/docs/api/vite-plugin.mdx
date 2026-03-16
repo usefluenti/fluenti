@@ -19,7 +19,7 @@ export default defineConfig({
 
 ```typescript
 fluenti({
-  framework: 'auto',     // 'vue' | 'solid' | 'auto'
+  framework: 'auto',     // 'vue' | 'react' | 'solid' | 'auto'
   catalogDir: 'src/locales/compiled',
   configPath: './fluenti.config.ts',
 })
@@ -27,7 +27,7 @@ fluenti({
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `framework` | `'vue' \| 'solid' \| 'auto'` | `'auto'` | Framework detection mode |
+| `framework` | `'vue' \| 'react' \| 'solid' \| 'auto'` | `'auto'` | Framework detection mode |
 | `catalogDir` | `string` | `'src/locales/compiled'` | Compiled catalogs directory |
 | `configPath` | `string?` | — | Path to fluenti config |
 
@@ -57,6 +57,14 @@ The plugin transforms tagged template and function call macros at build time.
 ```
 t`Hello ${name}` → computed(() => __i18n.t('hash', { name: unref(name) }))
 ```
+
+**React mode:**
+
+```
+t`Hello ${name}` → __i18n.t('hash', { name })
+```
+
+React uses direct calls (no wrapper) since React's re-render cycle handles reactivity.
 
 **Solid mode:**
 
