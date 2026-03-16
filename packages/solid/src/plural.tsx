@@ -1,6 +1,5 @@
 import { Dynamic } from 'solid-js/web'
 import type { Component, JSX } from 'solid-js'
-import { interpolate } from '@fluenti/core'
 import { useI18n } from './use-i18n'
 
 /** Plural category names in a stable order for ICU message building. */
