@@ -9,7 +9,7 @@
     "verbatimModuleSyntax": true,
     "skipLibCheck": true,
     "noEmit": true,
-    "types": ["vinxi/types/client"]
+    "types": ["vinxi/types/client", "@fluenti/vite-plugin/client"]
   },
   "include": ["src/**/*.ts", "src/**/*.tsx", "app.config.ts"]
 }

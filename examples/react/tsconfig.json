@@ -7,7 +7,7 @@
     "jsx": "react-jsx",
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "types": ["vite/client"]
+    "types": ["vite/client", "@fluenti/vite-plugin/client"]
   },
   "include": ["src"]
 }
