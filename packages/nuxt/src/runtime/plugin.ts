@@ -29,9 +29,23 @@ export default defineNuxtPlugin(async (nuxtApp) => {
     // Store in payload — Nuxt serializes this to HTML automatically.
     // The client reads it back to ensure hydration uses the same locale.
     nuxtApp.payload['fluentiLocale'] = detectedLocale
+  } else if (nuxtApp.payload['fluentiLocale']) {
+    // --- Client (SSR hydration): read from payload to avoid mismatch ---
+    detectedLocale = nuxtApp.payload['fluentiLocale'] as string
   } else {
-    // --- Client: read from Nuxt payload to avoid hydration mismatch ---
-    detectedLocale = (nuxtApp.payload['fluentiLocale'] as string) ?? config.defaultLocale
+    // --- Client (SPA mode / no payload): detect from path and cookie ---
+    const { locale: pathLocale } = extractLocaleFromPath(route.path, config.locales)
+    if (pathLocale) {
+      detectedLocale = pathLocale
+    } else if (config.detectBrowserLanguage?.useCookie) {
+      const cookieKey = config.detectBrowserLanguage.cookieKey ?? 'fluenti_locale'
+      const localeCookie = useCookie(cookieKey)
+      detectedLocale = (localeCookie.value && config.locales.includes(localeCookie.value))
+        ? localeCookie.value
+        : config.defaultLocale
+    } else {
+      detectedLocale = config.defaultLocale
+    }
   }
 
   const currentLocale = ref(detectedLocale)

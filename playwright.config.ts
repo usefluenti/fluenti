@@ -48,6 +48,16 @@ export default defineConfig({
       use: { baseURL: 'http://localhost:5183' },
       testMatch: '**/nuxt-ssg.spec.ts',
     },
+    {
+      name: 'nuxt-spa',
+      use: { baseURL: 'http://localhost:5184' },
+      testMatch: '**/nuxt-spa.spec.ts',
+    },
+    {
+      name: 'nuxt-custom-detect',
+      use: { baseURL: 'http://localhost:5185' },
+      testMatch: '**/nuxt-custom-detect.spec.ts',
+    },
   ],
   webServer: [
     {
@@ -95,6 +105,18 @@ export default defineConfig({
     {
       command: 'cd e2e/fixtures/nuxt-ssg && pnpm generate && npx serve .output/public -l 5183',
       port: 5183,
+      reuseExistingServer: true,
+      timeout: 120_000,
+    },
+    {
+      command: 'cd e2e/fixtures/nuxt-spa && pnpm build && pnpm preview --port 5184',
+      port: 5184,
+      reuseExistingServer: true,
+      timeout: 120_000,
+    },
+    {
+      command: 'cd e2e/fixtures/nuxt-custom-detect && pnpm build && pnpm preview --port 5185',
+      port: 5185,
       reuseExistingServer: true,
       timeout: 120_000,
     },

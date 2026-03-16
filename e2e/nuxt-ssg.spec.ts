@@ -156,3 +156,27 @@ test.describe('Nuxt SSG — Path-based Locale Detection', () => {
     await expect(page.getByTestId('page-title')).toContainText('关于我们')
   })
 })
+
+test.describe('Nuxt SSG — Cookie Locale Persistence', () => {
+  test('locale switch sets cookie', async ({ page, context }) => {
+    await page.goto('/')
+    await page.getByTestId('lang-ja').click()
+    await expect(page.getByTestId('current-locale')).toContainText('ja')
+
+    const cookies = await context.cookies()
+    const localeCookie = cookies.find(c => c.name === 'fluenti_locale')
+    expect(localeCookie).toBeDefined()
+    expect(localeCookie!.value).toBe('ja')
+  })
+
+  test('cookie updates on subsequent locale switches', async ({ page, context }) => {
+    await page.goto('/')
+    await page.getByTestId('lang-ja').click()
+    await page.getByTestId('lang-zh').click()
+    await expect(page.getByTestId('current-locale')).toContainText('zh')
+
+    const cookies = await context.cookies()
+    const localeCookie = cookies.find(c => c.name === 'fluenti_locale')
+    expect(localeCookie!.value).toBe('zh')
+  })
+})
