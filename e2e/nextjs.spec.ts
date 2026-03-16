@@ -193,4 +193,63 @@ test.describe('Next.js App Router e2e', () => {
     await expect(page.getByTestId('rsc-title')).toContainText('Server rendered')
     await expect(page.getByTestId('rsc-locale')).toContainText('Current server locale: en')
   })
+
+  // === Trans component in Next.js client page ===
+
+  test('richtext page renders Trans with link', async ({ page }) => {
+    await page.goto('/richtext')
+    await expect(page.getByTestId('richtext-page')).toBeVisible()
+    await expect(page.getByTestId('trans-link').locator('a[href="/docs"]')).toContainText('documentation')
+  })
+
+  test('richtext page renders Trans with bold', async ({ page }) => {
+    await page.goto('/richtext')
+    await expect(page.getByTestId('trans-bold').locator('strong')).toContainText('important')
+  })
+
+  test('richtext page renders Trans with multiple elements', async ({ page }) => {
+    await page.goto('/richtext')
+    // <a href="/login">sign in</a> + <strong>register</strong>
+    await expect(page.getByTestId('trans-multi').locator('a[href="/login"]')).toContainText('sign in')
+    await expect(page.getByTestId('trans-multi').locator('strong')).toContainText('register')
+  })
+
+  // === msg`` lazy message descriptors ===
+
+  test('msg tagged template renders lazy messages', async ({ page }) => {
+    await page.goto('/richtext')
+    await expect(page.getByTestId('richtext-title')).toContainText('Rich Text Demos')
+    await expect(page.getByTestId('richtext-subtitle')).toContainText('Components for complex translations')
+  })
+
+  test('msg tagged template translates when locale switches to Japanese', async ({ page }) => {
+    await page.goto('/richtext')
+    await page.getByTestId('lang-ja').click()
+    await expect(page.getByTestId('richtext-title')).toContainText('リッチテキストデモ')
+    await expect(page.getByTestId('richtext-subtitle')).toContainText('複雑な翻訳のためのコンポーネント')
+  })
+
+  test('Trans components translate when locale switches to Japanese', async ({ page }) => {
+    await page.goto('/richtext')
+    await page.getByTestId('lang-ja').click()
+    await expect(page.getByTestId('trans-link').locator('a[href="/docs"]')).toContainText('ドキュメント')
+    await expect(page.getByTestId('trans-bold').locator('strong')).toContainText('重要な')
+  })
+
+  // === fallbackLocale — missing key falls back to English ===
+
+  test('fallback locale shows English text for missing Japanese translation', async ({ page }) => {
+    await page.goto('/fallback')
+    await expect(page.getByTestId('fallback-page')).toBeVisible()
+    // Verify both keys render in English
+    await expect(page.getByTestId('fallback-only-en')).toContainText('This text is only translated in English')
+    await expect(page.getByTestId('fallback-both')).toContainText('Welcome to Fluenti')
+
+    // Switch to Japanese
+    await page.getByTestId('lang-ja').click()
+    // Key present in ja — should be Japanese
+    await expect(page.getByTestId('fallback-both')).toContainText('Fluenti へようこそ')
+    // Key NOT in ja — should fall back to English
+    await expect(page.getByTestId('fallback-only-en')).toContainText('This text is only translated in English')
+  })
 })

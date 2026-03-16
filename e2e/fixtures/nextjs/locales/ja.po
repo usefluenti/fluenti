@@ -75,3 +75,32 @@ msgstr "サーバーの応答：{message}"
 
 msgid "Hello from server action"
 msgstr "サーバーアクションからこんにちは"
+
+msgid "Rich Text"
+msgstr "リッチテキスト"
+
+msgid "Fallback"
+msgstr "フォールバック"
+
+msgid "Fallback Demo"
+msgstr "フォールバックデモ"
+
+#. msg`Rich Text Demos`
+msgid "1x4v5ca"
+msgstr "リッチテキストデモ"
+
+#. msg`Components for complex translations`
+msgid "1kjrwe6"
+msgstr "複雑な翻訳のためのコンポーネント"
+
+#. Trans: Read the <a>documentation</a> for more info.
+msgid "18r06yp"
+msgstr "<0>ドキュメント</0>で詳細をご覧ください。"
+
+#. Trans: This is <strong>important</strong> information.
+msgid "p3nupq"
+msgstr "これは<0>重要な</0>情報です。"
+
+#. Trans: Please <a>sign in</a> or <strong>register</strong> to continue.
+msgid "166utyv"
+msgstr "<0>サインイン</0>するか、<1>登録</1>して続けてください。"

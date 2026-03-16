@@ -57,3 +57,11 @@ msgstr "削除"
 
 msgid "Reset"
 msgstr "リセット"
+
+#. msg`Administrator`
+msgid "1d03gh6"
+msgstr "管理者"
+
+#. msg`Regular User`
+msgid "154355u"
+msgstr "一般ユーザー"

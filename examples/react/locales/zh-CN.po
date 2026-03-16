@@ -57,3 +57,11 @@ msgstr "移除"
 
 msgid "Reset"
 msgstr "重置"
+
+#. msg`Administrator`
+msgid "1d03gh6"
+msgstr "管理员"
+
+#. msg`Regular User`
+msgid "154355u"
+msgstr "普通用户"
