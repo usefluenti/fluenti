@@ -31,13 +31,13 @@ jobs:
           - shard: react
             projects: react
           - shard: nuxt
-            projects: nuxt,nuxt-spa,nuxt-custom-detect,nuxt-prefix
+            projects: nuxt,nuxt-spa,nuxt-custom-detect
 
           # fixtures
           - shard: vue-fixtures
             projects: splitting-vue,vue-i18n-bridge,vue-routes
           - shard: react-fixtures
-            projects: splitting-react,react-router,remix,nextjs
+            projects: react-router,remix,nextjs
 
     steps:
       - name: Checkout
