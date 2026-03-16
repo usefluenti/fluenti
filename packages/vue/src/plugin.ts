@@ -41,6 +41,10 @@ export interface FluentVueContext {
   loadedLocales: Readonly<Ref<ReadonlySet<string>>>
   /** Preload a locale in the background without switching to it */
   preloadLocale(locale: string): void
+  /** Check if a translation key exists in the catalog */
+  te(key: string, locale?: string): boolean
+  /** Get the raw compiled message without interpolation */
+  tm(key: string, locale?: string): CompiledMessage | undefined
 }
 
 /** Injection key for providing/injecting fluenti context */
@@ -59,6 +63,22 @@ export interface FluentVueOptions {
   chunkLoader?: ChunkLoader
   /** Enable code-splitting mode */
   splitting?: boolean
+  /**
+   * Prefix for globally registered components (Trans, Plural, Select).
+   *
+   * Set this to avoid naming conflicts with other libraries.
+   *
+   * @example
+   * componentPrefix: 'I18n'
+   * // Registers: I18nTrans, I18nPlural, I18nSelect
+   *
+   * @example
+   * componentPrefix: 'Fluenti'
+   * // Registers: FluentiTrans, FluentiPlural, FluentiSelect
+   *
+   * @default '' (no prefix — Trans, Plural, Select)
+   */
+  componentPrefix?: string
 }
 
 /** Return value of `createFluentVue()` */
@@ -257,6 +277,16 @@ export function createFluentVue(options: FluentVueOptions): FluentVuePlugin {
     })
   }
 
+  function te(key: string, loc?: string): boolean {
+    const targetLocale = loc ?? locale.value
+    return lookup(targetLocale, key) !== undefined
+  }
+
+  function tm(key: string, loc?: string): CompiledMessage | undefined {
+    const targetLocale = loc ?? locale.value
+    return lookup(targetLocale, key)
+  }
+
   const context: FluentVueContext = {
     t,
     locale,
@@ -270,14 +300,17 @@ export function createFluentVue(options: FluentVueOptions): FluentVuePlugin {
     isLoading,
     loadedLocales,
     preloadLocale,
+    te,
+    tm,
   }
 
   return {
     install(app: App) {
       app.provide(FLUENTI_KEY, context)
-      app.component('Trans', Trans)
-      app.component('Plural', Plural)
-      app.component('Select', Select)
+      const prefix = options.componentPrefix ?? ''
+      app.component(`${prefix}Trans`, Trans)
+      app.component(`${prefix}Plural`, Plural)
+      app.component(`${prefix}Select`, Select)
       app.config.globalProperties['$t'] = t
       app.config.globalProperties['$d'] = d
       app.config.globalProperties['$n'] = n

@@ -1,41 +1,146 @@
 ---
-title: SSR
-description: Server-side rendering with Fluenti
+title: SSR, SSG & ISR
+description: Server-side rendering, static generation, and incremental static regeneration
 ---
 
-Fluenti is SSR-safe by design. Every API works identically in SSR and CSR.
+import { Aside } from '@astrojs/starlight/components'
 
-## Key rules
+Fluenti supports all Nuxt rendering modes out of the box:
 
-1. **No shared global state** — Every SSR request gets its own Fluenti instance
-2. **Hydration consistency** — Client must initialize with the same locale the server used
+| Mode | How it works |
+|------|-------------|
+| **SSR** | Server detects locale per-request, injects into payload, client hydrates |
+| **SSG** (`nuxt generate`) | Each locale route is pre-rendered with the correct locale from its URL path |
+| **ISR** | Pre-rendered with configurable TTL, re-validated on demand |
+| **SPA** (`ssr: false`) | Client-side path detection, cookie fallback |
 
-## Vue (Nuxt)
+## Nuxt — Zero Config
+
+With `@fluenti/nuxt`, SSR/SSG/ISR work automatically:
 
 ```typescript
-// server plugin
-export default defineNuxtPlugin((nuxtApp) => {
-  const event = nuxtApp.ssrContext?.event
-  const locale = detectLocale({
-    cookie: getCookie(event, 'lang'),
-    headers: event?.headers,
-    available: ['en', 'zh-CN', 'ja'],
-    fallback: 'en',
-  })
-
-  const i18n = createFluentVue({ locale, messages: allMessages })
-  nuxtApp.vueApp.use(i18n)
-})
-
-// client plugin
-export default defineNuxtPlugin((nuxtApp) => {
-  const locale = getHydratedLocale('en')
-  const i18n = createFluentVue({ locale, messages: allMessages })
-  nuxtApp.vueApp.use(i18n)
+// nuxt.config.ts — this is all you need
+export default defineNuxtConfig({
+  modules: ['@fluenti/nuxt'],
+  fluenti: {
+    locales: ['en', 'ja', 'zh'],
+    defaultLocale: 'en',
+  },
 })
 ```
 
-## SolidJS (SolidStart)
+### How Hydration Works
+
+```
+Server (SSR/SSG)                     Client
+─────────────────                    ──────
+1. Run detector chain                1. Read locale from Nuxt payload
+   (path → cookie → header)         2. Skip detection — use server value
+2. Store locale in Nuxt payload      3. Watch route.path for nav changes
+3. Render HTML with correct locale   4. Sync cookie on locale change
+```
+
+The plugin stores the detected locale in `nuxtApp.payload`, which Nuxt serializes into the HTML. The client reads it back on hydration — no mismatch.
+
+## Static Site Generation (SSG)
+
+`nuxt generate` pre-renders all locale routes:
+
+```
+dist/
+├── index.html          ← en (default, no prefix)
+├── about/index.html    ← en
+├── ja/index.html       ← ja
+├── ja/about/index.html ← ja
+├── zh/index.html       ← zh
+└── zh/about/index.html ← zh
+```
+
+During SSG build:
+- **Path detector** extracts locale from each route's URL (`/ja/about` → `ja`)
+- Cookie and header detectors silently fail (no HTTP context) — this is by design
+- Each page is rendered in the correct locale
+
+<Aside type="tip">
+  The module enables `nitro.prerender.crawlLinks` automatically, so all locale-prefixed routes are discovered from your `<NuxtLinkLocale>` links.
+</Aside>
+
+## Incremental Static Regeneration (ISR)
+
+Add one config option:
+
+```typescript
+export default defineNuxtConfig({
+  fluenti: {
+    locales: ['en', 'ja', 'zh'],
+    defaultLocale: 'en',
+    isr: {
+      enabled: true,
+      ttl: 3600, // re-validate every hour
+    },
+  },
+})
+```
+
+This auto-generates `routeRules` for all locale patterns:
+
+```typescript
+// Generated automatically:
+routeRules: {
+  '/**': { isr: 3600 },       // default locale (prefix_except_default)
+  '/ja/**': { isr: 3600 },
+  '/zh/**': { isr: 3600 },
+}
+```
+
+### ISR Options
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `enabled` | `boolean` | — | Enable ISR route rules generation |
+| `ttl` | `number?` | `3600` | Cache TTL in seconds |
+
+## Key Rules
+
+1. **No shared global state** — Every SSR request gets its own Fluenti instance
+2. **Hydration consistency** — Client always reads the server-determined locale from payload
+3. **Path-first detection** — In SSG/ISR, the URL path is the only reliable locale source
+
+## Manual SSR (Non-Nuxt)
+
+If you're not using `@fluenti/nuxt`, you can use the core utilities directly:
+
+### Vue
+
+```typescript
+// server
+import { detectLocale, getSSRLocaleScript } from '@fluenti/core'
+import { createFluentVue } from '@fluenti/vue'
+
+const locale = detectLocale({
+  cookie: getCookie(event, 'lang'),
+  headers: event?.headers,
+  available: ['en', 'zh-CN', 'ja'],
+  fallback: 'en',
+})
+const i18n = createFluentVue({ locale, messages: allMessages })
+app.use(i18n)
+
+// Inject into HTML head:
+const script = getSSRLocaleScript(locale)
+// → <script>window.__FLUENTI_LOCALE__="zh-CN"</script>
+```
+
+```typescript
+// client
+import { getHydratedLocale } from '@fluenti/core'
+
+const locale = getHydratedLocale('en')
+const i18n = createFluentVue({ locale, messages: allMessages })
+app.use(i18n)
+```
+
+### SolidJS
 
 SolidJS is naturally SSR-safe because each `renderToString()` creates a new component tree with isolated signals.
 
@@ -53,5 +158,5 @@ function Server() {
 ## Utilities
 
 - `detectLocale(options)` — Detects locale from cookie, query, path, or Accept-Language header
-- `getSSRLocaleScript(locale)` — Generates a `<script>` tag to inject locale into HTML
+- `getSSRLocaleScript(locale)` — Generates a `<script>` tag to inject locale into HTML (XSS-safe)
 - `getHydratedLocale(fallback)` — Reads the injected locale on the client

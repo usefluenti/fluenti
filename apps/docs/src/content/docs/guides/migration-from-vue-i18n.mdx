@@ -3,6 +3,16 @@ title: Migration from vue-i18n
 description: Step-by-step migration guide with before/after examples
 ---
 
+import { Aside } from '@astrojs/starlight/components'
+
+<Aside type="tip">
+  **Prefer gradual migration?** Use the [vue-i18n bridge](/guides/vue-i18n-bridge/) to run both libraries side by side. Migrate messages one at a time without a big-bang rewrite.
+</Aside>
+
+## Full replacement
+
+This guide covers a complete migration from vue-i18n to Fluenti. If you need to coexist with vue-i18n during migration, see the [bridge guide](/guides/vue-i18n-bridge/) instead.
+
 ## Step 1: Install Fluenti
 
 ```bash
@@ -69,5 +79,19 @@ export default defineConfig({
 | `$d(date)` | `$d(date)` (same) |
 | `$n(num)` | `$n(num)` (same) |
 | `useI18n()` | `useI18n()` (same) |
+| `$tc(key, count)` | `t(key, { count })` with ICU plural syntax |
+| `$te(key)` | `te(key)` (same) |
 | `<i18n-t>` | `<Trans>` |
+| Pipe-separated plurals | ICU `{count, plural, ...}` syntax |
 | Manual key files | Automatic extraction with `fluenti extract` |
+| `@nuxtjs/i18n` | `@fluenti/nuxt` |
+
+## Plural syntax migration
+
+```
+// vue-i18n pipe-separated
+"items": "no items | one item | {count} items"
+
+// Fluenti ICU MessageFormat
+"items": "{count, plural, =0 {no items} one {# item} other {# items}}"
+```

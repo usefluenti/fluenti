@@ -1,0 +1,148 @@
+---
+title: Quick Start (Nuxt)
+description: Get started with Fluenti in a Nuxt 3 project with locale-prefixed routing and SEO
+---
+
+import { Steps, Tabs, TabItem, Aside } from '@astrojs/starlight/components'
+
+<Steps>
+
+1. **Install packages**
+
+   ```bash
+   pnpm add @fluenti/nuxt @fluenti/core @fluenti/vue
+   pnpm add -D @fluenti/cli @fluenti/vite-plugin
+   ```
+
+2. **Configure Nuxt**
+
+   ```typescript
+   // nuxt.config.ts
+   export default defineNuxtConfig({
+     modules: ['@fluenti/nuxt'],
+     fluenti: {
+       locales: ['en', 'ja', 'zh'],
+       defaultLocale: 'en',
+       strategy: 'prefix_except_default',
+     },
+   })
+   ```
+
+3. **Create `fluenti.config.ts`**
+
+   ```typescript
+   // fluenti.config.ts
+   export default {
+     sourceLocale: 'en',
+     locales: ['en', 'ja', 'zh'],
+     catalogDir: './locales',
+     format: 'po',
+     include: ['./pages/**/*.vue', './components/**/*.vue', './layouts/**/*.vue'],
+     compileOutDir: './locales/compiled',
+   }
+   ```
+
+4. **Write a page with translations**
+
+   ```vue
+   <!-- pages/index.vue -->
+   <script setup>
+   import { useI18n } from '@fluenti/vue'
+
+   const { t, setLocale } = useI18n()
+   </script>
+
+   <template>
+     <h1 v-t>Welcome to my app</h1>
+     <p>{{ t('Hello, {name}!', { name: 'World' }) }}</p>
+
+     <nav>
+       <NuxtLinkLocale to="/about">About</NuxtLinkLocale>
+     </nav>
+
+     <div>
+       <button @click="setLocale('en')">English</button>
+       <button @click="setLocale('ja')">日本語</button>
+       <button @click="setLocale('zh')">中文</button>
+     </div>
+   </template>
+   ```
+
+5. **Extract, translate, and compile**
+
+   ```bash
+   npx fluenti extract    # → locales/ja.po, locales/zh.po
+   # ... translate the .po files ...
+   npx fluenti compile    # → locales/compiled/
+   ```
+
+6. **Add locale-aware navigation**
+
+   Use the routing composables for locale-prefixed links and SEO:
+
+   ```vue
+   <!-- layouts/default.vue -->
+   <script setup>
+   const localePath = useLocalePath()
+   const switchLocalePath = useSwitchLocalePath()
+   const head = useLocaleHead({
+     addSeoAttributes: true,
+     baseUrl: 'https://example.com',
+   })
+
+   useHead(head.value)
+   </script>
+
+   <template>
+     <nav>
+       <NuxtLink :to="localePath('/')">Home</NuxtLink>
+       <NuxtLink :to="localePath('/about')">About</NuxtLink>
+     </nav>
+
+     <div>
+       <NuxtLink :to="switchLocalePath('en')">EN</NuxtLink>
+       <NuxtLink :to="switchLocalePath('ja')">JA</NuxtLink>
+       <NuxtLink :to="switchLocalePath('zh')">ZH</NuxtLink>
+     </div>
+
+     <slot />
+   </template>
+   ```
+
+</Steps>
+
+## Routing strategies
+
+The `strategy` option controls how locale prefixes appear in URLs:
+
+| Strategy | Default locale | Other locales |
+|----------|---------------|---------------|
+| `prefix_except_default` | `/about` | `/ja/about` |
+| `prefix` | `/en/about` | `/ja/about` |
+| `prefix_and_default` | `/about` + `/en/about` | `/ja/about` |
+| `no_prefix` | `/about` | `/about` |
+
+<Aside type="tip">
+  `prefix_except_default` is the most common strategy — it keeps clean URLs for your default locale while giving other locales a clear URL prefix.
+</Aside>
+
+## SEO output
+
+`useLocaleHead()` generates the following `<head>` metadata automatically:
+
+```html
+<html lang="en">
+<head>
+  <link rel="alternate" hreflang="en" href="https://example.com/about" />
+  <link rel="alternate" hreflang="ja" href="https://example.com/ja/about" />
+  <link rel="alternate" hreflang="zh" href="https://example.com/zh/about" />
+  <link rel="alternate" hreflang="x-default" href="https://example.com/about" />
+  <meta property="og:locale" content="en" />
+  <meta property="og:locale:alternate" content="ja" />
+  <meta property="og:locale:alternate" content="zh" />
+</head>
+```
+
+## Migrating from `@nuxtjs/i18n`?
+
+If you're migrating from `@nuxtjs/i18n` (nuxt-i18n), you can use `@fluenti/vue-i18n-compat` to run both libraries side by side during migration. See the [vue-i18n bridge guide](/guides/vue-i18n-bridge/) for details.
