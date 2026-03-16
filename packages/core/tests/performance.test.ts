@@ -88,7 +88,7 @@ describe('performance', () => {
 
   it('20+ variable message performance', () => {
     // Build a message with 25 variables
-    const vars = [...new Array(25)].map((_, i) => `v${i}`)
+    const vars = new Array(25).fill().map((_, i) => `v${i}`)
     const message = vars.map(v => `{${v}}`).join(' ')
     const values: Record<string, unknown> = {}
     for (const v of vars) {

@@ -423,7 +423,7 @@ describe('parse', () => {
     })
 
     it('24. plural with 10+ exact matches =0 through =10', () => {
-      const branches = [...new Array(11)].map((_, i) => `=${i} {val${i}}`).join(' ')
+      const branches = new Array(11).fill().map((_, i) => `=${i} {val${i}}`).join(' ')
       const msg = `{n, plural, ${branches} other {default}}`
       const result = parse(msg)
       const node = result[0] as any

@@ -6,8 +6,12 @@ export default defineConfig({
       'packages/core',
       'packages/vue',
       'packages/solid',
+      'packages/react',
       'packages/cli',
       'packages/vite-plugin',
+      'packages/next-plugin',
+      'packages/nuxt',
+      'packages/vue-i18n-compat',
     ],
   },
 })
