@@ -187,4 +187,42 @@ export default {
     expect(typeof messages[0].id).toBe('string')
     expect(messages[0].id.length).toBeGreaterThan(0)
   })
+
+  // ─── Edge cases ──────────────────────────────────────────────────────
+
+  it('extracts v-t + v-if element', () => {
+    const code = `<template>
+  <div v-t v-if="show">Conditional text</div>
+</template>`
+    const messages = extractFromVue(code, 'App.vue')
+    expect(messages).toHaveLength(1)
+    expect(messages[0].message).toBe('Conditional text')
+  })
+
+  it('extracts v-t + v-for element', () => {
+    const code = `<template>
+  <li v-t v-for="item in items" :key="item">Item label</li>
+</template>`
+    const messages = extractFromVue(code, 'App.vue')
+    expect(messages).toHaveLength(1)
+    expect(messages[0].message).toBe('Item label')
+  })
+
+  it('extracts Unicode message', () => {
+    const code = `<template>
+  <div v-t>こんにちは世界</div>
+</template>`
+    const messages = extractFromVue(code, 'App.vue')
+    expect(messages).toHaveLength(1)
+    expect(messages[0].message).toBe('こんにちは世界')
+  })
+
+  it('extracts message containing quotes', () => {
+    const code = `<template>
+  <div v-t>It's a "test"</div>
+</template>`
+    const messages = extractFromVue(code, 'App.vue')
+    expect(messages).toHaveLength(1)
+    expect(messages[0].message).toBe('It\'s a "test"')
+  })
 })
