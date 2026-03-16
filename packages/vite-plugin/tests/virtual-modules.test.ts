@@ -27,6 +27,12 @@ describe('resolveVirtualSplitId', () => {
     expect(resolveVirtualSplitId('some-other-module')).toBeUndefined()
     expect(resolveVirtualSplitId('virtual:fluenti/messages/en')).toBeUndefined()
   })
+
+  it('returns undefined for unknown virtual:fluenti/* sub-paths', () => {
+    expect(resolveVirtualSplitId('virtual:fluenti/unknown')).toBeUndefined()
+    expect(resolveVirtualSplitId('virtual:fluenti/')).toBeUndefined()
+    expect(resolveVirtualSplitId('virtual:other/runtime')).toBeUndefined()
+  })
 })
 
 describe('loadVirtualSplitModule', () => {
@@ -131,6 +137,88 @@ describe('loadVirtualSplitModule', () => {
       expect(code).toContain('createSignal')
       expect(code).toContain('__loadRoute')
       expect(code).not.toContain('shallowReactive')
+    })
+  })
+
+  describe('runtime module (react)', () => {
+    it('generates mutable catalog without framework reactivity', () => {
+      const code = loadVirtualSplitModule('\0virtual:fluenti/runtime', {
+        ...defaultOptions,
+        framework: 'react',
+      })
+
+      expect(code).toContain('__catalog')
+      expect(code).toContain('__switchLocale')
+      expect(code).toContain('__preloadLocale')
+      expect(code).not.toContain('shallowReactive')
+      expect(code).not.toContain('createStore')
+    })
+
+    it('includes all locale loaders for React', () => {
+      const code = loadVirtualSplitModule('\0virtual:fluenti/runtime', {
+        ...defaultOptions,
+        framework: 'react',
+      })!
+
+      expect(code).toContain("'en': () => import(")
+      expect(code).toContain("'fr': () => import(")
+      expect(code).toContain("'ja': () => import(")
+    })
+  })
+
+  describe('static messages module — edge cases', () => {
+    it('generates re-export from default locale', () => {
+      const code = loadVirtualSplitModule('\0virtual:fluenti/messages', defaultOptions)!
+
+      expect(code).toContain('export *')
+      expect(code).toContain('/en.js')
+    })
+  })
+
+  describe('route runtime module — edge cases', () => {
+    it('Vue route runtime includes route-specific exports', () => {
+      const code = loadVirtualSplitModule('\0virtual:fluenti/route-runtime', defaultOptions)!
+
+      expect(code).toContain('__loadRoute')
+      expect(code).toContain('__registerRouteLoader')
+      expect(code).toContain('__switchLocale')
+      expect(code).toContain('__preloadLocale')
+      expect(code).toContain('shallowReactive')
+    })
+
+    it('Solid route runtime uses createStore', () => {
+      const code = loadVirtualSplitModule('\0virtual:fluenti/route-runtime', {
+        ...defaultOptions,
+        framework: 'solid',
+      })!
+
+      expect(code).toContain('createStore')
+      expect(code).toContain('__loadRoute')
+      expect(code).toContain('__registerRouteLoader')
+    })
+  })
+
+  describe('generated module content', () => {
+    it('runtime module contains correct import paths for catalog directory', () => {
+      const code = loadVirtualSplitModule('\0virtual:fluenti/runtime', {
+        ...defaultOptions,
+        catalogDir: 'custom/path/compiled',
+      })!
+
+      expect(code).toContain('custom/path/compiled')
+      expect(code).toContain('/en.js')
+    })
+
+    it('runtime module contains loader entries for all configured locales', () => {
+      const locales = ['en', 'fr', 'ja', 'de', 'es']
+      const code = loadVirtualSplitModule('\0virtual:fluenti/runtime', {
+        ...defaultOptions,
+        locales,
+      })!
+
+      for (const locale of locales) {
+        expect(code).toContain(`'${locale}': () => import(`)
+      }
     })
   })
 

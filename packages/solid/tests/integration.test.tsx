@@ -77,11 +77,8 @@ describe('integration', () => {
   })
 
   it('Trans and Plural work together with locale switch', async () => {
-    let _changeLocale: (l: string) => void
-
     function App() {
-      const { setLocale } = useI18n()
-      _changeLocale = setLocale
+      useI18n()
       return (
         <div>
           <Trans
@@ -124,5 +121,53 @@ describe('integration', () => {
     ))
 
     expect(result).toBe('New value')
+  })
+
+  // ─── Edge cases ──────────────────────────────────────────────────────
+
+  it('full lifecycle: mount → translate → switch locale → unmount', async () => {
+    let changeLocale: (l: string) => void
+
+    function App() {
+      const { t, setLocale, locale } = useI18n()
+      changeLocale = setLocale
+      return (
+        <div>
+          <span data-testid="locale">{locale()}</span>
+          <span data-testid="text">{t('hello')}</span>
+          <span data-testid="interp">{t('greeting', { name: 'Test' })}</span>
+        </div>
+      )
+    }
+
+    // Mount
+    const { getByTestId, unmount } = render(() => (
+      <I18nProvider locale="en" messages={messages}>
+        <App />
+      </I18nProvider>
+    ))
+
+    // Initial render — English
+    expect(getByTestId('locale').textContent).toBe('en')
+    expect(getByTestId('text').textContent).toBe('Hello')
+    expect(getByTestId('interp').textContent).toBe('Hi Test')
+
+    // Switch locale to French
+    changeLocale!('fr')
+    await Promise.resolve()
+
+    expect(getByTestId('locale').textContent).toBe('fr')
+    expect(getByTestId('text').textContent).toBe('Bonjour')
+    expect(getByTestId('interp').textContent).toBe('Salut Test')
+
+    // Switch back to English
+    changeLocale!('en')
+    await Promise.resolve()
+
+    expect(getByTestId('locale').textContent).toBe('en')
+    expect(getByTestId('text').textContent).toBe('Hello')
+
+    // Unmount — should not throw
+    unmount()
   })
 })

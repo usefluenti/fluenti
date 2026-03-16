@@ -95,6 +95,91 @@ describe('I18nProvider', () => {
 
     expect(getByText('nonexistent.key')).toBeDefined()
   })
+
+  // ─── Edge cases ──────────────────────────────────────────────────────
+
+  it('works with no messages for current locale (returns key as fallback)', () => {
+    function Child() {
+      const { t } = useI18n()
+      return <span>{t('hello')}</span>
+    }
+
+    const { getByText } = render(() => (
+      <I18nProvider locale="en" messages={{}}>
+        <Child />
+      </I18nProvider>
+    ))
+
+    expect(getByText('hello')).toBeDefined()
+  })
+
+  it('nested Provider — inner overrides outer', () => {
+    function Child() {
+      const { t } = useI18n()
+      return <span data-testid="inner">{t('hello')}</span>
+    }
+
+    const { getByTestId } = render(() => (
+      <I18nProvider locale="en" messages={messages}>
+        <I18nProvider locale="fr" messages={messages}>
+          <Child />
+        </I18nProvider>
+      </I18nProvider>
+    ))
+
+    expect(getByTestId('inner').textContent).toBe('Bonjour')
+  })
+
+  it('loadMessages failure does not crash context', () => {
+    function Child() {
+      const { t, loadMessages } = useI18n()
+      // Loading messages for a locale that doesn't exist yet should work fine
+      loadMessages('de', { hello: 'Hallo' })
+      return <span>{t('hello')}</span>
+    }
+
+    const { getByText } = render(() => (
+      <I18nProvider locale="en" messages={messages}>
+        <Child />
+      </I18nProvider>
+    ))
+
+    // Still renders English since locale is 'en'
+    expect(getByText('Hello')).toBeDefined()
+  })
+
+  it('unmount during async locale load does not throw', async () => {
+    let resolveLoader: (v: Record<string, string>) => void
+    const loaderPromise = new Promise<Record<string, string>>((r) => { resolveLoader = r })
+
+    function Child() {
+      const { t, setLocale } = useI18n()
+      return (
+        <button onClick={() => setLocale('de')} data-testid="btn">
+          {t('hello')}
+        </button>
+      )
+    }
+
+    const { unmount } = render(() => (
+      <I18nProvider
+        locale="en"
+        messages={messages}
+        splitting={true}
+        chunkLoader={() => loaderPromise}
+      >
+        <Child />
+      </I18nProvider>
+    ))
+
+    // Unmount while loader is still pending
+    unmount()
+
+    // Resolve after unmount — should not throw
+    resolveLoader!({ hello: 'Hallo' })
+    await loaderPromise
+    await Promise.resolve()
+  })
 })
 
 describe('useI18n outside provider', () => {

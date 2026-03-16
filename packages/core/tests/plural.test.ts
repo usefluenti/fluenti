@@ -104,3 +104,64 @@ describe('complex locales', () => {
     expect(resolvePlural(100, opts, 'ja')).toBe('other')
   })
 })
+
+// ─── Exhaustive edge cases ───────────────────────────────────────────────
+
+describe('edge cases - exhaustive', () => {
+  it('exact match =2', () => {
+    expect(resolvePlural(2, { '=2': 'pair', 'other': 'many' }, 'en')).toBe('=2')
+  })
+
+  it('exact match =100', () => {
+    expect(resolvePlural(100, { '=100': 'century', 'other': 'many' }, 'en')).toBe('=100')
+  })
+
+  it('exact match takes priority over CLDR category', () => {
+    // In English, 1 is "one" in CLDR, but =1 exact match should win
+    expect(resolvePlural(1, { '=1': 'exactly-one', 'one': 'cldr-one', 'other': 'rest' }, 'en')).toBe('=1')
+  })
+
+  it('ordinal=true uses ordinal rules', () => {
+    // English ordinal: 1→one (1st), 2→two (2nd), 3→few (3rd), 4→other (4th)
+    const opts = { 'one': '1st', 'two': '2nd', 'few': '3rd', 'other': 'th' }
+    expect(resolvePlural(1, opts, 'en', true)).toBe('one')
+    expect(resolvePlural(2, opts, 'en', true)).toBe('two')
+    expect(resolvePlural(3, opts, 'en', true)).toBe('few')
+    expect(resolvePlural(4, opts, 'en', true)).toBe('other')
+  })
+
+  it('Arabic zero category', () => {
+    const opts = { 'zero': 'z', 'one': 'o', 'two': 't', 'few': 'f', 'many': 'm', 'other': 'x' }
+    expect(resolvePlural(0, opts, 'ar')).toBe('zero')
+  })
+
+  it('Arabic few category', () => {
+    const opts = { 'zero': 'z', 'one': 'o', 'two': 't', 'few': 'f', 'many': 'm', 'other': 'x' }
+    // Arabic "few" is for numbers like 3-10
+    expect(resolvePlural(3, opts, 'ar')).toBe('few')
+  })
+
+  it('French: 0 and 1 are both "one"', () => {
+    const opts = { 'one': 'singular', 'other': 'plural' }
+    expect(resolvePlural(0, opts, 'fr')).toBe('one')
+    expect(resolvePlural(1, opts, 'fr')).toBe('one')
+    expect(resolvePlural(2, opts, 'fr')).toBe('other')
+  })
+
+  it('locale with region subtag en-US', () => {
+    const opts = { 'one': 'item', 'other': 'items' }
+    expect(resolvePlural(1, opts, 'en-US')).toBe('one')
+    expect(resolvePlural(5, opts, 'en-US')).toBe('other')
+  })
+
+  it('Number.MAX_SAFE_INTEGER', () => {
+    const opts = { 'one': 'x', 'other': 'y' }
+    expect(resolvePlural(Number.MAX_SAFE_INTEGER, opts, 'en')).toBe('other')
+  })
+
+  it('negative zero -0', () => {
+    // -0 has exact key "=0" since `=${-0}` is "=0"
+    const opts = { '=0': 'none', 'one': 'x', 'other': 'y' }
+    expect(resolvePlural(-0, opts, 'en')).toBe('=0')
+  })
+})

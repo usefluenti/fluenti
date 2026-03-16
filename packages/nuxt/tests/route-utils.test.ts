@@ -106,6 +106,70 @@ describe('switchLocalePath', () => {
   })
 })
 
+describe('localePath edge cases', () => {
+  it('no_prefix returns path unchanged for any locale', () => {
+    expect(localePath('/dashboard/settings', 'ja', 'en', 'no_prefix')).toBe('/dashboard/settings')
+    expect(localePath('/dashboard/settings', 'zh', 'en', 'no_prefix')).toBe('/dashboard/settings')
+  })
+
+  it('prefix_except_default returns unprefixed path for default locale', () => {
+    expect(localePath('/contact', 'en', 'en', 'prefix_except_default')).toBe('/contact')
+  })
+
+  it('prefix_except_default adds prefix for non-default locale', () => {
+    expect(localePath('/contact', 'zh', 'en', 'prefix_except_default')).toBe('/zh/contact')
+  })
+
+  it('prefix strategy always adds prefix including default locale', () => {
+    expect(localePath('/contact', 'en', 'en', 'prefix')).toBe('/en/contact')
+    expect(localePath('/contact', 'ja', 'en', 'prefix')).toBe('/ja/contact')
+  })
+
+  it('handles root path "/" correctly for all strategies', () => {
+    expect(localePath('/', 'en', 'en', 'no_prefix')).toBe('/')
+    expect(localePath('/', 'en', 'en', 'prefix_except_default')).toBe('/')
+    expect(localePath('/', 'ja', 'en', 'prefix_except_default')).toBe('/ja')
+    expect(localePath('/', 'en', 'en', 'prefix')).toBe('/en')
+    expect(localePath('/', 'ja', 'en', 'prefix')).toBe('/ja')
+  })
+})
+
+describe('extractLocaleFromPath edge cases', () => {
+  const locales = ['en', 'ja', 'zh']
+
+  it('extracts valid locale from path', () => {
+    const result = extractLocaleFromPath('/en/dashboard', locales)
+    expect(result.locale).toBe('en')
+    expect(result.pathWithoutLocale).toBe('/dashboard')
+  })
+
+  it('returns null locale for non-locale first segment', () => {
+    const result = extractLocaleFromPath('/dashboard/settings', locales)
+    expect(result.locale).toBeNull()
+    expect(result.pathWithoutLocale).toBe('/dashboard/settings')
+  })
+
+  it('returns null locale and "/" for bare root path', () => {
+    const result = extractLocaleFromPath('/', locales)
+    expect(result.locale).toBeNull()
+    expect(result.pathWithoutLocale).toBe('/')
+  })
+})
+
+describe('switchLocalePath edge cases', () => {
+  const locales = ['en', 'ja', 'zh']
+
+  it('preserves the path segment when switching locales', () => {
+    const result = switchLocalePath('/ja/docs/guide', 'zh', locales, 'en', 'prefix_except_default')
+    expect(result).toBe('/zh/docs/guide')
+  })
+
+  it('returns current path unchanged for no_prefix strategy', () => {
+    const result = switchLocalePath('/docs/guide', 'ja', locales, 'en', 'no_prefix')
+    expect(result).toBe('/docs/guide')
+  })
+})
+
 describe('extendPages', () => {
   it('adds locale-prefixed routes for prefix_except_default', () => {
     const pages: PageRoute[] = [

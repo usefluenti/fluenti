@@ -91,4 +91,35 @@ describe('SSR', () => {
     warnSpy.mockRestore()
     resetGlobalI18nContext()
   })
+
+  // ─── Edge cases ──────────────────────────────────────────────────────
+
+  it('per-request isolation — two contexts do not interfere', () => {
+    const ctxA = createI18nContext({ locale: 'en', messages })
+    const ctxB = createI18nContext({ locale: 'fr', messages })
+
+    // Changing ctxA should not affect ctxB
+    ctxA.setLocale('fr')
+    ctxB.setLocale('en')
+
+    expect(ctxA.locale()).toBe('fr')
+    expect(ctxB.locale()).toBe('en')
+    expect(ctxA.t('hello')).toBe('Bonjour')
+    expect(ctxB.t('hello')).toBe('Hello')
+  })
+
+  it('locale signal is reactive in SSR context', () => {
+    const ctx = createI18nContext({ locale: 'en', messages })
+
+    expect(ctx.locale()).toBe('en')
+    expect(ctx.t('hello')).toBe('Hello')
+
+    ctx.setLocale('fr')
+    expect(ctx.locale()).toBe('fr')
+    expect(ctx.t('hello')).toBe('Bonjour')
+
+    ctx.setLocale('en')
+    expect(ctx.locale()).toBe('en')
+    expect(ctx.t('hello')).toBe('Hello')
+  })
 })

@@ -90,6 +90,84 @@ describe('transformForDynamicSplit', () => {
   })
 })
 
+describe('transformForDynamicSplit — edge cases', () => {
+  it('returns unchanged code when no $t calls exist', () => {
+    const code = 'const greeting = "Hello"; console.log(greeting)'
+    const result = transformForDynamicSplit(code)
+
+    expect(result.needsCatalogImport).toBe(false)
+    expect(result.usedHashes.size).toBe(0)
+    expect(result.code).toBe(code)
+  })
+
+  it('transforms a single $t call correctly', () => {
+    const code = `const msg = $t('Welcome')`
+    const result = transformForDynamicSplit(code)
+    const hash = hashMessage('Welcome')
+
+    expect(result.needsCatalogImport).toBe(true)
+    expect(result.usedHashes.size).toBe(1)
+    expect(result.usedHashes.has(hash)).toBe(true)
+    expect(result.code).toBe(`const msg = __catalog._${hash}`)
+  })
+
+  it('transforms $t with values object', () => {
+    const code = `$t('Hi {user}', { user: name })`
+    const result = transformForDynamicSplit(code)
+    const hash = hashMessage('Hi {user}')
+
+    expect(result.code).toBe(`__catalog._${hash}({ user: name })`)
+    expect(result.usedHashes.has(hash)).toBe(true)
+  })
+
+  it('transforms _ctx.$t pattern removing prefix', () => {
+    const code = `_ctx.$t('Greet')`
+    const result = transformForDynamicSplit(code)
+    const hash = hashMessage('Greet')
+
+    expect(result.code).toBe(`__catalog._${hash}`)
+    expect(result.code).not.toContain('_ctx')
+  })
+
+  it('transforms $setup.$t pattern removing prefix', () => {
+    const code = `$setup.$t('Setup msg')`
+    const result = transformForDynamicSplit(code)
+    const hash = hashMessage('Setup msg')
+
+    expect(result.code).toBe(`__catalog._${hash}`)
+    expect(result.code).not.toContain('$setup')
+  })
+
+  it('transforms backtick-quoted $t call', () => {
+    const code = '$t(`template literal`)'
+    const result = transformForDynamicSplit(code)
+    const hash = hashMessage('template literal')
+
+    expect(result.code).toBe(`__catalog._${hash}`)
+  })
+
+  it('transforms multiple $t calls in one line', () => {
+    const code = `$t('One'); $t('Two'); $t('Three')`
+    const result = transformForDynamicSplit(code)
+
+    expect(result.usedHashes.size).toBe(3)
+    expect(result.code).not.toContain('$t(')
+    expect(result.code).toContain(`__catalog._${hashMessage('One')}`)
+    expect(result.code).toContain(`__catalog._${hashMessage('Two')}`)
+    expect(result.code).toContain(`__catalog._${hashMessage('Three')}`)
+  })
+
+  it('preserves non-$t code around transformed calls', () => {
+    const code = `const prefix = ">>"; const msg = $t('Hello'); const suffix = "<<"`
+    const result = transformForDynamicSplit(code)
+    const hash = hashMessage('Hello')
+
+    expect(result.code).toContain('const prefix = ">>"')
+    expect(result.code).toContain(`const msg = __catalog._${hash}`)
+    expect(result.code).toContain('const suffix = "<<"')
+  })
+})
+
 describe('transformForStaticSplit', () => {
   it('transforms $t calls to direct _hash references', () => {
     const code = `const text = $t('Hello world')`
@@ -115,6 +193,46 @@ describe('transformForStaticSplit', () => {
     expect(result.needsCatalogImport).toBe(true)
     expect(result.code).not.toContain('_ctx._')
     expect(result.code).toMatch(/_toDisplayString\(_\w+\)/)
+  })
+
+  it('generates named imports for static split', () => {
+    const code = `$t('Alpha'); $t('Beta')`
+    const result = transformForStaticSplit(code)
+    const hashA = hashMessage('Alpha')
+    const hashB = hashMessage('Beta')
+
+    expect(result.usedHashes.has(hashA)).toBe(true)
+    expect(result.usedHashes.has(hashB)).toBe(true)
+    expect(result.code).toContain(`_${hashA}`)
+    expect(result.code).toContain(`_${hashB}`)
+    expect(result.code).not.toContain('__catalog')
+  })
+})
+
+describe('injectCatalogImport — edge cases', () => {
+  it('injects dynamic import at the top of the module', () => {
+    const code = 'const x = __catalog._abc\nconst y = __catalog._def'
+    const result = injectCatalogImport(code, 'dynamic', new Set(['abc', 'def']))
+
+    expect(result).toContain("import { __catalog } from 'virtual:fluenti/runtime'")
+    expect(result.indexOf('import')).toBe(0)
+  })
+
+  it('injects static import with all hash names', () => {
+    const code = 'const x = _h1; const y = _h2; const z = _h3'
+    const result = injectCatalogImport(code, 'static', new Set(['h1', 'h2', 'h3']))
+
+    expect(result).toContain('import { _h1, _h2, _h3 }')
+    expect(result).toContain("from 'virtual:fluenti/messages'")
+  })
+
+  it('injects per-route import targeting route-runtime', () => {
+    const code = 'const x = __catalog._xyz'
+    const result = injectCatalogImport(code, 'per-route', new Set(['xyz']))
+
+    expect(result).toContain("import { __catalog } from 'virtual:fluenti/route-runtime'")
+    expect(result).not.toContain('virtual:fluenti/runtime')
+    expect(result).not.toContain('virtual:fluenti/messages')
   })
 })
 
@@ -186,5 +304,18 @@ describe('CLI ↔ vite-plugin hash consistency', () => {
       expect(result.usedHashes.has(hash)).toBe(true)
       expect(result.code).toContain(`_${hash}`)
     }
+  })
+
+  it('dynamic and static transforms produce identical hashes for the same message', () => {
+    const message = 'Consistent hash test'
+    const cliHash = hashMessage(message)
+
+    const dynamicResult = transformForDynamicSplit(`$t('${message}')`)
+    const staticResult = transformForStaticSplit(`$t('${message}')`)
+
+    expect(dynamicResult.usedHashes.has(cliHash)).toBe(true)
+    expect(staticResult.usedHashes.has(cliHash)).toBe(true)
+    expect(dynamicResult.code).toContain(`_${cliHash}`)
+    expect(staticResult.code).toContain(`_${cliHash}`)
   })
 })

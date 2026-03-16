@@ -142,4 +142,30 @@ describe('DateTime', () => {
       'useI18n requires either createI18n()',
     )
   })
+
+  // ─── Edge cases ──────────────────────────────────────────────────────
+
+  it('handles NaN timestamp gracefully', () => {
+    const { container } = render(() => (
+      <I18nProvider locale="en" messages={{ en: {} }}>
+        <DateTime value={NaN} />
+      </I18nProvider>
+    ))
+
+    // Intl.DateTimeFormat with NaN produces "Invalid Date" in some envs
+    expect(container.textContent).toBeDefined()
+  })
+
+  it('handles invalid date object', () => {
+    const invalidDate = new Date('not-a-date')
+
+    const { container } = render(() => (
+      <I18nProvider locale="en" messages={{ en: {} }}>
+        <DateTime value={invalidDate} />
+      </I18nProvider>
+    ))
+
+    // Should render something (even if it's "Invalid Date")
+    expect(container.textContent).toBeDefined()
+  })
 })

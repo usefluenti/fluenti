@@ -230,3 +230,94 @@ describe('Trans XSS prevention', () => {
     expect(wrapper.text()).toBe('Click here to continue')
   })
 })
+
+describe('Trans edge cases', () => {
+  it('renders empty string message', () => {
+    const plugin = createPlugin()
+    const wrapper = mount(Trans, {
+      props: { message: '' },
+      global: { plugins: [plugin] },
+    })
+
+    // Empty message prop is falsy, so no-message path is taken (returns null)
+    expect(wrapper.html()).toBe('')
+  })
+
+  it('renders nested tags <a><b>content</b></a>', () => {
+    const plugin = createPlugin()
+    const wrapper = mount(Trans, {
+      props: { message: '<a><b>content</b></a>' },
+      global: { plugins: [plugin] },
+      slots: {
+        a: (props: { children: string }) => h('span', { class: 'outer' }, props.children),
+      },
+    })
+
+    // The outer <a> tag is matched; inner <b>content</b> is passed as children text
+    expect(wrapper.text()).toContain('content')
+  })
+
+  it('renders self-closing tag as plain text', () => {
+    const plugin = createPlugin()
+    const wrapper = mount(Trans, {
+      props: { message: 'Hello <br/> world' },
+      global: { plugins: [plugin] },
+    })
+
+    // Self-closing tags don't match <tag>content</tag> regex, rendered as text
+    expect(wrapper.text()).toContain('Hello')
+    expect(wrapper.text()).toContain('world')
+  })
+
+  it('renders tags only, no text', () => {
+    const plugin = createPlugin()
+    const wrapper = mount(Trans, {
+      props: { message: '<link>click</link>' },
+      global: { plugins: [plugin] },
+      slots: {
+        link: (props: { children: string }) => h('a', { href: '/go' }, props.children),
+      },
+    })
+
+    expect(wrapper.text()).toBe('click')
+    expect(wrapper.find('a').exists()).toBe(true)
+  })
+
+  it('renders single text child', () => {
+    const plugin = createPlugin()
+    const wrapper = mount(Trans, {
+      props: { message: 'Just plain text' },
+      global: { plugins: [plugin] },
+    })
+
+    expect(wrapper.text()).toBe('Just plain text')
+  })
+
+  it('message prop and slot both present - message takes priority', () => {
+    const plugin = createPlugin()
+    const wrapper = mount(Trans, {
+      props: { message: 'From message prop' },
+      global: { plugins: [plugin] },
+      slots: {
+        default: () => 'From default slot',
+      },
+    })
+
+    // When message prop is provided, it is used (slot is for named tag slots)
+    expect(wrapper.text()).toBe('From message prop')
+  })
+
+  it('renders values with nested object', () => {
+    const plugin = createPlugin()
+    const wrapper = mount(Trans, {
+      props: {
+        message: 'Hello {user}',
+        values: { user: { toString: () => 'Alice' } },
+      },
+      global: { plugins: [plugin] },
+    })
+
+    // The interpolation uses the object's toString
+    expect(wrapper.text()).toContain('Alice')
+  })
+})

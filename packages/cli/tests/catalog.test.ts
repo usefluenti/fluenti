@@ -36,8 +36,8 @@ describe('updateCatalog', () => {
     const { catalog, result } = updateCatalog(existing, extracted)
 
     expect(result.unchanged).toBe(1)
-    expect(catalog['abc'].translation).toBe('Bonjour')
-    expect(catalog['abc'].origin).toBe('new.vue:10')
+    expect(catalog['abc']!.translation).toBe('Bonjour')
+    expect(catalog['abc']!.origin).toBe('new.vue:10')
   })
 
   it('marks removed messages as obsolete', () => {
@@ -50,8 +50,8 @@ describe('updateCatalog', () => {
     const { catalog, result } = updateCatalog(existing, extracted)
 
     expect(result.obsolete).toBe(1)
-    expect(catalog['def'].obsolete).toBe(true)
-    expect(catalog['def'].translation).toBe('Monde')
+    expect(catalog['def']!.obsolete).toBe(true)
+    expect(catalog['def']!.translation).toBe('Monde')
   })
 
   it('clears obsolete flag when message reappears', () => {
@@ -62,7 +62,7 @@ describe('updateCatalog', () => {
 
     const { catalog } = updateCatalog(existing, extracted)
 
-    expect(catalog['abc'].obsolete).toBe(false)
+    expect(catalog['abc']!.obsolete).toBe(false)
   })
 
   it('handles mixed add, keep, and obsolete', () => {
@@ -81,7 +81,7 @@ describe('updateCatalog', () => {
     expect(result.unchanged).toBe(1)
     expect(result.obsolete).toBe(1)
     expect(catalog['ghi']).toBeDefined()
-    expect(catalog['def'].obsolete).toBe(true)
+    expect(catalog['def']!.obsolete).toBe(true)
   })
 
   it('returns correct stats for empty extraction', () => {
@@ -102,5 +102,97 @@ describe('updateCatalog', () => {
     expect(result.added).toBe(0)
     expect(result.unchanged).toBe(0)
     expect(result.obsolete).toBe(0)
+  })
+
+  // ─── Additional edge cases ─────────────────────────────────────────────────
+
+  it('returns all obsolete when extracted messages is empty', () => {
+    const existing: CatalogData = {
+      abc: { message: 'Hello', translation: 'Bonjour' },
+      def: { message: 'World', translation: 'Monde' },
+    }
+    const { catalog, result } = updateCatalog(existing, [])
+
+    expect(result.added).toBe(0)
+    expect(result.unchanged).toBe(0)
+    expect(result.obsolete).toBe(2)
+    expect(catalog['abc']!.obsolete).toBe(true)
+    expect(catalog['def']!.obsolete).toBe(true)
+  })
+
+  it('adds all new when existing catalog is empty', () => {
+    const extracted = [
+      makeMessage('a', 'Hello'),
+      makeMessage('b', 'World'),
+    ]
+    const { catalog, result } = updateCatalog({}, extracted)
+
+    expect(result.added).toBe(2)
+    expect(result.unchanged).toBe(0)
+    expect(result.obsolete).toBe(0)
+    expect(catalog['a']!.message).toBe('Hello')
+    expect(catalog['b']!.message).toBe('World')
+  })
+
+  it('preserves existing translation when re-extracted', () => {
+    const existing: CatalogData = {
+      abc: { message: 'Hello', translation: 'Bonjour', origin: 'old.vue:1' },
+    }
+    const extracted = [makeMessage('abc', 'Hello', 'new.vue', 5)]
+
+    const { catalog } = updateCatalog(existing, extracted)
+
+    expect(catalog['abc']!.translation).toBe('Bonjour')
+    expect(catalog['abc']!.origin).toBe('new.vue:5')
+  })
+
+  it('marks deleted messages as obsolete but keeps translation', () => {
+    const existing: CatalogData = {
+      abc: { message: 'Hello', translation: 'Bonjour' },
+    }
+    const { catalog } = updateCatalog(existing, [])
+
+    expect(catalog['abc']!.obsolete).toBe(true)
+    expect(catalog['abc']!.translation).toBe('Bonjour')
+  })
+
+  it('returns correct counts for mixed operations', () => {
+    const existing: CatalogData = {
+      keep: { message: 'Keep' },
+      remove: { message: 'Remove' },
+    }
+    const extracted = [
+      makeMessage('keep', 'Keep'),
+      makeMessage('new1', 'New one'),
+      makeMessage('new2', 'New two'),
+    ]
+    const { result } = updateCatalog(existing, extracted)
+
+    expect(result.added).toBe(2)
+    expect(result.unchanged).toBe(1)
+    expect(result.obsolete).toBe(1)
+  })
+
+  it('updates origin when message is re-extracted from new location', () => {
+    const existing: CatalogData = {
+      abc: { message: 'Hello', origin: 'old.vue:1' },
+    }
+    const extracted = [makeMessage('abc', 'Hello', 'moved.vue', 42)]
+
+    const { catalog } = updateCatalog(existing, extracted)
+
+    expect(catalog['abc']!.origin).toBe('moved.vue:42')
+  })
+
+  it('handles duplicate IDs in extracted messages (last one wins)', () => {
+    const extracted = [
+      makeMessage('abc', 'First', 'a.vue', 1),
+      makeMessage('abc', 'Second', 'b.vue', 2),
+    ]
+    const { catalog, result: _result } = updateCatalog({}, extracted)
+
+    // Both are "added" from the perspective of the loop, but same key overwrites
+    expect(catalog['abc']).toBeDefined()
+    expect(catalog['abc']!.origin).toBe('b.vue:2')
   })
 })

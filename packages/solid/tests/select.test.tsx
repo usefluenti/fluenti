@@ -162,6 +162,61 @@ describe('Select component', () => {
     })
   })
 
+  // ─── Edge cases ──────────────────────────────────────────────────────
+
+  describe('edge cases', () => {
+    it('renders "other" when no case matches and no options defined', () => {
+      const { container } = render(() => (
+        <I18nProvider locale="en" messages={{ en: {} }}>
+          <Select
+            value="unknown_value"
+            other="No match found"
+          />
+        </I18nProvider>
+      ))
+
+      expect(container.textContent).toBe('No match found')
+    })
+
+    it('handles empty string value', () => {
+      const { container } = render(() => (
+        <I18nProvider locale="en" messages={{ en: {} }}>
+          <Select
+            value=""
+            options={{ '': 'Empty match', other: 'Other' }}
+            other="Fallback"
+          />
+        </I18nProvider>
+      ))
+
+      expect(container.textContent).toBe('Empty match')
+    })
+
+    it('reacts to signal-driven value and options changes', async () => {
+      const [val, setVal] = createSignal('a')
+
+      const { container } = render(() => (
+        <I18nProvider locale="en" messages={{ en: {} }}>
+          <Select
+            value={val()}
+            options={{ a: 'Option A', b: 'Option B' }}
+            other="Default"
+          />
+        </I18nProvider>
+      ))
+
+      expect(container.textContent).toBe('Option A')
+
+      setVal('b')
+      await Promise.resolve()
+      expect(container.textContent).toBe('Option B')
+
+      setVal('c')
+      await Promise.resolve()
+      expect(container.textContent).toBe('Default')
+    })
+  })
+
   describe('JSX element props (rich text)', () => {
     it('renders JSX element option from options prop', () => {
       const { container } = render(() => (

@@ -305,4 +305,93 @@ describe('Select component', () => {
       expect(wrapper.html()).toContain('<em>They</em>')
     })
   })
+
+  describe('edge cases', () => {
+    it('handles empty string value', () => {
+      const plugin = createPlugin()
+      const wrapper = mount(Select, {
+        props: {
+          value: '',
+          other: 'Default',
+          options: { '': 'Empty match' },
+        },
+        global: { plugins: [plugin] },
+      })
+
+      expect(wrapper.text()).toBe('Empty match')
+    })
+
+    it('handles undefined-like value (no match)', () => {
+      const plugin = createPlugin()
+      const wrapper = mount(Select, {
+        props: {
+          value: 'undefined',
+          other: 'Fallback',
+        },
+        global: { plugins: [plugin] },
+      })
+
+      expect(wrapper.text()).toBe('Fallback')
+    })
+
+    it('handles special character value', () => {
+      const plugin = createPlugin()
+      const wrapper = mount(Select, {
+        props: {
+          value: 'a&b<c',
+          other: 'Default',
+          options: { 'a&b<c': 'Special matched' },
+        },
+        global: { plugins: [plugin] },
+      })
+
+      expect(wrapper.text()).toBe('Special matched')
+    })
+
+    it('renders empty string when no other and no match', () => {
+      const plugin = createPlugin()
+      const wrapper = mount(Select, {
+        props: {
+          value: 'nonexistent',
+          options: { male: 'He' },
+        },
+        global: { plugins: [plugin] },
+      })
+
+      // No other prop, no match -> empty string
+      expect(wrapper.text()).toBe('')
+    })
+
+    it('slot no match no other - renders nothing', () => {
+      const plugin = createPlugin()
+      const wrapper = mount(Select, {
+        props: {
+          value: 'nonexistent',
+        },
+        slots: {
+          male: 'He',
+        },
+        global: { plugins: [plugin] },
+      })
+
+      // No slot matches 'nonexistent', no 'other' slot either
+      // hasSlots check: !!slots['nonexistent'] || !!slots['other'] = false
+      // Falls to string path with no other prop -> empty string
+      expect(wrapper.text()).toBe('')
+    })
+
+    it('handles numeric string "123"', () => {
+      const plugin = createPlugin()
+      const wrapper = mount(Select, {
+        props: {
+          value: '123',
+          other: 'Default',
+          options: { '123': 'Numeric match' },
+        },
+        global: { plugins: [plugin] },
+      })
+
+      expect(wrapper.text()).toBe('Numeric match')
+    })
+  })
 })

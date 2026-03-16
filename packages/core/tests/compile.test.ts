@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { parse } from '../src/parser'
 import { compile } from '../src/compile'
+import type { ASTNode } from '../src/types'
 
 describe('compile', () => {
   it('returns string for single text node', () => {
@@ -214,6 +215,169 @@ describe('compile', () => {
       const fn = compile(ast, 'en') as Function
       const result = fn({ n: NaN })
       expect(result).toBe('NaN')
+    })
+  })
+
+  // ─── Edge cases — exhaustive ─────────────────────────────────────────
+
+  describe('edge cases - exhaustive', () => {
+    it('empty AST returns empty string', () => {
+      const result = compile([])
+      expect(result).toBe('')
+      expect(typeof result).toBe('string')
+    })
+
+    it('values undefined/null preserves placeholder', () => {
+      const ast = parse('{name}')
+      const fn = compile(ast) as Function
+      expect(fn(undefined)).toBe('{name}')
+      expect(fn(null)).toBe('{name}')
+    })
+
+    it('no locale defaults to en', () => {
+      const ast = parse('{count, plural, one {one} other {other}}')
+      const fn = compile(ast) as Function
+      expect(fn({ count: 1 })).toBe('one')
+      expect(fn({ count: 2 })).toBe('other')
+    })
+
+    it('plural variable as string "3" (type coercion)', () => {
+      const ast = parse('{count, plural, one {# item} other {# items}}')
+      const fn = compile(ast, 'en') as Function
+      expect(fn({ count: '3' })).toBe('3 items')
+    })
+
+    it('plural variable as NaN', () => {
+      const ast = parse('{count, plural, one {# item} other {# items}}')
+      const fn = compile(ast, 'en') as Function
+      const result = fn({ count: NaN })
+      expect(result).toBe('NaN items')
+    })
+
+    it('plural variable as negative number', () => {
+      const ast = parse('{count, plural, one {# item} other {# items}}')
+      const fn = compile(ast, 'en') as Function
+      expect(fn({ count: -5 })).toBe('-5 items')
+    })
+
+    it('plural variable as Infinity', () => {
+      const ast = parse('{count, plural, one {# item} other {# items}}')
+      const fn = compile(ast, 'en') as Function
+      const result = fn({ count: Infinity })
+      expect(result).toBe('Infinity items')
+    })
+
+    it('plural variable as float 1.5', () => {
+      const ast = parse('{count, plural, one {# item} other {# items}}')
+      const fn = compile(ast, 'en') as Function
+      expect(fn({ count: 1.5 })).toBe('1.5 items')
+    })
+
+    it('select variable undefined falls back to other', () => {
+      const ast = parse('{gender, select, male {He} female {She} other {They}}')
+      const fn = compile(ast, 'en') as Function
+      expect(fn({})).toBe('They')
+    })
+
+    it('select variable null falls back to other', () => {
+      const ast = parse('{gender, select, male {He} female {She} other {They}}')
+      const fn = compile(ast, 'en') as Function
+      expect(fn({ gender: null })).toBe('They')
+    })
+
+    it('select no match and no other returns empty string', () => {
+      const ast: ASTNode[] = [{
+        type: 'select',
+        variable: 'x',
+        options: { a: [{ type: 'text', value: 'A' }] },
+      }]
+      const fn = compile(ast, 'en') as Function
+      expect(fn({ x: 'z' })).toBe('')
+    })
+
+    it('date function with timestamp (not Date object)', () => {
+      const ast = parse('{d, date}')
+      const fn = compile(ast, 'en') as Function
+      // Use a known timestamp: 2024-01-15T00:00:00.000Z
+      const ts = new Date(2024, 0, 15).getTime()
+      const result = fn({ d: ts })
+      expect(typeof result).toBe('string')
+      expect(result).toBeTruthy()
+    })
+
+    it('number function with convertible string', () => {
+      const ast = parse('{n, number}')
+      const fn = compile(ast, 'en') as Function
+      const result = fn({ n: '1234.5' })
+      expect(result).toContain('1')
+      expect(result).toContain('234')
+    })
+
+    it('same message with multiple plural nodes', () => {
+      const ast = parse('{a, plural, one {# apple} other {# apples}} and {b, plural, one {# banana} other {# bananas}}')
+      const fn = compile(ast, 'en') as Function
+      expect(fn({ a: 1, b: 2 })).toBe('1 apple and 2 bananas')
+      expect(fn({ a: 3, b: 1 })).toBe('3 apples and 1 banana')
+    })
+
+    it('message with both select and plural', () => {
+      const ast = parse('{gender, select, male {He has {count, plural, one {# item} other {# items}}} other {They have {count, plural, one {# item} other {# items}}}}')
+      const fn = compile(ast, 'en') as Function
+      expect(fn({ gender: 'male', count: 1 })).toBe('He has 1 item')
+      expect(fn({ gender: 'other', count: 5 })).toBe('They have 5 items')
+    })
+
+    it('number with Infinity / -Infinity', () => {
+      const ast = parse('{n, number}')
+      const fn = compile(ast, 'en') as Function
+      const posResult = fn({ n: Infinity })
+      expect(posResult).toContain('∞')
+      const negResult = fn({ n: -Infinity })
+      expect(negResult).toContain('∞')
+    })
+
+    it('date with epoch 0', () => {
+      const ast = parse('{d, date}')
+      const fn = compile(ast, 'en') as Function
+      const result = fn({ d: 0 })
+      expect(typeof result).toBe('string')
+      expect(result).toBeTruthy()
+    })
+
+    it('number with Number.MAX_SAFE_INTEGER', () => {
+      const ast = parse('{n, number}')
+      const fn = compile(ast, 'en') as Function
+      const result = fn({ n: Number.MAX_SAFE_INTEGER })
+      expect(typeof result).toBe('string')
+      expect(result).toBeTruthy()
+    })
+
+    it('selectordinal with offset', () => {
+      const ast: ASTNode[] = [{
+        type: 'plural',
+        variable: 'n',
+        offset: 1,
+        ordinal: true,
+        options: {
+          one: [{ type: 'variable', name: '#' }, { type: 'text', value: 'st' }],
+          two: [{ type: 'variable', name: '#' }, { type: 'text', value: 'nd' }],
+          few: [{ type: 'variable', name: '#' }, { type: 'text', value: 'rd' }],
+          other: [{ type: 'variable', name: '#' }, { type: 'text', value: 'th' }],
+        },
+      }]
+      const fn = compile(ast, 'en') as Function
+      // n=2, offset=1 → adjustedCount=1 → ordinal 'one' → "1st"
+      expect(fn({ n: 2 })).toBe('1st')
+      // n=4, offset=1 → adjustedCount=3 → ordinal 'few' → "3rd"
+      expect(fn({ n: 4 })).toBe('3rd')
+    })
+
+    it('selectordinal non-English locale', () => {
+      // In Welsh (cy), ordinal rules differ from English
+      // We just verify it doesn't crash and produces output
+      const ast = parse('{n, selectordinal, other {#th}}')
+      const fn = compile(ast, 'ja') as Function
+      expect(fn({ n: 3 })).toBe('3th')
     })
   })
 

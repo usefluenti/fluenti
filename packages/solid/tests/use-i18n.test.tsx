@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render } from '@solidjs/testing-library'
 import { I18nProvider, useI18n } from '../src'
+import { resetGlobalI18nContext } from '../src/context'
 
 const messages = {
   en: { hello: 'Hello', greeting: 'Hi {name}' },
@@ -42,7 +43,7 @@ describe('useI18n reactivity', () => {
     const msgs = {
       en: {
         compiled: (vals?: Record<string, unknown>) =>
-          `Count: ${vals?.count ?? 0}`,
+          `Count: ${vals?.['count'] ?? 0}`,
       },
     }
 
@@ -61,11 +62,9 @@ describe('useI18n reactivity', () => {
   })
 
   it('loadMessages adds messages dynamically', async () => {
-    let _load: (loc: string, msgs: Record<string, any>) => void
-
     function Child() {
       const { t, loadMessages } = useI18n()
-      _load = loadMessages
+      void loadMessages
       return <span data-testid="text">{t('dynamic')}</span>
     }
 
@@ -292,5 +291,72 @@ describe('useI18n reactivity', () => {
     ))
 
     expect(result).toContain('42')
+  })
+
+  // ─── Edge cases ──────────────────────────────────────────────────────
+
+  it('throws when useI18n is called outside provider', () => {
+    resetGlobalI18nContext()
+
+    function BadChild() {
+      const { t } = useI18n()
+      return <span>{t('hello')}</span>
+    }
+
+    expect(() => render(() => <BadChild />)).toThrow(
+      'useI18n requires either createI18n()',
+    )
+  })
+
+  it('returns all expected properties from useI18n', () => {
+    let ctx: ReturnType<typeof useI18n> | undefined
+
+    function Child() {
+      ctx = useI18n()
+      return <span>test</span>
+    }
+
+    render(() => (
+      <I18nProvider locale="en" messages={messages}>
+        <Child />
+      </I18nProvider>
+    ))
+
+    expect(ctx).toBeDefined()
+    expect(typeof ctx!.t).toBe('function')
+    expect(typeof ctx!.locale).toBe('function')
+    expect(typeof ctx!.setLocale).toBe('function')
+    expect(typeof ctx!.loadMessages).toBe('function')
+    expect(typeof ctx!.getLocales).toBe('function')
+    expect(typeof ctx!.d).toBe('function')
+    expect(typeof ctx!.n).toBe('function')
+    expect(typeof ctx!.format).toBe('function')
+    expect(typeof ctx!.tRaw).toBe('function')
+    expect(typeof ctx!.isLoading).toBe('function')
+    expect(typeof ctx!.loadedLocales).toBe('function')
+    expect(typeof ctx!.preloadLocale).toBe('function')
+  })
+
+  it('setLocale triggers reactive update in rendered output', async () => {
+    let changeLocale: (l: string) => void
+
+    function Child() {
+      const { t, setLocale } = useI18n()
+      changeLocale = setLocale
+      return <span data-testid="output">{t('hello')}</span>
+    }
+
+    const { getByTestId } = render(() => (
+      <I18nProvider locale="en" messages={messages}>
+        <Child />
+      </I18nProvider>
+    ))
+
+    expect(getByTestId('output').textContent).toBe('Hello')
+
+    changeLocale!('fr')
+    await Promise.resolve()
+
+    expect(getByTestId('output').textContent).toBe('Bonjour')
   })
 })

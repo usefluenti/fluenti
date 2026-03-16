@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { defineComponent, h } from 'vue'
+import { defineComponent, h, nextTick } from 'vue'
 import { mount } from '@vue/test-utils'
 import { createFluentVue } from '../src/plugin'
 import { DateTime } from '../src/components/DateTime'
@@ -184,5 +184,78 @@ describe('DateTime', () => {
     })
     const wrapper = mountWithPlugin(Comp)
     expect(wrapper.find('span').exists()).toBe(true)
+  })
+
+  describe('edge cases', () => {
+    it('formats NaN value', () => {
+      const Comp = defineComponent({
+        setup() {
+          return () => h(DateTime, { value: NaN })
+        },
+      })
+      const wrapper = mountWithPlugin(Comp)
+      // formatDate catches errors and returns ''
+      expect(typeof wrapper.text()).toBe('string')
+    })
+
+    it('formats Infinity value', () => {
+      const Comp = defineComponent({
+        setup() {
+          return () => h(DateTime, { value: Infinity })
+        },
+      })
+      const wrapper = mountWithPlugin(Comp)
+      expect(typeof wrapper.text()).toBe('string')
+    })
+
+    it('formats negative timestamp', () => {
+      const Comp = defineComponent({
+        setup() {
+          // Negative timestamp = before epoch (1969)
+          return () => h(DateTime, { value: -86400000 })
+        },
+      })
+      const wrapper = mountWithPlugin(Comp)
+      const expected = new Intl.DateTimeFormat('en').format(-86400000)
+      expect(wrapper.text()).toBe(expected)
+    })
+
+    it('formats ancient date', () => {
+      const Comp = defineComponent({
+        setup() {
+          // Year 100 AD
+          const ancient = new Date('0100-01-01T00:00:00Z')
+          return () => h(DateTime, { value: ancient })
+        },
+      })
+      const wrapper = mountWithPlugin(Comp)
+      expect(typeof wrapper.text()).toBe('string')
+      expect(wrapper.text().length).toBeGreaterThan(0)
+    })
+
+    it('re-renders on locale switch', async () => {
+      const plugin = createFluentVue({
+        locale: 'en',
+        messages: { en: {}, de: {} },
+      })
+
+      const Comp = defineComponent({
+        setup() {
+          return () => h(DateTime, { value: fixedDate })
+        },
+      })
+
+      const wrapper = mount(Comp, { global: { plugins: [plugin] } })
+      const enText = wrapper.text()
+
+      plugin.global.setLocale('de')
+      await nextTick()
+
+      const deText = wrapper.text()
+      const expectedDe = new Intl.DateTimeFormat('de').format(fixedDate)
+      expect(deText).toBe(expectedDe)
+      // en and de format dates differently
+      expect(enText).not.toBe(deText)
+    })
   })
 })

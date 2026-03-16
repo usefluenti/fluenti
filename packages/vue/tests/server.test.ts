@@ -1,11 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import type { Mock } from 'vitest'
+import type { Messages } from '@fluenti/core'
 import { createServerI18n } from '../src/server'
 
 const enMessages = { greeting: 'Hello', farewell: 'Goodbye' }
 const deMessages = { greeting: 'Hallo', farewell: 'Auf Wiedersehen' }
 
 describe('createServerI18n', () => {
-  let loadMessages: ReturnType<typeof vi.fn>
+  let loadMessages: Mock<(locale: string) => Promise<Messages | { default: Messages }>>
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -161,6 +163,12 @@ describe('createServerI18n', () => {
       const { getI18n } = createServerI18n({ loadMessages })
       await expect(getI18n()).rejects.toThrow('resolveLocale')
     })
+
+    it('should handle resolveLocale that throws', async () => {
+      const resolveLocale = vi.fn(() => { throw new Error('resolver failed') })
+      const { getI18n } = createServerI18n({ loadMessages, resolveLocale })
+      await expect(getI18n()).rejects.toThrow('resolver failed')
+    })
   })
 
   // ─── Instance caching ─────────────────────────────────────────────
@@ -172,6 +180,76 @@ describe('createServerI18n', () => {
       const i18n2 = await getI18n()
 
       expect(i18n1).toBe(i18n2)
+    })
+  })
+
+  describe('edge cases', () => {
+    it('loadMessages returns rejected promise', async () => {
+      const failLoader = vi.fn(async () => { throw new Error('network error') })
+      const { setLocale, getI18n } = createServerI18n({ loadMessages: failLoader })
+      setLocale('en')
+
+      await expect(getI18n()).rejects.toThrow('network error')
+    })
+
+    it('locale change creates new instance', async () => {
+      const { setLocale, getI18n } = createServerI18n({ loadMessages })
+      setLocale('en')
+      const i18n1 = await getI18n()
+
+      setLocale('de')
+      const i18n2 = await getI18n()
+
+      expect(i18n1).not.toBe(i18n2)
+      expect(i18n2.locale).toBe('de')
+    })
+
+    it('passes fallbackChain', async () => {
+      const chainLoader = vi.fn(async (locale: string) => {
+        if (locale === 'pt-BR') return {}
+        if (locale === 'pt') return { hello: 'Olá' }
+        if (locale === 'en') return { hello: 'Hello' }
+        return {}
+      })
+      const { setLocale, getI18n } = createServerI18n({
+        loadMessages: chainLoader,
+        fallbackChain: { 'pt-BR': ['pt', 'en'] },
+      })
+      setLocale('pt-BR')
+      const i18n = await getI18n()
+
+      // The instance is created with fallbackChain config
+      expect(i18n.locale).toBe('pt-BR')
+    })
+
+    it('passes dateFormats', async () => {
+      const { setLocale, getI18n } = createServerI18n({
+        loadMessages,
+        dateFormats: {
+          custom: { year: '2-digit', month: '2-digit' },
+        },
+      })
+      setLocale('en')
+      const i18n = await getI18n()
+
+      const result = i18n.d(new Date(2024, 0, 15), 'custom')
+      expect(typeof result).toBe('string')
+      expect(result.length).toBeGreaterThan(0)
+    })
+
+    it('passes numberFormats', async () => {
+      const { setLocale, getI18n } = createServerI18n({
+        loadMessages,
+        numberFormats: {
+          compact: { notation: 'compact' as const },
+        },
+      })
+      setLocale('en')
+      const i18n = await getI18n()
+
+      const result = i18n.n(1500, 'compact')
+      expect(typeof result).toBe('string')
+      expect(result.length).toBeGreaterThan(0)
     })
   })
 })

@@ -159,4 +159,28 @@ describe('NumberFormat', () => {
       'useI18n requires either createI18n()',
     )
   })
+
+  // ─── Edge cases ──────────────────────────────────────────────────────
+
+  it('formats NaN value', () => {
+    const { container } = render(() => (
+      <I18nProvider locale="en" messages={{ en: {} }}>
+        <NumberFormat value={NaN} />
+      </I18nProvider>
+    ))
+
+    const expected = new Intl.NumberFormat('en').format(NaN)
+    expect(container.textContent).toBe(expected)
+  })
+
+  it('formats Infinity value', () => {
+    const { container } = render(() => (
+      <I18nProvider locale="en" messages={{ en: {} }}>
+        <NumberFormat value={Infinity} />
+      </I18nProvider>
+    ))
+
+    const expected = new Intl.NumberFormat('en').format(Infinity)
+    expect(container.textContent).toBe(expected)
+  })
 })
