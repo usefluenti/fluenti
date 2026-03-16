@@ -156,4 +156,89 @@ describe('parse', () => {
     expect(() => parse('{amount, number')).toThrow(FluentParseError)
     expect(() => parse('{amount, number')).toThrow('Expected closing }')
   })
+
+  // ─── selectordinal ────────────────────────────────────────────────────
+
+  describe('selectordinal', () => {
+    it('parses basic selectordinal structure with ordinal flag', () => {
+      const result = parse('{n, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}')
+      expect(result).toHaveLength(1)
+      expect(result[0]!.type).toBe('plural')
+      const node = result[0] as any
+      expect(node.variable).toBe('n')
+      expect(node.ordinal).toBe(true)
+      expect(Object.keys(node.options)).toEqual(['one', 'two', 'few', 'other'])
+    })
+
+    it('parses selectordinal with offset', () => {
+      const result = parse('{n, selectordinal, offset:1 one {#st} other {#th}}')
+      const node = result[0] as any
+      expect(node.offset).toBe(1)
+      expect(node.ordinal).toBe(true)
+    })
+
+    it('parses selectordinal with exact and category branches', () => {
+      const result = parse('{n, selectordinal, =1 {first} one {#st} two {#nd} few {#rd} other {#th}}')
+      const node = result[0] as any
+      expect(node.options['=1']).toBeDefined()
+      expect(node.options['one']).toBeDefined()
+      expect(node.options['other']).toBeDefined()
+    })
+
+    it('selectordinal requires other branch', () => {
+      expect(() => parse('{n, selectordinal, one {#st}}')).toThrow(FluentParseError)
+    })
+
+    it('regular plural does not have ordinal flag', () => {
+      const result = parse('{n, plural, one {# item} other {# items}}')
+      const node = result[0] as any
+      expect(node.ordinal).toBeUndefined()
+    })
+  })
+
+  // ─── Deep nesting and empty branches ──────────────────────────────────
+
+  describe('deep nesting and empty branches', () => {
+    it('parses 3-level nesting: plural → select → plural', () => {
+      const msg = '{count, plural, one {{gender, select, male {{n, plural, one {he has # item} other {he has # items}}} other {{n, plural, one {they have # item} other {they have # items}}}}} other {many}}'
+      const result = parse(msg)
+      expect(result).toHaveLength(1)
+      const outer = result[0] as any
+      expect(outer.type).toBe('plural')
+      const inner = outer.options.one[0]
+      expect(inner.type).toBe('select')
+    })
+
+    it('parses empty plural branch', () => {
+      const result = parse('{n, plural, one {} other {items}}')
+      const node = result[0] as any
+      expect(node.options.one).toEqual([])
+      expect(node.options.other).toHaveLength(1)
+    })
+
+    it('parses empty select branch', () => {
+      const result = parse('{g, select, male {} other {person}}')
+      const node = result[0] as any
+      expect(node.options.male).toEqual([])
+      expect(node.options.other).toHaveLength(1)
+    })
+
+    it('parses plural with only other', () => {
+      const result = parse('{n, plural, other {items}}')
+      const node = result[0] as any
+      expect(Object.keys(node.options)).toEqual(['other'])
+    })
+
+    it('parses select with only other', () => {
+      const result = parse('{g, select, other {person}}')
+      const node = result[0] as any
+      expect(Object.keys(node.options)).toEqual(['other'])
+    })
+
+    it('parses message with 5 variables', () => {
+      const result = parse('{a} {b} {c} {d} {e}')
+      const variables = result.filter(n => n.type === 'variable')
+      expect(variables).toHaveLength(5)
+    })
+  })
 })

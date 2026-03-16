@@ -78,4 +78,61 @@ describe('Catalog', () => {
     expect(catalog.get('en', 'common:greeting')).toBe('Hello')
     expect(catalog.get('en', 'auth:login')).toBe('Log in')
   })
+
+  // ─── Prototype pollution prevention ──────────────────────────────────────
+
+  describe('prototype pollution prevention', () => {
+    it('has() returns false for __proto__', () => {
+      const catalog = new Catalog()
+      catalog.set('en', { greeting: 'Hello' })
+      expect(catalog.has('en', '__proto__')).toBe(false)
+    })
+
+    it('has() returns false for constructor', () => {
+      const catalog = new Catalog()
+      catalog.set('en', { greeting: 'Hello' })
+      expect(catalog.has('en', 'constructor')).toBe(false)
+    })
+
+    it('has() returns false for toString', () => {
+      const catalog = new Catalog()
+      catalog.set('en', { greeting: 'Hello' })
+      expect(catalog.has('en', 'toString')).toBe(false)
+    })
+
+    it('get() returns undefined for prototype properties', () => {
+      const catalog = new Catalog()
+      catalog.set('en', { greeting: 'Hello' })
+      expect(catalog.get('en', '__proto__')).toBeUndefined()
+      expect(catalog.get('en', 'constructor')).toBeUndefined()
+      expect(catalog.get('en', 'toString')).toBeUndefined()
+    })
+
+    it('set key __proto__ does not pollute prototype chain', () => {
+      const catalog = new Catalog()
+      catalog.set('en', { '__proto__': 'malicious' as any })
+      // Should not pollute Object.prototype
+      expect(({} as any).__proto__).not.toBe('malicious')
+      // The key should be retrievable if explicitly set
+      expect(catalog.has('en', '__proto__')).toBe(false)
+    })
+  })
+
+  // ─── Edge cases ──────────────────────────────────────────────────────────
+
+  describe('edge cases', () => {
+    it('handles empty string locale', () => {
+      const catalog = new Catalog()
+      catalog.set('', { greeting: 'Hello' })
+      expect(catalog.get('', 'greeting')).toBe('Hello')
+      expect(catalog.has('', 'greeting')).toBe(true)
+    })
+
+    it('treats locale case-sensitively', () => {
+      const catalog = new Catalog()
+      catalog.set('en', { greeting: 'Hello' })
+      expect(catalog.get('EN', 'greeting')).toBeUndefined()
+      expect(catalog.has('EN', 'greeting')).toBe(false)
+    })
+  })
 })

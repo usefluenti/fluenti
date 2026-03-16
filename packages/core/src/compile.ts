@@ -86,7 +86,7 @@ function renderPlural(
     key = exactKey
   } else {
     // Build options without exact matches for CLDR resolution
-    key = resolvePluralCategory(adjustedCount, node.options, locale)
+    key = resolvePluralCategory(adjustedCount, node.options, locale, node.ordinal)
   }
   const branch = node.options[key] ?? node.options['other'] ?? []
 

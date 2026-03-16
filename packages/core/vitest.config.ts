@@ -11,5 +11,8 @@ export default defineConfig({
         statements: 90,
       }
     }
-  }
+  },
+  bench: {
+    include: ['bench/**/*.bench.ts'],
+  },
 })

@@ -32,26 +32,30 @@ export function formatDate(
 ): string {
   // Merge user styles over defaults
   const mergedStyles = { ...DEFAULT_DATE_FORMATS, ...styles }
-  if (style && style in mergedStyles) {
-    const styleDef = mergedStyles[style]
-    if (styleDef === 'relative') {
-      return formatRelativeTime(value, locale)
+  try {
+    if (style && style in mergedStyles) {
+      const styleDef = mergedStyles[style]
+      if (styleDef === 'relative') {
+        return formatRelativeTime(value, locale)
+      }
+      const options = styleDef as Intl.DateTimeFormatOptions
+      const cacheKey = `${locale}:${JSON.stringify(options)}`
+      let formatter = formatCache.get(cacheKey)
+      if (!formatter) {
+        formatter = new Intl.DateTimeFormat(locale, options)
+        formatCache.set(cacheKey, formatter)
+      }
+      return formatter.format(value instanceof Date ? value : new Date(value))
     }
-    const options = styleDef as Intl.DateTimeFormatOptions
-    const cacheKey = `${locale}:${JSON.stringify(options)}`
+
+    const cacheKey = `${locale}:default`
     let formatter = formatCache.get(cacheKey)
     if (!formatter) {
-      formatter = new Intl.DateTimeFormat(locale, options)
+      formatter = new Intl.DateTimeFormat(locale)
       formatCache.set(cacheKey, formatter)
     }
     return formatter.format(value instanceof Date ? value : new Date(value))
+  } catch {
+    return ''
   }
-
-  const cacheKey = `${locale}:default`
-  let formatter = formatCache.get(cacheKey)
-  if (!formatter) {
-    formatter = new Intl.DateTimeFormat(locale)
-    formatCache.set(cacheKey, formatter)
-  }
-  return formatter.format(value instanceof Date ? value : new Date(value))
 }

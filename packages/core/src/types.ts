@@ -51,6 +51,7 @@ export interface PluralNode {
   type: 'plural'
   variable: string
   offset?: number
+  ordinal?: boolean
   options: Record<string, ASTNode[]>
 }
 

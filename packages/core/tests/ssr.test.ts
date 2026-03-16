@@ -70,6 +70,98 @@ describe('detectLocale', () => {
       fallback: 'en',
     })).toBe('fr')
   })
+
+  // ─── Malformed Accept-Language ──────────────────────────────────────────
+
+  describe('malformed Accept-Language', () => {
+    it('handles garbage string', () => {
+      expect(detectLocale({
+        headers: { 'accept-language': ';;;,,,;;;' },
+        available,
+        fallback: 'en',
+      })).toBe('en')
+    })
+
+    it('handles missing quality value (parseFloat empty string)', () => {
+      expect(detectLocale({
+        headers: { 'accept-language': 'en;q=,fr;q=0.9' },
+        available,
+        fallback: 'en',
+      })).toBe('fr')
+    })
+
+    it('handles empty string header', () => {
+      expect(detectLocale({
+        headers: { 'accept-language': '' },
+        available,
+        fallback: 'en',
+      })).toBe('en')
+    })
+
+    it('handles wildcard *', () => {
+      expect(detectLocale({
+        headers: { 'accept-language': '*' },
+        available,
+        fallback: 'en',
+      })).toBe('en')
+    })
+
+    it('handles extra-long header (1000+ chars)', () => {
+      const longHeader = Array.from({ length: 200 }, (_, i) => `lang${i};q=0.${String(i).padStart(3, '0')}`).join(',')
+      expect(() => detectLocale({
+        headers: { 'accept-language': longHeader },
+        available,
+        fallback: 'en',
+      })).not.toThrow()
+    })
+
+    it('handles empty cookie value', () => {
+      expect(detectLocale({
+        cookie: '',
+        available,
+        fallback: 'en',
+      })).toBe('en')
+    })
+  })
+
+  // ─── SSR edge cases ────────────────────────────────────────────────────
+
+  describe('SSR edge cases', () => {
+    it('handles empty path string', () => {
+      expect(detectLocale({
+        path: '',
+        available,
+        fallback: 'en',
+      })).toBe('en')
+    })
+
+    it('matches Accept-Language with region subtag to base locale', () => {
+      expect(detectLocale({
+        headers: { 'accept-language': 'en-US' },
+        available,
+        fallback: 'fr',
+      })).toBe('en')
+    })
+
+    it('returns fallback when all options are empty/undefined', () => {
+      expect(detectLocale({
+        cookie: undefined,
+        query: undefined,
+        path: undefined,
+        headers: undefined,
+        available,
+        fallback: 'en',
+      })).toBe('en')
+    })
+
+    it('matches locale case-insensitively', () => {
+      expect(detectLocale({
+        cookie: 'FR',
+        available,
+        fallback: 'en',
+      })).toBe('fr')
+    })
+  })
 })
 
 describe('getSSRLocaleScript', () => {

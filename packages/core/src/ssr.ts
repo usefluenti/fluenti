@@ -91,7 +91,8 @@ function parseAcceptLanguage(header: string): Locale[] {
     .map(part => {
       const [locale = '', ...rest] = part.trim().split(';')
       const qStr = rest.find(r => r.trim().startsWith('q='))
-      const q = qStr ? parseFloat(qStr.trim().slice(2)) : 1
+      const rawQ = qStr ? parseFloat(qStr.trim().slice(2)) : 1
+      const q = Number.isNaN(rawQ) ? 0 : rawQ
       return { locale: locale.trim(), q }
     })
     .filter(entry => entry.locale && entry.locale !== '*')

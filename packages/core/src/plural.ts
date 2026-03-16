@@ -5,11 +5,12 @@ const rulesCache = new Map<string, Intl.PluralRules>()
 /**
  * Get or create a cached `Intl.PluralRules` instance for a locale.
  */
-function getRules(locale: Locale): Intl.PluralRules {
-  let rules = rulesCache.get(locale)
+function getRules(locale: Locale, type: Intl.PluralRulesOptions['type'] = 'cardinal'): Intl.PluralRules {
+  const cacheKey = `${locale}:${type}`
+  let rules = rulesCache.get(cacheKey)
   if (!rules) {
-    rules = new Intl.PluralRules(locale)
-    rulesCache.set(locale, rules)
+    rules = new Intl.PluralRules(locale, { type })
+    rulesCache.set(cacheKey, rules)
   }
   return rules
 }
@@ -30,6 +31,7 @@ export function resolvePlural(
   count: number,
   options: Record<string, unknown>,
   locale: Locale,
+  ordinal?: boolean,
 ): string {
   // Exact match first
   const exactKey = `=${count}`
@@ -37,7 +39,7 @@ export function resolvePlural(
     return exactKey
   }
 
-  return resolvePluralCategory(count, options, locale)
+  return resolvePluralCategory(count, options, locale, ordinal)
 }
 
 /**
@@ -54,8 +56,9 @@ export function resolvePluralCategory(
   count: number,
   options: Record<string, unknown>,
   locale: Locale,
+  ordinal?: boolean,
 ): string {
-  const rules = getRules(locale)
+  const rules = getRules(locale, ordinal ? 'ordinal' : 'cardinal')
   const category = rules.select(count)
   if (category in options) {
     return category

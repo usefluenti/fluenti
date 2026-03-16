@@ -16,7 +16,7 @@ export class Catalog {
   get(locale: Locale, id: string): CompiledMessage | undefined {
     const messages = this._catalogs[locale]
     if (!messages) return undefined
-    return messages[id]
+    return Object.hasOwn(messages, id) ? messages[id] : undefined
   }
 
   /**
@@ -38,7 +38,7 @@ export class Catalog {
   has(locale: Locale, id: string): boolean {
     const messages = this._catalogs[locale]
     if (!messages) return false
-    return id in messages
+    return Object.hasOwn(messages, id)
   }
 
   /**

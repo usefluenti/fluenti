@@ -64,6 +64,84 @@ describe('interpolate', () => {
   })
 })
 
+// ─── Selectordinal (end-to-end) ────────────────────────────────────────
+
+describe('selectordinal', () => {
+  it('uses ordinal plural rules for selectordinal', () => {
+    const msg = '{n, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}'
+    // English ordinal: 1→one(st), 2→two(nd), 3→few(rd), 4→other(th)
+    expect(interpolate(msg, { n: 1 }, 'en')).toBe('1st')
+    expect(interpolate(msg, { n: 2 }, 'en')).toBe('2nd')
+    expect(interpolate(msg, { n: 3 }, 'en')).toBe('3rd')
+    expect(interpolate(msg, { n: 4 }, 'en')).toBe('4th')
+    expect(interpolate(msg, { n: 11 }, 'en')).toBe('11th')
+    expect(interpolate(msg, { n: 21 }, 'en')).toBe('21st')
+  })
+})
+
+// ─── Non-string value handling ──────────────────────────────────────────
+
+describe('non-string value handling', () => {
+  it('coerces number to string', () => {
+    expect(interpolate('Value: {n}', { n: 42 })).toBe('Value: 42')
+  })
+
+  it('coerces boolean true to string', () => {
+    expect(interpolate('Active: {flag}', { flag: true })).toBe('Active: true')
+  })
+
+  it('coerces boolean false to string', () => {
+    expect(interpolate('Active: {flag}', { flag: false })).toBe('Active: false')
+  })
+
+  it('coerces 0 to "0" (not empty string)', () => {
+    expect(interpolate('Count: {n}', { n: 0 })).toBe('Count: 0')
+  })
+
+  it('treats null as missing (shows placeholder)', () => {
+    expect(interpolate('Hello {name}', { name: null })).toBe('Hello {name}')
+  })
+
+  it('handles object with custom toString', () => {
+    const obj = { toString() { return 'custom' } }
+    expect(interpolate('Value: {v}', { v: obj })).toBe('Value: custom')
+  })
+
+  it('ignores extra values not in template', () => {
+    expect(interpolate('Hello {name}', { name: 'World', extra: 'unused' })).toBe('Hello World')
+  })
+
+  it('handles empty string value', () => {
+    expect(interpolate('Hello {name}!', { name: '' })).toBe('Hello !')
+  })
+})
+
+// ─── Offset and # edge cases ──────────────────────────────────────────
+
+describe('offset and # edge cases', () => {
+  it('plural offset + # shows adjusted value', () => {
+    const msg = '{n, plural, offset:1 =1 {yourself} one {# other} other {# others}}'
+    expect(interpolate(msg, { n: 1 }, 'en')).toBe('yourself')
+    expect(interpolate(msg, { n: 2 }, 'en')).toBe('1 other')
+    expect(interpolate(msg, { n: 5 }, 'en')).toBe('4 others')
+  })
+
+  it('# in non-plural context renders as literal #', () => {
+    expect(interpolate('Item #', {})).toBe('Item #')
+  })
+
+  it('nested plural # references inner count', () => {
+    const msg = '{a, plural, other {{b, plural, one {# inner} other {# inners}}}}'
+    expect(interpolate(msg, { a: 10, b: 1 }, 'en')).toBe('1 inner')
+    expect(interpolate(msg, { a: 10, b: 5 }, 'en')).toBe('5 inners')
+  })
+
+  it('select with nested plural uses # from plural', () => {
+    const msg = '{g, select, male {{n, plural, one {he has # item} other {he has # items}}} other {other}}'
+    expect(interpolate(msg, { g: 'male', n: 3 }, 'en')).toBe('he has 3 items')
+  })
+})
+
 describe('XSS prevention', () => {
   it('does not interpret HTML tags in interpolated values', () => {
     const result = interpolate('Hello {name}', { name: '<script>alert("xss")</script>' })
