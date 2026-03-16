@@ -145,10 +145,6 @@ describe('detectLocale', () => {
 
     it('returns fallback when all options are empty/undefined', () => {
       expect(detectLocale({
-        cookie: undefined,
-        query: undefined,
-        path: undefined,
-        headers: undefined,
         available,
         fallback: 'en',
       })).toBe('en')
@@ -260,5 +256,122 @@ describe('getHydratedLocale', () => {
     if (origWindow !== undefined) {
       (globalThis as any).window = origWindow
     }
+  })
+})
+
+describe('edge cases - exhaustive', () => {
+  // ─── detectLocale ───────────────────────────────────────────────────
+
+  const available = ['en', 'fr', 'zh-CN', 'ja', 'de']
+
+  it('detectLocale multiple accept-language values with correct priority', () => {
+    const result = detectLocale({
+      headers: { 'accept-language': 'ja;q=0.7,de;q=0.9,fr;q=0.8' },
+      available,
+      fallback: 'en',
+    })
+    expect(result).toBe('de')
+  })
+
+  it('detectLocale path partial match "english" does not match "en"', () => {
+    const result = detectLocale({
+      path: 'english',
+      available,
+      fallback: 'en',
+    })
+    // "english" is not "en" and should not partially match
+    expect(result).toBe('en')
+  })
+
+  it('detectLocale all sources set (cookie wins)', () => {
+    const result = detectLocale({
+      cookie: 'ja',
+      query: 'fr',
+      path: 'de',
+      headers: { 'accept-language': 'zh-CN' },
+      available,
+      fallback: 'en',
+    })
+    expect(result).toBe('ja')
+  })
+
+  it('detectLocale q=0 explicit rejection', () => {
+    // q=0 means the locale is explicitly rejected; parseFloat gives 0
+    // The locale should still appear in the sorted list but with lowest priority
+    const result = detectLocale({
+      headers: { 'accept-language': 'fr;q=0,en;q=0.5' },
+      available,
+      fallback: 'ja',
+    })
+    expect(result).toBe('en')
+  })
+
+  // ─── getSSRLocaleScript ─────────────────────────────────────────────
+
+  it('getSSRLocaleScript empty string locale', () => {
+    const result = getSSRLocaleScript('')
+    expect(result).toBe('<script>window.__FLUENTI_LOCALE__=""</script>')
+  })
+
+  it('getSSRLocaleScript very long locale (100 chars)', () => {
+    const longLocale = 'a'.repeat(100)
+    const result = getSSRLocaleScript(longLocale)
+    expect(result).toContain(longLocale)
+    expect(result).toMatch(/^<script>window\.__FLUENTI_LOCALE__=".*"<\/script>$/)
+  })
+
+  it('getSSRLocaleScript null byte in locale', () => {
+    const result = getSSRLocaleScript('en\0test')
+    expect(result).toContain('en')
+    expect(typeof result).toBe('string')
+  })
+
+  // ─── getHydratedLocale ──────────────────────────────────────────────
+
+  it('getHydratedLocale value is number (not string) returns fallback', () => {
+    (globalThis as any).window = { __FLUENTI_LOCALE__: 42 }
+    expect(getHydratedLocale('en')).toBe('en')
+    delete (globalThis as any).window
+  })
+
+  it('getHydratedLocale value is empty string returns empty string', () => {
+    (globalThis as any).window = { __FLUENTI_LOCALE__: '' }
+    // Empty string is typeof 'string', so it returns ''
+    expect(getHydratedLocale('en')).toBe('')
+    delete (globalThis as any).window
+  })
+
+  // ─── parseAcceptLanguage (tested via detectLocale) ──────────────────
+
+  it('parseAcceptLanguage duplicate locale keeps highest q', () => {
+    // Both "en" entries appear; after sort the q=0.9 one comes first
+    // but negotiateLocale sees 'en' appearing, so result should be 'en'
+    const result = detectLocale({
+      headers: { 'accept-language': 'en;q=0.5,en;q=0.9' },
+      available,
+      fallback: 'ja',
+    })
+    expect(result).toBe('en')
+  })
+
+  it('parseAcceptLanguage q>1 (invalid but real)', () => {
+    // q=2 is technically invalid but parseFloat handles it
+    const result = detectLocale({
+      headers: { 'accept-language': 'fr;q=2,en;q=0.9' },
+      available,
+      fallback: 'ja',
+    })
+    // fr has higher q so it should be first
+    expect(result).toBe('fr')
+  })
+
+  it('parseAcceptLanguage negative q=-1', () => {
+    const result = detectLocale({
+      headers: { 'accept-language': 'fr;q=-1,en;q=0.5' },
+      available,
+      fallback: 'ja',
+    })
+    // en has higher q than fr (which is -1)
+    expect(result).toBe('en')
   })
 })

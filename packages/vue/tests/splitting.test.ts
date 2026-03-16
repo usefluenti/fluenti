@@ -140,4 +140,79 @@ describe('splitting mode', () => {
     const plugin = createSplitPlugin(vi.fn())
     expect(plugin.global.loadedLocales.value.has('en')).toBe(true)
   })
+
+  describe('edge cases', () => {
+    it('setLocale during another setLocale (race condition)', async () => {
+      let resolveFirst: (v: any) => void
+      let resolveSecond: (v: any) => void
+      const firstPromise = new Promise((r) => { resolveFirst = r })
+      const secondPromise = new Promise((r) => { resolveSecond = r })
+
+      const loader = vi.fn()
+        .mockReturnValueOnce(firstPromise)
+        .mockReturnValueOnce(secondPromise)
+
+      const plugin = createSplitPlugin(loader)
+      const { global: ctx } = plugin
+
+      // Start two setLocale calls concurrently
+      const p1 = ctx.setLocale('fr')
+      const p2 = ctx.setLocale('de')
+
+      expect(ctx.isLoading.value).toBe(true)
+
+      // Resolve second first
+      resolveSecond!({ hello: 'Hallo' })
+      await p2
+
+      // Resolve first after
+      resolveFirst!({ hello: 'Bonjour' })
+      await p1
+
+      // Both should complete without error; last one to resolve sets state
+      expect(ctx.isLoading.value).toBe(false)
+      expect(ctx.loadedLocales.value.has('fr')).toBe(true)
+      expect(ctx.loadedLocales.value.has('de')).toBe(true)
+    })
+
+    it('chunk loader throws -> isLoading resets', async () => {
+      const loader = vi.fn().mockRejectedValue(new Error('load failed'))
+      const plugin = createSplitPlugin(loader)
+      const { global: ctx } = plugin
+
+      await expect(ctx.setLocale('fr')).rejects.toThrow('load failed')
+
+      expect(ctx.isLoading.value).toBe(false)
+      // Locale should not have changed
+      expect(ctx.locale.value).toBe('en')
+    })
+
+    it('same locale multiple preload (dedup)', async () => {
+      const loader = vi.fn().mockResolvedValue({ hello: 'Bonjour' })
+      const plugin = createSplitPlugin(loader)
+      const { global: ctx } = plugin
+
+      ctx.preloadLocale('fr')
+      await new Promise((r) => setTimeout(r, 0))
+
+      // Second preload should be a no-op since 'fr' is now loaded
+      ctx.preloadLocale('fr')
+      await new Promise((r) => setTimeout(r, 0))
+
+      expect(loader).toHaveBeenCalledTimes(1)
+    })
+
+    it('setLocale to current locale (no-op)', async () => {
+      const loader = vi.fn()
+      const plugin = createSplitPlugin(loader)
+      const { global: ctx } = plugin
+
+      await ctx.setLocale('en')
+
+      // Already loaded, instant switch, no loader call
+      expect(loader).not.toHaveBeenCalled()
+      expect(ctx.locale.value).toBe('en')
+      expect(ctx.isLoading.value).toBe(false)
+    })
+  })
 })

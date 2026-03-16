@@ -29,6 +29,18 @@ describe('deriveRouteName', () => {
   it('handles filename with only extension', () => {
     expect(deriveRouteName('main.js')).toBe('main')
   })
+
+  it('strips directory prefix from path', () => {
+    expect(deriveRouteName('dist/assets/home-ab12cd34.js')).toBe('home')
+  })
+
+  it('strips .js extension', () => {
+    expect(deriveRouteName('dashboard.js')).toBe('dashboard')
+  })
+
+  it('strips trailing hash suffix of 4+ chars', () => {
+    expect(deriveRouteName('profile-a1b2c3d4.js')).toBe('profile')
+  })
 })
 
 describe('parseCompiledCatalog', () => {
@@ -84,6 +96,32 @@ describe('parseCompiledCatalog', () => {
   it('returns empty map for empty source', () => {
     expect(parseCompiledCatalog('')).toEqual(new Map())
   })
+
+  it('extracts string exports with quoted values', () => {
+    const source = `export const _x1 = "Bonjour"\nexport const _x2 = "Monde"\n`
+    const result = parseCompiledCatalog(source)
+
+    expect(result.size).toBe(2)
+    expect(result.get('x1')).toContain('"Bonjour"')
+    expect(result.get('x2')).toContain('"Monde"')
+  })
+
+  it('extracts function exports with arrow syntax', () => {
+    const source = `export const _fn1 = (v) => \`Hi \${v.name}\`\n`
+    const result = parseCompiledCatalog(source)
+
+    expect(result.size).toBe(1)
+    expect(result.get('fn1')).toContain('(v) => `Hi ${v.name}`')
+  })
+
+  it('handles @__PURE__ annotation prefix', () => {
+    const source = `/* @__PURE__ */ export const _pure1 = "Pure"\n`
+    const result = parseCompiledCatalog(source)
+
+    expect(result.size).toBe(1)
+    expect(result.has('pure1')).toBe(true)
+    expect(result.get('pure1')).toContain('/* @__PURE__ */')
+  })
 })
 
 describe('buildChunkModule', () => {
@@ -119,5 +157,31 @@ describe('buildChunkModule', () => {
     const result = buildChunkModule(new Set(), catalog)
 
     expect(result.trim()).toBe('')
+  })
+
+  it('builds module with subset of catalog hashes', () => {
+    const catalog = new Map([
+      ['h1', 'export const _h1 = "One"'],
+      ['h2', 'export const _h2 = "Two"'],
+      ['h3', 'export const _h3 = "Three"'],
+      ['h4', 'export const _h4 = "Four"'],
+    ])
+    const hashes = new Set(['h2', 'h4'])
+    const result = buildChunkModule(hashes, catalog)
+
+    expect(result).toContain('export const _h2 = "Two"')
+    expect(result).toContain('export const _h4 = "Four"')
+    expect(result).not.toContain('_h1')
+    expect(result).not.toContain('_h3')
+  })
+
+  it('returns only newline for empty hash set with non-empty catalog', () => {
+    const catalog = new Map([
+      ['a', 'export const _a = "A"'],
+      ['b', 'export const _b = "B"'],
+    ])
+    const result = buildChunkModule(new Set(), catalog)
+
+    expect(result).toBe('\n')
   })
 })

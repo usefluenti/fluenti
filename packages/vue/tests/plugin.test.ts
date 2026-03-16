@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest'
-import { createApp, defineComponent, h, nextTick, ref, resolveDirective, withDirectives } from 'vue'
+import { describe, it, expect, vi } from 'vitest'
+import { createApp, defineComponent, h, inject, nextTick, ref, resolveDirective, withDirectives } from 'vue'
 import { createFluentVue, FLUENTI_KEY } from '../src/plugin'
 import type { FluentVueContext } from '../src/plugin'
 
@@ -28,7 +28,6 @@ describe('createFluentVue', () => {
     })
 
     const app = createTestApp(() => {
-      const { inject } = require('vue')
       ctx = inject(FLUENTI_KEY)
     })
     app.use(plugin)
@@ -49,9 +48,9 @@ describe('createFluentVue', () => {
     const app = createApp({ render: () => h('div') })
     app.use(plugin)
 
-    expect(app.config.globalProperties.$t).toBeDefined()
-    expect(app.config.globalProperties.$d).toBeDefined()
-    expect(app.config.globalProperties.$n).toBeDefined()
+    expect(app.config.globalProperties['$t']).toBeDefined()
+    expect(app.config.globalProperties['$d']).toBeDefined()
+    expect(app.config.globalProperties['$n']).toBeDefined()
   })
 
   it('registers Trans, Plural, Select as global components', () => {
@@ -113,7 +112,7 @@ describe('t()', () => {
       messages: {
         en: {
           greeting: (vals?: Record<string, unknown>) =>
-            `Hi ${vals?.name ?? 'stranger'}`,
+            `Hi ${vals?.['name'] ?? 'stranger'}`,
         },
       },
     })
@@ -687,7 +686,7 @@ describe('$vtRich XSS prevention', () => {
       ? (() => {
           const app = createApp({ render: () => h('div') })
           app.use(plugin)
-          return app.config.globalProperties.$vtRich
+          return app.config.globalProperties['$vtRich']
         })()
       : undefined
 
@@ -718,7 +717,7 @@ describe('$vtRich XSS prevention', () => {
 
     const app = createApp({ render: () => h('div') })
     app.use(plugin)
-    const vtRich = app.config.globalProperties.$vtRich
+    const vtRich = app.config.globalProperties['$vtRich']
 
     const result = vtRich(
       'Click <0>here</0>',
@@ -742,7 +741,7 @@ describe('$vtRich XSS prevention', () => {
 
     const app = createApp({ render: () => h('div') })
     app.use(plugin)
-    const vtRich = app.config.globalProperties.$vtRich
+    const vtRich = app.config.globalProperties['$vtRich']
 
     const result = vtRich(
       'Read the <0>documentation</0> for details',
@@ -765,7 +764,7 @@ describe('$vtRich XSS prevention', () => {
 
     const app = createApp({ render: () => h('div') })
     app.use(plugin)
-    const vtRich = app.config.globalProperties.$vtRich
+    const vtRich = app.config.globalProperties['$vtRich']
 
     const result = vtRich(
       '{count, plural, =0 {No <0>items</0>} other {<1>many</1> items}}',
@@ -789,7 +788,7 @@ describe('$vtRich XSS prevention', () => {
 
     const app = createApp({ render: () => h('div') })
     app.use(plugin)
-    const vtRich = app.config.globalProperties.$vtRich
+    const vtRich = app.config.globalProperties['$vtRich']
 
     const result = vtRich(
       'Click <0>here</0>',
@@ -797,5 +796,272 @@ describe('$vtRich XSS prevention', () => {
     )
 
     expect(result).toBe('Click <a href="#">here</a>')
+  })
+})
+
+describe('edge cases - exhaustive', () => {
+  it('installs v-t directive', () => {
+    const plugin = createFluentVue({
+      locale: 'en',
+      messages: { en: {} },
+    })
+
+    const app = createApp({ render: () => h('div') })
+    app.use(plugin)
+
+    // v-t directive is registered: resolveDirective would find it inside a component
+    // We verify by checking that the directive was registered on the app
+    expect(app.directive('t')).toBeDefined()
+  })
+
+  it('adds $vtRich', () => {
+    const plugin = createFluentVue({
+      locale: 'en',
+      messages: { en: {} },
+    })
+
+    const app = createApp({ render: () => h('div') })
+    app.use(plugin)
+
+    expect(app.config.globalProperties['$vtRich']).toBeDefined()
+    expect(typeof app.config.globalProperties['$vtRich']).toBe('function')
+  })
+
+  it('empty componentPrefix uses default names', () => {
+    const plugin = createFluentVue({
+      locale: 'en',
+      messages: { en: {} },
+      componentPrefix: '',
+    })
+
+    const app = createApp({ render: () => h('div') })
+    app.use(plugin)
+
+    expect(app.component('Trans')).toBeDefined()
+    expect(app.component('Plural')).toBeDefined()
+    expect(app.component('Select')).toBeDefined()
+  })
+
+  it('t() compiled function returns undefined', () => {
+    const plugin = createFluentVue({
+      locale: 'en',
+      messages: {
+        en: {
+          broken: () => undefined as unknown as string,
+        },
+      },
+    })
+
+    // The function is called and its return value (even undefined) is used
+    const result = plugin.global.t('broken')
+    expect(result).toBeUndefined()
+  })
+
+  it('t() fallbackChain wildcard *', () => {
+    const plugin = createFluentVue({
+      locale: 'xx',
+      messages: {
+        xx: {},
+        en: { hello: 'Hello from en' },
+      },
+      fallbackChain: { '*': ['en'] },
+    })
+
+    expect(plugin.global.t('hello')).toBe('Hello from en')
+  })
+
+  it('t() MessageDescriptor (msg`...`)', () => {
+    const plugin = createFluentVue({
+      locale: 'en',
+      messages: {
+        en: {
+          'msg-id-1': 'Translated message',
+        },
+      },
+    })
+
+    const result = plugin.global.t({ id: 'msg-id-1', message: 'Default message' })
+    expect(result).toBe('Translated message')
+  })
+
+  it('t() MessageDescriptor falls back to message field', () => {
+    const plugin = createFluentVue({
+      locale: 'en',
+      messages: { en: {} },
+    })
+
+    const result = plugin.global.t({ id: 'missing-id', message: 'Fallback {name}' }, { name: 'Bob' })
+    expect(result).toBe('Fallback Bob')
+  })
+
+  it('t() empty string id (exists in catalog)', () => {
+    const plugin = createFluentVue({
+      locale: 'en',
+      messages: { en: { '': 'Empty key message' } },
+    })
+
+    expect(plugin.global.t('')).toBe('Empty key message')
+  })
+
+  it('t() full fallback chain test', () => {
+    const plugin = createFluentVue({
+      locale: 'zh-TW',
+      fallbackLocale: 'en',
+      messages: {
+        'zh-TW': {},
+        'zh-CN': { hello: 'Chinese simplified' },
+        en: { hello: 'English' },
+      },
+      fallbackChain: { 'zh-TW': ['zh-CN'] },
+    })
+
+    // Should find in zh-CN via fallbackChain before fallbackLocale
+    expect(plugin.global.t('hello')).toBe('Chinese simplified')
+  })
+
+  it('v-t directive null binding value', async () => {
+    const plugin = createFluentVue({
+      locale: 'en',
+      messages: { en: { hello: 'Hello World' } },
+    })
+
+    const Comp = defineComponent({
+      setup() {
+        return () => {
+          const vT = resolveDirective('t')!
+          return withDirectives(h('p', 'hello'), [[vT, null]])
+        }
+      },
+    })
+
+    const el = document.createElement('div')
+    const app = createApp(Comp)
+    app.use(plugin)
+    app.mount(el)
+    await nextTick()
+
+    expect(el.querySelector('p')?.textContent).toBe('Hello World')
+    app.unmount()
+  })
+
+  it('v-t directive undefined text content', async () => {
+    const plugin = createFluentVue({
+      locale: 'en',
+      messages: { en: { greeting: 'Hi there' } },
+    })
+
+    const Comp = defineComponent({
+      setup() {
+        return () => {
+          const vT = resolveDirective('t')!
+          // Element with no text content, using arg for message id
+          return withDirectives(h('span'), [[vT, undefined, 'greeting']])
+        }
+      },
+    })
+
+    const el = document.createElement('div')
+    const app = createApp(Comp)
+    app.use(plugin)
+    app.mount(el)
+    await nextTick()
+
+    expect(el.querySelector('span')?.textContent).toBe('Hi there')
+    app.unmount()
+  })
+
+  it('te() non-existent locale', () => {
+    const plugin = createFluentVue({
+      locale: 'en',
+      messages: { en: { hello: 'Hello' } },
+    })
+
+    expect(plugin.global.te('hello', 'zz')).toBe(false)
+  })
+
+  it('tm() non-existent locale', () => {
+    const plugin = createFluentVue({
+      locale: 'en',
+      messages: { en: { hello: 'Hello' } },
+    })
+
+    expect(plugin.global.tm('hello', 'zz')).toBeUndefined()
+  })
+
+  it('n() NaN / Infinity', () => {
+    const plugin = createFluentVue({
+      locale: 'en',
+      messages: { en: {} },
+    })
+
+    const nanResult = plugin.global.n(NaN)
+    expect(typeof nanResult).toBe('string')
+    expect(nanResult).toBe('NaN')
+
+    const infResult = plugin.global.n(Infinity)
+    expect(typeof infResult).toBe('string')
+    // Intl.NumberFormat formats Infinity as the infinity symbol
+    expect(infResult).toContain('∞')
+  })
+
+  it('d() NaN / invalid Date', () => {
+    const plugin = createFluentVue({
+      locale: 'en',
+      messages: { en: {} },
+    })
+
+    // NaN as timestamp - formatDate catches errors and returns ''
+    const nanResult = plugin.global.d(NaN)
+    expect(typeof nanResult).toBe('string')
+
+    // Invalid Date
+    const invalidResult = plugin.global.d(new Date('invalid'))
+    expect(typeof invalidResult).toBe('string')
+  })
+
+  it('preloadLocale without chunkLoader configured', () => {
+    const plugin = createFluentVue({
+      locale: 'en',
+      messages: { en: {} },
+      // No chunkLoader, no splitting
+    })
+
+    // Should be a no-op, not throw
+    expect(() => plugin.global.preloadLocale('fr')).not.toThrow()
+  })
+
+  it('preloadLocale already loaded locale (no-op)', async () => {
+    const loader = vi.fn().mockResolvedValue({ hello: 'Bonjour' })
+    const plugin = createFluentVue({
+      locale: 'en',
+      messages: { en: { hello: 'Hello' } },
+      splitting: true,
+      chunkLoader: loader,
+    })
+
+    // 'en' is already loaded (initial locale)
+    plugin.global.preloadLocale('en')
+    await new Promise((r) => setTimeout(r, 0))
+
+    // Loader should not have been called since 'en' is already loaded
+    expect(loader).not.toHaveBeenCalled()
+  })
+
+  it('isLoading initially false', () => {
+    const plugin = createFluentVue({
+      locale: 'en',
+      messages: { en: {} },
+    })
+
+    expect(plugin.global.isLoading.value).toBe(false)
+  })
+
+  it('loadedLocales initially contains initial locale', () => {
+    const plugin = createFluentVue({
+      locale: 'en',
+      messages: { en: {}, fr: {} },
+    })
+
+    expect(plugin.global.loadedLocales.value.has('en')).toBe(true)
   })
 })

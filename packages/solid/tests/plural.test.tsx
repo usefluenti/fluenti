@@ -276,4 +276,70 @@ describe('Plural component', () => {
       expect(container.textContent).toBe('5 items')
     })
   })
+
+  // ─── Edge cases ──────────────────────────────────────────────────────
+
+  it('handles negative values', () => {
+    const { container } = render(() => (
+      <I18nProvider locale="en" messages={{ en: {} }}>
+        <Plural value={-3} one="# item" other="# items" />
+      </I18nProvider>
+    ))
+
+    expect(container.textContent).toBe('-3 items')
+  })
+
+  it('handles NaN value gracefully', () => {
+    const { container } = render(() => (
+      <I18nProvider locale="en" messages={{ en: {} }}>
+        <Plural value={NaN} one="# item" other="# items" />
+      </I18nProvider>
+    ))
+
+    // NaN selects "other" via Intl.PluralRules and renders as NaN
+    expect(container.textContent).toBe('NaN items')
+  })
+
+  it('handles Arabic locale with all 6 plural categories', () => {
+    // Arabic has: zero (0), one (1), two (2), few (3-10), many (11-99), other (100+)
+    const { container: c0 } = render(() => (
+      <I18nProvider locale="ar" messages={{ ar: {} }}>
+        <Plural value={0} zero="٠ عناصر" one="عنصر واحد" two="عنصران" few="# عناصر قليلة" many="# عنصراً" other="# عنصر" />
+      </I18nProvider>
+    ))
+    expect(c0.textContent).toBe('٠ عناصر')
+
+    const { container: c2 } = render(() => (
+      <I18nProvider locale="ar" messages={{ ar: {} }}>
+        <Plural value={2} zero="٠ عناصر" one="عنصر واحد" two="عنصران" few="# عناصر قليلة" many="# عنصراً" other="# عنصر" />
+      </I18nProvider>
+    ))
+    expect(c2.textContent).toBe('عنصران')
+
+    const { container: c5 } = render(() => (
+      <I18nProvider locale="ar" messages={{ ar: {} }}>
+        <Plural value={5} zero="٠ عناصر" one="عنصر واحد" two="عنصران" few="# عناصر قليلة" many="# عنصراً" other="# عنصر" />
+      </I18nProvider>
+    ))
+    expect(c5.textContent).toBe('5 عناصر قليلة')
+
+    const { container: c50 } = render(() => (
+      <I18nProvider locale="ar" messages={{ ar: {} }}>
+        <Plural value={50} zero="٠ عناصر" one="عنصر واحد" two="عنصران" few="# عناصر قليلة" many="# عنصراً" other="# عنصر" />
+      </I18nProvider>
+    ))
+    expect(c50.textContent).toBe('50 عنصراً')
+  })
+
+  it('handles ordinal-like locale selection', () => {
+    // English ordinal: 1st, 2nd, 3rd, 4th...
+    // The Plural component uses cardinal by default (Intl.PluralRules)
+    const { container } = render(() => (
+      <I18nProvider locale="en" messages={{ en: {} }}>
+        <Plural value={1} one="1st place" other="# place" />
+      </I18nProvider>
+    ))
+
+    expect(container.textContent).toBe('1st place')
+  })
 })

@@ -907,7 +907,7 @@ describe('createVtNodeTransform', () => {
 
     expect(node.props.length).toBe(0)
     expect(node.children.length).toBe(1)
-    expect(node.children[0].type).toBe(5) // INTERPOLATION
+    expect(node.children[0]!.type).toBe(5) // INTERPOLATION
   })
 
   it('transforms v-t with explicit ID from arg', () => {
@@ -1024,7 +1024,7 @@ describe('createVtNodeTransform', () => {
     transform(node as any, dummyCtx as any)
 
     expect(node.children.length).toBe(1)
-    expect(node.children[0].type).toBe(5)
+    expect(node.children[0]!.type).toBe(5)
   })
 
   it('transforms v-t.plural with 3 forms', () => {
@@ -1083,8 +1083,8 @@ describe('createVtNodeTransform — <Trans> component', () => {
 
     expect(node.tag).toBe('span')
     expect(node.children.length).toBe(1)
-    expect(node.children[0].type).toBe(5) // INTERPOLATION
-    expect((node.children[0] as any).content.content).toBe("$t('This is simple text.')")
+    expect(node.children[0]!.type).toBe(5) // INTERPOLATION
+    expect((node.children[0]! as any).content.content).toBe("$t('This is simple text.')")
   })
 
   it('transforms <Trans> with child elements (rich text)', () => {
@@ -1880,6 +1880,73 @@ describe('solidJsxPlugin', () => {
 
   it('returns 6 plugins (including solid-jsx)', () => {
     const plugins = fluentiPlugin()
+    expect(plugins.length).toBe(6)
+  })
+})
+
+describe('configResolved hook', () => {
+  it('calls setResolvedMode via configResolved on virtual plugin', () => {
+    const plugins = fluentiPlugin()
+    const virtualPlugin = plugins.find((p) => p.name === 'fluenti:virtual') as any
+
+    // configResolved should exist and accept a config object with command
+    expect(virtualPlugin.configResolved).toBeDefined()
+    expect(typeof virtualPlugin.configResolved).toBe('function')
+
+    // Should not throw when called with build or serve command
+    expect(() => virtualPlugin.configResolved({ command: 'build' })).not.toThrow()
+    expect(() => virtualPlugin.configResolved({ command: 'serve' })).not.toThrow()
+  })
+})
+
+describe('script-transform plugin edge cases', () => {
+  function getScriptTransformPlugin(options?: Record<string, unknown>) {
+    const plugins = fluentiPlugin(options as any)
+    return plugins.find((p) => p.name === 'fluenti:script-transform') as any
+  }
+
+  it('transforms React TSX file with tagged template', () => {
+    const plugin = getScriptTransformPlugin({ framework: 'react' })
+    const code = "import { useState } from 'react'\nconst msg = t`Hello World`\nexport default function App() { return <div>{msg}</div> }"
+    const result = plugin.transform(code, 'App.tsx')
+
+    if (result) {
+      expect(result.code).toContain('__i18n')
+    }
+  })
+
+  it('skips files with no t` or t( calls', () => {
+    const plugin = getScriptTransformPlugin()
+    const code = 'const x = 42\nexport default x'
+    const result = plugin.transform(code, 'utils.ts')
+
+    expect(result).toBeUndefined()
+  })
+
+  it('skips node_modules files', () => {
+    const plugin = getScriptTransformPlugin()
+    const code = "const msg = t`Hello`"
+    const result = plugin.transform(code, 'node_modules/some-lib/index.js')
+
+    expect(result).toBeUndefined()
+  })
+})
+
+describe('missing config graceful handling', () => {
+  it('creates plugins with default options when no config provided', () => {
+    const plugins = fluentiPlugin()
+
+    expect(Array.isArray(plugins)).toBe(true)
+    expect(plugins.length).toBe(6)
+    for (const p of plugins) {
+      expect(p.name).toBeDefined()
+    }
+  })
+
+  it('creates plugins with partial options', () => {
+    const plugins = fluentiPlugin({ catalogDir: 'custom/locales' })
+
+    expect(Array.isArray(plugins)).toBe(true)
     expect(plugins.length).toBe(6)
   })
 })

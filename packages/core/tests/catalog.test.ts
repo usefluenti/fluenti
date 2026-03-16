@@ -65,7 +65,7 @@ describe('Catalog', () => {
 
   it('stores compiled functions', () => {
     const catalog = new Catalog()
-    const fn = (values?: Record<string, unknown>) => `Hello ${values?.name}`
+    const fn = (values?: Record<string, unknown>) => `Hello ${values?.['name']}`
     catalog.set('en', { greeting: fn })
     const retrieved = catalog.get('en', 'greeting')
     expect(typeof retrieved).toBe('function')
@@ -133,6 +133,77 @@ describe('Catalog', () => {
       catalog.set('en', { greeting: 'Hello' })
       expect(catalog.get('EN', 'greeting')).toBeUndefined()
       expect(catalog.has('EN', 'greeting')).toBe(false)
+    })
+  })
+
+  // ─── Exhaustive edge cases ─────────────────────────────────────────────
+
+  describe('edge cases - exhaustive', () => {
+    it('has() returns false for hasOwnProperty key', () => {
+      const catalog = new Catalog()
+      catalog.set('en', { greeting: 'Hello' })
+      expect(catalog.has('en', 'hasOwnProperty')).toBe(false)
+    })
+
+    it('has() returns false for valueOf key', () => {
+      const catalog = new Catalog()
+      catalog.set('en', { greeting: 'Hello' })
+      expect(catalog.has('en', 'valueOf')).toBe(false)
+    })
+
+    it('empty string message ID', () => {
+      const catalog = new Catalog()
+      catalog.set('en', { '': 'empty-id-message' })
+      expect(catalog.has('en', '')).toBe(true)
+      expect(catalog.get('en', '')).toBe('empty-id-message')
+    })
+
+    it('very long locale string', () => {
+      const catalog = new Catalog()
+      const longLocale = 'en-' + 'x'.repeat(1000)
+      catalog.set(longLocale, { greeting: 'Hello' })
+      expect(catalog.get(longLocale, 'greeting')).toBe('Hello')
+      expect(catalog.has(longLocale, 'greeting')).toBe(true)
+      expect(catalog.getLocales()).toContain(longLocale)
+    })
+
+    it('function message overwritten by string message', () => {
+      const catalog = new Catalog()
+      const fn = () => 'dynamic'
+      catalog.set('en', { greeting: fn })
+      expect(typeof catalog.get('en', 'greeting')).toBe('function')
+      catalog.set('en', { greeting: 'static' })
+      expect(catalog.get('en', 'greeting')).toBe('static')
+    })
+
+    it('multiple set same locale correctly merges', () => {
+      const catalog = new Catalog()
+      catalog.set('en', { a: 'A' })
+      catalog.set('en', { b: 'B' })
+      catalog.set('en', { c: 'C' })
+      expect(catalog.get('en', 'a')).toBe('A')
+      expect(catalog.get('en', 'b')).toBe('B')
+      expect(catalog.get('en', 'c')).toBe('C')
+    })
+
+    it('getLocales order matches insertion order', () => {
+      const catalog = new Catalog()
+      catalog.set('fr', { x: '1' })
+      catalog.set('de', { x: '2' })
+      catalog.set('en', { x: '3' })
+      expect(catalog.getLocales()).toEqual(['fr', 'de', 'en'])
+    })
+
+    it('ID with special characters (dots/slashes/colons)', () => {
+      const catalog = new Catalog()
+      catalog.set('en', {
+        'pages/home.title': 'Home',
+        'ns:sub:key': 'Nested',
+        'path/to/msg.label': 'Label',
+      })
+      expect(catalog.get('en', 'pages/home.title')).toBe('Home')
+      expect(catalog.get('en', 'ns:sub:key')).toBe('Nested')
+      expect(catalog.get('en', 'path/to/msg.label')).toBe('Label')
     })
   })
 })

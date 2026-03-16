@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import type { Messages } from '@fluenti/core'
 import { createServerI18n } from '../src/server'
 
 // Mock solid-js/web to not have getRequestEvent (fallback mode)
@@ -8,11 +9,11 @@ const enMessages = { greeting: 'Hello', farewell: 'Goodbye' }
 const deMessages = { greeting: 'Hallo', farewell: 'Auf Wiedersehen' }
 
 describe('createServerI18n', () => {
-  let loadMessages: ReturnType<typeof vi.fn>
+  let loadMessages: ReturnType<typeof vi.fn<(locale: string) => Promise<Messages>>>
 
   beforeEach(() => {
     vi.clearAllMocks()
-    loadMessages = vi.fn(async (locale: string) => {
+    loadMessages = vi.fn<(locale: string) => Promise<Messages>>(async (locale: string) => {
       if (locale === 'en') return enMessages
       if (locale === 'de') return deMessages
       throw new Error(`Unknown locale: ${locale}`)
@@ -46,7 +47,7 @@ describe('createServerI18n', () => {
   })
 
   it('should handle { default: Messages } module format', async () => {
-    const loader = vi.fn(async () => ({ default: enMessages }))
+    const loader = vi.fn<(locale: string) => Promise<{ default: Messages }>>(async () => ({ default: enMessages }))
     const { setLocale, getI18n } = createServerI18n({ loadMessages: loader })
     setLocale('en')
     const i18n = await getI18n()
@@ -80,7 +81,7 @@ describe('createServerI18n', () => {
   })
 
   it('should fall back to fallbackLocale for missing keys', async () => {
-    const sparseLoader = vi.fn(async (locale: string) => {
+    const sparseLoader = vi.fn<(locale: string) => Promise<Messages>>(async (locale: string) => {
       if (locale === 'de') return { greeting: 'Hallo' }
       if (locale === 'en') return enMessages
       throw new Error(`Unknown locale: ${locale}`)
@@ -177,6 +178,51 @@ describe('createServerI18n', () => {
       const i18n2 = await getI18n()
 
       expect(i18n1).toBe(i18n2)
+    })
+  })
+
+  // ─── Edge cases ──────────────────────────────────────────────────────
+
+  describe('edge cases', () => {
+    it('should pass full config options including dateFormats, numberFormats, and fallbackChain', async () => {
+      const missing = vi.fn(() => 'CUSTOM_MISSING')
+      const { setLocale, getI18n } = createServerI18n({
+        loadMessages,
+        fallbackLocale: 'en',
+        fallbackChain: { de: ['en'] },
+        dateFormats: { short: { year: '2-digit', month: '2-digit' } },
+        numberFormats: { compact: { notation: 'compact' as const } },
+        missing,
+      })
+      setLocale('en')
+      const i18n = await getI18n()
+
+      expect(i18n.locale).toBe('en')
+      expect(i18n.t('greeting')).toBe('Hello')
+      // Date and number formatting should work
+      expect(typeof i18n.d(new Date())).toBe('string')
+      expect(typeof i18n.n(1234)).toBe('string')
+    })
+
+    it('should throw when getI18n called without setLocale and no resolveLocale', async () => {
+      const { getI18n } = createServerI18n({ loadMessages })
+      await expect(getI18n()).rejects.toThrow('No locale set')
+      await expect(getI18n()).rejects.toThrow('resolveLocale')
+    })
+
+    it('should support async resolveLocale that returns a promise', async () => {
+      const resolveLocale = vi.fn(async () => {
+        // Simulate async cookie/header reading
+        await new Promise((r) => setTimeout(r, 10))
+        return 'de'
+      })
+
+      const { getI18n } = createServerI18n({ loadMessages, resolveLocale })
+      const i18n = await getI18n()
+
+      expect(resolveLocale).toHaveBeenCalledTimes(1)
+      expect(i18n.locale).toBe('de')
+      expect(i18n.t('greeting')).toBe('Hallo')
     })
   })
 })

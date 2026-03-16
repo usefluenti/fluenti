@@ -121,4 +121,42 @@ describe('splitting mode', () => {
     const ctx = createSplitContext(vi.fn())
     expect(ctx.loadedLocales().has('en')).toBe(true)
   })
+
+  // ─── Edge cases ──────────────────────────────────────────────────────
+
+  it('setLocale propagates loader error', async () => {
+    const loader = vi.fn().mockRejectedValue(new Error('Network failure'))
+    const ctx = createSplitContext(loader)
+
+    await expect(ctx.setLocale('fr')).rejects.toThrow('Network failure')
+    expect(ctx.isLoading()).toBe(false)
+    // Locale should remain unchanged after error
+    expect(ctx.locale()).toBe('en')
+  })
+
+  it('race condition: rapid setLocale calls settle to last locale', async () => {
+    let resolveFirst: (v: any) => void
+    let resolveSecond: (v: any) => void
+    const firstPromise = new Promise((r) => { resolveFirst = r })
+    const secondPromise = new Promise((r) => { resolveSecond = r })
+
+    const loader = vi.fn()
+      .mockReturnValueOnce(firstPromise)
+      .mockReturnValueOnce(secondPromise)
+
+    const ctx = createSplitContext(loader)
+
+    const p1 = ctx.setLocale('fr')
+    const p2 = ctx.setLocale('de')
+
+    // Resolve second first, then first
+    resolveSecond!({ hello: 'Hallo' })
+    resolveFirst!({ hello: 'Bonjour' })
+
+    await Promise.allSettled([p1, p2])
+
+    // Both locales should be loaded
+    expect(ctx.loadedLocales().has('fr')).toBe(true)
+    expect(ctx.loadedLocales().has('de')).toBe(true)
+  })
 })

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { defineComponent, h } from 'vue'
+import { defineComponent, h, nextTick } from 'vue'
 import { mount } from '@vue/test-utils'
 import { createFluentVue } from '../src/plugin'
 import { NumberFormat } from '../src/components/NumberFormat'
@@ -207,5 +207,63 @@ describe('NumberFormat', () => {
     })
     const wrapper = mountWithPlugin(Comp)
     expect(wrapper.find('span').exists()).toBe(true)
+  })
+
+  describe('edge cases', () => {
+    it('formats NaN', () => {
+      const Comp = defineComponent({
+        setup() {
+          return () => h(NumberFormat, { value: NaN })
+        },
+      })
+      const wrapper = mountWithPlugin(Comp)
+      expect(wrapper.text()).toBe('NaN')
+    })
+
+    it('formats Infinity', () => {
+      const Comp = defineComponent({
+        setup() {
+          return () => h(NumberFormat, { value: Infinity })
+        },
+      })
+      const wrapper = mountWithPlugin(Comp)
+      expect(wrapper.text()).toContain('∞')
+    })
+
+    it('formats -Infinity', () => {
+      const Comp = defineComponent({
+        setup() {
+          return () => h(NumberFormat, { value: -Infinity })
+        },
+      })
+      const wrapper = mountWithPlugin(Comp)
+      const expected = new Intl.NumberFormat('en').format(-Infinity)
+      expect(wrapper.text()).toBe(expected)
+    })
+
+    it('re-renders on locale switch', async () => {
+      const plugin = createFluentVue({
+        locale: 'en',
+        messages: { en: {}, de: {} },
+      })
+
+      const Comp = defineComponent({
+        setup() {
+          return () => h(NumberFormat, { value: 1234.56 })
+        },
+      })
+
+      const wrapper = mount(Comp, { global: { plugins: [plugin] } })
+      const enText = wrapper.text()
+
+      plugin.global.setLocale('de')
+      await nextTick()
+
+      const deText = wrapper.text()
+      const expectedDe = new Intl.NumberFormat('de').format(1234.56)
+      expect(deText).toBe(expectedDe)
+      // en uses ',' for thousands, de uses '.' - they should differ
+      expect(enText).not.toBe(deText)
+    })
   })
 })

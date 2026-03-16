@@ -497,4 +497,98 @@ describe('Plural component', () => {
       expect(wrapper.element.tagName).toBe('DIV')
     })
   })
+
+  describe('edge cases', () => {
+    it('handles negative value', () => {
+      const plugin = createPlugin()
+      const wrapper = mount(Plural, {
+        props: { value: -1, one: '# item', other: '# items' },
+        global: { plugins: [plugin] },
+      })
+
+      // Negative values go through Intl.PluralRules which categorizes -1 as 'one' in English
+      // but the ICU interpolation of # will show the actual value
+      expect(wrapper.text()).toContain('-1')
+    })
+
+    it('handles NaN value', () => {
+      const plugin = createPlugin()
+      const wrapper = mount(Plural, {
+        props: { value: NaN, other: '# items' },
+        global: { plugins: [plugin] },
+      })
+
+      // NaN goes through Intl.PluralRules.select which returns 'other'
+      expect(wrapper.text()).toContain('NaN')
+    })
+
+    it('handles Infinity value', () => {
+      const plugin = createPlugin()
+      const wrapper = mount(Plural, {
+        props: { value: Infinity, other: '# items' },
+        global: { plugins: [plugin] },
+      })
+
+      // Infinity goes through other category
+      const text = wrapper.text()
+      expect(text).toContain('items')
+    })
+
+    it('handles float 1.5', () => {
+      const plugin = createPlugin()
+      const wrapper = mount(Plural, {
+        props: { value: 1.5, one: '# item', other: '# items' },
+        global: { plugins: [plugin] },
+      })
+
+      // 1.5 is 'other' in English
+      expect(wrapper.text()).toContain('1.5')
+      expect(wrapper.text()).toContain('items')
+    })
+
+    it('handles very large value 1000000', () => {
+      const plugin = createPlugin()
+      const wrapper = mount(Plural, {
+        props: { value: 1000000, other: '# items' },
+        global: { plugins: [plugin] },
+      })
+
+      expect(wrapper.text()).toContain('1000000')
+    })
+
+    it('renders with no props except other', () => {
+      const plugin = createPlugin()
+      const wrapper = mount(Plural, {
+        props: { value: 5, other: '# things' },
+        global: { plugins: [plugin] },
+      })
+
+      expect(wrapper.text()).toBe('5 things')
+    })
+
+    it('renders empty other', () => {
+      const plugin = createPlugin()
+      const wrapper = mount(Plural, {
+        props: { value: 5, other: '' },
+        global: { plugins: [plugin] },
+      })
+
+      expect(wrapper.text()).toBe('')
+    })
+
+    it('slot and string prop mixed - slots take precedence', () => {
+      const plugin = createPlugin()
+      const wrapper = mount(Plural, {
+        props: { value: 0, zero: 'String zero', other: 'String other' },
+        slots: {
+          zero: '<strong>Slot zero</strong>',
+          other: 'Slot other',
+        },
+        global: { plugins: [plugin] },
+      })
+
+      // Slots take precedence over string props
+      expect(wrapper.html()).toContain('<strong>Slot zero</strong>')
+    })
+  })
 })

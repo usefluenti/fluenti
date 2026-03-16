@@ -161,3 +161,71 @@ describe('negotiateLocale edge cases', () => {
     expect(negotiateLocale('zh-Hans', ['zh-CN', 'en'])).toBe('zh-CN')
   })
 })
+
+// ─── Exhaustive edge cases ───────────────────────────────────────────────
+
+describe('edge cases - exhaustive', () => {
+  it('isRTL Pashto (ps)', () => {
+    expect(isRTL('ps')).toBe(true)
+  })
+
+  it('isRTL Sindhi (sd)', () => {
+    expect(isRTL('sd')).toBe(true)
+  })
+
+  it('isRTL Uyghur (ug)', () => {
+    expect(isRTL('ug')).toBe(true)
+  })
+
+  it('isRTL Dhivehi (dv)', () => {
+    expect(isRTL('dv')).toBe(true)
+  })
+
+  it('isRTL Yiddish (yi)', () => {
+    expect(isRTL('yi')).toBe(true)
+  })
+
+  it('isRTL N\'Ko (nqo)', () => {
+    expect(isRTL('nqo')).toBe(true)
+  })
+
+  it('isRTL with script subtag (ar-Arab)', () => {
+    expect(isRTL('ar-Arab')).toBe(true)
+  })
+
+  it('negotiate multi-script variants zh-Hans/zh-Hant', () => {
+    const available = ['zh-Hans', 'zh-Hant', 'en']
+    expect(negotiateLocale('zh-Hans', available)).toBe('zh-Hans')
+    expect(negotiateLocale('zh-Hant', available)).toBe('zh-Hant')
+  })
+
+  it('negotiate exact match priority over language match', () => {
+    const available = ['en', 'en-GB', 'en-US']
+    expect(negotiateLocale('en-US', available)).toBe('en-US')
+    expect(negotiateLocale('en-GB', available)).toBe('en-GB')
+  })
+
+  it('negotiate empty string locale', () => {
+    // Empty string locale against available locales falls back
+    expect(negotiateLocale('', ['en', 'fr'], 'en')).toBe('en')
+  })
+
+  it('parseLocale underscore separator en_US', () => {
+    // Underscores are not standard BCP 47 separators, parsed as single part
+    const result = parseLocale('en_US')
+    // Since there's no dash, 'en_US' is treated as a single language tag
+    expect(result.language).toBe('en_us')
+  })
+
+  it('getDirection covers all RTL languages', () => {
+    const rtlLanguages = ['ar', 'he', 'fa', 'ur', 'ps', 'sd', 'ug', 'ckb', 'dv', 'yi', 'nqo']
+    for (const lang of rtlLanguages) {
+      expect(getDirection(lang)).toBe('rtl')
+    }
+    // And a few LTR for contrast
+    const ltrLanguages = ['en', 'de', 'fr', 'ja', 'zh', 'ko', 'es', 'pt']
+    for (const lang of ltrLanguages) {
+      expect(getDirection(lang)).toBe('ltr')
+    }
+  })
+})

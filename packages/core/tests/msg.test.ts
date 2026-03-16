@@ -90,3 +90,55 @@ describe('msg', () => {
     expect(result.id.length).toBeGreaterThan(0)
   })
 })
+
+// ─── Exhaustive edge cases ───────────────────────────────────────────────
+
+describe('edge cases - exhaustive', () => {
+  it('expression is undefined', () => {
+    const result = msg`value is ${undefined}`
+    expect(result.message).toBe('value is {0}')
+    expect(typeof result.id).toBe('string')
+  })
+
+  it('expression is null', () => {
+    const result = msg`value is ${null}`
+    expect(result.message).toBe('value is {0}')
+    expect(typeof result.id).toBe('string')
+  })
+
+  it('expression is 0', () => {
+    const result = msg`count is ${0}`
+    expect(result.message).toBe('count is {0}')
+    expect(typeof result.id).toBe('string')
+  })
+
+  it('expression is false', () => {
+    const result = msg`flag is ${false}`
+    expect(result.message).toBe('flag is {0}')
+    expect(typeof result.id).toBe('string')
+  })
+
+  it('descriptor missing id (only message)', () => {
+    const desc = msg.descriptor({ id: '', message: 'Hello' })
+    expect(desc.id).toBe('')
+    expect(desc.message).toBe('Hello')
+  })
+
+  it('hash collision resilience (two similar messages)', () => {
+    // These are very similar messages - verify they get distinct IDs
+    const a = msg`item count`
+    const b = msg`item counts`
+    expect(a.id).not.toBe(b.id)
+  })
+
+  it('contains backticks', () => {
+    const tick = '`'
+    const result = msg`code ${tick}example${tick}`
+    expect(result.message).toBe('code {0}example{1}')
+  })
+
+  it('contains regex special characters', () => {
+    const result = msg`price is ${'$'}10.00 (USD)`
+    expect(result.message).toBe('price is {0}10.00 (USD)')
+  })
+})

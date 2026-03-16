@@ -142,6 +142,98 @@ describe('offset and # edge cases', () => {
   })
 })
 
+describe('edge cases - exhaustive', () => {
+  it('empty string message', () => {
+    expect(interpolate('')).toBe('')
+  })
+
+  it('whitespace-only message', () => {
+    expect(interpolate('   \t\n  ')).toBe('   \t\n  ')
+  })
+
+  it('very long message 100k chars', () => {
+    const longMsg = 'a'.repeat(100_000)
+    const result = interpolate(longMsg)
+    expect(result.length).toBe(100_000)
+    expect(result).toBe(longMsg)
+  })
+
+  it('different locale same message produces different cache key', () => {
+    const msg = '{count, plural, one {# item} other {# items}}'
+    const enResult = interpolate(msg, { count: 1 }, 'en')
+    const arResult = interpolate(msg, { count: 1 }, 'ar')
+    // English: 1 → 'one', Arabic: 1 → 'one' (same here but different cache paths)
+    expect(enResult).toBe('1 item')
+    expect(arResult).toBe('1 item')
+    // Verify with a count that differs between locales
+    const enResult2 = interpolate(msg, { count: 0 }, 'en')
+    const arResult2 = interpolate(msg, { count: 0 }, 'ar')
+    // English: 0 → 'other', Arabic: 0 → 'zero' (but we only have one/other)
+    expect(enResult2).toBe('0 items')
+    // Arabic 0 falls to 'other' since there's no 'zero' branch
+    expect(arResult2).toBe('0 items')
+  })
+
+  it('nested plural+select combination', () => {
+    const msg = '{count, plural, one {{gender, select, male {He has # thing} other {They have # thing}}} other {{gender, select, male {He has # things} other {They have # things}}}}'
+    expect(interpolate(msg, { count: 1, gender: 'male' }, 'en')).toBe('He has 1 thing')
+    expect(interpolate(msg, { count: 5, gender: 'other' }, 'en')).toBe('They have 5 things')
+  })
+
+  it('Symbol value', () => {
+    const result = interpolate('Value: {v}', { v: Symbol('test') })
+    expect(result).toBe('Value: Symbol(test)')
+  })
+
+  it('Array value', () => {
+    const result = interpolate('Value: {v}', { v: [1, 2, 3] })
+    expect(result).toBe('Value: 1,2,3')
+  })
+
+  it('Date object value', () => {
+    const d = new Date(2024, 0, 15)
+    const result = interpolate('Value: {v}', { v: d })
+    expect(result).toBe(`Value: ${String(d)}`)
+  })
+
+  it('negative zero -0', () => {
+    const result = interpolate('Value: {v}', { v: -0 })
+    expect(result).toBe('Value: 0')
+  })
+
+  it('offset > value (negative adjusted count)', () => {
+    const msg = '{n, plural, offset:10 other {# left}}'
+    const result = interpolate(msg, { n: 3 }, 'en')
+    expect(result).toBe('-7 left')
+  })
+
+  it('offset = 0', () => {
+    const msg = '{n, plural, offset:0 one {# item} other {# items}}'
+    expect(interpolate(msg, { n: 1 }, 'en')).toBe('1 item')
+    expect(interpolate(msg, { n: 5 }, 'en')).toBe('5 items')
+  })
+
+  it('same branch multiple # references', () => {
+    const msg = '{n, plural, other {# out of # total}}'
+    expect(interpolate(msg, { n: 5 }, 'en')).toBe('5 out of 5 total')
+  })
+
+  it('null byte value', () => {
+    const result = interpolate('Value: {v}', { v: '\0' })
+    expect(result).toBe('Value: \0')
+  })
+
+  it('JS protocol URL value', () => {
+    const result = interpolate('Link: {url}', { url: 'javascript:alert(1)' })
+    expect(result).toBe('Link: javascript:alert(1)')
+  })
+
+  it('unicode escape sequence value', () => {
+    const result = interpolate('Char: {v}', { v: '\u0041\u{1F600}' })
+    expect(result).toBe('Char: A\u{1F600}')
+  })
+})
+
 describe('XSS prevention', () => {
   it('does not interpret HTML tags in interpolated values', () => {
     const result = interpolate('Hello {name}', { name: '<script>alert("xss")</script>' })

@@ -139,4 +139,59 @@ describe('useI18n', () => {
     plugin.global.setLocale('fr')
     expect(plugin.global.locale.value).toBe('fr')
   })
+
+  describe('edge cases', () => {
+    it('returns all expected properties', () => {
+      const plugin = createFluentVue({
+        locale: 'en',
+        messages: { en: {} },
+      })
+
+      let ctx: ReturnType<typeof useI18n> | undefined
+      const Comp = defineComponent({
+        setup() {
+          ctx = useI18n()
+          return () => h('div')
+        },
+      })
+
+      mount(Comp, { global: { plugins: [plugin] } })
+
+      expect(ctx).toBeDefined()
+      expect(typeof ctx!.t).toBe('function')
+      expect(typeof ctx!.d).toBe('function')
+      expect(typeof ctx!.n).toBe('function')
+      expect(typeof ctx!.format).toBe('function')
+      expect(typeof ctx!.tRaw).toBe('function')
+      expect(typeof ctx!.setLocale).toBe('function')
+      expect(typeof ctx!.loadMessages).toBe('function')
+      expect(typeof ctx!.getLocales).toBe('function')
+      expect(typeof ctx!.preloadLocale).toBe('function')
+      expect(typeof ctx!.te).toBe('function')
+      expect(typeof ctx!.tm).toBe('function')
+      expect(ctx!.locale).toBeDefined()
+      expect(ctx!.isLoading).toBeDefined()
+      expect(ctx!.loadedLocales).toBeDefined()
+    })
+
+    it('context is same as plugin.global instance', () => {
+      const plugin = createFluentVue({
+        locale: 'en',
+        messages: { en: { hello: 'Hello' } },
+      })
+
+      let ctx: ReturnType<typeof useI18n> | undefined
+      const Comp = defineComponent({
+        setup() {
+          ctx = useI18n()
+          return () => h('div')
+        },
+      })
+
+      mount(Comp, { global: { plugins: [plugin] } })
+
+      // The useI18n() result should be the same object as plugin.global
+      expect(ctx).toBe(plugin.global)
+    })
+  })
 })

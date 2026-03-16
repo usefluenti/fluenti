@@ -270,4 +270,56 @@ describe('Trans component', () => {
     expect(container.querySelector('script')).toBeNull()
     expect(container.textContent).toContain('<script>alert(1)</script>')
   })
+
+  // ─── Edge cases ──────────────────────────────────────────────────────
+
+  it('renders empty string when children is an empty string', () => {
+    const { container } = render(() => (
+      <I18nProvider locale="en" messages={{ en: {} }}>
+        <Trans>{''}</Trans>
+      </I18nProvider>
+    ))
+
+    expect(container.textContent).toBe('')
+  })
+
+  it('renders deeply nested rich text components', () => {
+    const { container } = render(() => (
+      <I18nProvider locale="en" messages={{ en: {} }}>
+        <Trans
+          message="Read <outer>the <inner>important</inner> terms</outer>"
+          components={{
+            outer: (props: { children?: JSX.Element }) => (
+              <div class="outer">{props.children}</div>
+            ),
+            inner: (props: { children?: JSX.Element }) => (
+              <strong class="inner">{props.children}</strong>
+            ),
+          }}
+        />
+      </I18nProvider>
+    ))
+
+    const outer = container.querySelector('.outer')
+    expect(outer).toBeDefined()
+    const inner = container.querySelector('.inner')
+    expect(inner).toBeDefined()
+    expect(inner?.textContent).toBe('important')
+    expect(outer?.textContent).toContain('important')
+    expect(outer?.textContent).toContain('terms')
+  })
+
+  it('prevents XSS via event handler injection in values', () => {
+    const { container } = render(() => (
+      <I18nProvider locale="en" messages={{ en: {} }}>
+        <Trans
+          message="Welcome {user}"
+          values={{ user: '"><img src=x onerror=alert(1)>' }}
+        />
+      </I18nProvider>
+    ))
+
+    expect(container.querySelector('img')).toBeNull()
+    expect(container.textContent).toContain('"><img src=x onerror=alert(1)>')
+  })
 })
