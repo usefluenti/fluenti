@@ -18,24 +18,27 @@ export function App({ onLocaleChange }: { onLocaleChange: (locale: string) => vo
     onLocaleChange(loc)
   }
 
+  const name = 'World'
+  const itemCount = 3
+
   return (
     <div id="react-app">
       <header>
-        <h1 data-testid="title">{i18n.t('Fluenti React Playground')}</h1>
+        <h1 data-testid="title">{t`Fluenti React Playground`}</h1>
         <p className="tagline" data-testid="tagline">
-          {i18n.t('Write text. Fluenti translates it. Zero config.')}
+          {t`Write text. Fluenti translates it. Zero config.`}
         </p>
       </header>
 
       <nav>
         <a href="#" data-testid="nav-home" onClick={(e) => { e.preventDefault(); setPage('home') }}>
-          {i18n.t('Home')}
+          {t`Home`}
         </a>
         <a href="#" data-testid="nav-plurals" onClick={(e) => { e.preventDefault(); setPage('plurals') }}>
-          {i18n.t('Plurals')}
+          {t`Plurals`}
         </a>
         <a href="#" data-testid="nav-richtext" onClick={(e) => { e.preventDefault(); setPage('richtext') }}>
-          {i18n.t('Rich Text')}
+          {t`Rich Text`}
         </a>
       </nav>
 
@@ -63,11 +66,11 @@ export function App({ onLocaleChange }: { onLocaleChange: (locale: string) => vo
 
       {page === 'home' && (
         <section data-testid="home-section">
-          <h2 data-testid="welcome">{i18n.t('Welcome to Fluenti')}</h2>
-          <p data-testid="subtitle">{i18n.t('A modern i18n library for React')}</p>
-          <p data-testid="greeting">{i18n.t('Hello, {name}!', { name: 'World' })}</p>
-          <p data-testid="items">{i18n.t('You have {count} items in your cart.', { count: 3 })}</p>
-          <p data-testid="current-locale">{i18n.t('Current locale: {locale}', { locale })}</p>
+          <h2 data-testid="welcome">{t`Welcome to Fluenti`}</h2>
+          <p data-testid="subtitle">{t`A modern i18n library for React`}</p>
+          <p data-testid="greeting">{t`Hello, ${name}!`}</p>
+          <p data-testid="items">{t`You have ${itemCount} items in your cart.`}</p>
+          <p data-testid="current-locale">{t`Current locale: ${locale}`}</p>
           <p data-testid="date">{i18n.d(new Date(2025, 0, 15))}</p>
           <p data-testid="number">{i18n.n(1234.5)}</p>
 
@@ -76,21 +79,21 @@ export function App({ onLocaleChange }: { onLocaleChange: (locale: string) => vo
             {' / '}
             <span data-testid="msg-user">{i18n.t(ROLES.user)}</span>
           </div>
-          <p data-testid="fallback-only">{i18n.t('This key only exists in English')}</p>
+          <p data-testid="fallback-only">{t`This key only exists in English`}</p>
 
-          <h3 data-testid="features-title">{i18n.t('Features')}</h3>
+          <h3 data-testid="features-title">{t`Features`}</h3>
           <ul data-testid="features-list">
-            <li>{i18n.t('Reactive locale switching')}</li>
-            <li>{i18n.t('Rich text with React components')}</li>
-            <li>{i18n.t('Built-in plural support')}</li>
-            <li>{i18n.t('Type-safe message catalogs')}</li>
+            <li>{t`Reactive locale switching`}</li>
+            <li>{t`Rich text with React components`}</li>
+            <li>{t`Built-in plural support`}</li>
+            <li>{t`Type-safe message catalogs`}</li>
           </ul>
         </section>
       )}
 
       {page === 'plurals' && (
         <section data-testid="plurals-section">
-          <h2>Plural Demos</h2>
+          <h2>{t`Plural Demos`}</h2>
           <div data-testid="plural-result">
             <Plural
               value={count}
@@ -101,17 +104,17 @@ export function App({ onLocaleChange }: { onLocaleChange: (locale: string) => vo
           </div>
           <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
             <button data-testid="btn-add" onClick={() => setCount(c => c + 1)}>
-              {i18n.t('Add')}
+              {t`Add`}
             </button>
             <button data-testid="btn-remove" onClick={() => setCount(c => Math.max(0, c - 1))}>
-              {i18n.t('Remove')}
+              {t`Remove`}
             </button>
             <button data-testid="btn-reset" onClick={() => setCount(0)}>
-              {i18n.t('Reset')}
+              {t`Reset`}
             </button>
           </div>
 
-          <h3>Select Demo</h3>
+          <h3>{t`Select Demo`}</h3>
           <div data-testid="select-result">
             <Select
               value={gender}
@@ -121,16 +124,16 @@ export function App({ onLocaleChange }: { onLocaleChange: (locale: string) => vo
             />
           </div>
           <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
-            <button data-testid="gender-male" onClick={() => setGender('male')}>Male</button>
-            <button data-testid="gender-female" onClick={() => setGender('female')}>Female</button>
-            <button data-testid="gender-other" onClick={() => setGender('other')}>Other</button>
+            <button data-testid="gender-male" onClick={() => setGender('male')}>{t`Male`}</button>
+            <button data-testid="gender-female" onClick={() => setGender('female')}>{t`Female`}</button>
+            <button data-testid="gender-other" onClick={() => setGender('other')}>{t`Other`}</button>
           </div>
         </section>
       )}
 
       {page === 'richtext' && (
         <section data-testid="richtext-section">
-          <h2>Rich Text Demos</h2>
+          <h2>{t`Rich Text Demos`}</h2>
           <p data-testid="trans-basic">
             <Trans>Read the <a href="/docs">documentation</a> for more info.</Trans>
           </p>
@@ -144,7 +147,7 @@ export function App({ onLocaleChange }: { onLocaleChange: (locale: string) => vo
       )}
 
       <footer data-testid="footer">
-        <p>{i18n.t('Built with Fluenti and React')}</p>
+        <p>{t`Built with Fluenti and React`}</p>
       </footer>
     </div>
   )
