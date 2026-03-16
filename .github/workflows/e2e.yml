@@ -81,6 +81,8 @@ jobs:
           done
 
       - name: Run E2E tests
+        env:
+          E2E_PROJECTS: ${{ matrix.projects }}
         run: |
           IFS=',' read -ra PROJECTS <<< "${{ matrix.projects }}"
           ARGS=""
