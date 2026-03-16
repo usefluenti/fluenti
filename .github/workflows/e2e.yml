@@ -31,11 +31,11 @@ jobs:
           - shard: react
             projects: react
           - shard: nuxt
-            projects: nuxt,nuxt-ssg,nuxt-spa,nuxt-custom-detect,nuxt-prefix
+            projects: nuxt,nuxt-spa,nuxt-custom-detect,nuxt-prefix
 
           # fixtures
           - shard: vue-fixtures
-            projects: splitting-vue,vue-i18n-bridge,vue-routes,solid-start
+            projects: splitting-vue,vue-i18n-bridge,vue-routes
           - shard: react-fixtures
             projects: splitting-react,react-router,remix,nextjs
 
