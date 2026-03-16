@@ -44,6 +44,28 @@ describe('formatNumber', () => {
     const result = formatNumber(42, 'en', 'unknown', {})
     expect(result).toBe('42')
   })
+
+  // ─── Edge values ───────────────────────────────────────────────────────
+
+  it('formats NaN', () => {
+    const result = formatNumber(NaN, 'en')
+    expect(result).toBe('NaN')
+  })
+
+  it('formats Infinity', () => {
+    const result = formatNumber(Infinity, 'en')
+    expect(result).toContain('∞')
+  })
+
+  it('formats -Infinity', () => {
+    const result = formatNumber(-Infinity, 'en')
+    expect(result).toContain('∞')
+  })
+
+  it('formats 0', () => {
+    const result = formatNumber(0, 'en')
+    expect(result).toBe('0')
+  })
 })
 
 describe('formatDate', () => {
@@ -82,6 +104,24 @@ describe('formatDate', () => {
       relative: 'relative',
     })
     expect(result).toBeTruthy()
+    expect(typeof result).toBe('string')
+  })
+
+  // ─── Edge values ───────────────────────────────────────────────────────
+
+  it('handles NaN timestamp without throwing', () => {
+    const result = formatDate(NaN, 'en')
+    expect(typeof result).toBe('string')
+  })
+
+  it('handles epoch 0 timestamp', () => {
+    const result = formatDate(0, 'en')
+    expect(result).toBeTruthy()
+    expect(typeof result).toBe('string')
+  })
+
+  it('handles invalid Date object without throwing', () => {
+    const result = formatDate(new Date('invalid'), 'en')
     expect(typeof result).toBe('string')
   })
 })

@@ -54,3 +54,53 @@ describe('resolvePluralCategory', () => {
     expect(resolvePluralCategory(3, { 'few': 'x', 'other': 'y' }, 'ru')).toBe('few')
   })
 })
+
+// ─── Edge case values ──────────────────────────────────────────────────
+
+describe('edge case values', () => {
+  it('handles float 0.5', () => {
+    expect(resolvePlural(0.5, { 'one': 'x', 'other': 'y' }, 'en')).toBe('other')
+  })
+
+  it('handles float 1.5', () => {
+    expect(resolvePlural(1.5, { 'one': 'x', 'other': 'y' }, 'en')).toBe('other')
+  })
+
+  it('handles negative -1', () => {
+    const result = resolvePlural(-1, { 'one': 'x', 'other': 'y' }, 'en')
+    expect(result).toBe('one')
+  })
+
+  it('handles negative -5', () => {
+    expect(resolvePlural(-5, { 'one': 'x', 'other': 'y' }, 'en')).toBe('other')
+  })
+
+  it('handles NaN', () => {
+    const result = resolvePlural(NaN, { 'one': 'x', 'other': 'y' }, 'en')
+    expect(result).toBe('other')
+  })
+
+  it('handles Infinity', () => {
+    const result = resolvePlural(Infinity, { 'one': 'x', 'other': 'y' }, 'en')
+    expect(result).toBe('other')
+  })
+})
+
+// ─── Complex locales ───────────────────────────────────────────────────
+
+describe('complex locales', () => {
+  it('Polish (pl): one/few/many/other', () => {
+    const opts = { 'one': 'a', 'few': 'b', 'many': 'c', 'other': 'd' }
+    expect(resolvePlural(1, opts, 'pl')).toBe('one')
+    expect(resolvePlural(3, opts, 'pl')).toBe('few')
+    expect(resolvePlural(5, opts, 'pl')).toBe('many')
+    expect(resolvePlural(1.5, opts, 'pl')).toBe('other')
+  })
+
+  it('Japanese (ja): only other', () => {
+    const opts = { 'one': 'a', 'other': 'b' }
+    expect(resolvePlural(1, opts, 'ja')).toBe('other')
+    expect(resolvePlural(0, opts, 'ja')).toBe('other')
+    expect(resolvePlural(100, opts, 'ja')).toBe('other')
+  })
+})

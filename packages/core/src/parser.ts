@@ -180,6 +180,9 @@ export function parse(message: string): ASTNode[] {
             if (offset !== undefined) {
               node.offset = offset
             }
+            if (keyword === 'selectordinal') {
+              node.ordinal = true
+            }
             nodes.push(node)
             textStart = pos
             continue
