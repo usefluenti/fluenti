@@ -1,0 +1,193 @@
+---
+title: vue-i18n Bridge
+description: Run vue-i18n and Fluenti side by side for gradual migration
+---
+
+import { Steps, Tabs, TabItem, Aside } from '@astrojs/starlight/components'
+
+The `@fluenti/vue-i18n-compat` package lets you run **vue-i18n** and **Fluenti** in the same Vue app with shared locale state. Existing vue-i18n translations continue to work while you migrate messages to Fluenti one at a time.
+
+## When to use the bridge
+
+- You have an existing vue-i18n app and want to adopt Fluenti **gradually**
+- You can't do a big-bang migration of all translation files at once
+- You want ICU MessageFormat for new features while keeping legacy translations intact
+
+<Aside type="note">
+  If you're starting a new project, skip the bridge and use `@fluenti/vue` directly. The bridge is designed for incremental migration of existing codebases.
+</Aside>
+
+## Setup
+
+<Steps>
+
+1. **Install the bridge**
+
+   ```bash
+   pnpm add @fluenti/vue-i18n-compat @fluenti/core @fluenti/vue
+   ```
+
+   Your existing `vue-i18n` dependency stays in place.
+
+2. **Create the bridge in `main.ts`**
+
+   ```typescript
+   import { createApp } from 'vue'
+   import { createI18n } from 'vue-i18n'
+   import { createFluentVue } from '@fluenti/vue'
+   import { createFluentBridge } from '@fluenti/vue-i18n-compat'
+   import App from './App.vue'
+
+   // Your existing vue-i18n setup (unchanged)
+   const i18n = createI18n({
+     legacy: false,
+     locale: 'en',
+     messages: {
+       en: {
+         greeting: 'Hello!',
+         farewell: 'Goodbye, {name}!',
+         items: 'no items | one item | {count} items',
+       },
+       ja: {
+         greeting: 'こんにちは！',
+         farewell: 'さようなら、{name}！',
+         items: 'アイテムなし | 1個のアイテム | {count}個のアイテム',
+       },
+     },
+   })
+
+   // New Fluenti instance (migrated messages)
+   const fluenti = createFluentVue({
+     locale: 'en',
+     messages: {
+       en: { welcome: 'Welcome to our new system!' },
+       ja: { welcome: '新しいシステムへようこそ！' },
+     },
+   })
+
+   // Bridge them together
+   const bridge = createFluentBridge({
+     vueI18n: i18n,
+     fluenti,
+     priority: 'fluenti-first',
+   })
+
+   const app = createApp(App)
+   app.use(bridge)  // installs both plugins + sets up locale sync
+   app.mount('#app')
+   ```
+
+3. **Use in components**
+
+   ```vue
+   <script setup>
+   import { useI18n } from '@fluenti/vue-i18n-compat'
+
+   const { t, tc, te, locale, setLocale } = useI18n()
+   </script>
+
+   <template>
+     <!-- Legacy vue-i18n key — still works -->
+     <p>{{ t('greeting') }}</p>
+
+     <!-- New Fluenti key — also works -->
+     <p>{{ t('welcome') }}</p>
+
+     <!-- Legacy pipe-separated plurals -->
+     <p>{{ tc('items', count) }}</p>
+
+     <!-- Check if a key exists in either library -->
+     <p v-if="te('greeting')">Key exists</p>
+
+     <button @click="setLocale('ja')">日本語</button>
+   </template>
+   ```
+
+</Steps>
+
+## How lookups work
+
+When you call `t('key')`, the bridge checks both libraries based on the `priority` setting:
+
+<Tabs>
+  <TabItem label="fluenti-first (default)">
+    ```
+    t('key')
+      → Does Fluenti have this key?
+        → Yes: return Fluenti's translation
+        → No:  return vue-i18n's translation
+    ```
+    Use this when you're actively migrating messages to Fluenti. Newly migrated keys take precedence automatically.
+  </TabItem>
+  <TabItem label="vue-i18n-first">
+    ```
+    t('key')
+      → Does vue-i18n have this key?
+        → Yes: return vue-i18n's translation
+        → No:  return Fluenti's translation
+    ```
+    Use this during early adoption when you want vue-i18n to remain the source of truth for existing keys.
+  </TabItem>
+</Tabs>
+
+## Locale sync
+
+The bridge syncs locale state bidirectionally between vue-i18n and Fluenti:
+
+- Calling `setLocale('ja')` updates both libraries simultaneously
+- If external code changes `vueI18n.global.locale`, Fluenti's locale updates too
+- If external code changes the Fluenti locale, vue-i18n's locale updates too
+
+This ensures both libraries always agree on the current locale, no matter which API triggered the change.
+
+## Migrating a message
+
+To migrate a message from vue-i18n to Fluenti:
+
+<Steps>
+
+1. **Move the message** from your vue-i18n JSON to Fluenti's catalog (or write it as an ICU message)
+
+2. **Remove it** from the vue-i18n messages object
+
+3. **That's it** — `t('key')` now resolves from Fluenti instead
+
+</Steps>
+
+For plural messages, you also upgrade from vue-i18n's pipe syntax to ICU MessageFormat:
+
+```
+// vue-i18n (pipe-separated)
+"items": "no items | one item | {count} items"
+
+// Fluenti (ICU MessageFormat)
+"items": "{count, plural, =0 {no items} one {# item} other {# items}}"
+```
+
+## Migration checklist
+
+Once all messages have been migrated:
+
+1. Remove `vue-i18n` from your dependencies
+2. Remove `@fluenti/vue-i18n-compat` from your dependencies
+3. Replace `createFluentBridge()` with direct `app.use(fluenti)` setup
+4. Replace `import { useI18n } from '@fluenti/vue-i18n-compat'` with `import { useI18n } from '@fluenti/vue'`
+5. Remove `tc()` calls — use ICU `{count, plural, ...}` messages with `t()` instead
+
+## Accessing underlying instances
+
+If you need to call vue-i18n or Fluenti APIs directly:
+
+```vue
+<script setup>
+import { useI18n } from '@fluenti/vue-i18n-compat'
+
+const { fluenti, vueI18n } = useI18n()
+
+// Direct vue-i18n access
+const raw = vueI18n.tm('some.nested.key')
+
+// Direct Fluenti access
+const locales = fluenti.getLocales()
+</script>
+```

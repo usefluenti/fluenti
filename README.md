@@ -34,11 +34,17 @@ Traditional i18n libraries interpret messages at runtime, adding bundle weight a
 # Vue
 pnpm add @fluenti/core @fluenti/vue @fluenti/vite-plugin
 
+# Nuxt
+pnpm add @fluenti/nuxt @fluenti/core @fluenti/vue
+
 # SolidJS
 pnpm add @fluenti/core @fluenti/solid @fluenti/vite-plugin
 
 # CLI (message extraction & compilation)
 pnpm add -D @fluenti/cli
+
+# vue-i18n migration bridge (optional — run vue-i18n and Fluenti side by side)
+pnpm add @fluenti/vue-i18n-compat
 ```
 
 ## Quick Start
@@ -81,6 +87,8 @@ The Vite plugin loads compiled catalogs automatically — no manual wiring neede
 | [`@fluenti/solid`](packages/solid) <br> [![npm](https://img.shields.io/npm/v/@fluenti/solid?color=4f46e5&label=)](https://www.npmjs.com/package/@fluenti/solid) | SolidJS integration — `<Trans>`, `I18nProvider`, `useI18n()` |
 | [`@fluenti/cli`](packages/cli) <br> [![npm](https://img.shields.io/npm/v/@fluenti/cli?color=4f46e5&label=)](https://www.npmjs.com/package/@fluenti/cli) | Message extraction from Vue SFC & TSX, PO/JSON catalog compilation |
 | [`@fluenti/vite-plugin`](packages/vite-plugin) <br> [![npm](https://img.shields.io/npm/v/@fluenti/vite-plugin?color=4f46e5&label=)](https://www.npmjs.com/package/@fluenti/vite-plugin) | Vite build-time transforms, virtual modules, code splitting |
+| [`@fluenti/nuxt`](packages/nuxt) <br> [![npm](https://img.shields.io/npm/v/@fluenti/nuxt?color=4f46e5&label=)](https://www.npmjs.com/package/@fluenti/nuxt) | Nuxt module — locale-prefixed routing, SEO helpers, auto locale detection |
+| [`@fluenti/vue-i18n-compat`](packages/vue-i18n-compat) <br> [![npm](https://img.shields.io/npm/v/@fluenti/vue-i18n-compat?color=4f46e5&label=)](https://www.npmjs.com/package/@fluenti/vue-i18n-compat) | Progressive migration bridge between vue-i18n and Fluenti |
 
 ## Documentation
 
@@ -89,8 +97,10 @@ Full documentation — guides, API reference, and examples — is available at *
 - [Getting Started](https://fluenti.dev/getting-started/introduction/)
 - [Vue Quick Start](https://fluenti.dev/getting-started/quick-start-vue/)
 - [SolidJS Quick Start](https://fluenti.dev/getting-started/quick-start-solid/)
+- [Nuxt Quick Start](https://fluenti.dev/getting-started/quick-start-nuxt/)
 - [Code Splitting](https://fluenti.dev/advanced/code-splitting/)
 - [SSR Guide](https://fluenti.dev/guides/ssr/)
+- [vue-i18n Migration](https://fluenti.dev/guides/vue-i18n-migration/)
 
 ## License
 

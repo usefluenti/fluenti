@@ -1,0 +1,21 @@
+{
+  "name": "e2e-vue-i18n-bridge",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@fluenti/core": "workspace:*",
+    "@fluenti/vue": "workspace:*",
+    "@fluenti/vue-i18n-compat": "workspace:*",
+    "vue": "^3.5",
+    "vue-i18n": "^10"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^6",
+    "typescript": "^5.9",
+    "vite": "^8"
+  }
+}

@@ -33,6 +33,36 @@ export default defineConfig({
       use: { baseURL: 'http://localhost:5180' },
       testMatch: '**/splitting-vue.spec.ts',
     },
+    {
+      name: 'vue-i18n-bridge',
+      use: { baseURL: 'http://localhost:5181' },
+      testMatch: '**/vue-i18n-bridge.spec.ts',
+    },
+    {
+      name: 'nuxt-routes',
+      use: { baseURL: 'http://localhost:5182' },
+      testMatch: '**/nuxt-routes.spec.ts',
+    },
+    {
+      name: 'nuxt-ssg',
+      use: { baseURL: 'http://localhost:5183' },
+      testMatch: '**/nuxt-ssg.spec.ts',
+    },
+    {
+      name: 'nuxt-spa',
+      use: { baseURL: 'http://localhost:5184' },
+      testMatch: '**/nuxt-spa.spec.ts',
+    },
+    {
+      name: 'nuxt-custom-detect',
+      use: { baseURL: 'http://localhost:5185' },
+      testMatch: '**/nuxt-custom-detect.spec.ts',
+    },
+    {
+      name: 'nuxt-prefix',
+      use: { baseURL: 'http://localhost:5186' },
+      testMatch: '**/nuxt-prefix.spec.ts',
+    },
   ],
   webServer: [
     {
@@ -64,6 +94,42 @@ export default defineConfig({
       port: 5180,
       reuseExistingServer: true,
       timeout: 60_000,
+    },
+    {
+      command: 'cd e2e/fixtures/vue-i18n-bridge && pnpm build && pnpm preview --port 5181',
+      port: 5181,
+      reuseExistingServer: true,
+      timeout: 60_000,
+    },
+    {
+      command: 'cd e2e/fixtures/nuxt-routes && pnpm build && pnpm preview --port 5182',
+      port: 5182,
+      reuseExistingServer: true,
+      timeout: 60_000,
+    },
+    {
+      command: 'cd e2e/fixtures/nuxt-ssg && pnpm generate && npx serve .output/public -l 5183',
+      port: 5183,
+      reuseExistingServer: true,
+      timeout: 120_000,
+    },
+    {
+      command: 'cd e2e/fixtures/nuxt-spa && pnpm build && pnpm preview --port 5184',
+      port: 5184,
+      reuseExistingServer: true,
+      timeout: 120_000,
+    },
+    {
+      command: 'cd e2e/fixtures/nuxt-custom-detect && pnpm build && pnpm preview --port 5185',
+      port: 5185,
+      reuseExistingServer: true,
+      timeout: 120_000,
+    },
+    {
+      command: 'cd e2e/fixtures/nuxt-prefix && pnpm build && pnpm preview --port 5186',
+      port: 5186,
+      reuseExistingServer: true,
+      timeout: 120_000,
     },
   ],
 })
