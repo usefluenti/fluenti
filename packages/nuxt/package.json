@@ -29,8 +29,8 @@
   },
   "files": ["dist"],
   "scripts": {
-    "build": "tsup",
-    "dev": "tsup --watch",
+    "build": "vite build",
+    "dev": "vite build --watch",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
@@ -44,8 +44,9 @@
   },
   "devDependencies": {
     "typescript": "^5.9",
+    "vite": "^8",
+    "vite-plugin-dts": "^4",
     "vitest": "^4",
-    "tsup": "^8",
     "vue": "^3.5",
     "nuxt": "^3.17",
     "vue-router": "^4"
