@@ -42,6 +42,12 @@ export function withFluenti(options?: FluentiNextOptions) {
   const format = options?.format ?? 'po'
   const autoCompile = options?.autoCompile ?? true
 
+  // Pass serverModule to the loader via process.env
+  // (Turbopack loaders only accept string paths, no options object)
+  if (options?.serverModule) {
+    process.env['__FLUENTI_SERVER_MODULE'] = options.serverModule
+  }
+
   const compileOptions: CompileOptions = { catalogDir, compileOutDir, locales, format }
   const loaderPath = getLoaderPath()
 

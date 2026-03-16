@@ -35,4 +35,13 @@ export interface FluentiNextOptions {
    * @default true
    */
   autoCompile?: boolean
+
+  /**
+   * Path to the server i18n module that calls `configureServerI18n()`.
+   * When set, `t``\`\`` and `t()` in Server Components are automatically
+   * transformed to use `__getServerI18n()` from `@fluenti/next/server`.
+   *
+   * @example './src/lib/i18n.server'
+   */
+  serverModule?: string
 }

@@ -136,6 +136,18 @@ export interface ServerI18n {
   getI18n: () => Promise<FluentInstanceExtended & { locale: string }>
 
   /**
+   * Synchronous version of `getI18n()`.
+   * Returns the cached i18n instance for the current request.
+   *
+   * Requires that `setLocale()` has been called **and** messages have been
+   * pre-loaded (via a prior `await getI18n()` or `await setLocale()` from
+   * `@fluenti/next/server`).
+   *
+   * @internal Used by `@fluenti/next` loader transform.
+   */
+  getI18nSync: () => FluentInstanceExtended & { locale: string }
+
+  /**
    * `<Trans>` for React Server Components.
    * Async component — automatically resolves the i18n instance.
    *
@@ -349,5 +361,16 @@ export function createServerI18n(config: ServerI18nConfig): ServerI18n {
     return createElement(Fragment, null, i18n.n(value, style))
   }
 
-  return { setLocale, getI18n, Trans, Plural, DateTime, NumberFormat }
+  function getI18nSync(): FluentInstanceExtended & { locale: string } {
+    const store = getRequestStore()
+    if (!store.instance) {
+      throw new Error(
+        '[fluenti] No i18n instance available synchronously. ' +
+          'Ensure `await setLocale(locale)` is called in your root layout before rendering.',
+      )
+    }
+    return store.instance
+  }
+
+  return { setLocale, getI18n, getI18nSync, Trans, Plural, DateTime, NumberFormat }
 }

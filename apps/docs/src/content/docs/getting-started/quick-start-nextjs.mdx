@@ -24,12 +24,13 @@ import { Steps, Tabs, TabItem, Aside } from '@astrojs/starlight/components'
      locales: ['en', 'ja', 'zh'],
      catalogDir: './locales',
      format: 'po',
+     serverModule: './src/lib/i18n.server',
    })({
      reactStrictMode: true,
    })
    ```
 
-   This adds the Fluenti webpack/turbopack loader and enables auto-compilation of catalogs in dev mode.
+   `serverModule` enables `t``\`\`` in Server Components — the loader automatically transforms them using the server i18n singleton.
 
 3. **Create `fluenti.config.ts`**
 
@@ -49,9 +50,9 @@ import { Steps, Tabs, TabItem, Aside } from '@astrojs/starlight/components'
 
    ```typescript
    // src/lib/i18n.server.ts
-   import { createServerI18n } from '@fluenti/react/server'
+   import { configureServerI18n } from '@fluenti/next/server'
 
-   export const { setLocale, getI18n, Trans, Plural, DateTime, NumberFormat } = createServerI18n({
+   export const { setLocale, getI18n, Trans, Plural, DateTime, NumberFormat } = configureServerI18n({
      loadMessages: async (locale: string) => {
        switch (locale) {
          case 'ja': return import('@/locales/compiled/ja')
@@ -67,6 +68,10 @@ import { Steps, Tabs, TabItem, Aside } from '@astrojs/starlight/components'
    })
    ```
 
+   <Aside type="tip">
+     Use `configureServerI18n` from `@fluenti/next/server` (not `createServerI18n` from `@fluenti/react/server`). It makes `setLocale` async to pre-load messages, enabling zero-await `t``\`\`` in Server Components.
+   </Aside>
+
 5. **Set locale in your root layout**
 
    ```tsx
@@ -76,7 +81,7 @@ import { Steps, Tabs, TabItem, Aside } from '@astrojs/starlight/components'
 
    export default async function RootLayout({ children }: { children: React.ReactNode }) {
      const locale = (await cookies()).get('locale')?.value ?? 'en'
-     setLocale(locale)
+     await setLocale(locale)
 
      return (
        <html lang={locale}>
@@ -86,21 +91,23 @@ import { Steps, Tabs, TabItem, Aside } from '@astrojs/starlight/components'
    }
    ```
 
+   `await setLocale()` pre-loads messages into the per-request cache. After this, all child Server Components can access translations synchronously.
+
 6. **Write a page with translations**
 
    <Tabs>
      <TabItem label="Server Component">
        ```tsx
-       // src/app/page.tsx
-       import { getI18n, Trans, Plural } from '@/lib/i18n.server'
+       // src/app/page.tsx — zero imports, zero await
+       import { Trans, Plural } from '@/lib/i18n.server'
 
-       export default async function Home() {
-         const { t } = await getI18n()
+       export default function Home() {
+         const name = 'World'
 
          return (
            <div>
-             <h1>{t('Welcome to my app')}</h1>
-             <p>{t('Hello, {name}!', { name: 'World' })}</p>
+             <h1>{t`Welcome to my app`}</h1>
+             <p>{t`Hello, ${name}!`}</p>
 
              <Trans>Read the <a href="/docs">documentation</a> for details.</Trans>
              <Plural value={5} one="# item" other="# items" />
@@ -108,21 +115,22 @@ import { Steps, Tabs, TabItem, Aside } from '@astrojs/starlight/components'
          )
        }
        ```
+
+       No `await getI18n()` needed. The loader transforms `t``\`\`` to `__getServerI18n().t(...)` at build time — a synchronous call into the pre-loaded per-request cache.
      </TabItem>
      <TabItem label="Client Component">
        ```tsx
        // src/components/SearchBar.tsx
        'use client'
-       import { useI18n } from '@fluenti/react'
 
        export function SearchBar() {
-         const { i18n } = useI18n()
-
          return (
-           <input placeholder={i18n.t('Search...')} />
+           <input placeholder={t`Search...`} />
          )
        }
        ```
+
+       In client components, `t``\`\`` is transformed to `__i18n.t(...)` with an auto-injected `useI18n()` hook.
      </TabItem>
    </Tabs>
 
@@ -144,8 +152,8 @@ import { Steps, Tabs, TabItem, Aside } from '@astrojs/starlight/components'
 
 | Feature | Without plugin | With plugin |
 |---------|---------------|-------------|
-| `t`` ` `` tagged templates | Not available | Compiled to `__i18n.t()` at build time |
-| `t()` shorthand | Not available | Auto-injected `useI18n` hook |
+| `t``\`\`` in Server Components | Not available | Compiled to `__getServerI18n().t()` — sync, zero await |
+| `t``\`\`` in Client Components | Not available | Compiled to `__i18n.t()` with auto-injected hook |
 | Catalog compilation | Manual `fluenti compile` | Auto-compile on file change in dev |
 | Turbopack support | N/A | Loader registered via `turbopack.rules` |
 
@@ -153,15 +161,12 @@ import { Steps, Tabs, TabItem, Aside } from '@astrojs/starlight/components'
 
 | | Server Components (RSC) | Client Components |
 |---|---|---|
-| Import from | `@/lib/i18n.server` | `@fluenti/react` |
-| i18n access | `await getI18n()` | `useI18n()` hook |
-| Components | `Trans`, `Plural` from server setup | `Trans`, `Plural` from `@fluenti/react` |
-| Rendering | Async — runs on server only | Hydrated on client |
-| `t`` ` `` transform | Not needed (use `t()` from `getI18n()`) | Works with the plugin |
+| How `t``\`\`` works | → `__getServerI18n().t()` (sync, from per-request cache) | → `__i18n.t()` (from React Context via hook) |
+| Components | `Trans`, `Plural` from `@/lib/i18n.server` | `Trans`, `Plural` from `@fluenti/react` |
+| Rendering | Runs on server only — zero client JS | Hydrated on client |
+| Prerequisite | `await setLocale()` in layout | `<I18nProvider>` wrapper |
 
-<Aside type="caution">
-  The `t`` ` `` tagged template transform only works in **client components** (files with `'use client'`). Server Components should use `const { t } = await getI18n()` directly.
-</Aside>
+Both modes are fully automatic — write `t``\`\`` anywhere, the loader picks the right strategy based on whether the file has `'use client'`.
 
 ## Using with `<I18nProvider>` (Client Components)
 
@@ -195,7 +200,7 @@ import { cookies } from 'next/headers'
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const locale = (await cookies()).get('locale')?.value ?? 'en'
-  setLocale(locale)
+  await setLocale(locale)
 
   return (
     <html lang={locale}>

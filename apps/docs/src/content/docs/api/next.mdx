@@ -1,6 +1,6 @@
 ---
 title: "@fluenti/next"
-description: Next.js plugin API reference — webpack loader, turbopack support, and auto-compilation
+description: Next.js plugin API reference — webpack loader, turbopack support, RSC transforms, and auto-compilation
 ---
 
 ## `withFluenti(options?)`
@@ -16,6 +16,7 @@ export default withFluenti({
   catalogDir: './locales',
   compileOutDir: './src/locales/compiled',
   format: 'po',
+  serverModule: './src/lib/i18n.server',
 })({
   reactStrictMode: true,
 })
@@ -31,6 +32,7 @@ export default withFluenti({
 | `locales` | `string[]?` | `[sourceLocale]` | List of locale codes to compile |
 | `format` | `'json' \| 'po'?` | `'po'` | Catalog file format |
 | `autoCompile` | `boolean?` | `true` | Auto-compile catalogs and watch for changes in dev mode |
+| `serverModule` | `string?` | — | Path to the server i18n module. Enables `t``\`\`` in Server Components |
 
 ### Return value
 
@@ -58,22 +60,89 @@ export default withFluenti({ locales: ['en', 'ja'] })({
 
 ---
 
+## `@fluenti/next/server`
+
+Server-side i18n module for Next.js App Router.
+
+### `configureServerI18n(config)`
+
+Wraps `createServerI18n` from `@fluenti/react/server` with two enhancements:
+
+1. **`setLocale()` is async** — pre-loads messages into the per-request `React.cache`, so downstream `t``\`\`` calls resolve synchronously
+2. **Registers a singleton** — the loader's `__getServerI18n()` reads from this singleton
+
+```typescript
+// src/lib/i18n.server.ts
+import { configureServerI18n } from '@fluenti/next/server'
+
+export const { setLocale, getI18n, Trans, Plural, DateTime, NumberFormat } =
+  configureServerI18n({
+    loadMessages: (locale) => import(`@/locales/compiled/${locale}`),
+    fallbackLocale: 'en',
+    resolveLocale: async () => {
+      const { cookies } = await import('next/headers')
+      return (await cookies()).get('locale')?.value ?? 'en'
+    },
+  })
+```
+
+### Return value (`NextServerI18n`)
+
+Same as `ServerI18n` from `@fluenti/react/server`, except:
+
+| Property | Type | Difference |
+|----------|------|------------|
+| `setLocale` | `(locale: string) => Promise<void>` | **Async** — pre-loads messages. Must be `await`ed in the layout. |
+
+All other properties (`getI18n`, `Trans`, `Plural`, `DateTime`, `NumberFormat`, `getI18nSync`) are unchanged.
+
+---
+
 ## Webpack Loader
 
-The Fluenti loader transforms React source files at build time. It handles two patterns:
+The Fluenti loader transforms React source files at build time. It detects whether a file is a Server Component or Client Component and applies the appropriate transform.
 
-### Tagged template: `t`` ` ``
+### Server Components (no `'use client'`)
+
+When `serverModule` is configured, files without `'use client'` use the server transform:
+
+```tsx
+// Input
+const msg = t`Hello ${name}`
+
+// Output
+import { __getServerI18n } from '@fluenti/next/server'
+const msg = __getServerI18n().t('Hello {name}', { name: name })
+```
+
+`__getServerI18n()` is a synchronous function — not a hook. It reads the pre-loaded i18n instance from `React.cache` (per-request). No `await`, no `useContext`.
+
+### Client Components (`'use client'`)
+
+Files with `'use client'` use the client transform:
+
+```tsx
+// Input
+'use client'
+const msg = t`Hello ${name}`
+
+// Output
+'use client'
+import { __useI18n } from '@fluenti/react'
+const __i18n = __useI18n()
+const msg = __i18n.t('Hello {name}', { name: name })
+```
+
+### Tagged template: `t``\`\``
 
 ```tsx
 // Input
 const msg = t`Hello ${name}`
 const info = t`You have ${count} items in ${category}`
 
-// Output
-import { __useI18n } from '@fluenti/react'
-const __i18n = __useI18n()
-const msg = __i18n.t('Hello {name}', { name: name })
-const info = __i18n.t('You have {count} items in {category}', { count: count, category: category })
+// Server output
+const msg = __getServerI18n().t('Hello {name}', { name: name })
+const info = __getServerI18n().t('You have {count} items in {category}', { count: count, category: category })
 ```
 
 #### Expression handling
@@ -90,29 +159,18 @@ const info = __i18n.t('You have {count} items in {category}', { count: count, ca
 // Input
 const msg = t('Welcome to {app}', { app: 'MyApp' })
 
-// Output
-const msg = __i18n.t('Welcome to {app}', { app: 'MyApp' })
+// Server output
+const msg = __getServerI18n().t('Welcome to {app}', { app: 'MyApp' })
 ```
 
 Only standalone `t()` calls are transformed. Method calls like `i18n.t()` or `$t()` are left untouched.
-
-### Auto-injection
-
-When any `t`` ` `` or `t()` is detected, the loader automatically injects:
-
-```typescript
-import { __useI18n } from '@fluenti/react'
-const __i18n = __useI18n()
-```
-
-This means files using `t`` ` `` must be React components (the hook call must be inside a component function body).
 
 ### File filtering
 
 The loader only processes files that:
 - Match `.tsx`, `.jsx`, `.ts`, or `.js` extensions
 - Are **not** inside `node_modules`
-- Contain `t`` ` `` or `t(` patterns (quick regex check — files without these patterns are passed through unchanged)
+- Contain `t``\`\`` or `t(` patterns (quick regex check — files without these patterns are passed through unchanged)
 
 ---
 
@@ -168,8 +226,9 @@ If you already have a `turbopack` config, the plugin merges its rules (your rule
 
 | Feature | `@fluenti/vite-plugin` | `@fluenti/next` |
 |---------|----------------------|-----------------|
-| `t`` ` `` transform | ✓ | ✓ |
+| `t``\`\`` transform | ✓ | ✓ |
 | `t()` transform | ✓ | ✓ |
+| Server Component support | — | ✓ (`__getServerI18n()`) |
 | Vue `v-t` directive | ✓ | — (React only) |
 | Solid JSX transform | ✓ | — (React only) |
 | Virtual modules | ✓ | — |

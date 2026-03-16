@@ -185,26 +185,26 @@ import { Plural } from '@fluenti/react'
 
 For **Next.js** projects, use [`@fluenti/next`](/getting-started/quick-start-nextjs/) instead of the Vite plugin. It unlocks:
 
-- **Server Component translations** — `t()` calls run on the server, translation strings are never shipped to the client
-- **Zero client JS for static content** — pages with only server-rendered translations send no i18n runtime to the browser
+- **`t``\`\`` in Server Components** — same tagged template syntax works everywhere, no `await getI18n()` needed
+- **Zero client JS for static content** — translations resolve on the server, nothing shipped to the browser
 - **Auto-compilation in dev** — catalogs recompile on file change, no manual `fluenti compile` during development
 - **Turbopack support** — loader works with both webpack and turbopack
 
 ```tsx
-// src/app/page.tsx — Server Component, zero client JS
-import { getI18n, Trans } from '@/lib/i18n.server'
-
-export default async function Home() {
-  const { t } = await getI18n()
+// src/app/page.tsx — Server Component, zero imports, zero await
+export default function Home() {
+  const name = 'World'
 
   return (
     <div>
-      <h1>{t('Welcome to my app')}</h1>
-      <Trans>Read the <a href="/docs">documentation</a> for details.</Trans>
+      <h1>{t`Welcome to my app`}</h1>
+      <p>{t`Hello, ${name}!`}</p>
     </div>
   )
 }
 ```
+
+The loader detects Server Components (no `'use client'`) and transforms `t``\`\`` to `__getServerI18n().t(...)` — a synchronous call into the pre-loaded per-request cache. No async, no hook, no manual import.
 
 See the [Next.js Quick Start](/getting-started/quick-start-nextjs/) for a full setup guide.
 

@@ -2,10 +2,15 @@
  * Compile-time transforms for React/Next.js.
  *
  * Ported from @fluenti/vite-plugin — React-only subset:
- * - t`tagged template` → __i18n.t('message', { vars })
- * - t('string call')   → __i18n.t('message', { vars })
- * - Auto-injects `import { __useI18n } from '@fluenti/react'`
+ * - t`tagged template` → compiled t() call
+ * - t('string call')   → compiled t() call
+ *
+ * Two modes:
+ * - **Client** (`'use client'`): `t`msg`` → `__i18n.t('msg')`, auto-injects `__useI18n` hook
+ * - **Server** (default in App Router): `t`msg`` → `__getServerI18n().t('msg')`, auto-injects import
  */
+
+export type TransformMode = 'client' | 'server'
 
 // ─── Expression classifier ──────────────────────────────────────────────────
 
@@ -23,9 +28,17 @@ function classifyExpression(expr: string): string {
 
 // ─── t`` tagged template transform ──────────────────────────────────────────
 
-export function transformTaggedTemplate(code: string): { code: string; needsImport: boolean } {
+/**
+ * @param mode - 'client' uses `__i18n.t(...)`, 'server' uses `__getServerI18n().t(...)`
+ */
+export function transformTaggedTemplate(
+  code: string,
+  mode: TransformMode = 'client',
+): { code: string; needsImport: boolean } {
   let result = code
   let needsImport = false
+
+  const callPrefix = mode === 'server' ? '__getServerI18n().t' : '__i18n.t'
 
   const taggedRegex = /\bt`((?:[^`\\]|\\.|(\$\{(?:[^}]|\{[^}]*\})*\}))*)`/g
   let match: RegExpExecArray | null
@@ -93,7 +106,7 @@ export function transformTaggedTemplate(code: string): { code: string; needsImpo
       ? `, { ${valueEntries.join(', ')} }`
       : ''
 
-    const replacement = `__i18n.t('${icuMessage}'${valuesObj})`
+    const replacement = `${callPrefix}('${icuMessage}'${valuesObj})`
     result = result.replace(fullMatch, replacement)
   }
 
@@ -107,8 +120,8 @@ export function transformTaggedTemplate(code: string): { code: string; needsImpo
     const values = match[3]?.trim()
 
     const replacement = values
-      ? `__i18n.t('${message}', ${values})`
-      : `__i18n.t('${message}')`
+      ? `${callPrefix}('${message}', ${values})`
+      : `${callPrefix}('${message}')`
 
     funcReplacements.push({ start: match.index, end: match.index + match[0].length, replacement })
   }
@@ -124,9 +137,25 @@ export function transformTaggedTemplate(code: string): { code: string; needsImpo
 
 // ─── Import injection ───────────────────────────────────────────────────────
 
-export function injectImport(code: string): string {
+export function injectClientImport(code: string): string {
   const importLine = `import { __useI18n } from '@fluenti/react';\nconst __i18n = __useI18n();\n`
   return importLine + code
+}
+
+export function injectServerImport(code: string): string {
+  const importLine = `import { __getServerI18n } from '@fluenti/next/server';\n`
+  return importLine + code
+}
+
+/** @deprecated Use `injectClientImport` instead */
+export const injectImport = injectClientImport
+
+// ─── Helpers ────────────────────────────────────────────────────────────────
+
+function hasUseClientDirective(code: string): boolean {
+  // Match 'use client' or "use client" at the start of the file
+  // (possibly preceded by comments or whitespace)
+  return /^(?:\s*\/\/[^\n]*\n|\s*\/\*[\s\S]*?\*\/\s*)*\s*['"]use client['"]/.test(code)
 }
 
 // ─── Full transform pipeline ────────────────────────────────────────────────
@@ -143,9 +172,21 @@ export function transform(code: string, id: string): TransformResult | null {
   // Quick check: does the file contain t` or t( patterns?
   if (!/\bt[`(]/.test(code)) return null
 
-  const result = transformTaggedTemplate(code)
+  const isClient = hasUseClientDirective(code)
+  const serverModule = process.env['__FLUENTI_SERVER_MODULE']
+
+  // Determine transform mode:
+  // - Files with 'use client' → always client mode
+  // - Files without 'use client' + serverModule configured → server mode
+  // - Files without 'use client' + no serverModule → client mode (legacy/fallback)
+  const mode: TransformMode = !isClient && serverModule ? 'server' : 'client'
+
+  const result = transformTaggedTemplate(code, mode)
   if (!result.needsImport) return null
 
-  const finalCode = injectImport(result.code)
+  const finalCode = mode === 'server'
+    ? injectServerImport(result.code)
+    : injectClientImport(result.code)
+
   return { code: finalCode, transformed: true }
 }

@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, afterEach } from 'vitest'
 import { withFluenti } from '../src/index'
 
 describe('withFluenti', () => {
@@ -78,5 +78,22 @@ describe('withFluenti', () => {
     const config = wrapper({})
 
     expect(typeof config.webpack).toBe('function')
+  })
+
+  describe('serverModule', () => {
+    afterEach(() => {
+      delete process.env.__FLUENTI_SERVER_MODULE
+    })
+
+    it('sets process.env.__FLUENTI_SERVER_MODULE when serverModule is provided', () => {
+      withFluenti({ serverModule: './src/lib/i18n.server' })
+      expect(process.env.__FLUENTI_SERVER_MODULE).toBe('./src/lib/i18n.server')
+    })
+
+    it('does not set env var when serverModule is not provided', () => {
+      delete process.env.__FLUENTI_SERVER_MODULE
+      withFluenti({ locales: ['en'] })
+      expect(process.env.__FLUENTI_SERVER_MODULE).toBeUndefined()
+    })
   })
 })
