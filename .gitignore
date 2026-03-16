@@ -17,4 +17,5 @@ spec
 test-results/
 playwright-report/
 .vinxi
+app.config.timestamp*
 **/locales/compiled/

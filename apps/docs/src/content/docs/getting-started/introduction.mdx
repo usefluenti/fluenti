@@ -116,6 +116,8 @@ Fluenti's pipeline turns your source text into optimized, per-locale bundles at 
 | `@fluenti/solid` | SolidJS integration: `I18nProvider`, `<Trans>`, `<Plural>`, `<Select>`, `useI18n()` hook |
 | `@fluenti/cli` | Message extraction (Vue SFC + TSX), PO/JSON catalog format, compilation |
 | `@fluenti/vite-plugin` | Vite plugin: virtual modules, build-time `v-t` transforms, per-route code splitting |
+| `@fluenti/nuxt` | Nuxt module: locale-prefixed routing (4 strategies), SEO helpers, composables |
+| `@fluenti/vue-i18n-compat` | Progressive migration bridge — run vue-i18n and Fluenti side by side |
 
 ## Installation
 
@@ -153,16 +155,36 @@ Fluenti's pipeline turns your source text into optimized, per-locale bundles at 
   </TabItem>
 </Tabs>
 
+### Nuxt
+
+<Tabs>
+  <TabItem label="pnpm">
+    ```bash
+    pnpm add @fluenti/nuxt @fluenti/core @fluenti/vue
+    pnpm add -D @fluenti/cli @fluenti/vite-plugin
+    ```
+  </TabItem>
+  <TabItem label="npm">
+    ```bash
+    npm install @fluenti/nuxt @fluenti/core @fluenti/vue
+    npm install -D @fluenti/cli @fluenti/vite-plugin
+    ```
+  </TabItem>
+</Tabs>
+
 ### Requirements
 
 - Node.js >= 18
 - Vue >= 3.4 (for Vue bindings)
 - SolidJS >= 1.8 (for Solid bindings)
 - Vite >= 5 (for Vite plugin)
+- Nuxt >= 3 (for Nuxt module)
 
 ## Next steps
 
 - [Quick Start (Vue)](/getting-started/quick-start-vue/) — build your first translated Vue app
+- [Quick Start (Nuxt)](/getting-started/quick-start-nuxt/) — locale-prefixed routing and SEO for Nuxt
 - [Quick Start (SolidJS)](/getting-started/quick-start-solid/) — build your first translated Solid app
 - [The v-t directive](/guides/v-t-directive/) — deep dive into compile-time transforms
 - [Components](/guides/components/) — Trans, Plural, and Select components
+- [vue-i18n bridge](/guides/vue-i18n-bridge/) — gradual migration from vue-i18n
