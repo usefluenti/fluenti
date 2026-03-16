@@ -898,12 +898,14 @@ function transformTaggedTemplate(
     // React: direct call (no useMemo — t() is a hash lookup, fast enough)
     // Vue: computed(() => ...)
     // Solid: createMemo(() => ...)
+    // Escape single quotes in the ICU message to avoid breaking the string literal
+    const escapedIcuMessage = icuMessage.replace(/'/g, "\\'")
     let replacement: string
     if (framework === 'react') {
-      replacement = `__i18n.t('${icuMessage}'${valuesObj})`
+      replacement = `__i18n.t('${escapedIcuMessage}'${valuesObj})`
     } else {
       const wrapperFn = framework === 'vue' ? 'computed' : 'createMemo'
-      replacement = `${wrapperFn}(() => __i18n.t('${icuMessage}'${valuesObj}))`
+      replacement = `${wrapperFn}(() => __i18n.t('${escapedIcuMessage}'${valuesObj}))`
     }
 
     result = result.replace(fullMatch, replacement)
@@ -950,14 +952,14 @@ function injectImport(code: string, framework: 'vue' | 'solid' | 'react'): strin
   const pkgMap = { vue: '@fluenti/vue', solid: '@fluenti/solid', react: '@fluenti/react' } as const
   const pkg = pkgMap[framework]
 
-  // For React, we import __useI18n (internal hook) and call it at component top level.
-  // The Vite plugin injects this at the top of the compiled module.
   // For Vue/Solid, this is module-level code that runs before setup/createI18n,
   // so we must lazily resolve the context on first property access via Proxy.
-  // For React, __useI18n is a hook called inside the component function body.
+  // For React, we use globalThis.__fluenti_i18n which is set by the I18nProvider
+  // at render time. We use a Proxy to defer access so that module-level code
+  // (e.g. msg`` descriptors) doesn't fail before the provider has mounted.
   let importLine: string
   if (framework === 'react') {
-    importLine = `import { __useI18n } from '${pkg}';\nconst __i18n = __useI18n();\n`
+    importLine = `const __i18n = new Proxy({}, { get: (_, p) => { const i = globalThis.__fluenti_i18n; if (!i) throw new Error('[fluenti] i18n not initialised — ensure <I18nProvider> is mounted'); return i[p]; } });\n`
   } else {
     importLine = `import { useI18n as __useI18n } from '${pkg}';\nlet __i18n_v;\nconst __i18n = new Proxy({}, { get: (_, p) => { __i18n_v ??= __useI18n(); return __i18n_v[p]; } });\n`
   }
@@ -988,13 +990,19 @@ function injectImport(code: string, framework: 'vue' | 'solid' | 'react'): strin
     return importLine + result
   }
 
-  // Check if createMemo is already imported for solid
+  // Check if createMemo is already imported for solid.
+  // We must check the import statement specifically, not just any occurrence of
+  // 'createMemo' in the code — the tagged template transform already injected
+  // createMemo() calls before this runs.
   let result = code
-  if (!code.includes('createMemo')) {
-    const solidImportRegex = /import\s*\{([^}]*)\}\s*from\s*['"]solid-js['"]/
-    const match = result.match(solidImportRegex)
-    if (match) {
-      const existing = match[1]!.split(',').map(s => s.trim()).filter(Boolean)
+  const solidImportRegex = /import\s*\{([^}]*)\}\s*from\s*['"]solid-js['"]/
+  const solidImportMatch = result.match(solidImportRegex)
+  const alreadyImported = solidImportMatch
+    ? solidImportMatch[1]!.split(',').map(s => s.trim()).some(s => s === 'createMemo')
+    : false
+  if (!alreadyImported) {
+    if (solidImportMatch) {
+      const existing = solidImportMatch[1]!.split(',').map(s => s.trim()).filter(Boolean)
       const merged = [...new Set([...existing, 'createMemo'])].join(', ')
       result = result.replace(solidImportRegex, `import { ${merged} } from 'solid-js'`)
     } else {

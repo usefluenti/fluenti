@@ -1,12 +1,9 @@
 import { createApp, ref, computed, type InjectionKey } from 'vue'
 import { createFluentVue } from '@fluenti/vue'
 import {
-  useLocalePath,
-  useSwitchLocalePath,
-  useLocaleHead,
   extractLocaleFromPath,
-} from '@fluenti/nuxt'
-import type { FluentNuxtRuntimeConfig } from '@fluenti/nuxt'
+} from '@fluenti/nuxt/client'
+import type { FluentNuxtRuntimeConfig } from '@fluenti/nuxt/client'
 import App from './App.vue'
 import router from './router'
 import { messages } from './locales/messages'

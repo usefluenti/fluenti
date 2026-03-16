@@ -48,14 +48,18 @@ export const SelectComp: Component<SelectProps> = (props) => {
 
   const resolvedTag = () => props.tag ?? 'span'
 
+  /** Resolve a value that may be a Solid accessor function from createMemo */
+  const resolve = (val: unknown): unknown =>
+    typeof val === 'function' && !(val as { length?: number }).length ? (val as () => unknown)() : val
+
   const content = () => {
     // options prop takes precedence over attrs
     if (props.options !== undefined) {
       const match = props.options[props.value]
       if (match !== undefined) {
-        return match
+        return resolve(match)
       }
-      return props.other
+      return resolve(props.other)
     }
 
     // Fall back to attrs for backwards compatibility
@@ -67,9 +71,9 @@ export const SelectComp: Component<SelectProps> = (props) => {
       props.value !== 'options' &&
       props.value !== 'tag'
     ) {
-      return attrMatch
+      return resolve(attrMatch)
     }
-    return props.other
+    return resolve(props.other)
   }
 
   return (<Dynamic component={resolvedTag()}>{content()}</Dynamic>) as JSX.Element
