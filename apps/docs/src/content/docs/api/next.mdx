@@ -117,6 +117,25 @@ const msg = __getServerI18n().t('Hello {name}', { name: name })
 
 `__getServerI18n()` is a synchronous function — not a hook. It reads the pre-loaded i18n instance from `React.cache` (per-request). No `await`, no `useContext`.
 
+#### Auto-injected components
+
+`<Trans>`, `<Plural>`, `<DateTime>`, and `<NumberFormat>` in server files are automatically rewritten to singleton versions from `@fluenti/next/server`:
+
+```tsx
+// Input — no imports needed
+export default function Page() {
+  return <Trans>Read the <a href="/docs">documentation</a>.</Trans>
+}
+
+// Output
+import { __Trans } from '@fluenti/next/server'
+export default function Page() {
+  return <__Trans>Read the <a href="/docs">documentation</a>.</__Trans>
+}
+```
+
+If a component is already imported (e.g. from `@/lib/i18n.server`), the loader leaves it untouched.
+
 ### Client Components (`'use client'`)
 
 Files with `'use client'` use the client transform:
@@ -170,7 +189,7 @@ Only standalone `t()` calls are transformed. Method calls like `i18n.t()` or `$t
 The loader only processes files that:
 - Match `.tsx`, `.jsx`, `.ts`, or `.js` extensions
 - Are **not** inside `node_modules`
-- Contain `t``\`\`` or `t(` patterns (quick regex check — files without these patterns are passed through unchanged)
+- Contain `t``\`\``, `t(`, or `<Trans>`/`<Plural>`/`<DateTime>`/`<NumberFormat>` patterns (quick regex check — files without these patterns are passed through unchanged)
 
 ---
 

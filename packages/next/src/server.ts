@@ -19,12 +19,20 @@
 
 import { createServerI18n } from '@fluenti/react/server'
 import type { ServerI18nConfig, ServerI18n } from '@fluenti/react/server'
+import type {
+  ServerTransProps,
+  ServerPluralProps,
+  ServerDateTimeProps,
+  ServerNumberProps,
+} from '@fluenti/react/server'
 import type { FluentInstanceExtended } from '@fluenti/core'
+import type { ReactElement } from 'react'
 
 export type { ServerI18nConfig } from '@fluenti/react/server'
 
 // Module-level singleton — set by configureServerI18n()
 let _getI18nSync: (() => FluentInstanceExtended & { locale: string }) | null = null
+let _serverI18n: ServerI18n | null = null
 
 /**
  * The object returned by `configureServerI18n`.
@@ -73,6 +81,7 @@ export interface NextServerI18n extends Omit<ServerI18n, 'setLocale'> {
  */
 export function configureServerI18n(config: ServerI18nConfig): NextServerI18n {
   const serverI18n = createServerI18n(config)
+  _serverI18n = serverI18n
   _getI18nSync = serverI18n.getI18nSync
 
   const origSetLocale = serverI18n.setLocale
@@ -108,4 +117,42 @@ export function __getServerI18n(): FluentInstanceExtended & { locale: string } {
     )
   }
   return _getI18nSync()
+}
+
+function ensureConfigured(): ServerI18n {
+  if (!_serverI18n) {
+    throw new Error(
+      '[fluenti] Server i18n not configured. ' +
+        'Ensure your server i18n module calls configureServerI18n() from @fluenti/next/server.',
+    )
+  }
+  return _serverI18n
+}
+
+/**
+ * @internal Singleton `<Trans>` for auto-injection by the loader.
+ */
+export async function __Trans(props: ServerTransProps): Promise<ReactElement> {
+  return ensureConfigured().Trans(props)
+}
+
+/**
+ * @internal Singleton `<Plural>` for auto-injection by the loader.
+ */
+export async function __Plural(props: ServerPluralProps): Promise<ReactElement> {
+  return ensureConfigured().Plural(props)
+}
+
+/**
+ * @internal Singleton `<DateTime>` for auto-injection by the loader.
+ */
+export async function __DateTime(props: ServerDateTimeProps): Promise<ReactElement> {
+  return ensureConfigured().DateTime(props)
+}
+
+/**
+ * @internal Singleton `<NumberFormat>` for auto-injection by the loader.
+ */
+export async function __NumberFormat(props: ServerNumberProps): Promise<ReactElement> {
+  return ensureConfigured().NumberFormat(props)
 }

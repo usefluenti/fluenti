@@ -99,8 +99,6 @@ import { Steps, Tabs, TabItem, Aside } from '@astrojs/starlight/components'
      <TabItem label="Server Component">
        ```tsx
        // src/app/page.tsx — zero imports, zero await
-       import { Trans, Plural } from '@/lib/i18n.server'
-
        export default function Home() {
          const name = 'World'
 
@@ -116,7 +114,9 @@ import { Steps, Tabs, TabItem, Aside } from '@astrojs/starlight/components'
        }
        ```
 
-       No `await getI18n()` needed. The loader transforms `t``\`\`` to `__getServerI18n().t(...)` at build time — a synchronous call into the pre-loaded per-request cache.
+       Zero imports needed. The loader auto-injects everything at build time:
+       - `t``\`\`` → `__getServerI18n().t(...)` (synchronous call into pre-loaded cache)
+       - `<Trans>`, `<Plural>`, `<DateTime>`, `<NumberFormat>` → auto-imported from `@fluenti/next/server`
      </TabItem>
      <TabItem label="Client Component">
        ```tsx

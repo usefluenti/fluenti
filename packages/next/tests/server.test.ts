@@ -101,3 +101,37 @@ describe('configureServerI18n', () => {
     expect(serverI18n).toHaveProperty('NumberFormat')
   })
 })
+
+describe('singleton component exports', () => {
+  beforeEach(() => {
+    vi.resetModules()
+  })
+
+  it('__Trans throws when configureServerI18n has not been called', async () => {
+    const { __Trans } = await import('../src/server')
+    await expect(__Trans({ children: 'Hello' })).rejects.toThrow(
+      '[fluenti] Server i18n not configured',
+    )
+  })
+
+  it('__Plural throws when configureServerI18n has not been called', async () => {
+    const { __Plural } = await import('../src/server')
+    await expect(__Plural({ value: 1, other: 'items' })).rejects.toThrow(
+      '[fluenti] Server i18n not configured',
+    )
+  })
+
+  it('__DateTime throws when configureServerI18n has not been called', async () => {
+    const { __DateTime } = await import('../src/server')
+    await expect(__DateTime({ value: new Date() })).rejects.toThrow(
+      '[fluenti] Server i18n not configured',
+    )
+  })
+
+  it('__NumberFormat throws when configureServerI18n has not been called', async () => {
+    const { __NumberFormat } = await import('../src/server')
+    await expect(__NumberFormat({ value: 42 })).rejects.toThrow(
+      '[fluenti] Server i18n not configured',
+    )
+  })
+})

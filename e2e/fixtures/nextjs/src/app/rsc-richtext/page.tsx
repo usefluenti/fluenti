@@ -1,5 +1,4 @@
-import { Trans, Plural, DateTime, NumberFormat } from '@/lib/i18n.server'
-
+// No imports needed — Trans, Plural, DateTime, NumberFormat are auto-injected by the loader
 export default async function RSCRichTextPage() {
   return (
     <div data-testid="rsc-richtext-page">

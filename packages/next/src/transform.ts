@@ -4,10 +4,12 @@
  * Ported from @fluenti/vite-plugin — React-only subset:
  * - t`tagged template` → compiled t() call
  * - t('string call')   → compiled t() call
+ * - `<Trans>`, `<Plural>`, `<DateTime>`, `<NumberFormat>` in server files → auto-injected from singleton
  *
  * Two modes:
  * - **Client** (`'use client'`): `t`msg`` → `__i18n.t('msg')`, auto-injects `__useI18n` hook
- * - **Server** (default in App Router): `t`msg`` → `__getServerI18n().t('msg')`, auto-injects import
+ * - **Server** (default in App Router): `t`msg`` → `__getServerI18n().t('msg')`, auto-injects import;
+ *   also rewrites `<Trans>` → `<__Trans>` etc. with auto-imported singleton components
  */
 
 export type TransformMode = 'client' | 'server'
@@ -135,6 +137,45 @@ export function transformTaggedTemplate(
   return { code: result, needsImport }
 }
 
+// ─── Server Component rewriting ──────────────────────────────────────────────
+
+/** Components that can be auto-injected in server mode */
+const SERVER_COMPONENTS = ['Trans', 'Plural', 'DateTime', 'NumberFormat'] as const
+
+/**
+ * Detect `<Trans`, `<Plural`, `<DateTime`, `<NumberFormat` JSX usage
+ * and rewrite to `<__Trans`, `<__Plural`, etc.
+ *
+ * Only rewrites components that are NOT already imported by the user.
+ */
+export function rewriteServerComponents(
+  code: string,
+): { code: string; components: string[] } {
+  const components: string[] = []
+
+  let result = code
+  for (const name of SERVER_COMPONENTS) {
+    // Check if the component is used in JSX: <Trans or <Trans> or <Trans/> or </Trans>
+    const jsxUsage = new RegExp(`</?${name}[\\s/>]`)
+    if (!jsxUsage.test(result)) continue
+
+    // Check if user already imports this component (skip if so)
+    const importPattern = new RegExp(
+      `import\\s+(?:.*\\{[^}]*\\b${name}\\b[^}]*\\}|${name})\\s+from\\s+['"]`,
+    )
+    if (importPattern.test(result)) continue
+
+    // Rewrite: <Trans → <__Trans, </Trans → </__Trans
+    const rewriteOpen = new RegExp(`<${name}(?=[\\s/>])`, 'g')
+    const rewriteClose = new RegExp(`</${name}(?=[\\s>])`, 'g')
+    result = result.replace(rewriteOpen, `<__${name}`)
+    result = result.replace(rewriteClose, `</__${name}`)
+    components.push(name)
+  }
+
+  return { code: result, components }
+}
+
 // ─── Import injection ───────────────────────────────────────────────────────
 
 export function injectClientImport(code: string): string {
@@ -142,8 +183,12 @@ export function injectClientImport(code: string): string {
   return importLine + code
 }
 
-export function injectServerImport(code: string): string {
-  const importLine = `import { __getServerI18n } from '@fluenti/next/server';\n`
+export function injectServerImport(code: string, components: string[] = []): string {
+  const imports = ['__getServerI18n']
+  for (const name of components) {
+    imports.push(`__${name}`)
+  }
+  const importLine = `import { ${imports.join(', ')} } from '@fluenti/next/server';\n`
   return importLine + code
 }
 
@@ -169,8 +214,6 @@ export function transform(code: string, id: string): TransformResult | null {
   // Skip non-JS/TS files and node_modules
   if (id.includes('node_modules')) return null
   if (!id.match(/\.(tsx|jsx|ts|js)(\?|$)/)) return null
-  // Quick check: does the file contain t` or t( patterns?
-  if (!/\bt[`(]/.test(code)) return null
 
   const isClient = hasUseClientDirective(code)
   const serverModule = process.env['__FLUENTI_SERVER_MODULE']
@@ -181,12 +224,39 @@ export function transform(code: string, id: string): TransformResult | null {
   // - Files without 'use client' + no serverModule → client mode (legacy/fallback)
   const mode: TransformMode = !isClient && serverModule ? 'server' : 'client'
 
-  const result = transformTaggedTemplate(code, mode)
-  if (!result.needsImport) return null
+  // Quick check: does the file contain t`, t(, or server component patterns?
+  const hasTaggedOrCall = /\bt[`(]/.test(code)
+  const hasServerComponents = mode === 'server' && /<\/?(?:Trans|Plural|DateTime|NumberFormat)[\s/>]/.test(code)
 
-  const finalCode = mode === 'server'
-    ? injectServerImport(result.code)
-    : injectClientImport(result.code)
+  if (!hasTaggedOrCall && !hasServerComponents) return null
+
+  // Transform t`` and t() calls
+  const result = transformTaggedTemplate(code, mode)
+
+  // In server mode, also rewrite <Trans> → <__Trans> etc.
+  let serverComponents: string[] = []
+  let transformedCode = result.code
+  if (mode === 'server') {
+    const componentResult = rewriteServerComponents(transformedCode)
+    transformedCode = componentResult.code
+    serverComponents = componentResult.components
+  }
+
+  if (!result.needsImport && serverComponents.length === 0) return null
+
+  let finalCode: string
+  if (mode === 'server') {
+    // Only include __getServerI18n if t``/t() was used
+    if (result.needsImport) {
+      finalCode = injectServerImport(transformedCode, serverComponents)
+    } else {
+      // Only components, no t() — import just the components
+      const imports = serverComponents.map(n => `__${n}`)
+      finalCode = `import { ${imports.join(', ')} } from '@fluenti/next/server';\n` + transformedCode
+    }
+  } else {
+    finalCode = injectClientImport(transformedCode)
+  }
 
   return { code: finalCode, transformed: true }
 }

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { transform, transformTaggedTemplate, injectImport, injectClientImport, injectServerImport } from '../src/transform'
+import { transform, transformTaggedTemplate, rewriteServerComponents, injectImport, injectClientImport, injectServerImport } from '../src/transform'
 
 describe('transformTaggedTemplate', () => {
   it('transforms plain tagged template (client mode)', () => {
@@ -111,6 +111,14 @@ describe('injectServerImport', () => {
     expect(result).toContain("import { __getServerI18n } from '@fluenti/next/server'")
     expect(result).not.toContain('__useI18n')
     expect(result).not.toContain('const __i18n')
+  })
+
+  it('includes component imports when specified', () => {
+    const result = injectServerImport('const x = 1', ['Trans', 'Plural'])
+    expect(result).toContain('__getServerI18n')
+    expect(result).toContain('__Trans')
+    expect(result).toContain('__Plural')
+    expect(result).toContain("from '@fluenti/next/server'")
   })
 })
 
@@ -282,5 +290,112 @@ describe('transform edge cases', () => {
     const result = transformTaggedTemplate('const msg = t``')
     expect(result.needsImport).toBe(true)
     expect(result.code).toContain("__i18n.t('')")
+  })
+})
+
+// ─── Server Component rewriting ──────────────────────────────────────────────
+
+describe('rewriteServerComponents', () => {
+  it('rewrites <Trans> to <__Trans>', () => {
+    const code = '<Trans>Hello <a href="/docs">docs</a></Trans>'
+    const result = rewriteServerComponents(code)
+    expect(result.components).toEqual(['Trans'])
+    expect(result.code).toBe('<__Trans>Hello <a href="/docs">docs</a></__Trans>')
+  })
+
+  it('rewrites <Plural /> self-closing', () => {
+    const code = '<Plural value={5} one="# item" other="# items" />'
+    const result = rewriteServerComponents(code)
+    expect(result.components).toEqual(['Plural'])
+    expect(result.code).toBe('<__Plural value={5} one="# item" other="# items" />')
+  })
+
+  it('rewrites multiple components', () => {
+    const code = '<Trans>Hello</Trans>\n<Plural value={1} one="1" other="#" />\n<DateTime value={now} />'
+    const result = rewriteServerComponents(code)
+    expect(result.components).toEqual(['Trans', 'Plural', 'DateTime'])
+    expect(result.code).toContain('<__Trans>')
+    expect(result.code).toContain('<__Plural')
+    expect(result.code).toContain('<__DateTime')
+  })
+
+  it('does not rewrite components that are already imported', () => {
+    const code = "import { Trans } from '@/lib/i18n.server'\n<Trans>Hello</Trans>"
+    const result = rewriteServerComponents(code)
+    expect(result.components).toEqual([])
+    expect(result.code).toContain('<Trans>')
+  })
+
+  it('does not rewrite components not present in code', () => {
+    const code = 'const x = 1'
+    const result = rewriteServerComponents(code)
+    expect(result.components).toEqual([])
+    expect(result.code).toBe('const x = 1')
+  })
+
+  it('rewrites NumberFormat', () => {
+    const code = '<NumberFormat value={1234} />'
+    const result = rewriteServerComponents(code)
+    expect(result.components).toEqual(['NumberFormat'])
+    expect(result.code).toBe('<__NumberFormat value={1234} />')
+  })
+})
+
+describe('transform (server mode with components)', () => {
+  const originalEnv = process.env.__FLUENTI_SERVER_MODULE
+
+  beforeEach(() => {
+    process.env.__FLUENTI_SERVER_MODULE = './src/lib/i18n.server'
+  })
+
+  afterEach(() => {
+    if (originalEnv === undefined) {
+      delete process.env.__FLUENTI_SERVER_MODULE
+    } else {
+      process.env.__FLUENTI_SERVER_MODULE = originalEnv
+    }
+  })
+
+  it('rewrites <Trans> and adds import in server mode', () => {
+    const code = 'export default function Page() {\n  return <Trans>Hello <a href="/docs">docs</a></Trans>\n}'
+    const result = transform(code, 'page.tsx')
+    expect(result).not.toBeNull()
+    expect(result!.code).toContain('<__Trans>')
+    expect(result!.code).toContain('</__Trans>')
+    expect(result!.code).toContain('__Trans')
+    expect(result!.code).toContain("from '@fluenti/next/server'")
+  })
+
+  it('rewrites components and t`` together', () => {
+    const code = 'const title = t`Hello`\nconst el = <Plural value={5} one="# item" other="# items" />'
+    const result = transform(code, 'page.tsx')
+    expect(result).not.toBeNull()
+    expect(result!.code).toContain("__getServerI18n().t('Hello')")
+    expect(result!.code).toContain('<__Plural')
+    expect(result!.code).toContain('__getServerI18n')
+    expect(result!.code).toContain('__Plural')
+  })
+
+  it('only imports components (no __getServerI18n) when no t`` used', () => {
+    const code = 'export default function Page() {\n  return <Trans>Hello</Trans>\n}'
+    const result = transform(code, 'page.tsx')
+    expect(result).not.toBeNull()
+    expect(result!.code).toContain('__Trans')
+    expect(result!.code).not.toContain('__getServerI18n')
+  })
+
+  it('does not rewrite components in client mode', () => {
+    const code = "'use client'\nexport default function Page() {\n  return <Trans>Hello</Trans>\n}"
+    const result = transform(code, 'page.tsx')
+    // No t`` or t() calls → null
+    expect(result).toBeNull()
+  })
+
+  it('does not rewrite components when serverModule is not set', () => {
+    delete process.env.__FLUENTI_SERVER_MODULE
+    const code = 'export default function Page() {\n  return <Trans>Hello</Trans>\n}'
+    const result = transform(code, 'page.tsx')
+    // Client mode, no t`` or t() → null
+    expect(result).toBeNull()
   })
 })
