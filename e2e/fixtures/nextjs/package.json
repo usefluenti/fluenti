@@ -3,7 +3,7 @@
   "private": true,
   "scripts": {
     "compile": "fluenti compile",
-    "build": "fluenti compile && next build",
+    "build": "next build",
     "start": "next start"
   },
   "dependencies": {

@@ -61,9 +61,6 @@ jobs:
       - name: Build packages
         run: pnpm build
 
-      - name: Rebuild CLI bin links
-        run: pnpm rebuild @fluenti/cli
-
       - name: Compile message catalogs
         run: |
           CLI="$(pwd)/packages/cli/dist/cli.js"

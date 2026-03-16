@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "compile": "fluenti compile",
-    "build": "fluenti compile && remix vite:build",
+    "build": "remix vite:build",
     "preview": "vite preview"
   },
   "dependencies": {
