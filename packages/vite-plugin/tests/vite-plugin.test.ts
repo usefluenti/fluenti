@@ -320,6 +320,90 @@ describe('fluentiPlugin', () => {
       expect(result.code).toContain("$t('")
       expect(result.code).toContain('count')
     })
+
+    // ─── v-t + directive interactions ──────────────────────────────────────
+
+    it('v-t + v-for preserves v-for', () => {
+      const plugin = getVueTemplatePlugin()
+      const input = '<template><li v-t v-for="item in items" :key="item">Item name</li></template><script setup></script>'
+      const result = plugin.transform(input, 'App.vue')
+
+      expect(result).toBeDefined()
+      expect(result.code).toContain('v-for')
+      expect(result.code).toContain("$t('")
+      expect(result.code).not.toMatch(/\bv-t\b/)
+    })
+
+    it('v-t + v-show preserves v-show', () => {
+      const plugin = getVueTemplatePlugin()
+      const input = '<template><p v-t v-show="visible">Hidden text</p></template><script setup></script>'
+      const result = plugin.transform(input, 'App.vue')
+
+      expect(result).toBeDefined()
+      expect(result.code).toContain('v-show="visible"')
+      expect(result.code).toContain("$t('")
+    })
+
+    it('v-t + v-else preserves v-else', () => {
+      const plugin = getVueTemplatePlugin()
+      const input = '<template><p v-if="a">A</p><p v-t v-else>Fallback</p></template><script setup></script>'
+      const result = plugin.transform(input, 'App.vue')
+
+      expect(result).toBeDefined()
+      expect(result.code).toContain('v-else')
+      expect(result.code).toContain("$t('")
+    })
+
+    it('v-t + v-else-if preserves v-else-if', () => {
+      const plugin = getVueTemplatePlugin()
+      const input = '<template><p v-if="a">A</p><p v-t v-else-if="b">Other</p><p v-else>C</p></template><script setup></script>'
+      const result = plugin.transform(input, 'App.vue')
+
+      expect(result).toBeDefined()
+      expect(result.code).toContain('v-else-if')
+      expect(result.code).toContain("$t('")
+    })
+
+    it('v-t + :class + :style preserves dynamic bindings', () => {
+      const plugin = getVueTemplatePlugin()
+      const input = '<template><p v-t :class="cls" :style="sty">Styled</p></template><script setup></script>'
+      const result = plugin.transform(input, 'App.vue')
+
+      expect(result).toBeDefined()
+      expect(result.code).toContain(':class="cls"')
+      expect(result.code).toContain(':style="sty"')
+      expect(result.code).toContain("$t('")
+    })
+
+    it('two v-t elements in same template both transformed', () => {
+      const plugin = getVueTemplatePlugin()
+      const input = '<template><h1 v-t>First</h1><h2 v-t>Second</h2></template><script setup></script>'
+      const result = plugin.transform(input, 'App.vue')
+
+      expect(result).toBeDefined()
+      const matches = result.code.match(/\$t\('/g)
+      expect(matches).toBeDefined()
+      expect(matches!.length).toBeGreaterThanOrEqual(2)
+    })
+
+    it('v-t.placeholder + v-model preserves v-model', () => {
+      const plugin = getVueTemplatePlugin()
+      const input = '<template><input v-t.placeholder v-model="val" placeholder="Search"/></template><script setup></script>'
+      const result = plugin.transform(input, 'App.vue')
+
+      expect(result).toBeDefined()
+      expect(result.code).toContain('v-model="val"')
+      expect(result.code).toContain(':placeholder="$t(')
+    })
+
+    it('v-t + v-slot preserved on template element', () => {
+      const plugin = getVueTemplatePlugin()
+      const input = '<template><MyComp><template v-t v-slot:header>Header</template></MyComp></template><script setup></script>'
+      const result = plugin.transform(input, 'App.vue')
+
+      expect(result).toBeDefined()
+      expect(result.code).toContain("$t('")
+    })
   })
 
   describe('script transform', () => {
