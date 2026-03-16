@@ -1,0 +1,83 @@
+msgid ""
+msgstr "Content-Type: text/plain; charset=UTF-8\n"
+
+msgid "Fluenti Nuxt Playground"
+msgstr ""
+
+msgid "Server-rendered i18n with Nuxt 3 and Fluenti."
+msgstr ""
+
+msgid "Loading translations..."
+msgstr ""
+
+msgid "Built with Fluenti and Nuxt 3"
+msgstr ""
+
+msgid "Welcome to Fluenti"
+msgstr ""
+
+msgid "A modern i18n library with SSR support"
+msgstr ""
+
+msgid "Hello, {name}!"
+msgstr ""
+
+msgid "Current locale: {locale}"
+msgstr ""
+
+msgid "You have {count} items in your cart."
+msgstr ""
+
+msgid "Features"
+msgstr ""
+
+msgid "Server-side rendering"
+msgstr ""
+
+msgid "Locale detection from cookies"
+msgstr ""
+
+msgid "Hydration without flash"
+msgstr ""
+
+msgid "Reactive locale switching"
+msgstr ""
+
+msgid "Rich Text Demos"
+msgstr ""
+
+msgid "Visit our <link>documentation</link> to learn more."
+msgstr ""
+
+msgid "This is <bold>important</bold> information."
+msgstr ""
+
+msgid "Please <link>sign in</link> or <bold>register</bold> to continue."
+msgstr ""
+
+msgid "Plural Demos"
+msgstr ""
+
+msgid "Remove"
+msgstr ""
+
+msgid "Add"
+msgstr ""
+
+msgid "Reset"
+msgstr ""
+
+msgid "{appleCount, plural, =0 {No apples} one {1 apple} other {# apples}}"
+msgstr ""
+
+msgid "{messageCount, plural, =0 {No new messages} one {1 new message} other {# new messages}}"
+msgstr ""
+
+msgid "Home"
+msgstr ""
+
+msgid "Rich Text"
+msgstr ""
+
+msgid "Plurals"
+msgstr ""

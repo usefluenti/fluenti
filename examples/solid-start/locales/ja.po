@@ -1,0 +1,62 @@
+msgid ""
+msgstr "Content-Type: text/plain; charset=UTF-8\n"
+
+msgid "Welcome to Fluenti"
+msgstr "Fluenti へようこそ"
+
+msgid "A compile-time i18n library with SSR support"
+msgstr "SSR対応のコンパイル時i18nライブラリ"
+
+msgid "Hello, {name}!"
+msgstr "こんにちは、{name}さん！"
+
+msgid "Current locale: {locale}"
+msgstr "現在のロケール：{locale}"
+
+msgid "Rich Text"
+msgstr "リッチテキスト"
+
+msgid "Welcome to <bold>Fluenti</bold> for <italic>SolidStart</italic>!"
+msgstr "<bold>Fluenti</bold> の <italic>SolidStart</italic> 版へようこそ！"
+
+msgid "Supports <bold>bold</bold>, <italic>italic</italic>, and <link>links</link>."
+msgstr "<bold>太字</bold>、<italic>斜体</italic>、<link>リンク</link> をサポート。"
+
+msgid "Plurals"
+msgstr "複数形"
+
+msgid "Your cart is empty."
+msgstr "カートは空です。"
+
+msgid "You have # item in your cart."
+msgstr "カートに # 個のアイテムがあります。"
+
+msgid "You have # items in your cart."
+msgstr "カートに # 個のアイテムがあります。"
+
+msgid "Reset"
+msgstr "リセット"
+
+msgid "Home"
+msgstr "ホーム"
+
+msgid "This page is server-side rendered with per-request locale isolation."
+msgstr "このページはリクエストごとのロケール分離でサーバーサイドレンダリングされています。"
+
+msgid "Formatting"
+msgstr "フォーマット"
+
+msgid "Date & Number Formatting"
+msgstr "日付と数値のフォーマット"
+
+msgid "Today's date:"
+msgstr "今日の日付："
+
+msgid "A large number:"
+msgstr "大きな数字："
+
+msgid "Percentage:"
+msgstr "パーセント："
+
+msgid "Currency:"
+msgstr "通貨："

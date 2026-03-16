@@ -1,0 +1,62 @@
+msgid ""
+msgstr "Content-Type: text/plain; charset=UTF-8\n"
+
+msgid "Welcome to Fluenti"
+msgstr ""
+
+msgid "A compile-time i18n library with SSR support"
+msgstr ""
+
+msgid "Hello, {name}!"
+msgstr ""
+
+msgid "Current locale: {locale}"
+msgstr ""
+
+msgid "Rich Text"
+msgstr ""
+
+msgid "Welcome to <bold>Fluenti</bold> for <italic>SolidStart</italic>!"
+msgstr ""
+
+msgid "Supports <bold>bold</bold>, <italic>italic</italic>, and <link>links</link>."
+msgstr ""
+
+msgid "Plurals"
+msgstr ""
+
+msgid "Your cart is empty."
+msgstr ""
+
+msgid "You have # item in your cart."
+msgstr ""
+
+msgid "You have # items in your cart."
+msgstr ""
+
+msgid "Reset"
+msgstr ""
+
+msgid "Home"
+msgstr ""
+
+msgid "This page is server-side rendered with per-request locale isolation."
+msgstr ""
+
+msgid "Formatting"
+msgstr ""
+
+msgid "Date & Number Formatting"
+msgstr ""
+
+msgid "Today's date:"
+msgstr ""
+
+msgid "A large number:"
+msgstr ""
+
+msgid "Percentage:"
+msgstr ""
+
+msgid "Currency:"
+msgstr ""

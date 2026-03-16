@@ -265,6 +265,9 @@ importers:
 
   e2e/fixtures/react-splitting:
     dependencies:
+      '@fluenti/cli':
+        specifier: workspace:*
+        version: link:../../../packages/cli
       '@fluenti/react':
         specifier: workspace:*
         version: link:../../../packages/react
@@ -401,6 +404,9 @@ importers:
 
   e2e/fixtures/vue-splitting:
     dependencies:
+      '@fluenti/cli':
+        specifier: workspace:*
+        version: link:../../../packages/cli
       '@fluenti/vite-plugin':
         specifier: workspace:*
         version: link:../../../packages/vite-plugin
@@ -457,6 +463,9 @@ importers:
 
   examples/nuxt:
     dependencies:
+      '@fluenti/cli':
+        specifier: workspace:*
+        version: link:../../packages/cli
       '@fluenti/core':
         specifier: workspace:*
         version: link:../../packages/core

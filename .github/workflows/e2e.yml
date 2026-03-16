@@ -61,6 +61,25 @@ jobs:
       - name: Build packages
         run: pnpm build
 
+      - name: Compile message catalogs
+        run: |
+          CLI="$(pwd)/packages/cli/dist/cli.js"
+          for dir in examples/vue examples/solid examples/react examples/nextjs \
+                     examples/react-router examples/tanstack-start \
+                     examples/nuxt examples/solid-start \
+                     e2e/fixtures/react-router e2e/fixtures/remix e2e/fixtures/nextjs; do
+            if [ -f "$dir/fluenti.config.ts" ]; then
+              echo "Compiling $dir"
+              (cd "$dir" && node "$CLI" compile)
+            fi
+          done
+          for dir in e2e/fixtures/vue-splitting e2e/fixtures/react-splitting; do
+            if [ -f "$dir/fluenti.config.ts" ]; then
+              echo "Compiling $dir (split)"
+              (cd "$dir" && node "$CLI" compile --split)
+            fi
+          done
+
       - name: Run E2E tests
         run: |
           IFS=',' read -ra PROJECTS <<< "${{ matrix.projects }}"

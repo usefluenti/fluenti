@@ -7,6 +7,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@fluenti/cli": "workspace:*",
     "@fluenti/react": "workspace:*",
     "@fluenti/vite-plugin": "workspace:*",
     "react": "^19.0.0",
