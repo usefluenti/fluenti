@@ -56,6 +56,53 @@ function Home() {
 }
 ```
 
+## Server Components (RSC)
+
+For React Server Components (Next.js App Router), use `@fluenti/react/server`:
+
+```ts
+// lib/i18n.server.ts
+import { createServerI18n } from '@fluenti/react/server'
+
+export const { setLocale, getI18n, Trans, Plural, DateTime, NumberFormat } = createServerI18n({
+  loadMessages: (locale) => import(`../locales/compiled/${locale}.ts`),
+  fallbackLocale: 'en',
+  resolveLocale: async () => {
+    const { cookies } = await import('next/headers')
+    return (await cookies()).get('locale')?.value ?? 'en'
+  },
+})
+```
+
+```tsx
+// app/layout.tsx
+import { setLocale } from '@/lib/i18n.server'
+
+export default async function Layout({ children }) {
+  const locale = /* read from cookie/param */
+  setLocale(locale)
+  return <html lang={locale}><body>{children}</body></html>
+}
+```
+
+```tsx
+// app/page.tsx — use components directly, no i18n prop needed
+import { Trans, Plural, DateTime, NumberFormat } from '@/lib/i18n.server'
+
+export default async function Page() {
+  return (
+    <div>
+      <Trans>Read the <a href="/docs">documentation</a>.</Trans>
+      <Plural value={5} one="# item" other="# items" />
+      <DateTime value={new Date()} style="long" />
+      <NumberFormat value={1234.56} />
+    </div>
+  )
+}
+```
+
+The server components are async and internally `await getI18n()` — the DX matches client components exactly.
+
 ## Vite Plugin
 
 ```ts
@@ -87,6 +134,18 @@ export default {
 | Hook | Description |
 |------|-------------|
 | `useI18n()` | Full i18n context: `i18n`, `locale`, `setLocale`, `isLoading`, etc. |
+
+## Server API (`@fluenti/react/server`)
+
+| Export | Description |
+|--------|-------------|
+| `createServerI18n(config)` | Create request-scoped i18n utilities for RSC |
+| `setLocale(locale)` | Set locale for the current request (returned from `createServerI18n`) |
+| `getI18n()` | Get the i18n instance for the current request (returned from `createServerI18n`) |
+| `Trans` | Async server component for rich text (returned from `createServerI18n`) |
+| `Plural` | Async server component for pluralization (returned from `createServerI18n`) |
+| `DateTime` | Async server component for date formatting (returned from `createServerI18n`) |
+| `NumberFormat` | Async server component for number formatting (returned from `createServerI18n`) |
 
 ## Framework Compatibility
 
