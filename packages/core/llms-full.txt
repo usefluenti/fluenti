@@ -1,15 +1,23 @@
-# @fluenti/core — Full API Reference
+# @fluenti/core
 
-> Framework-agnostic compile-time i18n core — ICU MessageFormat parser, compiler, interpolation, formatters, plural rules, and SSR utilities.
+> Framework-agnostic compile-time i18n core for JavaScript/TypeScript. Provides ICU MessageFormat parsing, compilation, interpolation, CLDR plural rules, date/number/relative-time formatters via Intl APIs, locale negotiation, RTL detection, and SSR utilities. Used as the foundation for @fluenti/vue and @fluenti/solid.
 
-- Package: @fluenti/core
+- Package: `@fluenti/core`
 - Docs: https://fluenti.dev
 - Repository: https://github.com/usefluenti/fluenti/tree/main/packages/core
 - License: MIT
 
+## Installation
+
+```bash
+pnpm add @fluenti/core
+```
+
+Most users do not install `@fluenti/core` directly -- it is included as a dependency of `@fluenti/vue` and `@fluenti/solid`.
+
 ## createFluent(config)
 
-Create a fully configured i18n instance.
+Create a fully configured i18n instance. This is the main entry point for most applications.
 
 ```ts
 import { createFluent } from '@fluenti/core'
@@ -23,267 +31,563 @@ const i18n = createFluent({
   },
   dateFormats: { short: { dateStyle: 'short' } },
   numberFormats: { currency: { style: 'currency', currency: 'USD' } },
-  fallbackChain: { 'zh-TW': ['zh-CN', 'en'] },
+  fallbackChain: { 'zh-TW': ['zh-CN', 'en'], '*': ['en'] },
   missing: (locale, id) => `[${locale}:${id}]`,
 })
+
+i18n.t('greeting', { name: 'World' }) // "Hello World!"
+i18n.setLocale('ja')
+i18n.t('greeting', { name: 'World' }) // "こんにちは World！"
 ```
 
-### Config Options (FluentConfigExtended)
+### Config: FluentConfigExtended
 
-| Option | Type | Required | Description |
-|--------|------|----------|-------------|
-| locale | string | yes | Current locale |
-| messages | Record<string, Messages> | yes | Compiled messages per locale |
-| fallbackLocale | string | no | Locale to try when key not found |
-| fallbackChain | Record<string, string[]> | no | Locale fallback chain (use '*' for wildcard) |
-| dateFormats | Record<string, Intl.DateTimeFormatOptions> | no | Named date format presets |
-| numberFormats | Record<string, Intl.NumberFormatOptions> | no | Named number format presets |
-| missing | (locale, id) => string \| undefined | no | Handler for missing translations |
+| Property | Type | Required | Description |
+|---|---|---|---|
+| `locale` | `Locale` | Yes | Current active locale |
+| `messages` | `AllMessages` | Yes | `Record<Locale, Messages>` -- all locale messages |
+| `fallbackLocale` | `Locale` | No | Single fallback locale when key not found in current locale |
+| `fallbackChain` | `Record<string, Locale[]>` | No | Per-locale or wildcard (`'*'`) fallback chains |
+| `missing` | `(locale, id) => string \| undefined` | No | Handler for missing translations; return undefined to fall through to ID |
+| `dateFormats` | `DateFormatOptions` | No | Custom named date format styles, merged over defaults |
+| `numberFormats` | `NumberFormatOptions` | No | Custom named number format styles, merged over defaults |
+| `namespaceMapping` | `NamespaceMapping` | No | Glob-pattern to namespace mapping |
+| `externalCatalogs` | `Array<{ package, catalogDir }>` | No | External catalog sources |
 
-### Instance Methods (FluentInstanceExtended)
+### Instance: FluentInstanceExtended
 
 | Method | Signature | Description |
-|--------|-----------|-------------|
-| t | (id: string \| MessageDescriptor, values?) => string | Translate a message |
-| d | (value: Date \| number, style?) => string | Format a date |
-| n | (value: number, style?) => string | Format a number |
-| format | (message: string, values?) => string | Interpolate an ICU message directly |
-| setLocale | (locale: string) => void | Change current locale |
-| loadMessages | (locale: string, messages: Messages) => void | Load messages for a locale |
-| getLocales | () => string[] | Get all loaded locale codes |
-| locale | string (getter/setter) | Current locale |
+|---|---|---|
+| `t(id, values?)` | `(string \| MessageDescriptor, Record<string, unknown>?) => string` | Translate a message by ID or descriptor |
+| `d(value, style?)` | `(Date \| number, string?) => string` | Format a date using a named style |
+| `n(value, style?)` | `(number, string?) => string` | Format a number using a named style |
+| `format(message, values?)` | `(string, Record<string, unknown>?) => string` | Interpolate an ICU message string directly (no catalog lookup) |
+| `setLocale(locale)` | `(Locale) => void` | Switch the active locale |
+| `loadMessages(locale, messages)` | `(Locale, Messages) => void` | Load or merge messages for a locale at runtime |
+| `getLocales()` | `() => Locale[]` | List all locales with loaded messages |
+| `locale` | `Locale` (getter/setter) | Get or set the current locale |
+
+The deprecated `tRaw()` method is an alias for `format()` and will be removed in a future major version.
 
 ### Message Resolution Order
-1. Current locale
-2. Fallback locale
-3. Fallback chain (locale-specific, then wildcard '*')
-4. Missing handler
-5. Return message ID as-is
 
----
+1. Current locale catalog
+2. `fallbackLocale` (if configured)
+3. `fallbackChain[currentLocale]` (locale-specific chain)
+4. `fallbackChain['*']` (wildcard chain)
+5. `missing(locale, id)` handler (if configured, and if it returns a string)
+6. Returns the raw message ID as-is
 
-## ICU MessageFormat Parser
+### MessageDescriptor with t()
+
+When `t()` receives a `MessageDescriptor` object instead of a string, it uses `descriptor.message` as inline source text if the ID is not found in the catalog:
 
 ```ts
-import { parse, FluentParseError } from '@fluenti/core'
-
-const ast = parse('{count, plural, one {# item} other {# items}}')
+i18n.t({ id: 'greeting', message: 'Hello {name}!' }, { name: 'World' })
+// Uses descriptor.message if 'greeting' is not in the catalog
 ```
 
-### Supported Syntax
-- **Text**: `Hello World`
-- **Variables**: `Hello {name}`
-- **Plurals**: `{count, plural, =0 {none} one {# item} other {# items}}`
-- **Selects**: `{gender, select, male {He} female {She} other {They}}`
-- **Nested**: `{count, plural, one {He has # item} other {He has # items}}`
-- **Number format**: `{amount, number, currency}`
-- **Date format**: `{date, date, short}`
-- **# substitution**: `#` inside plural branches replaced with the plural value
+## parse(message)
+
+Parse an ICU MessageFormat string into an AST (`ASTNode[]`). Hand-written recursive descent parser.
+
+```ts
+import { parse } from '@fluenti/core'
+
+// Simple variable
+parse('Hello {name}!')
+// [{ type: 'text', value: 'Hello ' }, { type: 'variable', name: 'name' }, { type: 'text', value: '!' }]
+
+// Plural
+parse('{count, plural, one {# item} other {# items}}')
+// [{ type: 'plural', variable: 'count', options: { one: [...], other: [...] } }]
+
+// Select
+parse('{gender, select, male {He} female {She} other {They}}')
+// [{ type: 'select', variable: 'gender', options: { male: [...], female: [...], other: [...] } }]
+
+// Function with style
+parse('{amount, number, currency}')
+// [{ type: 'function', variable: 'amount', fn: 'number', style: 'currency' }]
+```
+
+### Supported ICU Features
+
+- Simple text
+- Variable interpolation: `{name}`
+- Plural: `{count, plural, =0 {none} one {# item} other {# items}}`
+- Select: `{gender, select, male {He} female {She} other {They}}`
+- Selectordinal: `{pos, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}`
+- Plural offset: `{count, plural, offset:1 =0 {nobody} one {# other} other {# others}}`
+- Functions: `{amount, number}`, `{amount, number, currency}`, `{amount, number, percent}`, `{d, date}`, `{d, date, short}`, `{d, date, long}`, `{d, date, full}`, `{t, time}`, `{t, time, short}`, `{t, time, long}`
+- Nested messages within plural/select branches
+- `#` substitution inside plural branches (replaced with count minus offset)
+- ICU escaping: `''` for literal `'`, `'{'` for literal `{`, `'}'` for literal `}`, `'quoted sequences'`
 
 ### AST Node Types
 
-| Type | Fields |
-|------|--------|
-| TextNode | type: 'text', value: string |
-| VariableNode | type: 'variable', name: string |
-| PluralNode | type: 'plural', variable: string, branches: Record<string, ASTNode[]>, offset?: number |
-| SelectNode | type: 'select', variable: string, branches: Record<string, ASTNode[]> |
-| FunctionNode | type: 'function', name: string, variable: string, style?: string |
-
----
-
-## Compiler
-
 ```ts
-import { compile } from '@fluenti/core'
+type ASTNode = TextNode | VariableNode | PluralNode | SelectNode | FunctionNode
 
-const messageFn = compile(ast)
-const result = messageFn({ count: 3 }) // "3 items"
+interface TextNode {
+  type: 'text'
+  value: string
+}
+
+interface VariableNode {
+  type: 'variable'
+  name: string        // '#' for plural count substitution
+}
+
+interface PluralNode {
+  type: 'plural'
+  variable: string
+  offset?: number     // Plural offset value
+  ordinal?: boolean   // true for selectordinal
+  options: Record<string, ASTNode[]>  // Keys: '=0', '=1', 'zero', 'one', 'two', 'few', 'many', 'other'
+}
+
+interface SelectNode {
+  type: 'select'
+  variable: string
+  options: Record<string, ASTNode[]>  // Keys: any string, must include 'other'
+}
+
+interface FunctionNode {
+  type: 'function'
+  variable: string
+  fn: string          // 'number', 'date', 'time'
+  style?: string      // 'currency', 'percent', 'short', 'long', 'full'
+}
 ```
 
-Compiles AST to a function `(values?) => string` or a plain string if no variables.
+### Error Handling
 
----
+Throws `FluentParseError` on invalid input. The error includes the offset position and a source excerpt with a pointer for diagnostics.
 
-## Interpolation
+```ts
+import { FluentParseError } from '@fluenti/core'
+
+try {
+  parse('{count, plural, one {item}}')  // Missing required 'other' option
+} catch (e) {
+  if (e instanceof FluentParseError) {
+    console.log(e.offset)   // Position of the error in the source
+    console.log(e.source)   // Original source string
+    console.log(e.message)  // Formatted message with excerpt and pointer
+  }
+}
+```
+
+Validation rules:
+- Plural and selectordinal must have an `other` option
+- Select must have an `other` option
+- Identifiers must match `[a-zA-Z0-9_]+`
+- All opened `{` must be closed with `}`
+
+## compile(ast, locale?)
+
+Compile a parsed AST into a `CompiledMessage`.
+
+```ts
+import { parse, compile } from '@fluenti/core'
+
+// Static text: returns a plain string (zero runtime overhead)
+const staticMsg = compile(parse('Hello world'))
+// "Hello world"
+
+// Dynamic message: returns a function
+const dynamicMsg = compile(parse('Hello {name}!'))
+dynamicMsg({ name: 'Alice' })  // "Hello Alice!"
+
+// Plural with locale
+const pluralMsg = compile(parse('{count, plural, one {# item} other {# items}}'), 'en')
+pluralMsg({ count: 1 })  // "1 item"
+pluralMsg({ count: 5 })  // "5 items"
+
+// Select
+const selectMsg = compile(parse('{gender, select, male {He} female {She} other {They}}'))
+selectMsg({ gender: 'female' })  // "She"
+
+// Function formatting
+const numMsg = compile(parse('{amount, number, currency}'), 'en')
+numMsg({ amount: 1234.5 })  // "$1,234.50"
+```
+
+**Return type**: `CompiledMessage = string | ((values?: Record<string, unknown>) => string)`
+
+**Optimizations**:
+- Single text node: returns the string directly
+- All text nodes: concatenates and returns a string
+- Otherwise: returns a function
+
+**Runtime behavior**:
+- Missing values render as `{variableName}` (the placeholder text)
+- `#` inside plural branches is replaced with the numeric value minus offset
+- Function nodes use `Intl.NumberFormat` and `Intl.DateTimeFormat`
+- Exact matches (`=0`, `=1`) in plurals are checked against raw count; CLDR categories are checked against offset-adjusted count
+- Default locale is `'en'` if not specified
+
+## interpolate(message, values?, locale?)
+
+One-step convenience function: parse, compile, and execute an ICU message. Results are stored in an LRU cache (500 entries max) keyed by `locale:message`.
 
 ```ts
 import { interpolate } from '@fluenti/core'
 
-interpolate('Hello {name}!', { name: 'World' }, 'en')
-// → "Hello World!"
+interpolate('Hello {name}!', { name: 'World' })
+// "Hello World!"
+
+interpolate('{count, plural, one {# item} other {# items}}', { count: 3 }, 'en')
+// "3 items"
+
+// Subsequent calls with the same message+locale hit the cache
+interpolate('Hello {name}!', { name: 'Alice' })
+// "Hello Alice!" (no re-parse)
 ```
 
-Runtime value substitution for pre-compiled string messages. Handles:
-- Named variables: `{name}`
-- Nested object access: resolved from flat values
-- Missing values: returns the placeholder as-is
+Parameters:
+- `message: string` -- ICU MessageFormat string
+- `values?: Record<string, unknown>` -- Interpolation values
+- `locale?: Locale` -- BCP 47 locale string (defaults to `'en'`)
 
----
+## resolvePlural(count, options, locale, ordinal?)
 
-## Plural Rules
+Resolve the correct plural category for a count value. Checks exact matches (`=0`, `=1`, etc.) first, then falls back to CLDR plural categories via `Intl.PluralRules`.
 
 ```ts
-import { resolvePlural, resolvePluralCategory } from '@fluenti/core'
+import { resolvePlural } from '@fluenti/core'
 
-resolvePluralCategory(1, 'en')    // → 'one'
-resolvePluralCategory(5, 'en')    // → 'other'
-resolvePluralCategory(1, 'ja')    // → 'other' (Japanese has no 'one')
+resolvePlural(0, { '=0': 'none', one: 'item', other: 'items' }, 'en')
+// '=0' (exact match takes priority)
 
-resolvePlural(branches, count, locale) // → resolved string
+resolvePlural(1, { one: 'item', other: 'items' }, 'en')
+// 'one' (CLDR category)
+
+resolvePlural(5, { one: 'item', other: 'items' }, 'en')
+// 'other'
+
+// Ordinal plurals
+resolvePlural(1, { one: 'st', two: 'nd', few: 'rd', other: 'th' }, 'en', true)
+// 'one'
 ```
 
-Uses `Intl.PluralRules` for CLDR-compliant plural category resolution.
+### resolvePluralCategory(count, options, locale, ordinal?)
 
----
+Same as `resolvePlural` but skips exact match checking. Used internally when exact matches need the raw count but CLDR categories need the offset-adjusted count.
 
-## Formatters
+Both functions use cached `Intl.PluralRules` instances per locale+type combination.
 
-### Date Formatting
+## formatDate(value, locale, style?, styles?)
+
+Format dates using named styles backed by `Intl.DateTimeFormat`. Formatter instances are cached.
 
 ```ts
-import { formatDate, DEFAULT_DATE_FORMATS } from '@fluenti/core'
+import { formatDate } from '@fluenti/core'
 
-formatDate(new Date(), 'en', 'long')
-formatDate(new Date(), 'ja', 'short')
-formatDate(new Date(), 'en', 'medium', customFormats)
+formatDate(new Date(), 'en')                       // "Jan 15, 2025" (default style)
+formatDate(new Date(), 'en', 'short')               // "1/15/2025"
+formatDate(new Date(), 'en', 'long')                // "Wednesday, January 15, 2025"
+formatDate(new Date(), 'en', 'time')                // "2:30 PM"
+formatDate(new Date(), 'en', 'datetime')            // "Jan 15, 2025, 2:30 PM"
+formatDate(Date.now() - 86400000, 'en', 'relative') // "yesterday"
 ```
 
-Built-in styles: `short`, `medium`, `long`, `full` (maps to Intl.DateTimeFormat dateStyle).
-Custom styles via `dateFormats` config option.
+### Built-in Date Styles (DEFAULT_DATE_FORMATS)
 
-### Number Formatting
+| Style | Options |
+|---|---|
+| `default` | `{ year: 'numeric', month: 'short', day: 'numeric' }` |
+| `short` | `{ year: 'numeric', month: 'numeric', day: 'numeric' }` |
+| `long` | `{ year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' }` |
+| `time` | `{ hour: 'numeric', minute: 'numeric' }` |
+| `datetime` | `{ year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric' }` |
+| `relative` | Delegates to `formatRelativeTime()` |
+
+Custom styles are passed as the 4th argument or configured via `dateFormats` in `createFluent()`. Custom styles are merged over defaults, so you can override built-in styles or add new ones.
+
+A style value can be `Intl.DateTimeFormatOptions` or the string `'relative'` to delegate to relative time formatting.
+
+## formatNumber(value, locale, style?, styles?)
+
+Format numbers using named styles backed by `Intl.NumberFormat`. Formatter instances are cached.
 
 ```ts
-import { formatNumber, DEFAULT_NUMBER_FORMATS, LOCALE_CURRENCY_MAP } from '@fluenti/core'
+import { formatNumber } from '@fluenti/core'
 
-formatNumber(1234.5, 'en', 'decimal')
-formatNumber(1234.5, 'en', 'currency')
-formatNumber(0.42, 'en', 'percent')
+formatNumber(1234.56, 'en')                         // "1,234.56"
+formatNumber(1234.56, 'de')                         // "1.234,56"
+formatNumber(1234.56, 'en', 'currency')             // "$1,234.56" (currency auto-detected from locale)
+formatNumber(1234.56, 'ja', 'currency')             // JPY auto-detected
+formatNumber(0.856, 'en', 'percent')                // "86%"
+formatNumber(1234.5, 'en', 'decimal')               // "1,234.50" (2 decimal places)
 ```
 
-Built-in styles: `decimal`, `currency`, `percent`.
-Custom styles via `numberFormats` config option.
-LOCALE_CURRENCY_MAP: maps locale → default currency code (e.g., 'en-US' → 'USD').
+### Built-in Number Styles (DEFAULT_NUMBER_FORMATS)
 
-### Relative Time Formatting
+| Style | Options |
+|---|---|
+| `default` | `{}` (locale default formatting) |
+| `currency` | `{ style: 'currency', currency: <auto-detected> }` |
+| `percent` | `{ style: 'percent' }` |
+| `decimal` | `{ minimumFractionDigits: 2, maximumFractionDigits: 2 }` |
+
+The `currency` style auto-detects the currency code from the locale via `LOCALE_CURRENCY_MAP`. Falls back to `USD` for unmapped locales.
+
+### LOCALE_CURRENCY_MAP
+
+Maps locales to default currency codes:
+
+`en` / `en-US` -> `USD`, `en-GB` -> `GBP`, `en-AU` -> `AUD`, `en-CA` -> `CAD`, `zh-CN` -> `CNY`, `zh-TW` -> `TWD`, `zh-HK` -> `HKD`, `ja` / `ja-JP` -> `JPY`, `ko` / `ko-KR` -> `KRW`, `de` / `fr` / `es` / `it` -> `EUR`, `pt-BR` -> `BRL`, `ru` -> `RUB`, `ar` -> `SAR`, `hi` -> `INR`.
+
+### Custom Number Styles
+
+Custom styles can be static `Intl.NumberFormatOptions` or a function `(locale: Locale) => Intl.NumberFormatOptions` for locale-dependent options:
+
+```ts
+const i18n = createFluent({
+  locale: 'en',
+  messages: { en: {} },
+  numberFormats: {
+    compact: { notation: 'compact' },
+    localCurrency: (locale) => ({
+      style: 'currency',
+      currency: myCurrencyMap[locale] ?? 'USD',
+    }),
+  },
+})
+```
+
+## formatRelativeTime(value, locale)
+
+Format a date as a relative time string. Auto-selects the best unit (year, month, week, day, hour, minute, second) based on the time difference from `Date.now()`.
 
 ```ts
 import { formatRelativeTime } from '@fluenti/core'
 
-formatRelativeTime(-1, 'day', 'en')   // → "1 day ago"
-formatRelativeTime(2, 'hour', 'en')   // → "in 2 hours"
+formatRelativeTime(Date.now() - 2 * 86400000, 'en')   // "2 days ago"
+formatRelativeTime(Date.now() + 3 * 3600000, 'en')     // "in 3 hours"
+formatRelativeTime(Date.now() - 60000, 'ja')            // "1 分前"
+formatRelativeTime(Date.now() - 500, 'en')              // "now" (less than 1 second)
 ```
 
----
+Uses `Intl.RelativeTimeFormat` with `{ numeric: 'auto' }` for natural phrasing (e.g. "yesterday" instead of "1 day ago").
 
-## Catalog
+Returns `''` for non-finite timestamps.
+
+## SSR Utilities
+
+### detectLocale(options)
+
+Detect the best locale from a server-side request context. Checks sources in priority order.
+
+```ts
+import { detectLocale } from '@fluenti/core'
+
+const locale = detectLocale({
+  cookie: getCookie('locale'),              // Priority 1
+  query: url.searchParams.get('locale'),    // Priority 2
+  path: url.pathname.split('/')[1],         // Priority 3
+  headers: request.headers,                 // Priority 4 (Accept-Language)
+  available: ['en', 'ja', 'zh-CN'],
+  fallback: 'en',                           // Priority 5
+})
+```
+
+**DetectLocaleOptions**:
+
+| Property | Type | Required | Description |
+|---|---|---|---|
+| `cookie` | `string` | No | Locale value extracted from cookie |
+| `query` | `string` | No | Locale value from query parameter |
+| `path` | `string` | No | Locale value from URL path segment |
+| `headers` | `Headers \| Record<string, string>` | No | Request headers (reads Accept-Language) |
+| `available` | `Locale[]` | Yes | List of supported locales |
+| `fallback` | `Locale` | Yes | Fallback locale if no source matches |
+
+Accept-Language header parsing:
+- Supports quality values: `en-US,en;q=0.9,zh-CN;q=0.8`
+- Sorted by quality (highest first)
+- Wildcard `*` is ignored
+- Each candidate is matched via `negotiateLocale()`
+
+Locale matching for cookie/query/path is case-insensitive and supports partial matches (e.g. `en` matches `en-US`).
+
+### getSSRLocaleScript(locale)
+
+Generate an XSS-safe `<script>` tag for injecting the detected locale into SSR HTML.
+
+```ts
+import { getSSRLocaleScript } from '@fluenti/core'
+
+getSSRLocaleScript('zh-CN')
+// '<script>window.__FLUENTI_LOCALE__="zh-CN"</script>'
+```
+
+Escapes special characters (`\`, `"`, `<`, `>`, `&`, `'`) to prevent XSS injection.
+
+### getHydratedLocale(fallback?)
+
+Read the SSR-injected locale on the client side. Returns `window.__FLUENTI_LOCALE__` if it exists and is a string, otherwise returns the fallback (defaults to `'en'`).
+
+```ts
+import { getHydratedLocale } from '@fluenti/core'
+
+// On the client, after SSR injected the script tag:
+const locale = getHydratedLocale('en')
+// Returns the SSR-detected locale, or 'en' if not available
+```
+
+Safe to call on the server (returns fallback when `window` is undefined).
+
+## Locale Utilities
+
+### negotiateLocale(requested, available, fallback?)
+
+BCP 47 locale negotiation. Accepts a single locale or ordered list of preferred locales.
+
+```ts
+import { negotiateLocale } from '@fluenti/core'
+
+negotiateLocale('en-US', ['en', 'ja', 'zh-CN'])         // 'en' (language match)
+negotiateLocale('zh-Hans-CN', ['en', 'zh-CN'])           // 'zh-CN' (region match)
+negotiateLocale(['fr', 'en'], ['en', 'ja'])              // 'en' (second preference matches)
+negotiateLocale('ko', ['en', 'ja'], 'en')                // 'en' (no match, fallback)
+negotiateLocale('pt-BR', ['pt', 'en'])                   // 'pt' (language match)
+```
+
+Matching strategy (in order):
+1. Exact match (case-insensitive, normalized)
+2. Language + region match (ignoring script)
+3. Language-only match
+4. Fallback or first available locale
+
+### parseLocale(locale)
+
+Parse a BCP 47 locale string into its components.
+
+```ts
+import { parseLocale } from '@fluenti/core'
+import type { ParsedLocale } from '@fluenti/core'
+
+parseLocale('en')            // { language: 'en' }
+parseLocale('en-US')         // { language: 'en', region: 'US' }
+parseLocale('zh-Hans-CN')    // { language: 'zh', script: 'Hans', region: 'CN' }
+```
+
+**ParsedLocale**: `{ language: string; script?: string; region?: string }`
+
+### isRTL(locale)
+
+Check if a locale uses a right-to-left script. Returns `boolean`.
+
+```ts
+import { isRTL } from '@fluenti/core'
+
+isRTL('ar')      // true
+isRTL('ar-SA')   // true
+isRTL('he')      // true
+isRTL('fa')      // true (Persian)
+isRTL('ur')      // true (Urdu)
+isRTL('en')      // false
+isRTL('ja')      // false
+```
+
+Supported RTL languages: Arabic (`ar`), Hebrew (`he`), Persian (`fa`), Urdu (`ur`), Pashto (`ps`), Sindhi (`sd`), Uyghur (`ug`), Central Kurdish/Sorani (`ckb`), Dhivehi (`dv`), Yiddish (`yi`), N'Ko (`nqo`).
+
+### getDirection(locale)
+
+Returns `'rtl'` or `'ltr'` for a locale. Useful for setting the `dir` attribute:
+
+```tsx
+<html lang={locale} dir={getDirection(locale)}>
+```
+
+## msg Tagged Template
+
+Create lazy message descriptors with auto-generated IDs. Uses FNV-1a hashing to generate stable, short IDs from the message content. Expressions become positional ICU placeholders.
+
+```ts
+import { msg } from '@fluenti/core'
+
+// Tagged template: expressions become {0}, {1}, etc.
+const greeting = msg`Hello ${name}`
+// { id: '<fnv1a-hash>', message: 'Hello {0}' }
+
+// Use with t()
+i18n.t(greeting)
+```
+
+### msg.descriptor(desc)
+
+Pass through an explicit message descriptor unchanged. Useful for static extraction:
+
+```ts
+const desc = msg.descriptor({ id: 'greeting', message: 'Hello {name}', comment: 'Main greeting' })
+// { id: 'greeting', message: 'Hello {name}', comment: 'Main greeting' }
+```
+
+## Catalog Class
+
+In-memory message catalog manager. Supports namespace-aware message IDs (e.g. `'common:greeting'`).
 
 ```ts
 import { Catalog } from '@fluenti/core'
 
 const catalog = new Catalog()
-catalog.set('en', { greeting: 'Hello!' })
-catalog.get('en', 'greeting')  // → 'Hello!'
-catalog.has('en', 'greeting')  // → true
-catalog.getLocales()           // → ['en']
+
+// Load messages for a locale
+catalog.set('en', { greeting: 'Hello!', 'common:save': 'Save' })
+
+// Lookup
+catalog.get('en', 'greeting')        // 'Hello!'
+catalog.get('en', 'common:save')     // 'Save'
+catalog.get('en', 'missing')         // undefined
+catalog.get('fr', 'greeting')        // undefined
+
+// Check existence
+catalog.has('en', 'greeting')        // true
+catalog.has('fr', 'greeting')        // false
+
+// List locales
+catalog.getLocales()                 // ['en']
+
+// Merge: subsequent set() calls merge with existing messages
+catalog.set('en', { farewell: 'Goodbye!' })
+catalog.get('en', 'greeting')        // 'Hello!' (preserved)
+catalog.get('en', 'farewell')        // 'Goodbye!' (added)
 ```
 
-In-memory message store with per-locale namespaces.
+Messages can be `string` (static) or `(values?: Record<string, unknown>) => string` (dynamic, compiled from ICU).
 
----
-
-## Locale Utilities
+## All Exported Types
 
 ```ts
-import { negotiateLocale, parseLocale, isRTL, getDirection } from '@fluenti/core'
+// --- Core Types ---
 
-negotiateLocale('zh-TW', ['en', 'zh-CN', 'ja'])  // → best match
-parseLocale('zh-Hans-CN')  // → { language: 'zh', script: 'Hans', region: 'CN' }
-isRTL('ar')                // → true
-getDirection('he')         // → 'rtl'
-```
-
-### parseLocale(locale) → ParsedLocale
-Returns `{ language, script?, region?, toString() }`.
-
----
-
-## SSR Utilities
-
-```ts
-import { detectLocale, getSSRLocaleScript, getHydratedLocale } from '@fluenti/core'
-```
-
-### detectLocale(options)
-
-Detect locale from server request context.
-
-```ts
-const locale = detectLocale({
-  supportedLocales: ['en', 'ja', 'zh-CN'],
-  defaultLocale: 'en',
-  cookie: req.headers.cookie,
-  queryParam: url.searchParams.get('locale'),
-  path: url.pathname,
-  acceptLanguage: req.headers['accept-language'],
-})
-```
-
-Detection order: cookie → query param → path → Accept-Language header → default.
-
-### getSSRLocaleScript(locale)
-
-Returns a `<script>` tag string that hydrates the locale on the client:
-
-```ts
-const script = getSSRLocaleScript('ja')
-// → '<script>window.__FLUENTI_LOCALE__="ja"</script>'
-```
-
-### getHydratedLocale(defaultLocale)
-
-Client-side: reads the locale from `window.__FLUENTI_LOCALE__` set during SSR.
-
----
-
-## msg() — Lazy Message Descriptor
-
-```ts
-import { msg } from '@fluenti/core'
-
-const greeting = msg({ id: 'greeting', message: 'Hello {name}!' })
-// Use later: i18n.t(greeting, { name: 'World' })
-```
-
-Creates a `MessageDescriptor` for deferred translation.
-
-### MessageDescriptor
-
-| Field | Type | Description |
-|-------|------|-------------|
-| id | string | Message ID |
-| message | string (optional) | Default/source message |
-| comment | string (optional) | Translator comment |
-| context | string (optional) | Disambiguation context |
-
----
-
-## Types
-
-```ts
 type Locale = string
 type CompiledMessage = string | ((values?: Record<string, unknown>) => string)
 type Messages = Record<string, CompiledMessage>
 type AllMessages = Record<Locale, Messages>
 
+// --- Configuration ---
+
 interface FluentConfig {
   locale: Locale
-  messages: Record<Locale, Messages>
   fallbackLocale?: Locale
-  fallbackChain?: Record<string, Locale[]>
+  messages: AllMessages
   missing?: (locale: Locale, id: string) => string | undefined
 }
+
+interface FluentConfigExtended extends FluentConfig {
+  namespaceMapping?: NamespaceMapping
+  dateFormats?: DateFormatOptions
+  numberFormats?: NumberFormatOptions
+  fallbackChain?: Record<string, Locale[]>
+  externalCatalogs?: Array<{ package: string; catalogDir: string }>
+}
+
+// --- Instance ---
 
 interface FluentInstance {
   locale: Locale
@@ -294,24 +598,122 @@ interface FluentInstance {
 }
 
 interface FluentInstanceExtended extends FluentInstance {
-  d(value: Date | number, style?: string): string
-  n(value: number, style?: string): string
+  d: (value: Date | number, style?: string) => string
+  n: (value: number, style?: string) => string
   format(message: string, values?: Record<string, unknown>): string
+  /** @deprecated Use format() instead */
+  tRaw(message: string, values?: Record<string, unknown>): string
+}
+
+// --- Messages ---
+
+interface MessageDescriptor {
+  id: string
+  message?: string
+  comment?: string
+  context?: string
 }
 
 interface ExtractedMessage {
   id: string
   message?: string
-  origin: { file: string; line: number }
   comment?: string
+  context?: string
+  origin: { file: string; line: number; column?: number }
 }
 
+// --- AST ---
+
+type ASTNode = TextNode | VariableNode | PluralNode | SelectNode | FunctionNode
+
+interface TextNode { type: 'text'; value: string }
+interface VariableNode { type: 'variable'; name: string }
+interface PluralNode {
+  type: 'plural'
+  variable: string
+  offset?: number
+  ordinal?: boolean
+  options: Record<string, ASTNode[]>
+}
+interface SelectNode {
+  type: 'select'
+  variable: string
+  options: Record<string, ASTNode[]>
+}
+interface FunctionNode {
+  type: 'function'
+  variable: string
+  fn: string
+  style?: string
+}
+
+// --- SSR ---
+
+interface DetectLocaleOptions {
+  cookie?: string
+  query?: string
+  path?: string
+  headers?: Headers | Record<string, string>
+  available: Locale[]
+  fallback: Locale
+}
+
+type DetectLocale = (options: DetectLocaleOptions) => Locale
+type GetSSRLocaleScript = (locale: Locale) => string
+type GetHydratedLocale = (fallback?: Locale) => Locale
+
+// --- Formatting ---
+
+interface DateFormatOptions {
+  [styleName: string]: Intl.DateTimeFormatOptions | 'relative'
+}
+
+interface NumberFormatOptions {
+  [styleName: string]: Intl.NumberFormatOptions | ((locale: Locale) => Intl.NumberFormatOptions)
+}
+
+type FormatDateFn = (value: Date | number, style?: string) => string
+type FormatNumberFn = (value: number, style?: string) => string
+
+// --- Locale ---
+
+interface ParsedLocale {
+  language: string
+  script?: string
+  region?: string
+}
+
+interface NamespaceMapping {
+  [globPattern: string]: string
+}
+
+// --- Lazy Messages ---
+
+type MsgTaggedTemplate = (strings: TemplateStringsArray, ...exprs: unknown[]) => MessageDescriptor
+type MsgDescriptor = (descriptor: MessageDescriptor) => MessageDescriptor
+
+// --- CLI/Build Config ---
+
 interface FluentiConfig {
-  sourceLocale: string
-  locales: string[]
+  sourceLocale: Locale
+  locales: Locale[]
   catalogDir: string
-  format: 'po' | 'json'
+  format: 'json' | 'po'
   include: string[]
+  exclude?: string[]
   compileOutDir: string
+  devWarnings?: boolean
+  strictBuild?: boolean
+  namespaceMapping?: Record<string, string>
+  fallbackChain?: Record<string, Locale[]>
+  externalCatalogs?: Array<{ package: string; catalogDir: string }>
+  strictThreshold?: number
+  splitting?: 'dynamic' | 'static' | false
+  defaultBuildLocale?: Locale
 }
 ```
+
+## Documentation
+
+- Full docs: [fluenti.dev](https://fluenti.dev)
+- Repository: [GitHub](https://github.com/usefluenti/fluenti)
