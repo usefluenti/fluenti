@@ -1,9 +1,9 @@
 ---
 title: Quick Start (React)
-description: Get started with Fluenti in a React project
+description: Get started with Fluenti in a React project — compile-time i18n with zero runtime parsing
 ---
 
-import { Steps } from '@astrojs/starlight/components'
+import { Steps, Tabs, TabItem, Aside } from '@astrojs/starlight/components'
 
 <Steps>
 
@@ -30,6 +30,8 @@ import { Steps } from '@astrojs/starlight/components'
    })
    ```
 
+   The plugin enables compile-time transforms — `t` tagged templates and `t()` calls are rewritten at build time, so there's no runtime parsing overhead.
+
 3. **Create `fluenti.config.ts`**
 
    ```typescript
@@ -44,26 +46,53 @@ import { Steps } from '@astrojs/starlight/components'
    }
    ```
 
-4. **Write your component — use `t()` with source text**
+4. **Write your component — use tagged templates or `t()` with source text**
 
-   ```tsx
-   // src/Home.tsx
-   import { useI18n } from '@fluenti/react'
+   <Tabs>
+     <TabItem label="Tagged template (recommended)">
+       ```tsx
+       // src/Home.tsx
+       export function Home() {
+         const name = 'World'
 
-   export function Home() {
-     const { i18n, setLocale } = useI18n()
+         return (
+           <div>
+             <h1>{t`Welcome to my app`}</h1>
+             <p>{t`Hello, ${name}!`}</p>
+           </div>
+         )
+       }
+       ```
 
-     return (
-       <div>
-         <h1>{i18n.t('Welcome to my app')}</h1>
-         <p>{i18n.t('Hello, {name}!', { name: 'World' })}</p>
+       No imports needed — the Vite plugin auto-injects `useI18n()` and transforms the tagged template at build time:
 
-         <button onClick={() => setLocale('en')}>English</button>
-         <button onClick={() => setLocale('zh-CN')}>中文</button>
-       </div>
-     )
-   }
-   ```
+       ```
+       t`Hello, ${name}!` → __i18n.t('Hello, {name}!', { name })
+       ```
+     </TabItem>
+     <TabItem label="useI18n hook">
+       ```tsx
+       // src/Home.tsx
+       import { useI18n } from '@fluenti/react'
+
+       export function Home() {
+         const { i18n, setLocale } = useI18n()
+
+         return (
+           <div>
+             <h1>{i18n.t('Welcome to my app')}</h1>
+             <p>{i18n.t('Hello, {name}!', { name: 'World' })}</p>
+
+             <button onClick={() => setLocale('en')}>English</button>
+             <button onClick={() => setLocale('zh-CN')}>中文</button>
+           </div>
+         )
+       }
+       ```
+     </TabItem>
+   </Tabs>
+
+   Both approaches write **source text directly in code** — no manual key management.
 
 5. **Extract messages**
 
@@ -71,7 +100,9 @@ import { Steps } from '@astrojs/starlight/components'
    npx fluenti extract
    ```
 
-   This scans your source files and generates catalog files in `./locales/`.
+   This scans your source files and generates catalog files in `./locales/`:
+   - `locales/en.po` — source messages (auto-filled)
+   - `locales/zh-CN.po` — empty translations to fill in
 
 6. **Add translations**
 
@@ -90,6 +121,8 @@ import { Steps } from '@astrojs/starlight/components'
    ```bash
    npx fluenti compile
    ```
+
+   This generates optimized JS modules in `src/locales/compiled/` — each message becomes a `/* @__PURE__ */` annotated export that bundlers can tree-shake. Unused translations are eliminated from production builds.
 
 8. **Initialize from compiled output**
 
@@ -118,18 +151,16 @@ import { Steps } from '@astrojs/starlight/components'
 
 </Steps>
 
-## Key differences from Vue
+## What the compiler does
 
-- Uses `<I18nProvider>` instead of a plugin
-- Access i18n via `useI18n()` hook — returns `{ i18n, locale, setLocale, ... }`
-- Call `i18n.t()` directly in JSX — no `useMemo` needed, it's an O(1) hash lookup
-- No `v-t` directive — use `i18n.t()` calls or `<Trans>` component
+Fluenti's Vite plugin handles two compile-time transforms for React:
 
-## Key differences from Solid
+| Source code | Compiled output | What happens |
+|---|---|---|
+| `` t`Hello, ${name}!` `` | `__i18n.t('Hello, {name}!', { name })` | Tagged template → hash lookup, `useI18n()` auto-injected |
+| `i18n.t('Hello, {name}!', { name })` | `i18n.t('a1b2c3', { name })` | Source text → hash ID, zero parsing at runtime |
 
-- No signals — React's re-render cycle handles reactivity
-- `i18n.t()` is called directly (no `createMemo` wrapper)
-- `locale` is a string, not an accessor
+At runtime, `i18n.t()` is an **O(1) hash lookup** into the compiled catalog — no message parsing, no ICU compilation, no `useMemo` needed.
 
 ## Rich text with `<Trans>`
 
@@ -140,6 +171,8 @@ import { Trans } from '@fluenti/react'
 <Trans>This is <strong>important</strong> information.</Trans>
 ```
 
+Write JSX naturally. The markup structure is preserved in the catalog so translators see positional tags like `<0>here</0>`, not raw HTML.
+
 ## Plurals with `<Plural>`
 
 ```tsx
@@ -148,11 +181,38 @@ import { Plural } from '@fluenti/react'
 <Plural value={count} zero="No items" one="# item" other="# items" />
 ```
 
+## Next.js and React Server Components
+
+For **Next.js** projects, use [`@fluenti/next`](/getting-started/quick-start-nextjs/) instead of the Vite plugin. It unlocks:
+
+- **Server Component translations** — `t()` calls run on the server, translation strings are never shipped to the client
+- **Zero client JS for static content** — pages with only server-rendered translations send no i18n runtime to the browser
+- **Auto-compilation in dev** — catalogs recompile on file change, no manual `fluenti compile` during development
+- **Turbopack support** — loader works with both webpack and turbopack
+
+```tsx
+// src/app/page.tsx — Server Component, zero client JS
+import { getI18n, Trans } from '@/lib/i18n.server'
+
+export default async function Home() {
+  const { t } = await getI18n()
+
+  return (
+    <div>
+      <h1>{t('Welcome to my app')}</h1>
+      <Trans>Read the <a href="/docs">documentation</a> for details.</Trans>
+    </div>
+  )
+}
+```
+
+See the [Next.js Quick Start](/getting-started/quick-start-nextjs/) for a full setup guide.
+
 ## Framework compatibility
 
 `@fluenti/react` works with any React-based framework:
 
-- **React SPA** (Vite) — full Vite plugin support
+- **React SPA** (Vite) — full Vite plugin support with compile-time transforms
 - **React Router** — client-side routing with locale persistence
 - **Remix** — file-based routing with Vite SPA mode
-- **Next.js** — App Router with RSC support (use [`@fluenti/next`](/getting-started/quick-start-nextjs/) for full integration)
+- **Next.js** — App Router with RSC support via [`@fluenti/next`](/getting-started/quick-start-nextjs/)
