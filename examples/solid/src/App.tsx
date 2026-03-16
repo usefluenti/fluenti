@@ -62,13 +62,15 @@ const LanguageSwitcher: Component = () => {
 }
 
 export const App: Component = () => {
-  const { t, d, n, format, locale } = useI18n()
+  const { d, n, format, locale } = useI18n()
   const [name, setName] = createSignal('Developer')
   const [compileCount, setCompileCount] = createSignal(3)
   const [price, setPrice] = createSignal(29.99)
   const [pluralCount, setPluralCount] = createSignal(0)
   const [reactivityCount, setReactivityCount] = createSignal(0)
   const [gender, setGender] = createSignal('female')
+  const formattedPrice = () => '$' + price()
+  const developer = 'Developer'
 
   const now = Date.now()
   const pastDate = new Date(Date.now() - 86400000 * 3)
@@ -113,36 +115,36 @@ export const App: Component = () => {
 
         {/* ── Home ── */}
         <div>
-          <h1>{t('Welcome to Fluenti')}</h1>
-          <p style={{ color: '#666', 'margin-bottom': '16px' }}>{t('A type-safe i18n library for Solid')}</p>
+          <h1>{t`Welcome to Fluenti`}</h1>
+          <p style={{ color: '#666', 'margin-bottom': '16px' }}>{t`A type-safe i18n library for Solid`}</p>
 
           <section style={{ 'margin-bottom': '24px' }}>
-            <h2>{t('Hello, {name}!', { name: 'Developer' })}</h2>
-            <p>{t('This playground demonstrates the features of @fluenti/solid.')}</p>
+            <h2>{t`Hello, ${developer}!`}</h2>
+            <p>{t`This playground demonstrates the features of @fluenti/solid.`}</p>
             <p style={{ 'margin-top': '8px', 'font-style': 'italic' }}>
-              {t('Current locale: {locale}', { locale: locale() })}
+              {t`Current locale: ${locale()}`}
             </p>
           </section>
 
           <section style={cardStyle}>
-            <h3 style={{ 'margin-bottom': '12px' }}>{t('Username')}</h3>
+            <h3 style={{ 'margin-bottom': '12px' }}>{t`Username`}</h3>
             <div style={{ display: 'flex', 'flex-direction': 'column', gap: '8px' }}>
               <label>
-                {t('Username')}
-                <input type="text" placeholder={t('Username')} style={{ 'margin-left': '8px' }} />
+                {t`Username`}
+                <input type="text" placeholder={t`Username`} style={{ 'margin-left': '8px' }} />
               </label>
               <label>
-                {t('Email')}
-                <input type="email" placeholder={t('Email')} style={{ 'margin-left': '8px' }} />
+                {t`Email`}
+                <input type="email" placeholder={t`Email`} style={{ 'margin-left': '8px' }} />
               </label>
               <label>
-                {t('Password')}
-                <input type="password" placeholder={t('Password')} style={{ 'margin-left': '8px' }} />
+                {t`Password`}
+                <input type="password" placeholder={t`Password`} style={{ 'margin-left': '8px' }} />
               </label>
-              <small style={{ color: '#999' }}>{t('This field is required')}</small>
+              <small style={{ color: '#999' }}>{t`This field is required`}</small>
               <div style={{ display: 'flex', gap: '8px', 'margin-top': '8px' }}>
-                <button>{t('Submit')}</button>
-                <button>{t('Cancel')}</button>
+                <button>{t`Submit`}</button>
+                <button>{t`Cancel`}</button>
               </div>
             </div>
           </section>
@@ -152,39 +154,39 @@ export const App: Component = () => {
 
         {/* ── Compile-Time Transforms ── */}
         <div>
-          <h1>{t('Compile-Time Transforms')}</h1>
+          <h1>{t`Compile-Time Transforms`}</h1>
           <p style={{ color: '#666', 'margin-bottom': '16px' }}>
-            {t('These demos showcase compile-time features: function calls and tagged templates — all transformed at build time by the Vite plugin.')}
+            {t`These demos showcase compile-time features: function calls and tagged templates — all transformed at build time by the Vite plugin.`}
           </p>
 
           <section style={{ ...cardStyle, 'margin-bottom': '16px' }}>
             <h2 style={{ 'margin-bottom': '12px', color: '#2c3e50' }}>
-              t() Function — Source Text as Key
+              Tagged Template — Source Text as Key
             </h2>
             <p style={{ color: '#888', 'font-size': '0.85rem', 'margin-bottom': '12px' }}>
-              <code>t('source text')</code> calls use the source text as the key. The CLI extracts it,
+              <code>{'t`source text`'}</code> tagged templates use the source text as the key. The CLI extracts it,
               translators translate it, and the compiled output maps it to the right locale.
             </p>
 
             <div style={{ 'border-bottom': '1px solid #eee', 'padding': '8px 0' }}>
               <div style={{ 'font-family': 'monospace', 'font-size': '0.8rem', color: '#999' }}>
-                t('Hello, {'{'}name{'}'}!', {'{'} name: name() {'}'})
+                {'t`Hello, ${name()}!`'}
               </div>
-              <div>{t('Hello, {name}!', { name: name() })}</div>
+              <div>{t`Hello, ${name()}!`}</div>
             </div>
 
             <div style={{ 'border-bottom': '1px solid #eee', 'padding': '8px 0' }}>
               <div style={{ 'font-family': 'monospace', 'font-size': '0.8rem', color: '#999' }}>
-                t('You have {'{'}count{'}'} items.', {'{'} count: compileCount() {'}'})
+                {'t`You have ${compileCount()} items.`'}
               </div>
-              <div>{t('You have {count} items.', { count: compileCount() })}</div>
+              <div>{t`You have ${compileCount()} items.`}</div>
             </div>
 
             <div style={{ 'padding': '8px 0' }}>
               <div style={{ 'font-family': 'monospace', 'font-size': '0.8rem', color: '#999' }}>
-                t('Current locale: {'{'}locale{'}'}', {'{'} locale: locale() {'}'})
+                {'t`Current locale: ${locale()}`'}
               </div>
-              <div>{t('Current locale: {locale}', { locale: locale() })}</div>
+              <div>{t`Current locale: ${locale()}`}</div>
             </div>
           </section>
 
@@ -202,7 +204,7 @@ export const App: Component = () => {
                   style={{ 'margin-left': '8px', padding: '4px 8px', border: '1px solid #ddd', 'border-radius': '4px' }}
                 />
               </label>
-              <div style={{ 'margin-top': '4px' }}>{t('Hello, {name}!', { name: name() })}</div>
+              <div style={{ 'margin-top': '4px' }}>{t`Hello, ${name()}!`}</div>
             </div>
 
             <div style={{ 'border-bottom': '1px solid #eee', 'padding': '8px 0' }}>
@@ -219,7 +221,7 @@ export const App: Component = () => {
                   style={{ padding: '4px 12px', border: '1px solid #ddd', 'border-radius': '4px', cursor: 'pointer' }}
                 >+</button>
               </div>
-              <div style={{ 'margin-top': '4px' }}>{t('You have {count} items in your cart.', { count: compileCount() })}</div>
+              <div style={{ 'margin-top': '4px' }}>{t`You have ${compileCount()} items in your cart.`}</div>
             </div>
 
             <div style={{ 'padding': '8px 0' }}>
@@ -233,7 +235,7 @@ export const App: Component = () => {
                   style={{ 'margin-left': '8px', padding: '4px 8px', border: '1px solid #ddd', 'border-radius': '4px', width: '100px' }}
                 />
               </label>
-              <div style={{ 'margin-top': '4px' }}>{t('Total: {price}', { price: '$' + price() })}</div>
+              <div style={{ 'margin-top': '4px' }}>{t`Total: ${formattedPrice()}`}</div>
             </div>
           </section>
         </div>
@@ -242,7 +244,7 @@ export const App: Component = () => {
 
         {/* ── Rich Text ── */}
         <div>
-          <h1>{t('Rich Text')}</h1>
+          <h1>{t`Rich Text`}</h1>
           <p style={{ color: '#666', 'margin-bottom': '16px' }}>
             The Trans component renders rich text with embedded components.
           </p>
@@ -252,7 +254,7 @@ export const App: Component = () => {
               <h3 style={{ 'margin-bottom': '8px' }}>Welcome Message</h3>
               <p>
                 <Trans
-                  message={t('Welcome to <bold>Fluenti</bold> for <italic>SolidJS</italic>!')}
+                  message={t`Welcome to <bold>Fluenti</bold> for <italic>SolidJS</italic>!`}
                   components={richComponents}
                 />
               </p>
@@ -262,7 +264,7 @@ export const App: Component = () => {
               <h3 style={{ 'margin-bottom': '8px' }}>Feature List</h3>
               <p>
                 <Trans
-                  message={t('Supports <bold>bold</bold>, <italic>italic</italic>, and <link>links</link>.')}
+                  message={t`Supports <bold>bold</bold>, <italic>italic</italic>, and <link>links</link>.`}
                   components={richComponents}
                 />
               </p>
@@ -272,7 +274,7 @@ export const App: Component = () => {
               <h3 style={{ 'margin-bottom': '8px' }}>Nested Components</h3>
               <p>
                 <Trans
-                  message={t('You can even <bold>nest <italic>components</italic> inside</bold> each other.')}
+                  message={t`You can even <bold>nest <italic>components</italic> inside</bold> each other.`}
                   components={richComponents}
                 />
               </p>
@@ -284,7 +286,7 @@ export const App: Component = () => {
 
         {/* ── Plurals ── */}
         <div>
-          <h1>{t('Plurals')}</h1>
+          <h1>{t`Plurals`}</h1>
           <p style={{ color: '#666', 'margin-bottom': '16px' }}>
             The Plural component selects the correct plural form based on Intl.PluralRules.
           </p>
@@ -302,9 +304,9 @@ export const App: Component = () => {
             <p style={{ 'font-size': '18px', 'margin-bottom': '24px' }}>
               <Plural
                 value={pluralCount()}
-                zero={t('Your cart is empty.')}
-                one={t('You have # item in your cart.')}
-                other={t('You have # items in your cart.')}
+                zero={t`Your cart is empty.`}
+                one={t`You have # item in your cart.`}
+                other={t`You have # items in your cart.`}
               />
             </p>
 
@@ -343,7 +345,7 @@ export const App: Component = () => {
                   cursor: 'pointer',
                 }}
               >
-                {t('Reset')}
+                {t`Reset`}
               </button>
             </div>
           </div>
@@ -353,25 +355,25 @@ export const App: Component = () => {
 
         {/* ── Reactivity Demo ── */}
         <div>
-          <h1>{t('Reactivity Demo')}</h1>
+          <h1>{t`Reactivity Demo`}</h1>
           <p style={{ color: '#666', 'margin-bottom': '16px' }}>
-            {t('In SolidJS, the component body runs only once. Text nodes update reactively.')}
+            {t`In SolidJS, the component body runs only once. Text nodes update reactively.`}
           </p>
 
           <div style={{ ...cardStyle, padding: '24px', 'margin-bottom': '16px' }}>
             <h3 style={{ 'margin-bottom': '12px' }}>Signal Counter</h3>
             <p style={{ 'font-size': '24px', 'margin-bottom': '16px' }}>
-              {t('Counter value: {count}', { count: reactivityCount() })}
+              {t`Counter value: ${reactivityCount()}`}
             </p>
             <div style={{ display: 'flex', gap: '8px' }}>
               <button onClick={() => setReactivityCount((c) => c - 1)}>
-                {t('Decrement')}
+                {t`Decrement`}
               </button>
               <button onClick={() => setReactivityCount((c) => c + 1)}>
-                {t('Increment')}
+                {t`Increment`}
               </button>
               <button onClick={() => setReactivityCount(0)}>
-                {t('Reset')}
+                {t`Reset`}
               </button>
             </div>
           </div>
@@ -399,7 +401,7 @@ export const App: Component = () => {
 
         {/* ── Formatting Showcase ── */}
         <div>
-          <h1>{t('Formatting Showcase')}</h1>
+          <h1>{t`Formatting Showcase`}</h1>
           <p style={{ color: '#666', 'margin-bottom': '16px' }}>
             Date formatting, number formatting, direct ICU interpolation, and select components.
           </p>
@@ -494,10 +496,10 @@ export const App: Component = () => {
                   <Select
                     value={gender()}
                     options={{
-                      male: t('He liked this'),
-                      female: t('She liked this'),
+                      male: t`He liked this`,
+                      female: t`She liked this`,
                     }}
-                    other={t('They liked this')}
+                    other={t`They liked this`}
                   />
                 </div>
               </div>

@@ -1,5 +1,5 @@
 import type { Component, JSX } from 'solid-js'
-import { useI18n, Trans } from '@fluenti/solid'
+import { Trans } from '@fluenti/solid'
 
 const Bold: Component<{ children?: JSX.Element }> = (props) => (
   <strong style={{ color: '#2c3e50' }}>{props.children}</strong>
@@ -16,11 +16,9 @@ const Link: Component<{ children?: JSX.Element }> = (props) => (
 const richComponents = { bold: Bold, italic: Italic, link: Link }
 
 export default function RichTextPage() {
-  const { t } = useI18n()
-
   return (
     <div>
-      <h1>{t('Rich Text')}</h1>
+      <h1>{t`Rich Text`}</h1>
       <p style={{ color: '#666', 'margin-bottom': '16px' }}>
         The Trans component renders rich text with embedded components, fully SSR-compatible.
       </p>
@@ -39,7 +37,7 @@ export default function RichTextPage() {
           <h3 style={{ 'margin-bottom': '8px' }}>Welcome Message</h3>
           <p>
             <Trans
-              message={t('Welcome to <bold>Fluenti</bold> for <italic>SolidStart</italic>!')}
+              message={t`Welcome to <bold>Fluenti</bold> for <italic>SolidStart</italic>!`}
               components={richComponents}
             />
           </p>
@@ -54,7 +52,7 @@ export default function RichTextPage() {
           <h3 style={{ 'margin-bottom': '8px' }}>Feature List</h3>
           <p>
             <Trans
-              message={t('Supports <bold>bold</bold>, <italic>italic</italic>, and <link>links</link>.')}
+              message={t`Supports <bold>bold</bold>, <italic>italic</italic>, and <link>links</link>.`}
               components={richComponents}
             />
           </p>

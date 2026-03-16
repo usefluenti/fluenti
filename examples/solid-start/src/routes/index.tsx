@@ -1,21 +1,22 @@
 import { useI18n } from '@fluenti/solid'
 
 export default function HomePage() {
-  const { t, locale, d, n } = useI18n()
+  const { locale, d, n } = useI18n()
+  const name = 'Developer'
+  const currentLocale = locale()
 
   return (
     <div>
-      <h1>{t('Welcome to Fluenti')}</h1>
+      <h1>{t`Welcome to Fluenti`}</h1>
       <p style={{ color: '#666', 'margin-bottom': '16px' }}>
-        {t('A compile-time i18n library with SSR support')}
+        {t`A compile-time i18n library with SSR support`}
       </p>
 
       <section style={{ 'margin-bottom': '24px' }}>
-        <h2>{t('Hello, {name}!', { name: 'Developer' })}</h2>
-        <p>{t('This page is server-side rendered with per-request locale isolation.')}</p>
+        <h2>{t`Hello, ${name}!`}</h2>
+        <p>{t`This page is server-side rendered with per-request locale isolation.`}</p>
         <p style={{ 'margin-top': '8px', 'font-style': 'italic' }}>
-          {t('Current locale: {locale}', { locale: locale() })}
-        </p>
+          {t`Current locale: ${currentLocale}`}</p>
       </section>
 
       <section style={{

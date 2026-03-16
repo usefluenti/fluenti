@@ -40,12 +40,11 @@ const LanguageSwitcher: Component = () => {
 }
 
 const Nav: Component = () => {
-  const { t } = useI18n()
   return (
     <nav style={{ display: 'flex', gap: '16px', 'margin-bottom': '8px' }}>
-      <a href="/" style={{ color: '#4a90d9' }}>{t('Home')}</a>
-      <a href="/rich-text" style={{ color: '#4a90d9' }}>{t('Rich Text')}</a>
-      <a href="/plurals" style={{ color: '#4a90d9' }}>{t('Plurals')}</a>
+      <a href="/" style={{ color: '#4a90d9' }}>{t`Home`}</a>
+      <a href="/rich-text" style={{ color: '#4a90d9' }}>{t`Rich Text`}</a>
+      <a href="/plurals" style={{ color: '#4a90d9' }}>{t`Plurals`}</a>
     </nav>
   )
 }
