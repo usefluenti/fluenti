@@ -75,3 +75,35 @@ msgstr ""
 
 msgid "Hello from server action"
 msgstr ""
+
+msgid "Rich Text"
+msgstr ""
+
+msgid "Fallback"
+msgstr ""
+
+msgid "Fallback Demo"
+msgstr ""
+
+msgid "This text is only translated in English"
+msgstr ""
+
+#. msg`Rich Text Demos`
+msgid "1x4v5ca"
+msgstr "Rich Text Demos"
+
+#. msg`Components for complex translations`
+msgid "1kjrwe6"
+msgstr "Components for complex translations"
+
+#. Trans: Read the <a>documentation</a> for more info.
+msgid "18r06yp"
+msgstr "Read the <0>documentation</0> for more info."
+
+#. Trans: This is <strong>important</strong> information.
+msgid "p3nupq"
+msgstr "This is <0>important</0> information."
+
+#. Trans: Please <a>sign in</a> or <strong>register</strong> to continue.
+msgid "166utyv"
+msgstr "Please <0>sign in</0> or <1>register</1> to continue."

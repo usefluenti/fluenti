@@ -1,5 +1,11 @@
 import { useState } from 'react'
-import { useI18n, Trans, Plural, Select } from '@fluenti/react'
+import { useI18n, Trans, Plural, Select, msg } from '@fluenti/react'
+
+// Lazy message descriptors — equivalent to Lingui's defineMessage/msg
+const ROLES = {
+  admin: msg`Administrator`,
+  user: msg`Regular User`,
+}
 
 export function App({ onLocaleChange }: { onLocaleChange: (locale: string) => void }) {
   const { i18n, locale, setLocale, isLoading, preloadLocale } = useI18n()
@@ -64,6 +70,13 @@ export function App({ onLocaleChange }: { onLocaleChange: (locale: string) => vo
           <p data-testid="current-locale">{i18n.t('Current locale: {locale}', { locale })}</p>
           <p data-testid="date">{i18n.d(new Date(2025, 0, 15))}</p>
           <p data-testid="number">{i18n.n(1234.5)}</p>
+
+          <div data-testid="msg-roles">
+            <span data-testid="msg-admin">{i18n.t(ROLES.admin)}</span>
+            {' / '}
+            <span data-testid="msg-user">{i18n.t(ROLES.user)}</span>
+          </div>
+          <p data-testid="fallback-only">{i18n.t('This key only exists in English')}</p>
 
           <h3 data-testid="features-title">{i18n.t('Features')}</h3>
           <ul data-testid="features-list">

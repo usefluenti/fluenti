@@ -75,3 +75,9 @@ msgstr "الخادم يقول: {message}"
 
 msgid "Hello from server action"
 msgstr "مرحباً من إجراء الخادم"
+
+msgid "Rich Text"
+msgstr "نص منسق"
+
+msgid "Fallback"
+msgstr "احتياطي"

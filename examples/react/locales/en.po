@@ -57,3 +57,14 @@ msgstr ""
 
 msgid "Reset"
 msgstr ""
+
+#. msg`Administrator`
+msgid "1d03gh6"
+msgstr "Administrator"
+
+#. msg`Regular User`
+msgid "154355u"
+msgstr "Regular User"
+
+msgid "This key only exists in English"
+msgstr ""
