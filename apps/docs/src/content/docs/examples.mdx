@@ -1,54 +1,80 @@
 ---
 title: Examples
 description: Official Fluenti example projects for every supported framework.
-template: splash
-hero:
-  title: Examples
-  tagline: Explore official example projects to see Fluenti in action across different frameworks.
 ---
 
 import { Card, CardGrid } from '@astrojs/starlight/components';
 
+Explore official example projects to see Fluenti in action across different frameworks.
+
+## React Ecosystem
+
 <CardGrid>
-  <Card title="Vue 3" icon="seti:vue">
-    A full-featured Vue 3 app demonstrating translations, plurals, rich text, `v-t` directive, date/number formatting, and more.
-
-    [View on GitHub →](https://github.com/usefluenti/fluenti/tree/main/examples/vue)
-  </Card>
-
   <Card title="React" icon="seti:react">
-    A React app with I18nProvider, locale switching, Trans/Plural/Select components, date/number formatting.
+    React 19 SPA with PO-format catalogs, `I18nProvider`, `Trans`/`Plural`/`Select` components, and date/number formatting.
 
     [View on GitHub →](https://github.com/usefluenti/fluenti/tree/main/examples/react)
   </Card>
 
-  <Card title="SolidJS" icon="seti:javascript">
-    A SolidJS app showcasing translations, plurals, rich text, compile-time features, and reactive signal integration.
+  <Card title="Next.js" icon="seti:react">
+    Next.js 15 App Router with React Server Components, streaming SSR, server actions, and cookie-based locale detection.
 
-    [View on GitHub →](https://github.com/usefluenti/fluenti/tree/main/examples/solid)
+    [View on GitHub →](https://github.com/usefluenti/fluenti/tree/main/examples/nextjs)
+  </Card>
+
+  <Card title="React Router" icon="seti:react">
+    React Router v7 SPA with client-side routing, lazy-loaded routes, and cookie-based locale persistence.
+
+    [View on GitHub →](https://github.com/usefluenti/fluenti/tree/main/examples/react-router)
+  </Card>
+
+  <Card title="TanStack Start" icon="seti:react">
+    TanStack Start with file-based routing, SSR via Vinxi, and cookie-based locale management.
+
+    [View on GitHub →](https://github.com/usefluenti/fluenti/tree/main/examples/tanstack-start)
+  </Card>
+</CardGrid>
+
+## Vue Ecosystem
+
+<CardGrid>
+  <Card title="Vue 3" icon="seti:vue">
+    Full-featured Vue 3 app with `v-t` directive, plurals, rich text, date/number formatting, and compile-time transforms.
+
+    [View on GitHub →](https://github.com/usefluenti/fluenti/tree/main/examples/vue)
   </Card>
 
   <Card title="Nuxt" icon="seti:vue">
-    A Nuxt 3 app with SSR support, demonstrating server-side locale detection and hydration.
+    Nuxt 3 SSR app with cookie-based locale detection, server-side rendering, and automatic hydration.
 
     [View on GitHub →](https://github.com/usefluenti/fluenti/tree/main/examples/nuxt)
   </Card>
 
-  <Card title="SolidStart" icon="seti:javascript">
-    A SolidStart app with SSR, showcasing server-side rendering and isomorphic i18n.
-
-    [View on GitHub →](https://github.com/usefluenti/fluenti/tree/main/examples/solid-start)
-  </Card>
-
   <Card title="vue-i18n Bridge" icon="seti:vue">
-    A Vue 3 app demonstrating `@fluenti/vue-i18n-compat` — running vue-i18n and Fluenti side by side with shared locale, bridged `t()`/`tc()`/`te()`, and ICU select.
+    Vue 3 app demonstrating `@fluenti/vue-i18n-compat` — running vue-i18n and Fluenti side by side with shared locale, bridged `t()`/`tc()`/`te()`, and ICU select.
 
     [View on GitHub →](https://github.com/usefluenti/fluenti/tree/main/e2e/fixtures/vue-i18n-bridge)
   </Card>
 
   <Card title="Nuxt Routing" icon="seti:vue">
-    A Vue 3 + Vue Router app demonstrating `@fluenti/nuxt` routing utilities — locale-prefixed routes, `switchLocalePath`, and SEO head generation.
+    Vue 3 + Vue Router app demonstrating `@fluenti/nuxt` routing utilities — locale-prefixed routes, `switchLocalePath`, and SEO head generation.
 
     [View on GitHub →](https://github.com/usefluenti/fluenti/tree/main/e2e/fixtures/nuxt-routes)
+  </Card>
+</CardGrid>
+
+## Solid Ecosystem
+
+<CardGrid>
+  <Card title="SolidJS" icon="seti:javascript">
+    SolidJS app with reactive signal integration, compile-time features, plurals, rich text, and `I18nProvider`.
+
+    [View on GitHub →](https://github.com/usefluenti/fluenti/tree/main/examples/solid)
+  </Card>
+
+  <Card title="SolidStart" icon="seti:javascript">
+    SolidStart SSR app with server-side rendering, isomorphic i18n, and hydration support.
+
+    [View on GitHub →](https://github.com/usefluenti/fluenti/tree/main/examples/solid-start)
   </Card>
 </CardGrid>
