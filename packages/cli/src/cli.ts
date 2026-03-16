@@ -11,18 +11,9 @@ import type { CatalogData } from './catalog'
 import { readJsonCatalog, writeJsonCatalog } from './json-format'
 import { readPoCatalog, writePoCatalog } from './po-format'
 import { compileCatalog, compileCatalogSplit, compileIndex, collectAllIds } from './compile'
-import type { ExtractedMessage } from '@fluenti/core'
+import type { ExtractedMessage, FluentiConfig } from '@fluenti/core'
 
-interface FluentConfig {
-  sourceLocale: string
-  locales: string[]
-  catalogDir: string
-  format: 'json' | 'po'
-  include: string[]
-  compileOutDir: string
-}
-
-const defaultConfig: FluentConfig = {
+const defaultConfig: FluentiConfig = {
   sourceLocale: 'en',
   locales: ['en'],
   catalogDir: './locales',
@@ -31,7 +22,7 @@ const defaultConfig: FluentConfig = {
   compileOutDir: './locales/compiled',
 }
 
-async function loadConfig(configPath?: string): Promise<FluentConfig> {
+async function loadConfig(configPath?: string): Promise<FluentiConfig> {
   const paths = configPath
     ? [resolve(configPath)]
     : [
@@ -45,8 +36,8 @@ async function loadConfig(configPath?: string): Promise<FluentConfig> {
       try {
         const { createJiti } = await import('jiti')
         const jiti = createJiti(import.meta.url)
-        const mod = await jiti.import(p) as { default?: Partial<FluentConfig> }
-        const userConfig = mod.default ?? mod as unknown as Partial<FluentConfig>
+        const mod = await jiti.import(p) as { default?: Partial<FluentiConfig> }
+        const userConfig = mod.default ?? mod as unknown as Partial<FluentiConfig>
         return { ...defaultConfig, ...userConfig }
       } catch {
         consola.warn(`Failed to load config from ${p}, using defaults`)
