@@ -1,18 +1,14 @@
 # @fluenti/cli
 
-> CLI tool for Fluenti — message extraction, catalog compilation, translation stats, and AI-powered translation.
+> CLI tool for the Fluenti i18n framework. Extracts translatable messages from Vue SFC and TSX/JSX source files, compiles PO/JSON catalogs to optimized ES modules with tree-shaking support, shows translation progress stats, and provides AI-powered translation via Claude Code or Codex CLI.
 
-## Overview
-
-@fluenti/cli provides the command-line workflow for Fluenti projects: extract translatable messages from source code, compile catalogs to optimized JS modules, view translation progress, and translate using AI.
-
-- Package: @fluenti/cli
+- Package: `@fluenti/cli`
 - Binary: `fluenti`
 - Docs: https://fluenti.dev
 - Repository: https://github.com/usefluenti/fluenti/tree/main/packages/cli
 - License: MIT
 
-## Install
+## Installation
 
 ```bash
 pnpm add -D @fluenti/cli
@@ -20,63 +16,47 @@ pnpm add -D @fluenti/cli
 
 ## Configuration
 
-Create `fluenti.config.ts` in your project root:
+Create `fluenti.config.ts` (or `.js` / `.mjs`) in your project root:
 
 ```ts
 export default {
   sourceLocale: 'en',
   locales: ['en', 'ja', 'zh-CN'],
   catalogDir: './locales',
-  format: 'po',                          // 'po' or 'json'
+  format: 'po' as const,              // 'po' or 'json'
   include: ['./src/**/*.{vue,tsx,jsx,ts,js}'],
-  compileOutDir: './locales/compiled',
+  compileOutDir: './src/locales/compiled',
 }
 ```
 
+| Property | Type | Default | Description |
+|---|---|---|---|
+| `sourceLocale` | `string` | `'en'` | Source language for extraction |
+| `locales` | `string[]` | `['en']` | All supported locales |
+| `catalogDir` | `string` | `'./locales'` | Directory for PO/JSON catalog files |
+| `format` | `'po' \| 'json'` | `'po'` | Catalog format (PO is gettext-compatible; JSON is simple key-value) |
+| `include` | `string[]` | `['./src/**/*.{vue,tsx,jsx,ts,js}']` | Glob patterns for source files to scan |
+| `compileOutDir` | `string` | `'./locales/compiled'` | Output directory for compiled JS modules |
+
+Config is loaded via `jiti` with fallback to defaults. Searched paths: `fluenti.config.ts`, `fluenti.config.js`, `fluenti.config.mjs`.
+
 ## Commands
 
-### `fluenti extract`
-Scan source files for translatable messages and update catalog files.
+- `fluenti extract [--config path]`: Scan source files for translatable messages and update catalog files. Extracts from Vue SFC (`v-t` directive, `<Trans>`, `<Plural>` components, `t()` calls) and TSX/JSX (`<Trans>`, `<Plural>`, `t()` calls). Reports added, unchanged, and obsolete counts per locale.
+- `fluenti compile [--config path] [--split]`: Compile catalogs to optimized ES modules. Default mode: `.ts` file with default export object. Split mode (`--split`): `.js` files with named exports and `@__PURE__` annotations for tree-shaking, plus a generated `index.js` with locale list and lazy loaders.
+- `fluenti stats [--config path]`: Display a table of translation progress per locale (total messages, translated count, completion percentage). Excludes obsolete entries.
+- `fluenti translate [--config path] [--provider claude|codex] [--locale xx] [--batch-size N]`: AI-powered translation of untranslated messages using local CLI tools. Default provider: `claude` (Claude Code CLI). Default batch size: `50`. Preserves ICU MessageFormat placeholders and HTML tags. Translates all non-source locales by default, or a specific locale with `--locale`.
+
+## Workflow
 
 ```bash
-fluenti extract [--config path]
+fluenti extract          # 1. Extract messages from source
+fluenti translate        # 2. AI-translate untranslated messages
+fluenti compile --split  # 3. Compile to tree-shakeable ES modules
+fluenti stats            # 4. Check translation progress
 ```
 
-Extracts from: Vue SFC (`v-t`, `<Trans>`, `<Plural>`, `t()`), TSX/JSX (`t```, `t()`, `<Trans>`, `<Plural>`).
+## Documentation
 
-### `fluenti compile`
-Compile PO/JSON catalogs to optimized ES modules.
-
-```bash
-fluenti compile [--config path] [--split]
-```
-
-- Default mode: generates `.ts` files with `export default { ... }`
-- Split mode (`--split`): named exports with `@__PURE__` annotations for tree-shaking
-
-### `fluenti stats`
-Show translation progress for all locales.
-
-```bash
-fluenti stats [--config path]
-```
-
-### `fluenti translate`
-AI-powered translation using local CLI tools.
-
-```bash
-fluenti translate [--provider claude|codex] [--locale ja] [--batch-size 50] [--config path]
-```
-
-- `--provider`: `claude` (Claude Code CLI) or `codex` (OpenAI Codex CLI). Default: `claude`
-- `--locale`: translate specific locale only; omit for all non-source locales
-- `--batch-size`: messages per AI call. Default: `50`
-
-## Typical Workflow
-
-```bash
-fluenti extract          # Extract messages from source
-fluenti translate        # AI-translate untranslated messages
-fluenti compile --split  # Compile to tree-shakeable JS
-fluenti stats            # Check translation progress
-```
+- Full docs: [fluenti.dev](https://fluenti.dev)
+- Repository: [GitHub](https://github.com/usefluenti/fluenti)
