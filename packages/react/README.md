@@ -154,7 +154,7 @@ Works with any React-based framework:
 - React SPA (Vite)
 - React Router
 - Remix
-- Next.js (App Router / Pages Router)
+- Next.js (App Router / Pages Router) — use [`@fluenti/next`](../next) for webpack/turbopack integration
 
 ## Documentation
 

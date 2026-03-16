@@ -390,3 +390,20 @@ t`Hello ${name}` → __i18n.t('Hello {name}', { name })
 ```
 
 The plugin auto-injects the `__useI18n()` internal hook. Unlike Vue (`computed`) and Solid (`createMemo`), React uses direct calls since re-renders handle reactivity.
+
+## Next.js Plugin
+
+For Next.js projects, use [`@fluenti/next`](/api/next/) instead of the Vite plugin. It provides the same `t`` ` `` transform via a webpack/turbopack loader, plus auto-compilation of catalogs in dev mode.
+
+```typescript
+// next.config.ts
+import { withFluenti } from '@fluenti/next'
+
+export default withFluenti({
+  locales: ['en', 'ja'],
+})({
+  reactStrictMode: true,
+})
+```
+
+See the [Next.js Quick Start](/getting-started/quick-start-nextjs/) for a full setup guide.

@@ -1,0 +1,178 @@
+---
+title: "@fluenti/next"
+description: Next.js plugin API reference — webpack loader, turbopack support, and auto-compilation
+---
+
+## `withFluenti(options?)`
+
+Creates a Next.js config wrapper that adds the Fluenti webpack/turbopack loader and dev-mode auto-compilation.
+
+```typescript
+// next.config.ts
+import { withFluenti } from '@fluenti/next'
+
+export default withFluenti({
+  locales: ['en', 'ja', 'ar'],
+  catalogDir: './locales',
+  compileOutDir: './src/locales/compiled',
+  format: 'po',
+})({
+  reactStrictMode: true,
+})
+```
+
+### `FluentiNextOptions`
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `catalogDir` | `string?` | `'./locales'` | Directory containing source translation catalogs (PO/JSON) |
+| `compileOutDir` | `string?` | `'./src/locales/compiled'` | Output directory for compiled JS catalogs |
+| `sourceLocale` | `string?` | `'en'` | Source locale code |
+| `locales` | `string[]?` | `[sourceLocale]` | List of locale codes to compile |
+| `format` | `'json' \| 'po'?` | `'po'` | Catalog file format |
+| `autoCompile` | `boolean?` | `true` | Auto-compile catalogs and watch for changes in dev mode |
+
+### Return value
+
+```typescript
+(nextConfig?: NextConfig) => NextConfig
+```
+
+A function that wraps your Next.js config. Adds:
+- A webpack rule with the Fluenti loader for `.tsx`, `.jsx`, `.ts`, `.js` files
+- Turbopack rules via `turbopack.rules` (Next.js 15.3+)
+- File watching in dev mode when `autoCompile` is enabled
+
+### Chaining
+
+The wrapper preserves existing config, including custom `webpack` functions:
+
+```typescript
+export default withFluenti({ locales: ['en', 'ja'] })({
+  webpack(config, options) {
+    // Runs after the Fluenti loader is added
+    return config
+  },
+})
+```
+
+---
+
+## Webpack Loader
+
+The Fluenti loader transforms React source files at build time. It handles two patterns:
+
+### Tagged template: `t`` ` ``
+
+```tsx
+// Input
+const msg = t`Hello ${name}`
+const info = t`You have ${count} items in ${category}`
+
+// Output
+import { __useI18n } from '@fluenti/react'
+const __i18n = __useI18n()
+const msg = __i18n.t('Hello {name}', { name: name })
+const info = __i18n.t('You have {count} items in {category}', { count: count, category: category })
+```
+
+#### Expression handling
+
+| Expression | ICU placeholder | Value |
+|-----------|----------------|-------|
+| `${name}` (identifier) | `{name}` | `name` |
+| `${user.name}` (property access) | `{name}` | `user.name` |
+| `${a + b}` (complex expression) | `{0}` (positional) | `a + b` |
+
+### Function call: `t()`
+
+```tsx
+// Input
+const msg = t('Welcome to {app}', { app: 'MyApp' })
+
+// Output
+const msg = __i18n.t('Welcome to {app}', { app: 'MyApp' })
+```
+
+Only standalone `t()` calls are transformed. Method calls like `i18n.t()` or `$t()` are left untouched.
+
+### Auto-injection
+
+When any `t`` ` `` or `t()` is detected, the loader automatically injects:
+
+```typescript
+import { __useI18n } from '@fluenti/react'
+const __i18n = __useI18n()
+```
+
+This means files using `t`` ` `` must be React components (the hook call must be inside a component function body).
+
+### File filtering
+
+The loader only processes files that:
+- Match `.tsx`, `.jsx`, `.ts`, or `.js` extensions
+- Are **not** inside `node_modules`
+- Contain `t`` ` `` or `t(` patterns (quick regex check — files without these patterns are passed through unchanged)
+
+---
+
+## Auto-Compilation
+
+When `autoCompile` is `true` (default) and `next dev` is running:
+
+1. **Initial compile** — catalogs are compiled on dev server startup
+2. **File watching** — the `catalogDir` is watched for changes to `.po` or `.json` files
+3. **Re-compile** — on file change, catalogs are re-compiled to `compileOutDir`
+4. **HMR** — Next.js detects the output file change and triggers a hot module reload
+
+This eliminates the need to manually run `fluenti compile` during development.
+
+### Production builds
+
+Auto-compilation only runs in `next dev`. For production, add `fluenti compile` to your build script:
+
+```json
+{
+  "scripts": {
+    "dev": "next dev",
+    "build": "fluenti compile && next build"
+  }
+}
+```
+
+---
+
+## Turbopack Support
+
+The plugin registers the loader for turbopack using the `turbopack.rules` config format (Next.js 15.3+):
+
+```typescript
+// Automatically added by withFluenti():
+{
+  turbopack: {
+    rules: {
+      '*.tsx': { loaders: ['@fluenti/next/loader'], as: '*.js' },
+      '*.jsx': { loaders: ['@fluenti/next/loader'], as: '*.js' },
+      '*.ts':  { loaders: ['@fluenti/next/loader'], as: '*.js' },
+      '*.js':  { loaders: ['@fluenti/next/loader'], as: '*.js' },
+    },
+  },
+}
+```
+
+If you already have a `turbopack` config, the plugin merges its rules (your rules take precedence).
+
+---
+
+## Comparison with `@fluenti/vite-plugin`
+
+| Feature | `@fluenti/vite-plugin` | `@fluenti/next` |
+|---------|----------------------|-----------------|
+| `t`` ` `` transform | ✓ | ✓ |
+| `t()` transform | ✓ | ✓ |
+| Vue `v-t` directive | ✓ | — (React only) |
+| Solid JSX transform | ✓ | — (React only) |
+| Virtual modules | ✓ | — |
+| Code splitting (dynamic/static/per-route) | ✓ | — |
+| HMR | Native Vite HMR | Via auto-compile + file watching |
+| Build tool | Vite | webpack / turbopack |

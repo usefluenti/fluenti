@@ -37,6 +37,9 @@ pnpm add @fluenti/core @fluenti/vue @fluenti/vite-plugin
 # React
 pnpm add @fluenti/core @fluenti/react @fluenti/vite-plugin
 
+# Next.js
+pnpm add @fluenti/core @fluenti/react @fluenti/next
+
 # Nuxt
 pnpm add @fluenti/nuxt @fluenti/core @fluenti/vue
 
@@ -89,6 +92,7 @@ The Vite plugin loads compiled catalogs automatically — no manual wiring neede
 | [`@fluenti/vue`](packages/vue) <br> [![npm](https://img.shields.io/npm/v/@fluenti/vue?color=4f46e5&label=)](https://www.npmjs.com/package/@fluenti/vue) | Vue 3 integration — `v-t` directive, `<Trans>`, `useI18n()` composable |
 | [`@fluenti/react`](packages/react) <br> [![npm](https://img.shields.io/npm/v/@fluenti/react?color=4f46e5&label=)](https://www.npmjs.com/package/@fluenti/react) | React integration — `I18nProvider`, `<Trans>`, `<Plural>`, `<Select>`, `useI18n()` hook |
 | [`@fluenti/solid`](packages/solid) <br> [![npm](https://img.shields.io/npm/v/@fluenti/solid?color=4f46e5&label=)](https://www.npmjs.com/package/@fluenti/solid) | SolidJS integration — `<Trans>`, `I18nProvider`, `useI18n()` |
+| [`@fluenti/next`](packages/next) <br> [![npm](https://img.shields.io/npm/v/@fluenti/next?color=4f46e5&label=)](https://www.npmjs.com/package/@fluenti/next) | Next.js plugin — webpack/turbopack loader, auto-compilation, dev file watching |
 | [`@fluenti/cli`](packages/cli) <br> [![npm](https://img.shields.io/npm/v/@fluenti/cli?color=4f46e5&label=)](https://www.npmjs.com/package/@fluenti/cli) | Message extraction from Vue SFC & TSX, PO/JSON catalog compilation |
 | [`@fluenti/vite-plugin`](packages/vite-plugin) <br> [![npm](https://img.shields.io/npm/v/@fluenti/vite-plugin?color=4f46e5&label=)](https://www.npmjs.com/package/@fluenti/vite-plugin) | Vite build-time transforms, virtual modules, code splitting |
 | [`@fluenti/nuxt`](packages/nuxt) <br> [![npm](https://img.shields.io/npm/v/@fluenti/nuxt?color=4f46e5&label=)](https://www.npmjs.com/package/@fluenti/nuxt) | Nuxt module — locale-prefixed routing, SEO helpers, auto locale detection |
@@ -101,6 +105,7 @@ Full documentation — guides, API reference, and examples — is available at *
 - [Getting Started](https://fluenti.dev/getting-started/introduction/)
 - [Vue Quick Start](https://fluenti.dev/getting-started/quick-start-vue/)
 - [React Quick Start](https://fluenti.dev/getting-started/quick-start-react/)
+- [Next.js Quick Start](https://fluenti.dev/getting-started/quick-start-nextjs/)
 - [SolidJS Quick Start](https://fluenti.dev/getting-started/quick-start-solid/)
 - [Nuxt Quick Start](https://fluenti.dev/getting-started/quick-start-nuxt/)
 - [Code Splitting](https://fluenti.dev/advanced/code-splitting/)
