@@ -113,9 +113,13 @@ export function createFluent(config: FluentConfigExtended): FluentInstanceExtend
 
     // Missing handler
     if (config.missing) {
-      const result = config.missing(currentLocale, id)
-      if (result !== undefined) {
-        return result
+      try {
+        const result = config.missing(currentLocale, id)
+        if (result !== undefined) {
+          return result
+        }
+      } catch {
+        // Missing handler threw — fall through to returning the id
       }
     }
 
