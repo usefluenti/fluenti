@@ -1,0 +1,272 @@
+# Migrating to @fluenti/react from react-i18next / react-intl
+
+> Step-by-step guide to migrate a React app from react-i18next or react-intl (FormatJS) to Fluenti.
+
+## Overview
+
+Fluenti is a **compile-time** i18n library — translations are compiled to optimized JS at build time. Unlike react-i18next and react-intl which parse messages at runtime, Fluenti produces zero-overhead string functions.
+
+Key differences:
+- No runtime message parser — messages become plain strings or template literal functions
+- ICU MessageFormat for all syntax (plurals, selects, numbers, dates)
+- PO or JSON catalog format, managed by CLI extraction and compilation
+- Vite plugin or Next.js plugin for build-time transforms
+
+---
+
+## Migrating from react-i18next
+
+### 1. Install Fluenti
+
+```bash
+pnpm add @fluenti/core @fluenti/react
+pnpm add -D @fluenti/cli @fluenti/vite-plugin
+```
+
+### 2. Replace provider setup
+
+Before (react-i18next):
+```tsx
+import i18n from 'i18next'
+import { initReactI18next, I18nextProvider } from 'react-i18next'
+
+i18n.use(initReactI18next).init({
+  resources: { en: { translation: messages } },
+  lng: 'en',
+})
+
+<I18nextProvider i18n={i18n}><App /></I18nextProvider>
+```
+
+After (Fluenti):
+```tsx
+import { I18nProvider } from '@fluenti/react'
+import en from './locales/compiled/en'
+
+<I18nProvider locale="en" fallbackLocale="en" messages={{ en }}>
+  <App />
+</I18nProvider>
+```
+
+### 3. Update hook usage
+
+Before (react-i18next):
+```tsx
+import { useTranslation } from 'react-i18next'
+const { t, i18n } = useTranslation()
+t('hello', { name: 'World' })
+i18n.changeLanguage('ja')
+```
+
+After (Fluenti):
+```tsx
+import { useI18n } from '@fluenti/react'
+const { i18n, setLocale } = useI18n()
+i18n.t('hello', { name: 'World' })
+setLocale('ja')
+```
+
+### 4. Replace components
+
+Before (react-i18next):
+```tsx
+import { Trans } from 'react-i18next'
+<Trans i18nKey="welcome">
+  Welcome to <strong>our app</strong>
+</Trans>
+```
+
+After (Fluenti):
+```tsx
+import { Trans } from '@fluenti/react'
+<Trans message="Welcome to {0}our app{1}">
+  {(text) => <strong>{text}</strong>}
+</Trans>
+```
+
+### 5. Convert message syntax
+
+react-i18next interpolation → ICU:
+```
+# react-i18next
+"hello": "Hello, {{name}}!"
+
+# Fluenti (ICU MessageFormat)
+"hello": "Hello, {name}!"
+```
+
+react-i18next plurals → ICU plural:
+```
+# react-i18next
+"items": "{{count}} item"
+"items_plural": "{{count}} items"
+
+# Fluenti (ICU)
+"items": "{count, plural, one {{count} item} other {{count} items}}"
+```
+
+### API Mapping: react-i18next → Fluenti
+
+| react-i18next | Fluenti |
+|---------------|---------|
+| `useTranslation()` | `useI18n()` |
+| `t(key, options)` | `i18n.t(key, values)` |
+| `i18n.changeLanguage(lng)` | `setLocale(locale)` |
+| `i18n.language` | `locale` |
+| `<Trans>` | `<Trans>` |
+| `<I18nextProvider>` | `<I18nProvider>` |
+| `{{var}}` interpolation | `{var}` interpolation |
+| `_plural` suffix | ICU `{n, plural, ...}` |
+| Namespaces | Not needed (use message IDs) |
+| Backend plugins | `loadMessages` prop on provider |
+
+---
+
+## Migrating from react-intl (FormatJS)
+
+### 1. Install Fluenti
+
+```bash
+pnpm add @fluenti/core @fluenti/react
+pnpm add -D @fluenti/cli @fluenti/vite-plugin
+```
+
+### 2. Replace provider
+
+Before (react-intl):
+```tsx
+import { IntlProvider } from 'react-intl'
+<IntlProvider locale="en" messages={messages}>
+  <App />
+</IntlProvider>
+```
+
+After (Fluenti):
+```tsx
+import { I18nProvider } from '@fluenti/react'
+import en from './locales/compiled/en'
+<I18nProvider locale="en" fallbackLocale="en" messages={{ en }}>
+  <App />
+</I18nProvider>
+```
+
+### 3. Update hook usage
+
+Before (react-intl):
+```tsx
+import { useIntl } from 'react-intl'
+const intl = useIntl()
+intl.formatMessage({ id: 'hello' }, { name: 'World' })
+intl.formatDate(date, { dateStyle: 'long' })
+intl.formatNumber(1234, { style: 'decimal' })
+```
+
+After (Fluenti):
+```tsx
+import { useI18n } from '@fluenti/react'
+const { i18n } = useI18n()
+i18n.t('hello', { name: 'World' })
+i18n.d(date, 'long')
+i18n.n(1234, 'decimal')
+```
+
+### 4. Replace components
+
+Before (react-intl):
+```tsx
+import { FormattedMessage, FormattedDate, FormattedNumber } from 'react-intl'
+<FormattedMessage id="hello" values={{ name: 'World' }} />
+<FormattedDate value={date} dateStyle="long" />
+<FormattedNumber value={1234} style="decimal" />
+```
+
+After (Fluenti):
+```tsx
+import { Trans, DateTime, NumberFormat } from '@fluenti/react'
+<Trans message="Hello, {name}!" values={{ name: 'World' }} />
+<DateTime value={date} style="long" />
+<NumberFormat value={1234} style="decimal" />
+```
+
+### 5. Message format
+
+react-intl already uses ICU MessageFormat, so most messages work as-is. Key differences:
+
+```
+# react-intl — uses defaultMessage
+defineMessage({ id: 'hello', defaultMessage: 'Hello, {name}!' })
+
+# Fluenti — messages live in catalog files, referenced by ID
+i18n.t('hello', { name: 'World' })
+```
+
+### API Mapping: react-intl → Fluenti
+
+| react-intl | Fluenti |
+|------------|---------|
+| `<IntlProvider>` | `<I18nProvider>` |
+| `useIntl()` | `useI18n()` |
+| `intl.formatMessage()` | `i18n.t()` |
+| `intl.formatDate()` | `i18n.d()` |
+| `intl.formatNumber()` | `i18n.n()` |
+| `<FormattedMessage>` | `<Trans>` |
+| `<FormattedDate>` | `<DateTime>` |
+| `<FormattedNumber>` | `<NumberFormat>` |
+| `<FormattedPlural>` | `<Plural>` |
+| `defineMessage()` | `msg()` |
+| ICU MessageFormat | ICU MessageFormat (compatible) |
+
+---
+
+## Common Steps for Both
+
+### Set up Fluenti CLI config
+
+```ts
+// fluenti.config.ts
+export default {
+  sourceLocale: 'en',
+  locales: ['en', 'ja', 'zh-CN'],
+  catalogDir: './locales',
+  format: 'po',
+  include: ['./src/**/*.{tsx,jsx,ts,js}'],
+  compileOutDir: './locales/compiled',
+}
+```
+
+### Extract and compile
+
+```bash
+npx fluenti extract    # Extract messages from source
+npx fluenti compile    # Compile to JS modules
+```
+
+### Vite plugin setup
+
+```ts
+// vite.config.ts
+import react from '@vitejs/plugin-react'
+import fluenti from '@fluenti/vite-plugin'
+
+export default {
+  plugins: [react(), fluenti({ framework: 'react' })],
+}
+```
+
+### For Next.js projects
+
+Use @fluenti/next instead of @fluenti/vite-plugin:
+
+```ts
+// next.config.ts
+import { withFluenti } from '@fluenti/next'
+export default withFluenti({})
+```
+
+## Key Behavioral Differences
+
+1. **Compile-time** — syntax errors caught at build time, not runtime
+2. **No runtime parser** — smaller bundle, faster rendering
+3. **PO file support** — compatible with Poedit, Crowdin, Weblate
+4. **CLI-managed catalogs** — extract → translate → compile workflow
+5. **AI translation** — `npx fluenti translate --provider claude` for automated translation

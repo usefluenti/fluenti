@@ -1,0 +1,48 @@
+# @fluenti/next
+
+> Next.js plugin for Fluenti — withFluenti config wrapper, webpack loader for t`` transforms, and server component generation.
+
+## Overview
+
+@fluenti/next integrates Fluenti into Next.js projects. It wraps next.config with a webpack loader that transforms `t`` template literals and `t()` calls at build time, and generates a server module for RSC i18n support.
+
+- Package: @fluenti/next
+- Docs: https://fluenti.dev
+- Repository: https://github.com/usefluenti/fluenti/tree/main/packages/next-plugin
+- Peer dependencies: next >=14.0.0, react >=18.0.0
+- Dependencies: @fluenti/core, @fluenti/react
+- License: MIT
+
+## Exports
+
+Main entry (`@fluenti/next`):
+- withFluenti(config?): Wrap next.config.ts with Fluenti support
+- Types: WithFluentConfig, FluentProviderProps
+
+Additional entries:
+- `@fluenti/next/server`: Server-side utilities
+- `@fluenti/next/provider`: FluentProvider async server component
+- `@fluenti/next/client`: Client-side type definitions
+
+## Quick Start
+
+```ts
+// next.config.ts
+import { withFluenti } from '@fluenti/next'
+export default withFluenti()({ reactStrictMode: true })
+```
+
+## withFluenti()
+
+Two calling styles:
+- Function style (recommended): `withFluenti(fluentConfig?)(nextConfig)`
+- Direct style: `withFluenti(nextConfig)`
+
+WithFluentConfig options:
+- locales (string[]): Override fluenti.config.ts locales
+- defaultLocale (string): Override sourceLocale
+- compiledDir (string): Override compileOutDir
+- serverModule (string): Custom serverModule path (skip auto-generation)
+- serverModuleOutDir (string): Where to generate serverModule (default: node_modules/.fluenti)
+- resolveLocale (() => string | Promise<string>): Resolve locale for Server Actions
+- dateFormats, numberFormats, fallbackChain: Format overrides

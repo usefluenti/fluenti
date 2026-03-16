@@ -1,0 +1,84 @@
+# @fluenti/vue
+
+> Vue 3 compile-time i18n integration with v-t directive, components, and useI18n() composable.
+
+@fluenti/vue provides internationalization for Vue 3 applications. The v-t directive is compiled away at build time by @fluenti/vite-plugin. The plugin is SSR-safe with no singletons.
+
+## Install
+
+```bash
+pnpm add @fluenti/core @fluenti/vue @fluenti/vite-plugin
+```
+
+## Quick Start
+
+```ts
+import { createFluentVue } from '@fluenti/vue'
+
+const fluent = createFluentVue({
+  locale: 'en',
+  fallbackLocale: 'en',
+  messages: { en, ja },
+})
+
+app.use(fluent)
+```
+
+## Exports
+
+- `createFluentVue(options)` — Plugin factory (SSR-safe, one instance per request)
+- `useI18n()` — Composable returning the i18n context
+- `FLUENTI_KEY` — Vue injection key
+- `Trans` — Rich text translation component
+- `Plural` — Plural forms component
+- `Select` — Gender/option selection component
+
+## Plugin Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `locale` | `string` | — | Active locale (required) |
+| `messages` | `Record<string, Messages>` | — | Message catalogs (required) |
+| `fallbackLocale` | `string` | — | Fallback when key is missing |
+| `fallbackChain` | `Record<string, string[]>` | — | Locale-specific fallback chains |
+| `dateFormats` | `Record<string, DateTimeFormatOptions>` | — | Named date format presets |
+| `numberFormats` | `Record<string, NumberFormatOptions>` | — | Named number format presets |
+| `missing` | `(locale, id) => string \| undefined` | — | Missing key handler |
+| `componentPrefix` | `string` | `''` | Prefix for registered components |
+| `splitting` | `boolean` | `false` | Enable async code-splitting |
+| `chunkLoader` | `(locale) => Promise<Messages>` | — | Async locale chunk loader |
+
+## useI18n() API
+
+| Method | Signature | Description |
+|--------|-----------|-------------|
+| `t` | `(id, values?) => string` | Translate a key |
+| `d` | `(value, style?) => string` | Format a date |
+| `n` | `(value, style?) => string` | Format a number |
+| `format` | `(message, values?) => string` | Format ICU message directly |
+| `te` | `(key, locale?) => boolean` | Check if key exists |
+| `tm` | `(key, locale?) => CompiledMessage` | Get raw compiled message |
+| `locale` | `Ref<string>` | Reactive current locale |
+| `setLocale` | `(locale) => Promise<void>` | Change locale |
+| `loadMessages` | `(locale, messages) => void` | Add messages at runtime |
+| `getLocales` | `() => string[]` | Get loaded locale codes |
+| `preloadLocale` | `(locale) => void` | Preload a locale chunk |
+| `isLoading` | `Ref<boolean>` | Whether a chunk is loading |
+| `loadedLocales` | `Ref<ReadonlySet<string>>` | Set of loaded locales |
+
+## v-t Directive Modifiers
+
+| Modifier | Effect |
+|----------|--------|
+| _(none)_ | Translates text content |
+| `.plural` | Plural forms with pipe syntax |
+| `.alt` | Translates alt attribute |
+| `.placeholder` | Translates placeholder attribute |
+| `.title` | Translates title attribute |
+| `.{attr}` | Translates any named attribute |
+
+## Documentation
+
+- Full docs: https://fluenti.dev
+- llms-full.txt: Detailed API reference with examples
+- Source: https://github.com/usefluenti/fluenti
