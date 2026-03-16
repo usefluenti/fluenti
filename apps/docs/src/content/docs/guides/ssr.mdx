@@ -179,7 +179,23 @@ export default async function RootLayout({ children }) {
 Then use components directly in any Server Component — no `i18n` prop needed:
 
 ```tsx
-// app/page.tsx
+// app/page.tsx — zero imports with @fluenti/next
+export default function Page() {
+  return (
+    <div>
+      <h1>{t`Welcome`}</h1>
+      <Trans>Read the <a href="/docs">documentation</a>.</Trans>
+      <Plural value={5} one="# item" other="# items" />
+    </div>
+  )
+}
+```
+
+With `@fluenti/next`, the loader auto-injects everything: `t``\`\`` is rewritten to `__getServerI18n().t(...)`, and `<Trans>`, `<Plural>`, `<DateTime>`, `<NumberFormat>` are auto-imported from the singleton. No manual imports needed.
+
+If you're using `@fluenti/react/server` directly (without Next.js), you still need to import from your server module:
+
+```tsx
 import { getI18n, Trans, Plural } from '@/lib/i18n.server'
 
 export default async function Page() {
