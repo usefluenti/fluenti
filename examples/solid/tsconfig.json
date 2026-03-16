@@ -3,7 +3,8 @@
   "compilerOptions": {
     "jsx": "preserve",
     "jsxImportSource": "solid-js",
-    "noEmit": true
+    "noEmit": true,
+    "types": ["@fluenti/vite-plugin/client"]
   },
   "include": ["src"]
 }

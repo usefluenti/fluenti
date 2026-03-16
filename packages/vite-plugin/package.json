@@ -21,12 +21,13 @@
     ".": {
       "import": { "types": "./dist/index.d.ts", "default": "./dist/index.js" },
       "require": { "types": "./dist/index.d.cts", "default": "./dist/index.cjs" }
-    }
+    },
+    "./client": { "types": "./client.d.ts" }
   },
-  "files": ["dist"],
+  "files": ["dist", "client.d.ts"],
   "scripts": {
-    "build": "tsup",
-    "dev": "tsup --watch",
+    "build": "vite build",
+    "dev": "vite build --watch",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
@@ -39,9 +40,9 @@
   "devDependencies": {
     "typescript": "^5.9",
     "vitest": "^4",
-    "tsup": "^8",
     "@vitest/coverage-v8": "^4",
     "vite": "^8",
+    "vite-plugin-dts": "^4",
     "@vue/compiler-sfc": "^3.5"
   }
 }
