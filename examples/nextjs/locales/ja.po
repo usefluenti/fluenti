@@ -1,0 +1,138 @@
+msgid ""
+msgstr "Content-Type: text/plain; charset=utf-8\n"
+
+msgid "Fluenti Next.js Playground"
+msgstr "Fluenti Next.js プレイグラウンド"
+
+msgid "Write text. Fluenti translates it. Zero config."
+msgstr "テキストを書くだけ。Fluenti が翻訳。設定不要。"
+
+msgid "Home"
+msgstr "ホーム"
+
+msgid "Plurals"
+msgstr "複数形"
+
+msgid "Rich Text"
+msgstr "リッチテキスト"
+
+msgid "RSC"
+msgstr "RSC"
+
+msgid "RSC Rich Text"
+msgstr "RSCリッチテキスト"
+
+msgid "Streaming"
+msgstr "ストリーミング"
+
+msgid "Actions"
+msgstr "アクション"
+
+msgid "Fallback"
+msgstr "フォールバック"
+
+msgid "Welcome to Fluenti"
+msgstr "Fluenti へようこそ"
+
+msgid "A modern i18n library for React"
+msgstr "React のためのモダンな i18n ライブラリ"
+
+msgid "Hello, {name}!"
+msgstr "こんにちは、{name}さん！"
+
+msgid "You have {count} items in your cart."
+msgstr "カートに {count} 個のアイテムがあります。"
+
+msgid "Current locale: {locale}"
+msgstr "現在のロケール：{locale}"
+
+msgid "Features"
+msgstr "機能"
+
+msgid "Server-side rendering with RSC"
+msgstr "RSC によるサーバーサイドレンダリング"
+
+msgid "Streaming with Suspense"
+msgstr "Suspense によるストリーミング"
+
+msgid "Server actions integration"
+msgstr "サーバーアクション連携"
+
+msgid "Automatic cookie-based locale detection"
+msgstr "Cookie ベースの自動ロケール検出"
+
+msgid "Add"
+msgstr "追加"
+
+msgid "Remove"
+msgstr "削除"
+
+msgid "Reset"
+msgstr "リセット"
+
+msgid "Male"
+msgstr "男性"
+
+msgid "Female"
+msgstr "女性"
+
+msgid "Other"
+msgstr "その他"
+
+msgid "Select Demo"
+msgstr "セレクトデモ"
+
+msgid "Server rendered"
+msgstr "サーバーレンダリング"
+
+msgid "This page is a React Server Component."
+msgstr "このページは React サーバーコンポーネントです。"
+
+msgid "Current server locale: {locale}"
+msgstr "現在のサーバーロケール：{locale}"
+
+msgid "Streamed content loaded!"
+msgstr "ストリーミングコンテンツが読み込まれました！"
+
+msgid "Server Action Demo"
+msgstr "サーバーアクションデモ"
+
+msgid "Submit"
+msgstr "送信"
+
+msgid "Server says: {message}"
+msgstr "サーバーの応答：{message}"
+
+msgid "Hello from server action"
+msgstr "サーバーアクションからこんにちは"
+
+msgid "Fallback Demo"
+msgstr "フォールバックデモ"
+
+#. msg`Administrator`
+msgid "1d03gh6"
+msgstr "管理者"
+
+#. msg`Regular User`
+msgid "154355u"
+msgstr "一般ユーザー"
+
+#. msg`Rich Text Demos`
+msgid "1x4v5ca"
+msgstr "リッチテキストデモ"
+
+#. msg`Components for complex translations`
+msgid "1kjrwe6"
+msgstr "複雑な翻訳のためのコンポーネント"
+
+#. Trans: Read the <a>documentation</a> for more info.
+msgid "18r06yp"
+msgstr "<0>ドキュメント</0>で詳細をご覧ください。"
+
+#. Trans: This is <strong>important</strong> information.
+msgid "p3nupq"
+msgstr "これは<0>重要な</0>情報です。"
+
+#. Trans: Please <a>sign in</a> or <strong>register</strong> to continue.
+msgid "166utyv"
+msgstr "<0>サインイン</0>するか、<1>登録</1>して続けてください。"

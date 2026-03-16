@@ -1,0 +1,27 @@
+{
+  "name": "playground-react-router",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --port 5179",
+    "compile": "fluenti compile",
+    "build": "fluenti compile && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@fluenti/cli": "workspace:*",
+    "@fluenti/core": "workspace:*",
+    "@fluenti/react": "workspace:*",
+    "@fluenti/vite-plugin": "workspace:*",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-router-dom": "^7"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "typescript": "^5.9",
+    "vite": "^8"
+  }
+}

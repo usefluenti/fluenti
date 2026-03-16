@@ -1,0 +1,25 @@
+{
+  "name": "playground-nextjs",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --port 5178",
+    "compile": "fluenti compile",
+    "build": "fluenti compile && next build",
+    "start": "next start -p 5178",
+    "preview": "next start -p 5178"
+  },
+  "dependencies": {
+    "@fluenti/cli": "workspace:*",
+    "@fluenti/core": "workspace:*",
+    "@fluenti/next": "workspace:*",
+    "@fluenti/react": "workspace:*",
+    "next": "^15",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "typescript": "^5.9"
+  }
+}
