@@ -1,6 +1,6 @@
 {
   "name": "@fluenti/core",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "type": "module",
   "description": "Framework-agnostic compile-time i18n core — ICU parser, compiler, interpolation, formatters",
   "homepage": "https://fluenti.dev",

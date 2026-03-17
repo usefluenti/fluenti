@@ -1,6 +1,6 @@
 {
   "name": "@fluenti/cli",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "type": "module",
   "description": "Fluenti CLI — message extraction from Vue SFC & TSX, PO/JSON catalog compilation",
   "homepage": "https://fluenti.dev",
