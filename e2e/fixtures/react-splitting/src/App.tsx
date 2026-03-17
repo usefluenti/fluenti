@@ -6,14 +6,7 @@ import { __switchLocale, __currentLocale, __loading } from 'virtual:fluenti/runt
 const Home = lazy(() => import('./pages/Home'))
 const About = lazy(() => import('./pages/About'))
 
-function Nav() {
-  const [, forceUpdate] = useState(0)
-
-  const switchLocale = async (locale: string) => {
-    await __switchLocale(locale)
-    forceUpdate((n: number) => n + 1)
-  }
-
+function Nav({ onSwitchLocale }: { onSwitchLocale: (locale: string) => void }) {
   return (
     <div>
       <nav>
@@ -26,12 +19,12 @@ function Nav() {
         <button
           data-testid="lang-en"
           className={__currentLocale === 'en' ? 'active' : ''}
-          onClick={() => switchLocale('en')}
+          onClick={() => onSwitchLocale('en')}
         >English</button>
         <button
           data-testid="lang-ja"
           className={__currentLocale === 'ja' ? 'active' : ''}
-          onClick={() => switchLocale('ja')}
+          onClick={() => onSwitchLocale('ja')}
         >日本語</button>
       </div>
 
@@ -41,9 +34,16 @@ function Nav() {
 }
 
 export default function App() {
+  const [, forceUpdate] = useState(0)
+
+  const switchLocale = async (locale: string) => {
+    await __switchLocale(locale)
+    forceUpdate((n: number) => n + 1)
+  }
+
   return (
     <BrowserRouter>
-      <Nav />
+      <Nav onSwitchLocale={switchLocale} />
       <Suspense fallback={<div>Loading...</div>}>
         <Routes>
           <Route path="/" element={<Home />} />

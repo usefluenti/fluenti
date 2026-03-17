@@ -1,8 +1,8 @@
 # @fluenti/next
 
-[![npm version](https://img.shields.io/npm/v/@fluenti/next.svg)](https://www.npmjs.com/package/@fluenti/next)
-[![bundle size](https://img.shields.io/bundlephobia/minzip/@fluenti/next)](https://bundlephobia.com/package/@fluenti/next)
-[![license](https://img.shields.io/npm/l/@fluenti/next.svg)](https://github.com/usefluenti/fluenti/blob/main/LICENSE)
+[![npm](https://img.shields.io/npm/v/@fluenti/next?color=4f46e5&label=npm)](https://www.npmjs.com/package/@fluenti/next)
+[![bundle size](https://img.shields.io/bundlephobia/minzip/@fluenti/next?color=22c55e&label=size)](https://bundlephobia.com/package/@fluenti/next)
+[![license](https://img.shields.io/npm/l/@fluenti/next?color=gray)](https://github.com/usefluenti/fluenti/blob/main/LICENSE)
 
 **Compile-time i18n for Next.js.** App Router native. RSC + streaming + server actions out of the box.
 
@@ -311,4 +311,4 @@ Full docs at [fluenti.dev](https://fluenti.dev).
 
 ## License
 
-MIT
+[MIT](https://github.com/usefluenti/fluenti/blob/main/LICENSE)

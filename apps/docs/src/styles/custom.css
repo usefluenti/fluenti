@@ -317,7 +317,7 @@ nav.sidebar .group-label span {
   --sl-main-pad: 0;
 }
 
-[data-has-hero] .sl-container > footer:has(.pagination-links) {
+.sl-container > footer:has(.pagination-links) {
   display: none;
 }
 

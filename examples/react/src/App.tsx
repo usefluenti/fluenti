@@ -8,7 +8,7 @@ const ROLES = {
 }
 
 export function App({ onLocaleChange }: { onLocaleChange: (locale: string) => void }) {
-  const { i18n, locale, setLocale, isLoading, preloadLocale } = useI18n()
+  const { i18n, d, n, locale, setLocale, isLoading, preloadLocale } = useI18n()
   const [page, setPage] = useState<'home' | 'plurals' | 'richtext'>('home')
   const [count, setCount] = useState(0)
   const [gender, setGender] = useState('other')
@@ -71,8 +71,8 @@ export function App({ onLocaleChange }: { onLocaleChange: (locale: string) => vo
           <p data-testid="greeting">{t`Hello, ${name}!`}</p>
           <p data-testid="items">{t`You have ${itemCount} items in your cart.`}</p>
           <p data-testid="current-locale">{t`Current locale: ${locale}`}</p>
-          <p data-testid="date">{i18n.d(new Date(2025, 0, 15))}</p>
-          <p data-testid="number">{i18n.n(1234.5)}</p>
+          <p data-testid="date">{d(new Date(2025, 0, 15))}</p>
+          <p data-testid="number">{n(1234.5)}</p>
 
           <div data-testid="msg-roles">
             <span data-testid="msg-admin">{i18n.t(ROLES.admin)}</span>

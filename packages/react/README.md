@@ -73,12 +73,12 @@ function App() {
 import { useI18n, Trans, Plural, Select } from '@fluenti/react'
 
 function Dashboard() {
-  const { i18n, locale, setLocale } = useI18n()
+  const { t, d, n, locale, setLocale } = useI18n()
 
   return (
     <div>
       {/* Simple translation */}
-      <h1>{i18n.t('Welcome back, {name}!', { name: 'Alice' })}</h1>
+      <h1>{t('Welcome back, {name}!', { name: 'Alice' })}</h1>
 
       {/* Rich text with embedded components */}
       <Trans>Read the <a href="/docs">documentation</a></Trans>
@@ -90,8 +90,8 @@ function Dashboard() {
       <Select value={role} admin="Full access" editor="Edit access" other="Read only" />
 
       {/* Date & number formatting */}
-      <p>{i18n.d(new Date(), 'long')}</p>
-      <p>{i18n.n(9999.99, 'currency')}</p>
+      <p>{d(new Date(), 'long')}</p>
+      <p>{n(9999.99, 'currency')}</p>
 
       {/* Switch locale at runtime */}
       <button onClick={() => setLocale('ja')}>日本語</button>
@@ -188,9 +188,9 @@ Server components are async and use `React.cache()` for request-scoped state -- 
 
 | Hook | Returns |
 |------|---------|
-| `useI18n()` | `{ i18n, locale, setLocale, isLoading, loadedLocales, preloadLocale }` |
+| `useI18n()` | `{ t, d, n, format, loadMessages, getLocales, i18n, locale, setLocale, ... }` |
 
-The `i18n` object exposes `t()` for translations, `d()` for dates, and `n()` for numbers.
+Convenience methods `t()`, `d()`, `n()`, `format()`, `loadMessages()`, `getLocales()` are available directly. The `i18n` object is retained as an escape hatch.
 
 ### Server API (`@fluenti/react/server`)
 
@@ -203,12 +203,12 @@ The `i18n` object exposes `t()` for translations, `d()` for dates, and `n()` for
 
 ### Utilities
 
-| Export | Description |
-|--------|-------------|
-| `msg` | Tag for lazy message definitions outside the component tree |
-| `detectLocale(options)` | SSR locale detection (cookie, query, path, headers) |
-| `getSSRLocaleScript()` | Inline `<script>` for hydration without flash |
-| `isRTL(locale)` | Check if a locale is right-to-left |
+| Export | Entry point | Description |
+|--------|-------------|-------------|
+| `msg` | `@fluenti/react` | Tag for lazy message definitions outside the component tree |
+| `detectLocale(options)` | `@fluenti/react/server` | SSR locale detection (cookie, query, path, headers) |
+| `getSSRLocaleScript()` | `@fluenti/react/server` | Inline `<script>` for hydration without flash |
+| `isRTL(locale)` | `@fluenti/react/server` | Check if a locale is right-to-left |
 
 ---
 

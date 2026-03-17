@@ -76,14 +76,14 @@ function ProductCard({ product }: { product: Product }) {
 }
 ```
 
-For dynamic keys or non-component contexts, fall back to `i18n.t()`:
+For dynamic keys or non-component contexts, fall back to `t()`:
 
 ```tsx
 import { useI18n } from '@fluenti/react'
 
 function DynamicContent({ messageKey }: { messageKey: string }) {
-  const { i18n } = useI18n()
-  return <p>{i18n.t(messageKey)}</p>
+  const { t } = useI18n()
+  return <p>{t(messageKey)}</p>
 }
 ```
 
