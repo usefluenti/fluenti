@@ -10,6 +10,7 @@ export default defineConfig({
       catalogDir: 'src/locales/compiled',
       sourceLocale: 'en',
       locales: ['en', 'ja'],
+      splitting: 'dynamic',
     }),
   ],
 })
