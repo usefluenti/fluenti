@@ -300,6 +300,15 @@ Server utility (imported from `@fluenti/next/server`). Executes `fn` with a temp
 | `DateTime` | Server component for date formatting |
 | `NumberFormat` | Server component for number formatting |
 
+## Documentation
+
+Full docs at [fluenti.dev](https://fluenti.dev).
+
+- [Next.js Quick Start](https://fluenti.dev/start/quick-start-nextjs/)
+- [Next.js Guide](https://fluenti.dev/frameworks/react/nextjs/)
+- [Server Components](https://fluenti.dev/frameworks/react/server-components/)
+- [API Reference](https://fluenti.dev/api/next/)
+
 ## License
 
 MIT

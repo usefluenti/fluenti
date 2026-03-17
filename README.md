@@ -13,7 +13,7 @@
   <a href="https://www.npmjs.com/package/@fluenti/core"><img src="https://img.shields.io/npm/dm/@fluenti/core?color=6366f1&label=" alt="npm downloads" /></a>
   <a href="https://github.com/usefluenti/fluenti/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/usefluenti/fluenti/ci.yml?label=CI" alt="CI" /></a>
   <a href="https://github.com/usefluenti/fluenti/actions/workflows/e2e.yml"><img src="https://img.shields.io/github/actions/workflow/status/usefluenti/fluenti/e2e.yml?label=E2E" alt="E2E" /></a>
-  <img src="https://img.shields.io/badge/tests-1414-4caf50" alt="tests" />
+  <img src="https://img.shields.io/badge/tests-1599-4caf50" alt="tests" />
   <img src="https://img.shields.io/badge/coverage-97%25-4caf50" alt="coverage" />
   <a href="https://github.com/usefluenti/fluenti/blob/main/LICENSE"><img src="https://img.shields.io/github/license/usefluenti/fluenti?color=4338ca&label=" alt="license" /></a>
 </p>
@@ -46,6 +46,9 @@ pnpm add @fluenti/nuxt @fluenti/core @fluenti/vue
 
 # SolidJS
 pnpm add @fluenti/core @fluenti/solid @fluenti/vite-plugin
+
+# Next.js
+pnpm add @fluenti/core @fluenti/react @fluenti/next
 
 # CLI (message extraction & compilation)
 pnpm add -D @fluenti/cli
@@ -95,6 +98,7 @@ The Vite plugin loads compiled catalogs automatically — no manual wiring neede
 | [`@fluenti/solid`](packages/solid) <br> [![npm](https://img.shields.io/npm/v/@fluenti/solid?color=4f46e5&label=)](https://www.npmjs.com/package/@fluenti/solid) | SolidJS integration — `<Trans>`, `I18nProvider`, `useI18n()` |
 | [`@fluenti/cli`](packages/cli) <br> [![npm](https://img.shields.io/npm/v/@fluenti/cli?color=4f46e5&label=)](https://www.npmjs.com/package/@fluenti/cli) | Message extraction from Vue SFC & TSX, PO/JSON catalog compilation |
 | [`@fluenti/vite-plugin`](packages/vite-plugin) <br> [![npm](https://img.shields.io/npm/v/@fluenti/vite-plugin?color=4f46e5&label=)](https://www.npmjs.com/package/@fluenti/vite-plugin) | Vite build-time transforms, virtual modules, code splitting |
+| [`@fluenti/next`](packages/next-plugin) <br> [![npm](https://img.shields.io/npm/v/@fluenti/next?color=4f46e5&label=)](https://www.npmjs.com/package/@fluenti/next) | Next.js plugin — `withFluenti()`, RSC support, streaming SSR |
 | [`@fluenti/nuxt`](packages/nuxt) <br> [![npm](https://img.shields.io/npm/v/@fluenti/nuxt?color=4f46e5&label=)](https://www.npmjs.com/package/@fluenti/nuxt) | Nuxt module — locale-prefixed routing, SEO helpers, auto locale detection |
 | [`@fluenti/vue-i18n-compat`](packages/vue-i18n-compat) <br> [![npm](https://img.shields.io/npm/v/@fluenti/vue-i18n-compat?color=4f46e5&label=)](https://www.npmjs.com/package/@fluenti/vue-i18n-compat) | Progressive migration bridge between vue-i18n and Fluenti |
 
@@ -106,10 +110,11 @@ Full documentation — guides, API reference, and examples — is available at *
 - [Vue Quick Start](https://fluenti.dev/getting-started/quick-start-vue/)
 - [React Quick Start](https://fluenti.dev/getting-started/quick-start-react/)
 - [SolidJS Quick Start](https://fluenti.dev/getting-started/quick-start-solid/)
+- [Next.js Quick Start](https://fluenti.dev/start/quick-start-nextjs/)
 - [Nuxt Quick Start](https://fluenti.dev/getting-started/quick-start-nuxt/)
 - [Code Splitting](https://fluenti.dev/advanced/code-splitting/)
 - [SSR Guide](https://fluenti.dev/guides/ssr/)
-- [vue-i18n Migration](https://fluenti.dev/guides/vue-i18n-migration/)
+- [vue-i18n Migration](https://fluenti.dev/frameworks/vue/migration-from-vue-i18n/)
 
 ## License
 
