@@ -2,6 +2,7 @@ import { defineConfig } from 'astro/config'
 import starlight from '@astrojs/starlight'
 
 export default defineConfig({
+  site: 'https://fluenti.dev',
   server: { port: 8321 },
   redirects: {
     '/getting-started/introduction/': '/start/introduction/',
@@ -30,6 +31,12 @@ export default defineConfig({
   },
   integrations: [
     starlight({
+      head: [
+        {
+          tag: 'meta',
+          attrs: { property: 'og:image', content: 'https://fluenti.dev/og-image.png' },
+        },
+      ],
       title: 'Fluenti',
       description: 'Compile-time i18n for modern frameworks',
       logo: {
