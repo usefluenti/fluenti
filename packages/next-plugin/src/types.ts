@@ -20,12 +20,16 @@ export interface WithFluentConfig {
   serverModuleOutDir?: string
 
   /**
-   * Resolve locale in contexts where FluentProvider doesn't run
-   * (e.g. Server Actions).
+   * Path to a module that default-exports an async function returning the locale string.
+   * Used in contexts where FluentProvider doesn't run (e.g. Server Actions).
    *
-   * FluentProvider's locale is passed via prop — not configured here.
+   * The module must `export default` a function `() => string | Promise<string>`.
+   *
+   * If omitted, defaults to reading the `locale` cookie.
+   *
+   * @example './lib/resolve-locale'
    */
-  resolveLocale?: () => string | Promise<string>
+  resolveLocale?: string
 
   /** Custom date format styles */
   dateFormats?: DateFormatOptions
@@ -44,7 +48,7 @@ export interface ResolvedFluentConfig {
   compiledDir: string
   serverModule: string | null
   serverModuleOutDir: string
-  resolveLocale?: () => string | Promise<string>
+  resolveLocale?: string
   dateFormats?: DateFormatOptions
   numberFormats?: NumberFormatOptions
   fallbackChain?: Record<string, Locale[]>

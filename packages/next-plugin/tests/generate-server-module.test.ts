@@ -57,4 +57,24 @@ describe('generateServerModule', () => {
     expect(serverSource).toContain('export const __getServerI18n = serverI18n.__getSyncInstance')
     expect(serverSource).toContain('export async function FluentProvider')
   })
+
+  it('uses cookie-based resolveLocale by default', () => {
+    generateServerModule('/project', baseConfig)
+
+    const serverSource = writtenFiles['/project/node_modules/.fluenti/server.js']!
+    expect(serverSource).toContain("(await cookies()).get('locale')")
+    expect(serverSource).not.toContain('__resolveLocale')
+  })
+
+  it('imports custom resolveLocale module when path is provided', () => {
+    generateServerModule('/project', {
+      ...baseConfig,
+      resolveLocale: './lib/resolve-locale',
+    })
+
+    const serverSource = writtenFiles['/project/node_modules/.fluenti/server.js']!
+    expect(serverSource).toContain("import __resolveLocale from './lib/resolve-locale'")
+    expect(serverSource).toContain('resolveLocale: __resolveLocale,')
+    expect(serverSource).not.toContain("cookies().get('locale')")
+  })
 })
