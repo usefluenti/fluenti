@@ -192,7 +192,7 @@ export async function searchAction(query: string) {
 
 ## Custom Locale Resolution
 
-By default, `withFluenti()` reads the locale from a `locale` cookie. If you store locale preferences in a database, JWT, or external API, pass a `resolveLocale` module path:
+By default, `withFluenti()` reads the locale from a `locale` cookie. If you store locale preferences in a database, pass a `resolveLocale` module path:
 
 ```typescript
 // next.config.ts
@@ -203,7 +203,25 @@ export default withFluenti({
 })({ reactStrictMode: true })
 ```
 
-The module must default-export an async function that returns the locale string:
+The module must default-export an async function that returns the locale string.
+
+### Example: Database User Preference
+
+A common pattern is to store each user's preferred locale in the database and fall back to a cookie for anonymous visitors.
+
+Assuming a `users` table with a `locale` column (e.g., Prisma / Drizzle):
+
+```prisma
+// prisma/schema.prisma
+model User {
+  id     String  @id @default(cuid())
+  email  String  @unique
+  locale String? // null = use default
+  // ...
+}
+```
+
+Write the resolver:
 
 ```ts
 // lib/resolve-locale.ts
@@ -212,20 +230,119 @@ import { auth } from './auth'
 import { db } from './db'
 
 export default async function resolveLocale(): Promise<string> {
-  // 1. Try logged-in user's DB preference
+  // 1. Logged-in user → read from DB
   const session = await auth()
   if (session?.user) {
-    const user = await db.user.findUnique({ where: { id: session.user.id } })
+    const user = await db.user.findUnique({
+      where: { id: session.user.id },
+      select: { locale: true },
+    })
     if (user?.locale) return user.locale
   }
 
-  // 2. Fall back to cookie
+  // 2. Anonymous visitor → read from cookie
   const cookieStore = await cookies()
   return cookieStore.get('locale')?.value ?? 'en'
 }
 ```
 
-This is especially important for **Server Actions**, which skip the layout and rely entirely on `resolveLocale` to determine the active locale.
+In the layout, the same resolver logic determines the locale for page renders:
+
+```tsx
+// app/layout.tsx
+import { cookies } from 'next/headers'
+import { getDirection } from '@fluenti/core'
+// @ts-expect-error — generated at build time
+import { FluentProvider } from '@fluenti/next/__generated'
+import resolveLocale from '@/lib/resolve-locale'
+
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const locale = await resolveLocale()
+  return (
+    <html lang={locale} dir={getDirection(locale)}>
+      <body>
+        <FluentProvider locale={locale}>{children}</FluentProvider>
+      </body>
+    </html>
+  )
+}
+```
+
+<Aside type="tip">
+  Reuse the same `resolveLocale` function in both the layout and `withFluenti({ resolveLocale })`. The layout calls it directly for `<html lang>`. The plugin calls it for Server Actions and other contexts where the layout doesn't run.
+</Aside>
+
+### Saving locale to the database
+
+Use a Server Action to persist the user's choice:
+
+```ts
+// app/actions.ts
+'use server'
+import { auth } from '@/lib/auth'
+import { db } from '@/lib/db'
+import { cookies } from 'next/headers'
+
+export async function setUserLocale(locale: string) {
+  // Persist for logged-in users
+  const session = await auth()
+  if (session?.user) {
+    await db.user.update({
+      where: { id: session.user.id },
+      data: { locale },
+    })
+  }
+
+  // Always set cookie as fallback (anonymous + SSR pre-auth)
+  const cookieStore = await cookies()
+  cookieStore.set('locale', locale, { path: '/', maxAge: 60 * 60 * 24 * 365 })
+}
+```
+
+Call it from a Client Component:
+
+```tsx
+// components/locale-switcher.tsx
+'use client'
+import { useRouter } from 'next/navigation'
+import { useI18n } from '@fluenti/react'
+import { setUserLocale } from '@/app/actions'
+
+export function LocaleSwitcher() {
+  const { locale, setLocale, preloadLocale } = useI18n()
+  const router = useRouter()
+
+  const switchTo = async (newLocale: string) => {
+    await setUserLocale(newLocale)   // persist to DB + cookie
+    await setLocale(newLocale)       // update client state
+    router.refresh()                 // re-render server layout
+  }
+
+  return (
+    <div>
+      <button onMouseEnter={() => preloadLocale('en')} onClick={() => switchTo('en')}>
+        English
+      </button>
+      <button onMouseEnter={() => preloadLocale('ja')} onClick={() => switchTo('ja')}>
+        日本語
+      </button>
+    </div>
+  )
+}
+```
+
+<Aside type="caution">
+  **`router.refresh()` is required.** After changing the locale, the server layout must re-render to update `<html lang>` and the server-side `FluentProvider`. Without `refresh()`, only client components update.
+</Aside>
+
+### Why this works across all contexts
+
+| Context | How locale is resolved |
+|---------|----------------------|
+| Page render (layout) | `resolveLocale()` called directly in layout |
+| Server Component (RSC) | Reads from `React.cache()` store set by layout |
+| Server Action | `resolveLocale()` called automatically by `withFluenti()` (layout doesn't run) |
+| Client Component | Reads from `I18nProvider` context (set by `FluentProvider`) |
 
 ## Streaming & Suspense
 
