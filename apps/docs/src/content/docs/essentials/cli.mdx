@@ -1,0 +1,93 @@
+---
+title: CLI Usage
+description: Using the fluenti CLI — extract, compile, stats, and translate commands
+---
+
+import { Aside } from '@astrojs/starlight/components'
+
+The `@fluenti/cli` provides commands for the extract → translate → compile workflow.
+
+## `fluenti extract`
+
+Scan source files and update translation catalogs:
+
+```bash
+npx fluenti extract
+```
+
+Supports:
+- `t()` and `` t` ` `` calls
+- `<Trans>` component children
+- `<Plural>` components
+- `v-t` directive (Vue)
+- `msg` tagged template
+
+The command reads `fluenti.config.ts` for `include`, `exclude`, `catalogDir`, and `format` settings.
+
+## `fluenti compile`
+
+Compile message catalogs to optimized JavaScript modules:
+
+```bash
+npx fluenti compile
+```
+
+- **Input:** JSON or PO catalog files from `catalogDir`
+- **Output:** ES modules with string literals and template functions in `compileOutDir`
+- Each message becomes a `/* @__PURE__ */` annotated named export for tree-shaking
+- Static messages compile to plain strings (zero overhead)
+- Dynamic messages compile to small functions
+
+## `fluenti stats`
+
+Show translation progress:
+
+```bash
+npx fluenti stats
+```
+
+```
+Locale    Total   Translated   %
+──────    ─────   ──────────   ──────
+en        142     142          100%
+ja        142     128           90%
+zh-CN     142      97           68%
+```
+
+Use `--strict --threshold 90` in CI to fail if any locale falls below the threshold:
+
+```bash
+npx fluenti stats --strict --threshold 90
+```
+
+## Workflow
+
+```
+┌─────────────────────────────────────────┐
+│  1. fluenti extract                     │
+│     Scan source → update PO/JSON files  │
+│                                         │
+│  2. Translate                           │
+│     Translators edit PO files           │
+│     (or sync via Crowdin / Weblate)     │
+│                                         │
+│  3. fluenti compile                     │
+│     PO → optimised JS modules           │
+└─────────────────────────────────────────┘
+```
+
+<Aside type="tip">
+Run `fluenti extract` locally during development. Run `fluenti compile` in CI to guarantee the checked-in catalogs are the single source of truth.
+</Aside>
+
+## Programmatic API
+
+For custom tooling, the CLI exports its internals:
+
+```typescript
+import { extractFromVue, extractFromTsx } from '@fluenti/cli'
+import { updateCatalog, compileCatalog } from '@fluenti/cli'
+import { readPoCatalog, writePoCatalog } from '@fluenti/cli'
+```
+
+For the full programmatic API reference, see [@fluenti/cli API](/api/cli/).

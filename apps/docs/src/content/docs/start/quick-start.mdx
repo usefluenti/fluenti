@@ -1,0 +1,67 @@
+---
+title: Quick Start
+description: Choose your framework and get Fluenti running in under 5 minutes
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components'
+
+## Why compile-time?
+
+| Traditional i18n | Fluenti (compile-time) |
+|---|---|
+| Invent a key: `"home.hero.title"` | Write natural text: `<h1 v-t>Welcome</h1>` |
+| Add to en.json manually | Run `fluenti extract` (automatic) |
+| Ship ICU parser to browser | Ship pre-compiled functions (zero parser) |
+| Parse on every render | Nothing to parse at runtime |
+
+## Choose your framework
+
+<CardGrid>
+  <Card title="Vue" icon="seti:vue">
+    Vue 3 SPA with `v-t` directive and Vite plugin.
+
+    [Get started →](/start/quick-start-vue/)
+  </Card>
+
+  <Card title="React" icon="seti:react">
+    React SPA with `I18nProvider` and Vite plugin.
+
+    [Get started →](/start/quick-start-react/)
+  </Card>
+
+  <Card title="SolidJS" icon="seti:javascript">
+    SolidJS SPA with reactive signals and Vite plugin.
+
+    [Get started →](/start/quick-start-solid/)
+  </Card>
+
+  <Card title="Nuxt" icon="seti:vue">
+    Nuxt 3 with locale-prefixed routing and SSR.
+
+    [Get started →](/start/quick-start-nuxt/)
+  </Card>
+
+  <Card title="Next.js" icon="seti:react">
+    Next.js App Router with RSC and `withFluenti()`.
+
+    [Get started →](/start/quick-start-nextjs/)
+  </Card>
+
+  <Card title="React Router" icon="seti:react">
+    React Router v7 SPA with client-side routing.
+
+    [Get started →](/start/quick-start-react-router/)
+  </Card>
+
+  <Card title="SolidStart" icon="seti:javascript">
+    SolidStart with SSR and file-based routing.
+
+    [Get started →](/start/quick-start-solidstart/)
+  </Card>
+
+  <Card title="TanStack Start" icon="seti:react">
+    TanStack Start with file-based routing and SSR.
+
+    [Get started →](/start/quick-start-tanstack-start/)
+  </Card>
+</CardGrid>

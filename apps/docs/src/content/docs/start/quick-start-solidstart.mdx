@@ -107,18 +107,22 @@ import { Steps, Aside } from '@astrojs/starlight/components'
 
    ```tsx
    // src/routes/index.tsx
-   import { useI18n } from '@fluenti/solid'
+   import { Trans } from '@fluenti/solid'
 
    export default function Home() {
-     const { t } = useI18n()
+     const name = 'World'
+
      return (
        <div>
-         <h1>{t('Welcome to my app')}</h1>
-         <p>{t('Hello, {name}!', { name: 'World' })}</p>
+         <h1>{t`Welcome to my app`}</h1>
+         <p>{t`Hello, ${name}!`}</p>
+         <Trans>Read the <a href="/docs">documentation</a> to learn more.</Trans>
        </div>
      )
    }
    ```
+
+   The `` t`...` `` tagged template is a compiler macro — no import needed.
 
 6. **Extract, translate, and compile**
 
@@ -137,3 +141,9 @@ import { Steps, Aside } from '@astrojs/starlight/components'
 - SSR hydration via `getSSRLocaleScript` + `getHydratedLocale`
 - `isServer` guard to inject locale script only during SSR
 - Cookie-based locale persistence for server-side detection
+
+## Next steps
+
+- [SolidStart guide](/frameworks/solid/solidstart/) — full integration reference
+- [SolidJS SPA](/start/quick-start-solid/) — if you don't need SSR
+- [Translating Content](/essentials/translating-content/) — all translation APIs

@@ -1,0 +1,172 @@
+---
+title: Code Splitting
+description: Load locale data on demand with static or dynamic splitting strategies
+---
+
+import { Tabs, TabItem, Aside } from '@astrojs/starlight/components'
+
+`fluenti compile` always generates tree-shakeable named exports — every message is a `/* @__PURE__ */` annotated export so bundlers can eliminate unused translations. For apps with many locales or large catalogs, code splitting loads locale data on demand.
+
+## How It Works
+
+1. Run `fluenti compile` to generate per-locale ES modules with named exports and `@__PURE__` annotations
+2. Each message becomes a tree-shakeable named export — unused messages are removed from the production bundle
+3. Configure `chunkLoader` to dynamically import locale chunks
+4. When `setLocale()` is called, the chunk is loaded before switching
+
+## Setup
+
+Compile your catalogs:
+
+```bash
+npx fluenti compile
+```
+
+This generates:
+- `locales/compiled/en.js` — named exports per message with `export default` re-export
+- `locales/compiled/zh-CN.js` — same exports, translated
+- `locales/compiled/index.js` — locale list and lazy loaders
+
+Configure the plugin:
+
+<Tabs>
+<TabItem label="Vue">
+```typescript
+const i18n = createFluentVue({
+  locale: 'en',
+  messages: { en },
+  splitting: true,
+  chunkLoader: (locale) => import(`./locales/compiled/${locale}.js`),
+})
+```
+</TabItem>
+
+<TabItem label="React">
+```tsx
+<I18nProvider
+  locale="en"
+  messages={{ en }}
+  loadMessages={(locale) => import(`./locales/compiled/${locale}.js`)}
+>
+  <App />
+</I18nProvider>
+```
+</TabItem>
+
+<TabItem label="Solid">
+```tsx
+<I18nProvider
+  locale="en"
+  messages={{ en }}
+  splitting={true}
+  chunkLoader={(locale) => import(`./locales/compiled/${locale}.js`)}
+>
+  <App />
+</I18nProvider>
+```
+</TabItem>
+</Tabs>
+
+## Static vs Dynamic Splitting
+
+| Strategy | `splitting: 'static'` | `splitting: 'dynamic'` |
+|----------|----------------------|----------------------|
+| Bundle | All locales in bundle, tree-shaken | Only default locale bundled |
+| Loading | Sync — no loading states | Async — needs `isLoading` handling |
+| Best for | Few locales, small catalogs | Many locales, large catalogs |
+
+Configure in `fluenti.config.ts`:
+
+```typescript
+import { defineConfig } from '@fluenti/cli'
+
+export default defineConfig({
+  splitting: 'dynamic',
+  defaultBuildLocale: 'en',
+})
+```
+
+## Decision Table
+
+| Splitting | When to use | Trade-off |
+|---|---|---|
+| `false` | ≤ 3 locales, small catalog | Simplest — everything bundled |
+| `'static'` | Known set of locales, moderate catalog | Locale loaded at startup, no lazy requests |
+| `'dynamic'` | Many locales or large catalog | Smallest initial bundle, async locale switch |
+
+## Build vs Dev Mode
+
+| Mode | Behavior |
+|------|----------|
+| **Dev** | All locales loaded eagerly for instant HMR |
+| **Build** | Only `defaultBuildLocale` is bundled; others are lazy chunks |
+
+## Preload on Hover
+
+<Aside type="tip">
+Call `preloadLocale()` on hover so the catalog is already cached when the user clicks. The switch feels instant.
+</Aside>
+
+<Tabs>
+<TabItem label="Vue">
+```vue
+<template>
+  <button
+    v-for="loc in locales"
+    :key="loc"
+    @mouseenter="preloadLocale(loc)"
+    @click="setLocale(loc)"
+  >
+    {{ loc }}
+  </button>
+</template>
+
+<script setup>
+import { useI18n } from '@fluenti/vue'
+const { setLocale, preloadLocale } = useI18n()
+const locales = ['en', 'ja', 'zh-CN']
+</script>
+```
+</TabItem>
+
+<TabItem label="React">
+```tsx
+import { useI18n } from '@fluenti/react'
+
+function LocaleSwitcher() {
+  const { setLocale, preloadLocale } = useI18n()
+  const locales = ['en', 'ja', 'zh-CN']
+
+  return locales.map((loc) => (
+    <button
+      key={loc}
+      onMouseEnter={() => preloadLocale(loc)}
+      onClick={() => setLocale(loc)}
+    >
+      {loc}
+    </button>
+  ))
+}
+```
+</TabItem>
+
+<TabItem label="Solid">
+```tsx
+import { useI18n } from '@fluenti/solid'
+
+function LocaleSwitcher() {
+  const { setLocale, preloadLocale } = useI18n()
+  const locales = ['en', 'ja', 'zh-CN']
+
+  return locales.map((loc) => (
+    <button
+      onMouseEnter={() => preloadLocale(loc)}
+      onClick={() => setLocale(loc)}
+    >
+      {loc}
+    </button>
+  ))
+}
+```
+</TabItem>
+</Tabs>

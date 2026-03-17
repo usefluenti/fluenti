@@ -1,0 +1,63 @@
+---
+title: SolidJS SPA
+description: Using Fluenti in a SolidJS single-page application with Vite
+---
+
+Fluenti works with any SolidJS SPA built on Vite. See the [Quick Start](/start/quick-start/) for initial setup.
+
+## Provider Setup
+
+Wrap your app with `I18nProvider`:
+
+```tsx
+// src/App.tsx
+import { I18nProvider } from '@fluenti/solid'
+import { Home } from './Home'
+import en from './locales/compiled/en'
+import zhCN from './locales/compiled/zh-CN'
+
+export function App() {
+  return (
+    <I18nProvider
+      locale="en"
+      fallbackLocale="en"
+      messages={{ en, 'zh-CN': zhCN }}
+    >
+      <Home />
+    </I18nProvider>
+  )
+}
+```
+
+## Translation APIs
+
+### t() Function
+
+```tsx
+import { useI18n } from '@fluenti/solid'
+
+function Greeting() {
+  const { t } = useI18n()
+  return <p>{t('Hello, {name}!', { name: 'World' })}</p>
+}
+```
+
+### Rich Text and Plurals
+
+```tsx
+<Trans>Click <a href="/next">here</a> to continue.</Trans>
+<Plural value={count()} zero="No items" one="# item" other="# items" />
+```
+
+## Key Differences from Vue
+
+- Uses `<I18nProvider>` instead of a plugin
+- Signals (`name()`) instead of refs (`name.value`)
+- JSX instead of templates — use `t()` directly in JSX expressions
+- Naturally reactive — `t()` reads the `locale()` signal, so JSX auto-tracks it
+
+## Key Differences from React
+
+- Uses signals — `locale()` is an accessor, not a string
+- `t()` is called directly (not `i18n.t()`)
+- `createMemo` wrapper for `` t`...` `` tagged template (vs direct call in React)
