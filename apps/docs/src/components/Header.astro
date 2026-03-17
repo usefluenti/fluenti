@@ -19,7 +19,7 @@ const navItems = [
 <div class="header fl-header">
 	{/* Logo */}
 	<a href={siteTitleHref} class="fl-header-brand">
-		<span class="fl-logo-icon">F</span>
+		<img src="/assets/logo-icon.svg" alt="" class="fl-logo-icon" width="22" height="22" />
 		<span class="fl-logo-text">fluenti</span>
 	</a>
 
@@ -90,18 +90,10 @@ const navItems = [
 	}
 
 	.fl-logo-icon {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
 		width: 22px;
 		height: 22px;
-		border-radius: 18%;
-		background: linear-gradient(135deg, #6366f1, #7c3aed);
-		color: white;
-		font-weight: 700;
-		font-size: 12px;
-		line-height: 1;
 		flex-shrink: 0;
+		border-radius: 18%;
 	}
 
 	.fl-logo-text {
