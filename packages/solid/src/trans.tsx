@@ -1,156 +1,219 @@
 import { Dynamic } from 'solid-js/web'
+import { createMemo } from 'solid-js'
 import type { Component, JSX } from 'solid-js'
-import { useI18n } from './use-i18n'
 
-/** @internal Tree-shakeable dev-mode flag. Bundlers replace or dead-code-eliminate this. */
-// eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-const __DEV__: boolean = /* @__PURE__ */ (() => {
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    return (globalThis as Record<string, unknown>)['process'] !== undefined
-      ? ((globalThis as Record<string, unknown>)['process'] as { env: Record<string, string | undefined> }).env['NODE_ENV'] !== 'production'
-      : true
-  } catch {
-    return true
-  }
-})()
+/** A Solid component that accepts children */
+export type RichComponent = Component<{ children?: JSX.Element }>
 
 /** Props for the `<Trans>` component */
 export interface TransProps {
-  /**
-   * The message string — may contain `{var}` placeholders and `<tag>...</tag>` rich text markers.
-   * @deprecated Use children instead for a simpler and more idiomatic API.
-   */
-  message?: string
-  /** Interpolation values for `{var}` placeholders */
-  values?: Record<string, unknown>
-  /** Map of tag names to Solid components for rich text rendering */
-  components?: Record<string, Component<{ children?: JSX.Element }>>
-  /** Wrapper element tag name (default: `'span'`) */
+  /** Wrapper element tag name (default: `'span'`) — used in children-only mode */
   tag?: string
-  /** Children — the recommended API for inline content */
+  /** Children — the content to translate (legacy API) */
   children?: JSX.Element
+  /** Translated message string with XML-like tags (e.g. `<bold>text</bold>`) */
+  message?: string
+  /** Map of tag names to Solid components */
+  components?: Record<string, RichComponent>
+  /** @internal Pre-computed message from build plugin */
+  __message?: string
+  /** @internal Pre-computed component map from build plugin */
+  __components?: Record<string, RichComponent>
 }
 
 /**
- * Render a translated message with optional rich-text component interpolation.
+ * A token from parsing the message string.
+ * Either a plain text segment or a tag with inner content.
+ */
+interface TextToken {
+  readonly type: 'text'
+  readonly value: string
+}
+
+interface TagToken {
+  readonly type: 'tag'
+  readonly name: string
+  readonly children: readonly Token[]
+}
+
+type Token = TextToken | TagToken
+
+/**
+ * Parse a message string containing XML-like tags into a token tree.
  *
- * **Recommended usage** — pass children directly:
+ * Supports:
+ * - Named tags: `<bold>content</bold>`
+ * - Self-closing tags: `<br/>`
+ * - Nested tags: `<bold>hello <italic>world</italic></bold>`
+ */
+function parseTokens(input: string): readonly Token[] {
+  const tokens: Token[] = []
+  let pos = 0
+
+  while (pos < input.length) {
+    const openIdx = input.indexOf('<', pos)
+
+    if (openIdx === -1) {
+      // No more tags — rest is plain text
+      tokens.push({ type: 'text', value: input.slice(pos) })
+      break
+    }
+
+    // Push any text before this tag
+    if (openIdx > pos) {
+      tokens.push({ type: 'text', value: input.slice(pos, openIdx) })
+    }
+
+    // Check for self-closing tag: <tagName/>
+    const selfCloseMatch = input.slice(openIdx).match(/^<(\w+)\s*\/>/)
+    if (selfCloseMatch) {
+      tokens.push({ type: 'tag', name: selfCloseMatch[1]!, children: [] })
+      pos = openIdx + selfCloseMatch[0].length
+      continue
+    }
+
+    // Check for opening tag: <tagName>
+    const openMatch = input.slice(openIdx).match(/^<(\w+)>/)
+    if (!openMatch) {
+      // Not a valid tag — treat '<' as text
+      tokens.push({ type: 'text', value: '<' })
+      pos = openIdx + 1
+      continue
+    }
+
+    const tagName = openMatch[1]!
+    const contentStart = openIdx + openMatch[0].length
+
+    // Find the matching closing tag, respecting nesting
+    const innerEnd = findClosingTag(input, tagName, contentStart)
+    if (innerEnd === -1) {
+      // No closing tag found — treat as plain text
+      tokens.push({ type: 'text', value: input.slice(openIdx, contentStart) })
+      pos = contentStart
+      continue
+    }
+
+    const innerContent = input.slice(contentStart, innerEnd)
+    const closingTag = `</${tagName}>`
+    tokens.push({
+      type: 'tag',
+      name: tagName,
+      children: parseTokens(innerContent),
+    })
+    pos = innerEnd + closingTag.length
+  }
+
+  return tokens
+}
+
+/**
+ * Find the position of the matching closing tag, accounting for nesting
+ * of the same tag name.
  *
- * @example
+ * Returns the index of the start of the closing tag, or -1 if not found.
+ */
+function findClosingTag(input: string, tagName: string, startPos: number): number {
+  const openTag = `<${tagName}>`
+  const closeTag = `</${tagName}>`
+  let depth = 1
+  let pos = startPos
+
+  while (pos < input.length && depth > 0) {
+    const nextOpen = input.indexOf(openTag, pos)
+    const nextClose = input.indexOf(closeTag, pos)
+
+    if (nextClose === -1) return -1
+
+    if (nextOpen !== -1 && nextOpen < nextClose) {
+      depth++
+      pos = nextOpen + openTag.length
+    } else {
+      depth--
+      if (depth === 0) return nextClose
+      pos = nextClose + closeTag.length
+    }
+  }
+
+  return -1
+}
+
+/**
+ * Render a token tree into Solid JSX elements using the components map.
+ */
+function renderTokens(
+  tokens: readonly Token[],
+  components: Record<string, RichComponent>,
+): JSX.Element {
+  const elements = tokens.map((token): JSX.Element => {
+    if (token.type === 'text') {
+      return token.value as unknown as JSX.Element
+    }
+
+    const Comp = components[token.name]
+    if (!Comp) {
+      // Unknown component — render inner content as plain text
+      return renderTokens(token.children, components)
+    }
+
+    const innerContent = token.children.length > 0
+      ? renderTokens(token.children, components)
+      : undefined
+
+    return (<Dynamic component={Comp}>{innerContent}</Dynamic>) as JSX.Element
+  })
+
+  if (elements.length === 1) return elements[0]!
+  return (<>{elements}</>) as JSX.Element
+}
+
+/**
+ * Render translated content with inline components.
+ *
+ * Supports two APIs:
+ *
+ * 1. **message + components** (recommended for rich text):
  * ```tsx
- * <Trans>Click <a href="/next">here</a> to continue</Trans>
+ * <Trans
+ *   message={t`Welcome to <bold>Fluenti</bold>!`}
+ *   components={{ bold: (props) => <strong>{props.children}</strong> }}
+ * />
  * ```
  *
- * **Plain mode** — when no `components` prop is provided the message is
- * interpolated via `format` and rendered as a text node.
- *
- * **Rich-text mode** — `<tag>...</tag>` markers in the message are replaced
- * with the matching component from the `components` prop.
- *
- * @deprecated message prop — use children instead:
+ * 2. **children** (legacy / simple passthrough):
  * ```tsx
- * // Before (deprecated)
- * <Trans message="Click <link>here</link>" components={{ link: ... }} />
- *
- * // After (recommended)
  * <Trans>Click <a href="/next">here</a> to continue</Trans>
  * ```
  */
 export const Trans: Component<TransProps> = (props) => {
-  const { format } = useI18n()
-
-  let warned = false
+  // message + components API (including build-time __message/__components)
+  // Note: the vite-plugin tagged-template transform wraps Solid expressions in
+  // createMemo(), so props.message may be a memo accessor (function) instead of
+  // a string. We unwrap it here to handle both cases.
+  const message = createMemo(() => {
+    const raw = props.__message ?? props.message
+    return typeof raw === 'function' ? (raw as () => string)() : raw
+  })
+  const components = createMemo(() => props.__components ?? props.components)
 
   return (() => {
-    // Resolve message prop — handles Solid accessor functions from createMemo
-    const rawMessage = props.message
-    const resolvedMessage = typeof rawMessage === 'function'
-      ? (rawMessage as () => string)()
-      : rawMessage
+    const msg = message()
+    const comps = components()
 
-    // No message → render children directly (recommended API)
-    if (!resolvedMessage) {
-      const children = props.children
-      if (!children) return null
-
-      // If children is an array with a single element, render unwrapped
-      if (Array.isArray(children) && children.length === 1) {
-        return children[0] as JSX.Element
-      }
-
-      // Wrap multiple children (or non-array children) in the tag element
-      return (<Dynamic component={props.tag ?? 'span'}>{children}</Dynamic>) as JSX.Element
+    if (msg !== undefined && comps) {
+      const tokens = parseTokens(msg)
+      return renderTokens(tokens, comps)
     }
 
-    if (__DEV__ && !warned) {
-      warned = true
-      console.warn(
-        '[fluenti] <Trans> "message" prop is deprecated. ' +
-          'Use children instead for a simpler API. ' +
-          'See https://fluenti.dev/guide/migration#trans-default-slot',
-      )
+    // Fallback: children-only API (backward compatible)
+    const children = props.children
+    if (!children) return null
+
+    // If children is an array with a single element, render unwrapped
+    if (Array.isArray(children) && children.length === 1) {
+      return children[0] as JSX.Element
     }
 
-    const message = props.values
-      ? format(resolvedMessage, props.values)
-      : resolvedMessage
-
-    if (!props.components) {
-      return message as unknown as JSX.Element
-    }
-
-    return parseRichText(message, props.components) as unknown as JSX.Element
+    // Wrap multiple children (or non-array children) in the tag element
+    return (<Dynamic component={props.tag ?? 'span'}>{children}</Dynamic>) as JSX.Element
   }) as unknown as JSX.Element
-}
-
-/**
- * Parse a message string containing `<tag>children</tag>` markers and
- * return an array of text strings and rendered component nodes.
- */
-function parseRichText(
-  message: string,
-  components: Record<string, Component<{ children?: JSX.Element }>>,
-): (string | JSX.Element)[] {
-  const result: (string | JSX.Element)[] = []
-  // Match <tagName>...content...</tagName>
-  const tagPattern = /<(\w+)>([\s\S]*?)<\/\1>/g
-  let lastIndex = 0
-  let match: RegExpExecArray | null = tagPattern.exec(message)
-
-  while (match !== null) {
-    // Push text before the tag
-    if (match.index > lastIndex) {
-      result.push(message.slice(lastIndex, match.index))
-    }
-
-    const tagName = match[1]!
-    const innerContent = match[2]!
-    const Comp = components[tagName]
-
-    if (Comp) {
-      // Recursively parse inner content for nested tags
-      const children = parseRichText(innerContent, components)
-      const child = children.length === 1 ? children[0] : children
-      result.push(
-        (() => {
-          const comp = Comp as Component<{ children?: JSX.Element }>
-          return comp({ children: child as JSX.Element })
-        })() as JSX.Element,
-      )
-    } else {
-      // Unknown tag — render as plain text
-      result.push(`<${tagName}>${innerContent}</${tagName}>`)
-    }
-
-    lastIndex = match.index + match[0].length
-    match = tagPattern.exec(message)
-  }
-
-  // Trailing text
-  if (lastIndex < message.length) {
-    result.push(message.slice(lastIndex))
-  }
-
-  return result
 }

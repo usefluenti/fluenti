@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { useI18n, Plural, Select } from '@fluenti/react'
 
 function PluralsPage() {
-  const { i18n } = useI18n()
+  const { t, i18n } = useI18n()
   const [count, setCount] = useState(0)
   const [gender, setGender] = useState('other')
 

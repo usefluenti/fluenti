@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render } from '@solidjs/testing-library'
 import { I18nProvider, useI18n, Plural } from '../src'
-import type { JSX } from 'solid-js'
+
 import { Trans } from '../src'
 
 const messages = {
@@ -81,14 +81,9 @@ describe('integration', () => {
       useI18n()
       return (
         <div>
-          <Trans
-            message="Click <bold>here</bold>"
-            components={{
-              bold: (props: { children?: JSX.Element }) => (
-                <strong>{props.children}</strong>
-              ),
-            }}
-          />
+          <Trans>
+            Click <strong>here</strong>
+          </Trans>
           <Plural value={3} one="# item" other="# items" />
         </div>
       )

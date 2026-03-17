@@ -37,6 +37,7 @@ Static messages with no variables compile down to plain strings. Zero overhead, 
 - **CLDR plural rules** -- per-locale plural category resolution (`zero`, `one`, `two`, `few`, `many`, `other`)
 - **Intl formatters** -- thin wrappers around `Intl.DateTimeFormat`, `Intl.NumberFormat`, `Intl.RelativeTimeFormat`
 - **SSR-safe** -- locale detection from cookies, query params, URL paths, or headers
+- **Dual-mode `t` function** -- `t('message.id', { values })` for catalog lookup or `` t`Hello ${name}` `` as a tagged template literal; returned from `useI18n()` in all framework packages
 - **Tree-shakeable** -- import only what you use; dead code is eliminated
 - **Fallback chains** -- locale-specific and wildcard (`*`) fallback resolution
 - **Custom number/date styles** -- define reusable format presets per locale
@@ -70,6 +71,38 @@ const i18n = createFluent({
 
 i18n.t('greeting', { name: 'World' }) // "Hello World!"
 ```
+
+### Advanced configuration
+
+`createFluent()` accepts additional options on `FluentConfigExtended`:
+
+```ts
+const i18n = createFluent({
+  locale: 'en',
+  fallbackLocale: 'en',
+  messages: { en },
+
+  // Post-translation transform applied to every resolved message
+  transform: (result, id, locale) => result.toUpperCase(),
+
+  // Callback fired whenever the locale changes
+  onLocaleChange: (newLocale, prevLocale) => {
+    document.documentElement.lang = newLocale
+  },
+
+  // Custom ICU function formatters (e.g. {items, list})
+  formatters: {
+    list: (value, style, locale) =>
+      new Intl.ListFormat(locale, { type: style || 'conjunction' }).format(value as string[]),
+  },
+})
+```
+
+| Option | Type | Description |
+|--------|------|-------------|
+| `transform` | `(result: string, id: string, locale: Locale) => string` | Post-interpolation hook applied to every resolved message |
+| `onLocaleChange` | `(newLocale: Locale, prevLocale: Locale) => void` | Callback fired on `setLocale()` or locale property assignment |
+| `formatters` | `Record<string, CustomFormatter>` | Custom ICU function formatters keyed by function name |
 
 ### Parse and compile ICU messages
 

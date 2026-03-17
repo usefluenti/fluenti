@@ -21,6 +21,10 @@
     ".": {
       "import": { "types": "./dist/index.d.ts", "default": "./dist/index.js" },
       "require": { "types": "./dist/index.d.ts", "default": "./dist/index.cjs" }
+    },
+    "./transforms": {
+      "import": { "types": "./dist/transforms.d.ts", "default": "./dist/transforms.js" },
+      "require": { "types": "./dist/transforms.d.ts", "default": "./dist/transforms.cjs" }
     }
   },
   "files": ["dist"],
@@ -30,6 +34,9 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "bench": "vitest bench"
+  },
+  "dependencies": {
+    "acorn": "^8.16.0"
   },
   "devDependencies": {
     "typescript": "^5.9",

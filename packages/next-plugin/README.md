@@ -114,14 +114,18 @@ export default async function RSCPage() {
 ```tsx
 // app/page.tsx
 'use client'
+import { useI18n } from '@fluenti/react'
 
 export default function Home() {
+  const { t } = useI18n()
   const name = 'World'
   return <h1>{t`Hello, ${name}!`}</h1>
 }
 ```
 
-No imports needed for `t` — the webpack loader injects them automatically.
+The `t` function supports dual-mode usage: `t('message.id', { values })` for catalog lookup and `` t`Hello ${name}` `` as a tagged template literal. The webpack loader uses **AST scope analysis** to detect `t` bindings from `useI18n()` destructuring and transforms only those calls.
+
+> **Deprecated**: The magic global `t` (auto-injected without an explicit import) still works via a legacy fallback but is deprecated. Prefer `const { t } = useI18n()` for scope-safe transforms.
 
 ### 5. Extract and compile messages
 

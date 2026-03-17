@@ -3,6 +3,7 @@ import { createFluent } from '@fluenti/core'
 import type { Messages } from '@fluenti/core'
 import { I18nContext } from './context'
 import type { I18nProviderProps } from './types'
+import { setGlobalI18n } from './global-registry'
 
 export function I18nProvider({
   locale,
@@ -135,12 +136,11 @@ export function I18nProvider({
     [i18n, currentLocale, handleSetLocale, isLoading, loadedLocales, preloadLocale],
   )
 
-  // Expose i18n instance globally for @fluenti/next webpack loader.
-  // The loader injects `globalThis.__fluenti_i18n.t(...)` into client components,
-  // avoiding React module boundary issues in Next.js RSC.
+  // Expose i18n instance globally for @fluenti/next webpack loader and
+  // @fluenti/vite-plugin. The loader injects `globalThis.__fluenti_i18n.t(...)`
+  // into client components, avoiding React module boundary issues in Next.js RSC.
   if (typeof globalThis !== 'undefined') {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    ;(globalThis as any).__fluenti_i18n = i18n
+    setGlobalI18n(i18n)
   }
 
   return <I18nContext.Provider value={ctx}>{children}</I18nContext.Provider>

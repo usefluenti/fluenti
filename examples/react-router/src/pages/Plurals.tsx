@@ -1,7 +1,8 @@
 import { useState } from 'react'
-import { Plural, Select } from '@fluenti/react'
+import { Plural, Select, useI18n } from '@fluenti/react'
 
 export function Plurals() {
+  const { t } = useI18n()
   const [count, setCount] = useState(0)
   const [gender, setGender] = useState('other')
 

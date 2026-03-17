@@ -2,6 +2,7 @@ import {
   memo,
   useContext,
   useMemo,
+  type ReactElement,
   type ReactNode,
 } from 'react'
 import { I18nContext } from '../context'
@@ -16,6 +17,12 @@ export interface TransProps {
   comment?: string
   /** Custom render wrapper */
   render?: (translation: ReactNode) => ReactNode
+  /** @internal Pre-computed message ID from build plugin */
+  __id?: string
+  /** @internal Pre-computed ICU message from build plugin */
+  __message?: string
+  /** @internal Pre-computed component list from build plugin */
+  __components?: ReactElement[]
 }
 
 /**
@@ -26,19 +33,31 @@ export interface TransProps {
  * <Trans>Read the <a href="/docs">documentation</a> for more info.</Trans>
  * ```
  */
-export const Trans = memo(function Trans({ children, id, render }: TransProps) {
+export const Trans = memo(function Trans({
+  children,
+  id,
+  render,
+  __id,
+  __message,
+  __components,
+}: TransProps) {
   const ctx = useContext(I18nContext)
   if (!ctx) {
     throw new Error('[fluenti] <Trans> must be used within an <I18nProvider>')
   }
 
+  // Fast path: build plugin pre-computed message and components
+  const hasPrecomputed = __message !== undefined
+
   const { message, components } = useMemo(
-    () => extractMessage(children),
-    [children],
+    () => hasPrecomputed
+      ? { message: __message!, components: __components ?? [] }
+      : extractMessage(children),
+    [hasPrecomputed, __message, __components, children],
   )
   const messageId = useMemo(
-    () => id ?? hashMessage(message),
-    [id, message],
+    () => id ?? __id ?? hashMessage(message),
+    [id, __id, message],
   )
 
   // Look up translation; fall back to source message

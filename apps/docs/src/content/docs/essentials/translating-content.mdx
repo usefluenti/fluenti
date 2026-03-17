@@ -16,7 +16,7 @@ Fluenti offers multiple ways to translate content, all processed at **compile ti
 | 5 | `t()` function call | Fallback | All |
 
 <Aside type="tip">
-The `` t`…` `` tagged template and `v-t` directive are **not imported** — the Vite plugin injects them automatically. Just use them.
+The `t` function returned by `useI18n()` supports both function calls (`t('id', values)`) and tagged templates (`` t`Hello ${name}` ``). The `v-t` directive requires no import — it is a compile-time template transform.
 </Aside>
 
 ## v-t Directive (Vue)
@@ -105,12 +105,15 @@ const greeting = __i18n.t('_hash123', { name: name() })
 
 ## Tagged Templates
 
-The `` t` ` `` tagged template is a compiler macro for reactive translations. You never import it — the Vite plugin injects the necessary imports automatically.
+The `t` function from `useI18n()` doubles as a tagged template literal. The Vite plugin uses AST scope analysis to detect `t` bindings from `useI18n()` and optimizes them at compile time.
 
 <Tabs>
 <TabItem label="Vue">
 ```vue
 <script setup>
+import { useI18n } from '@fluenti/vue'
+const { t } = useI18n()
+
 const pageTitle = t`Welcome to Fluenti`
 const greeting = t`Hello ${name}, you have ${count} items`
 </script>
@@ -126,7 +129,10 @@ Returns a `ComputedRef` — automatically updates when any referenced reactive v
 
 <TabItem label="React">
 ```tsx
+import { useI18n } from '@fluenti/react'
+
 function Dashboard() {
+  const { t } = useI18n()
   const name = 'World'
   const count = 5
 
@@ -144,15 +150,20 @@ Returns a plain value — React's re-render cycle handles reactivity. Works in b
 
 <TabItem label="Solid">
 ```tsx
-const pageTitle = t`Welcome to Fluenti`
-const greeting = t`Hello ${name}, you have ${count} items`
+import { useI18n } from '@fluenti/solid'
 
-return (
-  <div>
-    <h1>{pageTitle()}</h1>
-    <p>{greeting()}</p>
-  </div>
-)
+function Dashboard() {
+  const { t } = useI18n()
+  const pageTitle = t`Welcome to Fluenti`
+  const greeting = t`Hello ${name}, you have ${count} items`
+
+  return (
+    <div>
+      <h1>{pageTitle()}</h1>
+      <p>{greeting()}</p>
+    </div>
+  )
+}
 ```
 
 Returns a `createMemo` — similarly reactive.

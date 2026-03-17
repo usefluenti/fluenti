@@ -68,7 +68,11 @@ function Demo(props) {
 
   return (
     <div>
+      {/* Function call with catalog lookup */}
       <h1>{t('Hello, {name}!', { name: 'World' })}</h1>
+
+      {/* Tagged template literal */}
+      <h1>{t`Hello, ${name}!`}</h1>
 
       <Trans>Read the <a href="/docs">documentation</a></Trans>
 
@@ -109,7 +113,7 @@ const { t, d, n, format, locale, setLocale, isLoading } = useI18n()
 
 | Method | Signature | Description |
 |--------|-----------|-------------|
-| `t` | `(id: string \| MessageDescriptor, values?) => string` | Translate a message key with optional interpolation |
+| `t` | `(id: string \| MessageDescriptor, values?) => string` or `` t`Hello ${name}` `` | Dual-mode: function call for catalog lookup, or tagged template literal |
 | `d` | `(value: Date \| number, style?) => string` | Format a date using named presets or Intl defaults |
 | `n` | `(value: number, style?) => string` | Format a number using named presets or Intl defaults |
 | `format` | `(message: string, values?) => string` | Format an ICU message string directly (no catalog lookup) |
@@ -132,8 +136,15 @@ const i18n = createI18n({
   locale: 'en',
   fallbackLocale: 'en',
   messages: { en, ja },
+
+  // Optional: post-translation transform, locale change callback, custom formatters
+  transform: (result, id, locale) => result,
+  onLocaleChange: (newLocale, prevLocale) => { /* ... */ },
+  formatters: { /* custom ICU function formatters */ },
 })
 ```
+
+The config accepts all `FluentConfigExtended` options from `@fluenti/core`, including `transform`, `onLocaleChange`, and `formatters`. See the [core README](https://github.com/usefluenti/fluenti/tree/main/packages/core#advanced-configuration) for details.
 
 ### Components
 

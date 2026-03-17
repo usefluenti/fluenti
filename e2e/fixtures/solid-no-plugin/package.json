@@ -1,0 +1,19 @@
+{
+  "name": "e2e-solid-no-plugin",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@fluenti/solid": "workspace:*",
+    "@fluenti/core": "workspace:*",
+    "solid-js": "^1.8"
+  },
+  "devDependencies": {
+    "vite-plugin-solid": "^2",
+    "typescript": "^5.9",
+    "vite": "^8"
+  }
+}

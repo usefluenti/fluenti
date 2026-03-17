@@ -176,24 +176,6 @@ describe('useI18n reactivity', () => {
     expect(result).toBe('No placeholders here')
   })
 
-  it('tRaw() is a deprecated alias for format()', () => {
-    let result = ''
-
-    function Child() {
-      const { tRaw } = useI18n()
-      result = tRaw('Hello {name}', { name: 'Deprecated' })
-      return <span>{result}</span>
-    }
-
-    render(() => (
-      <I18nProvider locale="en" messages={{ en: {} }}>
-        <Child />
-      </I18nProvider>
-    ))
-
-    expect(result).toBe('Hello Deprecated')
-  })
-
   it('t() accepts MessageDescriptor with id', () => {
     let result = ''
 
@@ -331,7 +313,6 @@ describe('useI18n reactivity', () => {
     expect(typeof ctx!.d).toBe('function')
     expect(typeof ctx!.n).toBe('function')
     expect(typeof ctx!.format).toBe('function')
-    expect(typeof ctx!.tRaw).toBe('function')
     expect(typeof ctx!.isLoading).toBe('function')
     expect(typeof ctx!.loadedLocales).toBe('function')
     expect(typeof ctx!.preloadLocale).toBe('function')

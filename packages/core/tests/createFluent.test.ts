@@ -127,14 +127,6 @@ describe('createFluent', () => {
     expect(i18n.format('Hello {name}!', { name: 'World' })).toBe('Hello World!')
   })
 
-  it('tRaw() is a deprecated alias for format()', () => {
-    const i18n = createFluent({
-      locale: 'en',
-      messages: { en: {} },
-    })
-    expect(i18n.tRaw('Hello {name}!', { name: 'World' })).toBe('Hello World!')
-  })
-
   it('handles MessageDescriptor from msg()', () => {
     const i18n = createFluent({
       locale: 'en',
@@ -179,6 +171,73 @@ describe('createFluent', () => {
     })
     i18n.locale = 'fr'
     expect(i18n.locale).toBe('fr')
+  })
+
+  // ─── Tagged template (dual-mode t) ──────────────────────────────────
+
+  describe('tagged template', () => {
+    it('t`Hello World` — no expressions', () => {
+      const i18n = createFluent({
+        locale: 'en',
+        messages: { en: {} },
+      })
+      expect(i18n.t`Hello World`).toBe('Hello World')
+    })
+
+    it('t`Hello ${name}` — simple variable', () => {
+      const i18n = createFluent({
+        locale: 'en',
+        messages: { en: {} },
+      })
+      const name = 'Alice'
+      expect(i18n.t`Hello ${name}`).toBe('Hello Alice')
+    })
+
+    it('t`${a} and ${b}` — multiple expressions', () => {
+      const i18n = createFluent({
+        locale: 'en',
+        messages: { en: {} },
+      })
+      const a = 'foo'
+      const b = 'bar'
+      expect(i18n.t`${a} and ${b}`).toBe('foo and bar')
+    })
+
+    it('equivalent to t("Hello {0}", { 0: name })', () => {
+      const i18n = createFluent({
+        locale: 'en',
+        messages: { en: {} },
+      })
+      const name = 'Bob'
+      const tagged = i18n.t`Hello ${name}`
+      const functional = i18n.t('Hello {0}', { 0: name })
+      expect(tagged).toBe(functional)
+    })
+
+    it('looks up catalog when ICU message matches a key', () => {
+      const i18n = createFluent({
+        locale: 'en',
+        fallbackLocale: 'en',
+        messages: {
+          en: { 'Hello {0}': 'Hi {0}!' },
+        },
+      })
+      const name = 'Carol'
+      expect(i18n.t`Hello ${name}`).toBe('Hi Carol!')
+    })
+
+    it('falls back to ICU interpolation when no catalog match', () => {
+      const i18n = createFluent({
+        locale: 'ja',
+        fallbackLocale: 'en',
+        messages: {
+          en: {},
+          ja: {},
+        },
+      })
+      const count = 42
+      expect(i18n.t`You have ${count} items`).toBe('You have 42 items')
+    })
   })
 
   // ─── Edge cases ──────────────────────────────────────────────────────
@@ -403,16 +462,6 @@ describe('createFluent', () => {
       expect(result).toBe('She')
     })
 
-    it('tRaw() is equivalent to format()', () => {
-      const i18n = createFluent({
-        locale: 'en',
-        messages: { en: {} },
-      })
-      const msg = '{count, plural, one {# item} other {# items}}'
-      const values = { count: 3 }
-      expect(i18n.tRaw(msg, values)).toBe(i18n.format(msg, values))
-    })
-
     it('t(descriptor) - catalog has it uses catalog version', () => {
       const i18n = createFluent({
         locale: 'en',
@@ -446,6 +495,176 @@ describe('createFluent', () => {
       expect(i18n.t('a')).toBe('A')
       expect(i18n.t('b')).toBe('B')
       expect(i18n.t('c')).toBe('C')
+    })
+  })
+
+  // ─── transform hook ─────────────────────────────────────────────────
+
+  describe('transform hook', () => {
+    it('applies transform to resolved messages', () => {
+      const i18n = createFluent({
+        locale: 'en',
+        messages: { en: { greeting: 'hello world' } },
+        transform: (result) => result.toUpperCase(),
+      })
+      expect(i18n.t('greeting')).toBe('HELLO WORLD')
+    })
+
+    it('receives id and locale', () => {
+      const calls: Array<{ result: string; id: string; locale: string }> = []
+      const i18n = createFluent({
+        locale: 'en',
+        messages: { en: { greeting: 'Hello' } },
+        transform: (result, id, locale) => {
+          calls.push({ result, id, locale })
+          return result
+        },
+      })
+      i18n.t('greeting')
+      expect(calls).toEqual([{ result: 'Hello', id: 'greeting', locale: 'en' }])
+    })
+
+    it('applies to fallback messages', () => {
+      const i18n = createFluent({
+        locale: 'fr',
+        fallbackLocale: 'en',
+        messages: { en: { greeting: 'Hello' }, fr: {} },
+        transform: (result) => `[${result}]`,
+      })
+      expect(i18n.t('greeting')).toBe('[Hello]')
+    })
+
+    it('applies to ICU-interpolated messages', () => {
+      const i18n = createFluent({
+        locale: 'en',
+        messages: { en: {} },
+        transform: (result) => result.toUpperCase(),
+      })
+      expect(i18n.t('Hello {0}', { 0: 'world' })).toBe('HELLO WORLD')
+    })
+  })
+
+  // ─── onLocaleChange callback ────────────────────────────────────────
+
+  describe('onLocaleChange callback', () => {
+    it('fires when locale changes via setLocale()', () => {
+      const calls: Array<{ newLocale: string; prevLocale: string }> = []
+      const i18n = createFluent({
+        locale: 'en',
+        messages: { en: {}, fr: {} },
+        onLocaleChange: (newLocale, prevLocale) => {
+          calls.push({ newLocale, prevLocale })
+        },
+      })
+      i18n.setLocale('fr')
+      expect(calls).toEqual([{ newLocale: 'fr', prevLocale: 'en' }])
+    })
+
+    it('fires when locale changes via property setter', () => {
+      const calls: Array<{ newLocale: string; prevLocale: string }> = []
+      const i18n = createFluent({
+        locale: 'en',
+        messages: { en: {}, fr: {} },
+        onLocaleChange: (newLocale, prevLocale) => {
+          calls.push({ newLocale, prevLocale })
+        },
+      })
+      i18n.locale = 'fr'
+      expect(calls).toEqual([{ newLocale: 'fr', prevLocale: 'en' }])
+    })
+
+    it('does not fire when locale is set to the same value', () => {
+      const calls: string[] = []
+      const i18n = createFluent({
+        locale: 'en',
+        messages: { en: {} },
+        onLocaleChange: (newLocale) => { calls.push(newLocale) },
+      })
+      i18n.setLocale('en')
+      expect(calls).toEqual([])
+    })
+  })
+
+  // ─── custom formatters ─────────────────────────────────────────────
+
+  describe('custom formatters', () => {
+    it('uses custom formatter for ICU function nodes', () => {
+      const i18n = createFluent({
+        locale: 'en',
+        messages: { en: {} },
+        formatters: {
+          list: (value, _style, _locale) => {
+            if (Array.isArray(value)) {
+              return value.join(', ')
+            }
+            return String(value)
+          },
+        },
+      })
+      expect(i18n.format('{items, list}', { items: ['a', 'b', 'c'] })).toBe('a, b, c')
+    })
+
+    it('custom formatter receives style and locale', () => {
+      const calls: Array<{ style: string; locale: string }> = []
+      const i18n = createFluent({
+        locale: 'ja',
+        messages: { ja: {} },
+        formatters: {
+          custom: (_value, style, locale) => {
+            calls.push({ style, locale })
+            return 'ok'
+          },
+        },
+      })
+      i18n.format('{x, custom, mystyle}', { x: 1 })
+      expect(calls).toEqual([{ style: 'mystyle', locale: 'ja' }])
+    })
+
+    it('falls back to built-in formatters when no custom match', () => {
+      const i18n = createFluent({
+        locale: 'en',
+        messages: { en: {} },
+        formatters: {
+          list: () => 'custom',
+        },
+      })
+      // {n, number} should still use built-in Intl.NumberFormat
+      const result = i18n.format('{n, number}', { n: 42 })
+      expect(result).toBe('42')
+    })
+  })
+
+  // ─── input validation ──────────────────────────────────────────────
+
+  describe('input validation', () => {
+    it('throws on empty locale in createFluent', () => {
+      expect(() => createFluent({
+        locale: '',
+        messages: {},
+      })).toThrow('non-empty string')
+    })
+
+    it('throws on whitespace-only locale in createFluent', () => {
+      expect(() => createFluent({
+        locale: '  ',
+        messages: {},
+      })).toThrow('non-empty string')
+    })
+
+    it('throws on empty locale in setLocale', () => {
+      const i18n = createFluent({
+        locale: 'en',
+        messages: { en: {} },
+      })
+      expect(() => i18n.setLocale('')).toThrow('non-empty string')
+    })
+
+    it('throws on empty locale in locale setter', () => {
+      const i18n = createFluent({
+        locale: 'en',
+        messages: { en: {} },
+      })
+      expect(() => { i18n.locale = '' }).toThrow('non-empty string')
     })
   })
 })

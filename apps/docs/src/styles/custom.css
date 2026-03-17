@@ -262,6 +262,7 @@ nav.sidebar .group-label span {
 :root[data-theme='dark'] .expressive-code {
   --ec-codeBg: #18181b;
   --ec-codeBrdCol: #27272a;
+  --ec-brdRad: 0.625rem;
   --ec-frm-edTabBg: #18181b;
   --ec-frm-edTabBarBg: #18181b;
   --ec-frm-edTabBarBrdBtmCol: #27272a;
@@ -270,18 +271,28 @@ nav.sidebar .group-label span {
 :root:not([data-theme='dark']) .expressive-code {
   --ec-codeBg: #fafafa;
   --ec-codeBrdCol: #e4e4e7;
+  --ec-brdRad: 0.625rem;
   --ec-frm-edTabBg: #fafafa;
   --ec-frm-edTabBarBg: #fafafa;
   --ec-frm-edTabBarBrdBtmCol: #e4e4e7;
 }
 
 .expressive-code .frame {
-  border-radius: 0.625rem;
   overflow: hidden;
+  background: var(--ec-codeBg);
+}
+
+.expressive-code .frame .header {
+  border-radius: 0;
+}
+
+.expressive-code .frame.is-terminal .header {
+  background: var(--ec-codeBg);
 }
 
 .expressive-code pre {
   border-radius: 0;
+  background: var(--ec-codeBg);
   font-size: 0.8125rem;
   line-height: 1.6;
 }

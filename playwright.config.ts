@@ -19,6 +19,8 @@ const serverMap: Record<string, { command: string; port: number; timeout?: numbe
   'react-router':    { command: 'cd e2e/fixtures/react-router && pnpm build && pnpm preview --port 5188', port: 5188 },
   remix:             { command: 'cd e2e/fixtures/remix && pnpm build && pnpm preview --port 5189', port: 5189 },
   nextjs:            { command: 'cd e2e/fixtures/nextjs && pnpm build && pnpm start -p 5190', port: 5190, timeout: 120_000 },
+  'react-no-plugin': { command: 'cd e2e/fixtures/react-no-plugin && pnpm build && pnpm preview --port 5192', port: 5192 },
+  'solid-no-plugin': { command: 'cd e2e/fixtures/solid-no-plugin && pnpm build && pnpm preview --port 5193', port: 5193 },
 }
 
 // Filter webServers to only those needed by the selected projects.
@@ -59,6 +61,8 @@ export default defineConfig({
     { name: 'react-router', use: { baseURL: 'http://localhost:5188' }, testMatch: '**/react-router.spec.ts' },
     { name: 'remix', use: { baseURL: 'http://localhost:5189' }, testMatch: '**/remix.spec.ts' },
     { name: 'nextjs', use: { baseURL: 'http://localhost:5190' }, testMatch: '**/nextjs.spec.ts' },
+    { name: 'react-no-plugin', use: { baseURL: 'http://localhost:5192' }, testMatch: '**/react-no-plugin.spec.ts' },
+    { name: 'solid-no-plugin', use: { baseURL: 'http://localhost:5193' }, testMatch: '**/solid-no-plugin.spec.ts' },
   ],
   webServer,
 })

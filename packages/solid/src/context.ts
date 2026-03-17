@@ -1,5 +1,5 @@
 import { createSignal, createRoot, type Accessor } from 'solid-js'
-import { formatDate, formatNumber, interpolate as coreInterpolate } from '@fluenti/core'
+import { formatDate, formatNumber, interpolate as coreInterpolate, buildICUMessage } from '@fluenti/core'
 import type { FluentConfig, Locale, Messages, CompiledMessage, MessageDescriptor, DateFormatOptions, NumberFormatOptions } from '@fluenti/core'
 
 /** Chunk loader for code-splitting mode */
@@ -25,6 +25,8 @@ export interface I18nContext {
   setLocale(locale: Locale): Promise<void>
   /** Translate a message by id with optional interpolation values */
   t(id: string | MessageDescriptor, values?: Record<string, unknown>): string
+  /** Tagged template form: t`Hello ${name}` */
+  t(strings: TemplateStringsArray, ...exprs: unknown[]): string
   /** Merge additional messages into a locale catalog at runtime */
   loadMessages(locale: Locale, messages: Messages): void
   /** Return all locale codes that have loaded messages */
@@ -35,10 +37,6 @@ export interface I18nContext {
   n(value: number, style?: string): string
   /** Format an ICU message string directly (no catalog lookup) */
   format(message: string, values?: Record<string, unknown>): string
-  /**
-   * @deprecated Use `format()` instead. `tRaw` will be removed in a future major version.
-   */
-  tRaw(message: string, values?: Record<string, unknown>): string
   /** Whether a locale chunk is currently being loaded */
   isLoading: Accessor<boolean>
   /** Set of locales whose messages have been loaded */
@@ -114,7 +112,19 @@ export function createI18nContext(config: FluentConfig | I18nConfig): I18nContex
     )
   }
 
-  const t = (id: string | MessageDescriptor, values?: Record<string, unknown>): string => {
+  function t(strings: TemplateStringsArray, ...exprs: unknown[]): string
+  function t(id: string | MessageDescriptor, values?: Record<string, unknown>): string
+  function t(idOrStrings: string | MessageDescriptor | TemplateStringsArray, ...rest: unknown[]): string {
+    // Tagged template form: t`Hello ${name}`
+    if (Array.isArray(idOrStrings) && 'raw' in idOrStrings) {
+      const strings = idOrStrings as TemplateStringsArray
+      const icu = buildICUMessage(strings, rest)
+      const values = Object.fromEntries(rest.map((v, i) => [String(i), v]))
+      return t(icu, values)
+    }
+
+    const id = idOrStrings as string | MessageDescriptor
+    const values = rest[0] as Record<string, unknown> | undefined
     const currentLocale = locale() // reactive dependency
     let messageId: string
     let fallbackMessage: string | undefined
@@ -183,12 +193,7 @@ export function createI18nContext(config: FluentConfig | I18nConfig): I18nContex
     return coreInterpolate(message, values, locale())
   }
 
-  /** @deprecated Use `format()` instead. */
-  const tRaw = (message: string, values?: Record<string, unknown>): string => {
-    return format(message, values)
-  }
-
-  return { locale, setLocale, t, loadMessages, getLocales, d, n, format, tRaw, isLoading, loadedLocales, preloadLocale }
+  return { locale, setLocale, t, loadMessages, getLocales, d, n, format, isLoading, loadedLocales, preloadLocale }
 }
 
 // ─── Module-level singleton ─────────────────────────────────────────────────

@@ -3,7 +3,6 @@ import { FileRoutes } from '@solidjs/start/router'
 import { Suspense, type Component, type JSX } from 'solid-js'
 import { isServer } from 'solid-js/web'
 import { I18nProvider, useI18n } from '@fluenti/solid'
-import { getSSRLocaleScript } from '@fluenti/core'
 import { allMessages, DEFAULT_LOCALE, getInitialLocale } from './lib/i18n'
 
 const LanguageSwitcher: Component = () => {
@@ -85,7 +84,6 @@ export default function App() {
           fallbackLocale={DEFAULT_LOCALE}
           messages={allMessages}
         >
-          {isServer && <script innerHTML={getSSRLocaleScript(initialLocale).replace(/<\/?script>/g, '')} />}
           <Layout>{props.children}</Layout>
         </I18nProvider>
       )}

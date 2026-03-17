@@ -1,4 +1,4 @@
-import type { Locale } from './types'
+import type { CustomFormatter, Locale } from './types'
 import { parse } from './parser'
 import { compile } from './compile'
 
@@ -59,14 +59,26 @@ const compiledCache = new LRUCache<string, CompiledFn>(LRU_MAX)
  * @param message - ICU MessageFormat string
  * @param values - Interpolation values
  * @param locale - BCP 47 locale string (defaults to 'en')
+ * @param formatters - Optional custom ICU function formatters
  * @returns Interpolated string
  */
 export function interpolate(
   message: string,
   values?: Record<string, unknown>,
   locale?: Locale,
+  formatters?: Record<string, CustomFormatter>,
 ): string {
   const effectiveLocale = locale ?? 'en'
+
+  // When custom formatters are provided, skip the shared cache since
+  // different createFluent instances may register different formatters.
+  if (formatters) {
+    const ast = parse(message)
+    const compiled = compile(ast, effectiveLocale, formatters)
+    if (typeof compiled === 'string') return compiled
+    return compiled(values)
+  }
+
   const cacheKey = `${effectiveLocale}:${message}`
 
   let compiled = compiledCache.get(cacheKey)

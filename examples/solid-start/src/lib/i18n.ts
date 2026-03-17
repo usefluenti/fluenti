@@ -28,8 +28,14 @@ export function detectLocaleFromCookie(cookieHeader: string | null): Locale {
 }
 
 /**
- * Get the initial locale: from hydrated value on client, fallback on server.
+ * Get the initial locale on the client.
+ * Reads from cookie first (set by LanguageSwitcher), then falls back to
+ * the SSR-injected window variable, then to DEFAULT_LOCALE.
  */
 export function getInitialLocale(): Locale {
+  if (typeof document !== 'undefined') {
+    const locale = detectLocaleFromCookie(document.cookie)
+    if (locale !== DEFAULT_LOCALE) return locale
+  }
   return getHydratedLocale(DEFAULT_LOCALE)
 }

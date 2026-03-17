@@ -25,14 +25,20 @@ i18n.t('greeting', { name: 'World' }) // "Hello World!"
 
 ### Config
 
+`createFluent()` accepts a `FluentConfigExtended` object:
+
 | Property | Type | Description |
 |----------|------|-------------|
-| `locale` | `string` | Current locale |
+| `locale` | `string` | Current locale (validated — must be a non-empty string) |
 | `fallbackLocale` | `string?` | Fallback locale |
 | `messages` | `AllMessages` | Locale-to-messages map |
 | `missing` | `(locale, id) => string?` | Missing message handler |
 | `dateFormats` | `DateFormatOptions?` | Named date format styles |
 | `numberFormats` | `NumberFormatOptions?` | Named number format styles |
+| `fallbackChain` | `Record<string, Locale[]>?` | Locale fallback chains (e.g. `{ 'zh-TW': ['zh-CN', 'en'] }`) |
+| `transform` | `(result, id, locale) => string?` | Post-translation transform hook (see below) |
+| `onLocaleChange` | `(newLocale, prevLocale) => void?` | Callback fired when locale changes |
+| `formatters` | `Record<string, CustomFormatter>?` | Custom ICU function formatters (see below) |
 
 ### Instance methods
 
@@ -42,10 +48,78 @@ i18n.t('greeting', { name: 'World' }) // "Hello World!"
 | `format(message, values?)` | Direct ICU interpolation without catalog lookup |
 | `d(value, style?)` | Format a date |
 | `n(value, style?)` | Format a number |
-| `tRaw(message, values?)` | @deprecated Use `format()` instead |
 | `setLocale(locale)` | Change active locale |
 | `loadMessages(locale, msgs)` | Add messages at runtime |
 | `getLocales()` | List available locales |
+
+### `transform` hook
+
+Post-processing hook applied to every resolved message, after interpolation. Useful for pseudo-localization, profanity filtering, or analytics:
+
+```typescript
+const i18n = createFluent({
+  locale: 'en',
+  messages: { en },
+  transform: (result, id, locale) => {
+    // Example: pseudo-localize in dev
+    if (import.meta.env.DEV) return `[${result}]`
+    return result
+  },
+})
+```
+
+**Signature:** `(result: string, id: string, locale: Locale) => string`
+
+### `onLocaleChange` callback
+
+Fired whenever the locale changes via `setLocale()` or the `locale` property setter:
+
+```typescript
+const i18n = createFluent({
+  locale: 'en',
+  messages: { en, fr },
+  onLocaleChange: (newLocale, prevLocale) => {
+    document.documentElement.lang = newLocale
+    console.log(`Locale changed: ${prevLocale} → ${newLocale}`)
+  },
+})
+```
+
+**Signature:** `(newLocale: Locale, prevLocale: Locale) => void`
+
+### Custom `formatters`
+
+Register custom ICU function handlers. When a `{variable, functionName, style}` node is encountered during interpolation, custom formatters are checked before the built-in `Intl` formatters:
+
+```typescript
+const i18n = createFluent({
+  locale: 'en',
+  messages: { en },
+  formatters: {
+    uppercase: (value, _style, _locale) => String(value).toUpperCase(),
+    list: (value, style, locale) =>
+      new Intl.ListFormat(locale, { type: style || 'conjunction' }).format(value as string[]),
+  },
+})
+
+// Usage in ICU messages:
+// {name, uppercase}       → "ALICE"
+// {items, list, disjunction} → "apples, bananas, or cherries"
+```
+
+**Type:** `Record<string, CustomFormatter>` where `CustomFormatter = (value: unknown, style: string, locale: Locale) => string`
+
+### Locale validation
+
+`createFluent()` and `setLocale()` validate that the locale is a non-empty string. An error is thrown if the locale is empty, `undefined`, or not a string:
+
+```typescript
+createFluent({ locale: '', messages: {} })
+// Error: [fluenti] createFluent: locale must be a non-empty string, got ""
+
+i18n.setLocale('')
+// Error: [fluenti] setLocale: locale must be a non-empty string, got ""
+```
 
 ## `parse(message)`
 

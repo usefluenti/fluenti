@@ -20,6 +20,9 @@ export { NumberFormat } from './components/Number'
 // Lazy messages
 export { msg } from './msg'
 
+// Global i18n registry (used by build plugins)
+export { getGlobalI18n, setGlobalI18n, clearGlobalI18n } from './global-registry'
+
 // Types
 export type {
   I18nContextValue,

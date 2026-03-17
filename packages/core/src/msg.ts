@@ -3,7 +3,7 @@ import type { MessageDescriptor } from './types'
 /**
  * FNV-1a hash producing a short alphanumeric ID.
  */
-function hashMessage(message: string): string {
+export function hashMessage(message: string): string {
   let hash = 0x811c9dc5
   for (let i = 0; i < message.length; i++) {
     hash ^= message.charCodeAt(i)
@@ -17,7 +17,7 @@ function hashMessage(message: string): string {
  * Build an ICU message string from tagged template parts.
  * Uses positional placeholders: `{0}`, `{1}`, etc.
  */
-function buildICUMessage(strings: TemplateStringsArray, exprs: unknown[]): string {
+export function buildICUMessage(strings: TemplateStringsArray, exprs: unknown[]): string {
   let result = strings[0]!
   for (let i = 0; i < exprs.length; i++) {
     result += `{${i}}` + strings[i + 1]!

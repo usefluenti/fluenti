@@ -4,12 +4,14 @@ import dts from 'vite-plugin-dts'
 export default defineConfig({
   build: {
     lib: {
-      entry: 'src/index.ts',
+      entry: {
+        index: 'src/index.ts',
+        transforms: 'src/transforms.ts',
+      },
       formats: ['es', 'cjs'],
-      fileName: 'index',
     },
     rollupOptions: {
-      external: [/^node:/],
+      external: [/^node:/, 'acorn'],
     },
     sourcemap: true,
     emptyOutDir: true,

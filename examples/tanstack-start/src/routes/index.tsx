@@ -7,7 +7,7 @@ const ROLES = {
 }
 
 function Home() {
-  const { i18n, locale } = useI18n()
+  const { t, i18n, locale } = useI18n()
   const name = 'World'
   const count = 3
   return (

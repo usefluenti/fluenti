@@ -77,8 +77,11 @@ function Dashboard() {
 
   return (
     <div>
-      {/* Simple translation */}
+      {/* Function call with catalog lookup */}
       <h1>{t('Welcome back, {name}!', { name: 'Alice' })}</h1>
+
+      {/* Tagged template literal */}
+      <h1>{t`Welcome back, ${name}!`}</h1>
 
       {/* Rich text with embedded components */}
       <Trans>Read the <a href="/docs">documentation</a></Trans>
@@ -190,7 +193,7 @@ Server components are async and use `React.cache()` for request-scoped state -- 
 |------|---------|
 | `useI18n()` | `{ t, d, n, format, loadMessages, getLocales, i18n, locale, setLocale, ... }` |
 
-Convenience methods `t()`, `d()`, `n()`, `format()`, `loadMessages()`, `getLocales()` are available directly. The `i18n` object is retained as an escape hatch.
+The `t` function supports dual-mode usage: `t('message.id', { values })` for catalog lookup and `` t`Hello ${name}` `` as a tagged template literal. Convenience methods `d()`, `n()`, `format()`, `loadMessages()`, `getLocales()` are also available directly. The `i18n` object is retained as an escape hatch.
 
 ### Server API (`@fluenti/react/server`)
 
@@ -200,6 +203,16 @@ Convenience methods `t()`, `d()`, `n()`, `format()`, `loadMessages()`, `getLocal
 | `setLocale(locale)` | Set locale for the current request |
 | `getI18n()` | Get the i18n instance (async) |
 | `Trans`, `Plural`, `DateTime`, `NumberFormat` | Async server components |
+
+### Global Registry
+
+For module-level access to the i18n instance (used by build-time transforms and plugin loaders):
+
+| Export | Description |
+|--------|-------------|
+| `getGlobalI18n()` | Get the global i18n instance (set by `I18nProvider` on mount) |
+| `setGlobalI18n(instance)` | Set the global i18n instance manually |
+| `clearGlobalI18n()` | Clear the global instance (primarily for testing) |
 
 ### Utilities
 

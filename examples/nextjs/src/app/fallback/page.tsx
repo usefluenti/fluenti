@@ -3,7 +3,7 @@
 import { useI18n } from '@fluenti/react'
 
 export default function FallbackPage() {
-  const { locale } = useI18n()
+  const { t, locale } = useI18n()
 
   return (
     <div data-testid="fallback-page">

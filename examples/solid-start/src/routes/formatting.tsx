@@ -13,7 +13,7 @@ const Formatting: Component = () => {
       <h1>{translate(pageTitle)}</h1>
 
       <section style={{ 'margin-bottom': '24px' }}>
-        <h2>{t`Today's date:`}</h2>
+        <h2>{translate`Today's date:`}</h2>
         <p>
           Default: <DateTime value={Date.now()} />
         </p>
@@ -29,21 +29,21 @@ const Formatting: Component = () => {
       </section>
 
       <section style={{ 'margin-bottom': '24px' }}>
-        <h2>{t`A large number:`}</h2>
+        <h2>{translate`A large number:`}</h2>
         <p>
           Default: <NumberFormat value={1234567.89} />
         </p>
       </section>
 
       <section style={{ 'margin-bottom': '24px' }}>
-        <h2>{t`Percentage:`}</h2>
+        <h2>{translate`Percentage:`}</h2>
         <p>
           <NumberFormat value={0.75} style="percent" />
         </p>
       </section>
 
       <section>
-        <h2>{t`Currency:`}</h2>
+        <h2>{translate`Currency:`}</h2>
         <p>
           <NumberFormat value={99.99} style="currency" />
         </p>

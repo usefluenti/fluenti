@@ -8,6 +8,7 @@ export type {
   FluentInstance,
   FluentInstanceExtended,
   FluentConfigExtended,
+  CustomFormatter,
   ASTNode,
   TextNode,
   VariableNode,
@@ -31,7 +32,7 @@ export { resolvePlural, resolvePluralCategory } from './plural'
 export { Catalog } from './catalog'
 export { negotiateLocale, parseLocale, isRTL, getDirection } from './locale'
 export type { ParsedLocale } from './locale'
-export { msg } from './msg'
+export { msg, buildICUMessage, hashMessage } from './msg'
 export { detectLocale, getSSRLocaleScript, getHydratedLocale } from './ssr'
 export { formatNumber, DEFAULT_NUMBER_FORMATS, LOCALE_CURRENCY_MAP } from './formatters/number'
 export { formatDate, DEFAULT_DATE_FORMATS } from './formatters/date'
@@ -48,6 +49,7 @@ import { Catalog } from './catalog'
 import { interpolate } from './interpolate'
 import { formatNumber } from './formatters/number'
 import { formatDate } from './formatters/date'
+import { buildICUMessage } from './msg'
 
 /**
  * Create a Fluenti instance with full i18n support.
@@ -67,13 +69,33 @@ import { formatDate } from './formatters/date'
  * i18n.t('greeting', { name: 'World' }) // 'Hello World!'
  * ```
  */
+function validateLocale(locale: Locale, context: string): void {
+  if (typeof locale !== 'string' || locale.trim() === '') {
+    throw new Error(`[fluenti] ${context}: locale must be a non-empty string, got ${JSON.stringify(locale)}`)
+  }
+}
+
 export function createFluent(config: FluentConfigExtended): FluentInstanceExtended {
+  validateLocale(config.locale, 'createFluent')
   let currentLocale: Locale = config.locale
   const catalog = new Catalog()
+
+  const customFormatters = config.formatters
 
   // Load initial messages
   for (const [locale, messages] of Object.entries(config.messages)) {
     catalog.set(locale, messages)
+  }
+
+  function interp(message: string, values: Record<string, unknown> | undefined, locale: Locale): string {
+    return interpolate(message, values, locale, customFormatters)
+  }
+
+  function applyTransform(result: string, id: string): string {
+    if (config.transform) {
+      return config.transform(result, id, currentLocale)
+    }
+    return result
   }
 
   function resolveMessage(id: string, values?: Record<string, unknown>): string {
@@ -81,9 +103,9 @@ export function createFluent(config: FluentConfigExtended): FluentInstanceExtend
     const msg = catalog.get(currentLocale, id)
     if (msg !== undefined) {
       if (typeof msg === 'string') {
-        return interpolate(msg, values, currentLocale)
+        return applyTransform(interp(msg, values, currentLocale), id)
       }
-      return msg(values)
+      return applyTransform(msg(values), id)
     }
 
     // Try fallback locale
@@ -91,9 +113,9 @@ export function createFluent(config: FluentConfigExtended): FluentInstanceExtend
       const fallbackMsg = catalog.get(config.fallbackLocale, id)
       if (fallbackMsg !== undefined) {
         if (typeof fallbackMsg === 'string') {
-          return interpolate(fallbackMsg, values, config.fallbackLocale)
+          return applyTransform(interp(fallbackMsg, values, config.fallbackLocale), id)
         }
-        return fallbackMsg(values)
+        return applyTransform(fallbackMsg(values), id)
       }
     }
 
@@ -104,9 +126,9 @@ export function createFluent(config: FluentConfigExtended): FluentInstanceExtend
         const chainMsg = catalog.get(chainLocale, id)
         if (chainMsg !== undefined) {
           if (typeof chainMsg === 'string') {
-            return interpolate(chainMsg, values, chainLocale)
+            return applyTransform(interp(chainMsg, values, chainLocale), id)
           }
-          return chainMsg(values)
+          return applyTransform(chainMsg(values), id)
         }
       }
     }
@@ -116,7 +138,7 @@ export function createFluent(config: FluentConfigExtended): FluentInstanceExtend
       try {
         const result = config.missing(currentLocale, id)
         if (result !== undefined) {
-          return result
+          return applyTransform(result, id)
         }
       } catch {
         // Missing handler threw — fall through to returning the id
@@ -126,7 +148,7 @@ export function createFluent(config: FluentConfigExtended): FluentInstanceExtend
     // If the id looks like an ICU message, interpolate it directly
     // (compile-time transforms like <Plural> emit inline ICU as t() arguments)
     if (id.includes('{')) {
-      return interpolate(id, values, currentLocale)
+      return applyTransform(interp(id, values, currentLocale), id)
     }
     return id
   }
@@ -136,23 +158,44 @@ export function createFluent(config: FluentConfigExtended): FluentInstanceExtend
       return currentLocale
     },
     set locale(value: Locale) {
+      validateLocale(value, 'locale setter')
+      const prev = currentLocale
       currentLocale = value
+      if (prev !== value) {
+        config.onLocaleChange?.(value, prev)
+      }
     },
 
-    t(id: string | MessageDescriptor, values?: Record<string, unknown>): string {
+    t(idOrStrings: string | MessageDescriptor | TemplateStringsArray, ...rest: unknown[]): string {
+      // Tagged template form: t`Hello ${name}`
+      if (Array.isArray(idOrStrings) && 'raw' in idOrStrings) {
+        const strings = idOrStrings as TemplateStringsArray
+        const icu = buildICUMessage(strings, rest)
+        const values = Object.fromEntries(rest.map((v, i) => [String(i), v]))
+        return resolveMessage(icu, values)
+      }
+
+      // Function call form: t('id', values) or t(descriptor, values)
+      const id = idOrStrings as string | MessageDescriptor
+      const values = rest[0] as Record<string, unknown> | undefined
       const messageId = typeof id === 'string' ? id : id.id
       const descriptor = typeof id === 'object' ? id : undefined
 
       // If descriptor has a message and it's not in the catalog, use it as source
       if (descriptor?.message && !catalog.has(currentLocale, messageId)) {
-        return interpolate(descriptor.message, values, currentLocale)
+        return interp(descriptor.message, values, currentLocale)
       }
 
       return resolveMessage(messageId, values)
     },
 
     setLocale(locale: Locale): void {
+      validateLocale(locale, 'setLocale')
+      const prev = currentLocale
       currentLocale = locale
+      if (prev !== locale) {
+        config.onLocaleChange?.(locale, prev)
+      }
     },
 
     loadMessages(locale: Locale, messages: Messages): void {
@@ -172,12 +215,7 @@ export function createFluent(config: FluentConfigExtended): FluentInstanceExtend
     },
 
     format(message: string, values?: Record<string, unknown>): string {
-      return interpolate(message, values, currentLocale)
-    },
-
-    /** @deprecated Use `format()` instead. */
-    tRaw(message: string, values?: Record<string, unknown>): string {
-      return interpolate(message, values, currentLocale)
+      return interp(message, values, currentLocale)
     },
   }
 
