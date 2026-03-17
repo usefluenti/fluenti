@@ -1,0 +1,44 @@
+---
+title: "@fluenti/next"
+description: Next.js plugin API reference
+---
+
+## `withFluenti(config?)`
+
+Wrap your Next.js config to add the Fluenti compiler plugin:
+
+```typescript
+// next.config.ts
+import { withFluenti } from '@fluenti/next'
+
+export default withFluenti()({
+  reactStrictMode: true,
+})
+```
+
+### Config
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `configPath` | `string?` | `'./fluenti.config.ts'` | Path to Fluenti config file |
+
+## Generated Modules
+
+`withFluenti()` generates modules at build time:
+
+### `@fluenti/next/__generated`
+
+| Export | Description |
+|--------|-------------|
+| `FluentProvider` | Combined client/server provider component |
+
+```tsx
+// @ts-expect-error — generated at build time
+import { FluentProvider } from '@fluenti/next/__generated'
+```
+
+`FluentProvider` accepts a `locale` prop and wraps the client `I18nProvider` from `@fluenti/react` with the server locale setup.
+
+## Usage
+
+For setup and usage details, see the [Next.js guide](/frameworks/react/nextjs/) and [Server Components](/frameworks/react/server-components/).

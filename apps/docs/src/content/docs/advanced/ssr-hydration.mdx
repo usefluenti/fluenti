@@ -1,0 +1,133 @@
+---
+title: SSR & Hydration
+description: Server-side rendering concepts, locale detection, and hydration across all frameworks
+---
+
+import { Tabs, TabItem, Aside } from '@astrojs/starlight/components'
+
+## Key Rules
+
+1. **No shared global state** — Every SSR request gets its own Fluenti instance
+2. **Hydration consistency** — Client always reads the server-determined locale from payload
+3. **Path-first detection** — In SSG/ISR, the URL path is the only reliable locale source
+
+## Detection Priority
+
+Use `detectLocale` from core with a clear priority chain:
+
+```
+cookie → query → path → Accept-Language → fallback
+```
+
+```ts
+import { detectLocale } from '@fluenti/core'
+
+const locale = detectLocale({
+  cookie: req.headers.cookie,
+  query: url.searchParams.get('lang'),
+  path: url.pathname,
+  headers: req.headers,
+  available: ['en', 'ja', 'zh-CN'],
+  fallback: 'en',
+})
+```
+
+## Always set `<html lang>` and `<html dir>`
+
+```ts
+import { getDirection } from '@fluenti/core'
+
+const dir = getDirection(locale) // 'ltr' or 'rtl'
+// <html lang="${locale}" dir="${dir}">
+```
+
+## Persist with a Cookie
+
+After the user explicitly switches locale, store the preference in a cookie so `detectLocale` picks it up on the next server request.
+
+<Aside type="caution">
+**Hydration mismatch:** If the server renders locale A but the client reads locale B from `localStorage`, React/Vue/Solid will warn about mismatched HTML. Always let the server be the source of truth — use cookies (visible to both server and client), not `localStorage`.
+</Aside>
+
+## Hydration Script
+
+For manual SSR (without Nuxt or Next.js), use `getSSRLocaleScript` to inject the server-detected locale into the HTML:
+
+```ts
+import { getSSRLocaleScript, getHydratedLocale } from '@fluenti/core'
+
+// Server: inject into HTML <head>
+const script = getSSRLocaleScript(locale)
+// → <script>window.__FLUENTI_LOCALE__="ja"</script>
+
+// Client: read it back
+const locale = getHydratedLocale('en')
+```
+
+## Framework-Specific SSR
+
+<Tabs>
+<TabItem label="Next.js">
+Uses `withFluenti()` and `FluentProvider`. Cookie-based locale detection via `cookies()` from `next/headers`. RSC support via `createServerI18n`.
+
+See [Next.js guide](/frameworks/react/nextjs/) and [Server Components](/frameworks/react/server-components/).
+</TabItem>
+
+<TabItem label="Nuxt">
+Zero-config — the `@fluenti/nuxt` module handles locale detection, cookie persistence, `<html lang>`, SSR hydration, SSG, and ISR automatically.
+
+See [Nuxt SSR](/frameworks/nuxt/ssr-ssg-isr/).
+</TabItem>
+
+<TabItem label="Vue (manual)">
+```typescript
+// server
+import { detectLocale, getSSRLocaleScript } from '@fluenti/core'
+import { createFluentVue } from '@fluenti/vue'
+
+const locale = detectLocale({
+  cookie: getCookie(event, 'lang'),
+  headers: event?.headers,
+  available: ['en', 'zh-CN', 'ja'],
+  fallback: 'en',
+})
+const i18n = createFluentVue({ locale, messages: allMessages })
+app.use(i18n)
+
+const script = getSSRLocaleScript(locale)
+```
+
+```typescript
+// client
+import { getHydratedLocale } from '@fluenti/core'
+
+const locale = getHydratedLocale('en')
+const i18n = createFluentVue({ locale, messages: allMessages })
+app.use(i18n)
+```
+
+See [Vue Manual SSR](/frameworks/vue/ssr/).
+</TabItem>
+
+<TabItem label="SolidStart">
+Uses `getSSRLocaleScript` + `getHydratedLocale` with `isServer` guard for mismatch-free hydration.
+
+See [SolidStart guide](/frameworks/solid/solidstart/).
+</TabItem>
+
+<TabItem label="Solid (manual)">
+SolidJS is naturally SSR-safe — each `renderToString()` creates a new component tree with isolated signals.
+
+See [SolidJS Manual SSR](/frameworks/solid/ssr/).
+</TabItem>
+</Tabs>
+
+## Utilities
+
+| Utility | Description |
+|---------|-------------|
+| `detectLocale(options)` | Detect locale from cookie, query, path, or Accept-Language header |
+| `getSSRLocaleScript(locale)` | Generate a `<script>` tag to inject locale into HTML (XSS-safe) |
+| `getHydratedLocale(fallback)` | Read the injected locale on the client |
+| `getDirection(locale)` | Return `'rtl'` or `'ltr'` |
+| `isRTL(locale)` | Check if a locale is right-to-left |

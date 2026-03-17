@@ -52,9 +52,9 @@ import { Steps } from '@astrojs/starlight/components'
    // src/main.tsx
    import { createRoot } from 'react-dom/client'
    import { BrowserRouter, Routes, Route } from 'react-router-dom'
-   import { I18nProvider, useI18n } from '@fluenti/react'
+   import { I18nProvider } from '@fluenti/react'
    import { getDirection } from '@fluenti/core'
-   import { useState, useEffect, lazy, Suspense } from 'react'
+   import { useState, useEffect } from 'react'
    import en from './locales/compiled/en'
    import zhCN from './locales/compiled/zh-CN'
    import ja from './locales/compiled/ja'
@@ -141,10 +141,15 @@ const About = lazy(() => import('./pages/About'))
 } />
 ```
 
-For more on code splitting, see [Locale Management](/guides/locale-switching/).
+For more on code splitting, see [Code Splitting](/advanced/code-splitting/).
 
 ## Key differences from React SPA
 
 - Cookie-based locale persistence (server-readable for future SSR migration)
 - Lazy-loaded route components with `Suspense` for code splitting
 - `preloadLocale()` on hover for instant locale switching
+
+## Next steps
+
+- [React Router guide](/frameworks/react/react-router/) — full integration reference
+- [Translating Content](/essentials/translating-content/) — all translation APIs

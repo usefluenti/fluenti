@@ -1,0 +1,63 @@
+---
+title: Configuration
+description: Configuring fluenti.config.ts for your project
+---
+
+Fluenti uses a `fluenti.config.ts` file at your project root. It is auto-loaded via jiti — no build step needed.
+
+## Example
+
+```typescript
+// fluenti.config.ts
+import { defineConfig } from '@fluenti/cli'
+
+export default defineConfig({
+  sourceLocale: 'en',
+  locales: ['en', 'zh-CN', 'ja'],
+  catalogDir: './locales',
+  format: 'po',
+  include: ['./src/**/*.vue', './src/**/*.tsx', './src/**/*.jsx', './src/**/*.ts'],
+  exclude: ['./src/**/*.test.*'],
+  compileOutDir: './src/locales/compiled',
+  fallbackChain: { 'zh-TW': ['zh-CN', 'en'], '*': ['en'] },
+  splitting: 'dynamic',
+  defaultBuildLocale: 'en',
+})
+```
+
+`defineConfig` is an identity function that provides full type inference and IDE autocompletion for all config options.
+
+## Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `sourceLocale` | `string` | `'en'` | The locale used in source code |
+| `locales` | `string[]` | `['en']` | All target locales |
+| `catalogDir` | `string` | `'./locales'` | Directory for translation catalogs |
+| `format` | `'json' \| 'po'` | `'po'` | Catalog file format. PO is recommended — compatible with Poedit, Weblate, Crowdin and other translation tools |
+| `include` | `string[]` | `['./src/**/*.vue', './src/**/*.tsx', './src/**/*.jsx']` | Glob patterns for source files |
+| `exclude` | `string[]` | `['./src/**/*.test.*']` | Glob patterns to exclude |
+| `compileOutDir` | `string` | `'./src/locales/compiled'` | Output directory for compiled messages |
+| `fallbackChain` | `Record<string, string[]>` | `{}` | Locale fallback chains |
+| `splitting` | `'dynamic' \| 'static' \| false` | `false` | Code-splitting strategy |
+| `defaultBuildLocale` | `string?` | — | Default locale embedded in the bundle |
+
+## PO vs JSON
+
+| | PO | JSON |
+|---|---|---|
+| **Best for** | Teams with translators, Crowdin/Weblate | Solo devs, programmatic manipulation |
+| **Tooling** | Poedit, Crowdin, Weblate, Lokalise | Any text editor, `jq` |
+| **Comments** | First-class `#. translator comment` | Not supported |
+| **Recommendation** | Default choice for production | Quick prototyping |
+
+## Compiled output
+
+Compiled catalogs are build artifacts. Regenerate them in CI instead of committing:
+
+```txt
+# .gitignore
+locales/compiled/
+```
+
+For the full API reference, see [@fluenti/cli](/api/cli/) and [@fluenti/vite-plugin](/api/vite-plugin/).

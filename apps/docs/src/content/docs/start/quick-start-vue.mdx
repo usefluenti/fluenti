@@ -46,23 +46,35 @@ import { Steps } from '@astrojs/starlight/components'
    })
    ```
 
-4. **Write your component — just use `v-t`**
+4. **Write your component — just use `v-t` and `` t`` ``**
 
    ```vue
    <script setup>
    import { useI18n } from '@fluenti/vue'
-   const { t, setLocale } = useI18n()
+   import { ref } from 'vue'
+
+   const { setLocale } = useI18n()
+   const name = ref('World')
+
+   // t`` tagged template — auto-reactive, no import needed
+   const greeting = t`Hello, ${name}!`
    </script>
 
    <template>
+     <!-- v-t directive — compiled away at build time, zero runtime cost -->
      <h1 v-t>Welcome to my app</h1>
      <p v-t>This text will be automatically extracted for translation.</p>
-     <p>{{ t('Hello, {name}!', { name: 'World' }) }}</p>
+     <p>{{ greeting }}</p>
+
+     <!-- Rich text with real HTML — no XSS, no indexed placeholders -->
+     <Trans>Read the <a href="/docs">documentation</a> to learn more.</Trans>
 
      <button @click="setLocale('en')">English</button>
      <button @click="setLocale('zh-CN')">中文</button>
    </template>
    ```
+
+   No manual keys. No JSON files. Just write natural text — the compiler does the rest.
 
 5. **Extract messages**
 
@@ -119,9 +131,10 @@ import { Steps } from '@astrojs/starlight/components'
 
 ## What's happening under the hood?
 
-1. **`v-t` directive** — The Vite plugin transforms `<h1 v-t>Welcome</h1>` into `<h1>{{ $t('hash') }}</h1>` at compile time
-2. **`t()` calls** — `t('Hello, {name}!')` is extracted by the CLI and looked up at runtime via the compiled catalog
-3. **No manual keys** — Message IDs are auto-generated hashes. You write source text, not key names.
+1. **`v-t` directive** — The Vite plugin transforms `<h1 v-t>Welcome</h1>` into `<h1>{{ $t('hash') }}</h1>` at compile time. Zero runtime cost — it's compiled away entirely.
+2. **`` t`` `` tagged template** — `` t`Hello, ${name}!` `` compiles to `computed(() => __i18n.t('hash', { name: unref(name) }))`. Auto-reactive, auto-extracted.
+3. **`<Trans>`** — Write real HTML inside translated text. No indexed placeholders, no XSS risk.
+4. **No manual keys** — Message IDs are auto-generated hashes. You write source text, not key names.
 
 ## Rich text with `<Trans>`
 
@@ -167,3 +180,9 @@ const ROLES = {
   <span>{{ t(ROLES.admin) }}</span>
 </template>
 ```
+
+## Next steps
+
+- [v-t Directive](/frameworks/vue/v-t-directive/) — full reference for the compile-time directive
+- [Translating Content](/essentials/translating-content/) — all translation APIs
+- [Configuration](/essentials/configuration/) — full `fluenti.config.ts` reference

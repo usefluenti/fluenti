@@ -46,19 +46,29 @@ import { Steps } from '@astrojs/starlight/components'
    })
    ```
 
-4. **Write your component — use `t()` with source text**
+4. **Write your component — just use `` t`` `` and `<Trans>`**
 
    ```tsx
    // src/Home.tsx
    import { useI18n } from '@fluenti/react'
+   import { Trans, Plural } from '@fluenti/react'
 
    export function Home() {
-     const { i18n, setLocale } = useI18n()
+     const { setLocale } = useI18n()
+     const name = 'World'
+     const count = 3
 
      return (
        <div>
-         <h1>{i18n.t('Welcome to my app')}</h1>
-         <p>{i18n.t('Hello, {name}!', { name: 'World' })}</p>
+         {/* t`` tagged template — compiler macro, no import needed */}
+         <h1>{t`Welcome to my app`}</h1>
+         <p>{t`Hello, ${name}!`}</p>
+
+         {/* Rich text with real HTML — no XSS, no indexed placeholders */}
+         <Trans>Read the <a href="/docs">documentation</a> to learn more.</Trans>
+
+         {/* Locale-aware plurals */}
+         <Plural value={count} one="# item in cart" other="# items in cart" />
 
          <button onClick={() => setLocale('en')}>English</button>
          <button onClick={() => setLocale('zh-CN')}>中文</button>
@@ -66,6 +76,8 @@ import { Steps } from '@astrojs/starlight/components'
      )
    }
    ```
+
+   No manual keys. No JSON files. The `` t`...` `` tagged template is a compiler macro — the Vite plugin injects it automatically.
 
 5. **Extract messages**
 
@@ -120,19 +132,6 @@ import { Steps } from '@astrojs/starlight/components'
 
 </Steps>
 
-## Key differences from Vue
-
-- Uses `<I18nProvider>` instead of a plugin
-- Access i18n via `useI18n()` hook — returns `{ i18n, locale, setLocale, ... }`
-- Call `i18n.t()` directly in JSX — no `useMemo` needed, it's an O(1) hash lookup
-- No `v-t` directive — use `i18n.t()` calls or `<Trans>` component
-
-## Key differences from Solid
-
-- No signals — React's re-render cycle handles reactivity
-- `i18n.t()` is called directly (no `createMemo` wrapper)
-- `locale` is a string, not an accessor
-
 ## Rich text with `<Trans>`
 
 ```tsx
@@ -155,6 +154,12 @@ import { Plural } from '@fluenti/react'
 `@fluenti/react` works with any React-based framework:
 
 - **React SPA** (Vite) — full Vite plugin support
-- **React Router** — client-side routing with locale persistence
-- **Remix** — file-based routing with Vite SPA mode
-- **Next.js** — App Router with `'use client'` components (without Vite plugin)
+- **React Router** — [Quick Start (React Router)](/start/quick-start-react-router/)
+- **Next.js** — [Quick Start (Next.js)](/start/quick-start-nextjs/)
+- **TanStack Start** — [Quick Start (TanStack Start)](/start/quick-start-tanstack-start/)
+
+## Next steps
+
+- [React SPA guide](/frameworks/react/react-spa/) — deeper patterns for React SPAs
+- [Translating Content](/essentials/translating-content/) — all translation APIs
+- [Configuration](/essentials/configuration/) — full `fluenti.config.ts` reference

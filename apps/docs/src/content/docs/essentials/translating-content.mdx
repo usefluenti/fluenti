@@ -1,6 +1,6 @@
 ---
 title: Translating Content
-description: Overview of all translation APIs — v-t, t(), tagged templates, Trans, and msg
+description: All translation APIs — v-t, t(), tagged templates, Trans, Plural, Select, and msg
 ---
 
 import { Tabs, TabItem, Aside } from '@astrojs/starlight/components'
@@ -170,6 +170,187 @@ Returns a `createMemo` — similarly reactive.
 | `${a + b}` | `{0}` | `a + b` |
 
 **Rules:** Simple identifier uses the name as placeholder. Property access uses the last segment. Everything else gets positional `{0}`, `{1}`, etc.
+
+## Lazy Messages with msg\`\`
+
+Use `msg` for translations that need to be defined outside of components — in constants, stores, or route definitions.
+
+```typescript
+import { msg } from '@fluenti/core'
+
+const ROLES = {
+  admin: msg`Administrator`,
+  user: msg`Regular User`,
+}
+```
+
+`msg` returns a `MessageDescriptor` — it records the message text without translating it. Resolve it at render time with `t()`:
+
+```vue
+<template>
+  <span>{{ t(ROLES.admin) }}</span>
+</template>
+```
+
+Use cases: route meta, store constants, config objects, enum-like maps.
+
+## Trans
+
+When translations contain HTML elements or framework components, use `<Trans>` with its **default slot** (Vue) or **children** (React/Solid). You write native HTML inside the component — no indexed placeholders.
+
+<Tabs>
+<TabItem label="Vue">
+```vue
+<template>
+  <Trans>Read the <router-link to="/terms">terms</router-link> and <strong>conditions</strong></Trans>
+</template>
+```
+
+`Trans`, `Plural`, and `Select` are globally registered by the Fluenti plugin — no import needed.
+</TabItem>
+
+<TabItem label="React">
+```tsx
+import { Trans } from '@fluenti/react'
+
+<Trans>
+  Read the <a href="/terms">terms</a> and <strong>conditions</strong>
+</Trans>
+```
+</TabItem>
+
+<TabItem label="Solid">
+```tsx
+<Trans>
+  Read the <A href="/terms">terms</A> and <strong>conditions</strong>
+</Trans>
+```
+</TabItem>
+</Tabs>
+
+The `<Trans>` component extracts the text content of its default slot (including HTML tags) as the source message. During compilation, translators see the tags as placeholders, and at runtime the translated message is rendered with the original elements restored.
+
+<Aside type="tip">
+`Trans` accepts an optional `tag` prop (default: `'span'`) to control the wrapper element. Set `tag="p"` or `tag="div"` as needed.
+</Aside>
+
+## Plural
+
+Fluenti uses `Intl.PluralRules` for locale-aware pluralization, supporting all CLDR plural categories. The `<Plural>` component is the simplest way to handle plurals. Pass the numeric value and provide a string for each plural category your source language needs. Use `#` as a placeholder for the numeric value.
+
+<Tabs>
+<TabItem label="Vue">
+```vue
+<template>
+  <Plural :value="count" one="# item" other="# items" />
+</template>
+```
+</TabItem>
+
+<TabItem label="React">
+```tsx
+<Plural value={count} one="# item" other="# items" />
+```
+</TabItem>
+
+<TabItem label="Solid">
+```tsx
+<Plural value={count()} one="# item" other="# items" />
+```
+</TabItem>
+</Tabs>
+
+### Props
+
+| Prop | When used |
+|------|-----------|
+| `value` | **(required)** The numeric value to pluralize on |
+| `zero` | Exact zero match |
+| `one` | CLDR "one" category (e.g., 1 in English) |
+| `two` | CLDR "two" category (e.g., Arabic dual) |
+| `few` | CLDR "few" category (e.g., Russian 2-4) |
+| `many` | CLDR "many" category (e.g., Arabic 11-99) |
+| `other` | **(required)** Fallback for all other values |
+| `tag` | Wrapper element (default: `'span'`) |
+
+### Catalog extraction
+
+Plural forms are **auto-extracted** to catalogs by `fluenti extract`. You only write the source-language forms — Fluenti generates the correct ICU `{count, plural, ...}` pattern in the catalog.
+
+### ICU MessageFormat syntax
+
+You can also write ICU plural patterns directly in `t()` calls:
+
+```
+{count, plural,
+  =0 {No items}
+  one {# item}
+  other {# items}
+}
+```
+
+### Exact matches
+
+Exact matches (`=0`, `=1`, `=2`) are checked before CLDR categories:
+
+```
+{count, plural, =0 {Nobody} =1 {Just you} one {# person} other {# people}}
+```
+
+### Offset
+
+```
+{count, plural, offset:1
+  =0 {Nobody}
+  =1 {Just {name}}
+  one {# other and {name}}
+  other {# others and {name}}
+}
+```
+
+### Language-specific plural rules
+
+| Language | Categories |
+|----------|-----------|
+| English | one, other |
+| Chinese | other (no plural forms) |
+| Arabic | zero, one, two, few, many, other |
+| Russian | one, few, many, other |
+| French | one, other |
+
+## Select
+
+ICU select patterns for choosing text based on a string value (e.g., gender, status).
+
+<Tabs>
+<TabItem label="Vue">
+```vue
+<template>
+  <Select :value="gender" male="He liked this" female="She liked this" other="They liked this" />
+</template>
+```
+</TabItem>
+
+<TabItem label="React">
+```tsx
+<Select value={gender} male="He liked this" female="She liked this" other="They liked this" />
+```
+</TabItem>
+
+<TabItem label="Solid">
+```tsx
+<Select value={gender()} male="He liked this" female="She liked this" other="They liked this" />
+```
+</TabItem>
+</Tabs>
+
+For programmatic usage, pass an `options` object instead of individual props:
+
+```tsx
+<Select value={role} options={{ admin: 'Full access', editor: 'Can edit', other: 'Unknown' }} />
+```
+
+**Props:** `value` (required), `other` (required), `options` (optional object), plus any string keys as individual props. `tag` optional.
 
 ## When to Use What
 

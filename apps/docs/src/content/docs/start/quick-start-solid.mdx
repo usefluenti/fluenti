@@ -46,19 +46,32 @@ import { Steps } from '@astrojs/starlight/components'
    })
    ```
 
-4. **Write your component — use `t()` with source text**
+4. **Write your component — just use `` t`` `` and `<Trans>`**
 
    ```tsx
    // src/Home.tsx
    import { useI18n } from '@fluenti/solid'
+   import { createSignal } from 'solid-js'
 
    export function Home() {
-     const { t, setLocale } = useI18n()
+     const { setLocale } = useI18n()
+     const [name] = createSignal('World')
+     const [count] = createSignal(3)
+
+     // t`` tagged template — compiler macro, no import needed
+     // Returns a createMemo — naturally reactive with signals
+     const greeting = t`Hello, ${name}!`
 
      return (
        <div>
-         <h1>{t('Welcome to my app')}</h1>
-         <p>{t('Hello, {name}!', { name: 'World' })}</p>
+         <h1>{t`Welcome to my app`}</h1>
+         <p>{greeting()}</p>
+
+         {/* Rich text with real HTML */}
+         <Trans>Read the <a href="/docs">documentation</a> to learn more.</Trans>
+
+         {/* Locale-aware plurals */}
+         <Plural value={count()} one="# item in cart" other="# items in cart" />
 
          <button onClick={() => setLocale('en')}>English</button>
          <button onClick={() => setLocale('zh-CN')}>中文</button>
@@ -66,6 +79,8 @@ import { Steps } from '@astrojs/starlight/components'
      )
    }
    ```
+
+   No manual keys. No JSON files. The Vite plugin injects `` t`...` `` automatically — just use it.
 
 5. **Extract messages**
 
@@ -136,3 +151,9 @@ import { Steps } from '@astrojs/starlight/components'
 ```tsx
 <Plural value={count()} zero="No items" one="# item" other="# items" />
 ```
+
+## Next steps
+
+- [SolidJS SPA guide](/frameworks/solid/solid-spa/) — deeper patterns for Solid SPAs
+- [SolidStart](/start/quick-start-solidstart/) — SSR with SolidStart
+- [Translating Content](/essentials/translating-content/) — all translation APIs

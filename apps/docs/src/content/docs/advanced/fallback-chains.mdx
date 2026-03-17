@@ -1,0 +1,63 @@
+---
+title: Fallback Chains
+description: Configure locale fallback resolution for regional variants and missing translations
+---
+
+When a message is not found in the current locale, Fluenti tries:
+1. Current locale
+2. Fallback chain (if configured)
+3. `fallbackLocale` (if set)
+4. Returns the message ID
+
+## Configuration
+
+```typescript
+const i18n = createFluentVue({
+  locale: 'zh-TW',
+  fallbackLocale: 'en',
+  messages: { en, 'zh-CN': zhCN, 'zh-TW': zhTW },
+  fallbackChain: {
+    'zh-TW': ['zh-CN', 'en'],
+    'pt-BR': ['pt', 'en'],
+    '*': ['en'],
+  },
+})
+```
+
+With this config, when locale is `zh-TW`:
+1. Try `zh-TW` catalog
+2. Try `zh-CN` catalog (from fallbackChain)
+3. Try `en` catalog (from fallbackChain)
+4. Try `en` catalog (from fallbackLocale)
+
+## Regional Variants
+
+Instead of duplicating an entire catalog for `en-GB`, let it fall back to `en` and only translate the differences:
+
+```ts
+createFluent({
+  locale: 'en-GB',
+  fallbackLocale: 'en',
+  fallbackChain: {
+    'en-GB': ['en'],
+    'zh-TW': ['zh-CN'],
+    'pt-BR': ['pt'],
+  },
+  messages,
+})
+```
+
+## Missing Handler
+
+For custom behavior when a message is not found:
+
+```typescript
+const i18n = createFluentVue({
+  locale: 'en',
+  messages,
+  missing: (locale, id) => {
+    console.warn(`Missing translation: ${locale}/${id}`)
+    return undefined // or return a fallback string
+  },
+})
+```

@@ -1,11 +1,27 @@
 ---
-title: Nuxt Routing
-description: Locale-prefixed routes, NuxtLinkLocale, switchLocalePath, and routing strategies
+title: Setup & Routing
+description: Nuxt module setup, locale-prefixed routes, NuxtLinkLocale, and SEO
 ---
 
 import { Aside } from '@astrojs/starlight/components'
 
 `@fluenti/nuxt` provides locale-prefixed routing, navigation composables, and SEO metadata out of the box.
+
+## Module Setup
+
+```typescript
+// nuxt.config.ts
+export default defineNuxtConfig({
+  modules: ['@fluenti/nuxt'],
+  fluenti: {
+    locales: ['en', 'ja', 'zh'],
+    defaultLocale: 'en',
+    strategy: 'prefix_except_default',
+  },
+})
+```
+
+The module automatically registers the Vite plugin — `v-t` directive transforms, `<Trans>` / `<Plural>` compile-time optimization, and code splitting all work out of the box.
 
 ## Routing Strategies
 
@@ -17,18 +33,6 @@ The `strategy` option controls how locale prefixes appear in URLs:
 | `prefix` | `/en/about` | `/ja/about` |
 | `prefix_and_default` | `/about` + `/en/about` | `/ja/about` |
 | `no_prefix` | `/about` | `/about` |
-
-```typescript
-// nuxt.config.ts
-export default defineNuxtConfig({
-  modules: ['@fluenti/nuxt'],
-  fluenti: {
-    locales: ['en', 'ja', 'zh'],
-    defaultLocale: 'en',
-    strategy: 'prefix_except_default', // recommended
-  },
-})
-```
 
 <Aside type="tip">
   `prefix_except_default` is the most common strategy — it keeps clean URLs for your default locale while giving other locales a clear URL prefix.
@@ -113,7 +117,7 @@ This generates:
 
 ## Programmatic Locale Switching
 
-Use `setLocale()` from `useI18n()` for programmatic switching (e.g., from a dropdown):
+Use `setLocale()` from `useI18n()` for programmatic switching:
 
 ```vue
 <script setup>

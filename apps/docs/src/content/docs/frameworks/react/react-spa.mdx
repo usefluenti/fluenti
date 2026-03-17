@@ -1,0 +1,86 @@
+---
+title: React SPA
+description: Using Fluenti in a React single-page application with Vite
+---
+
+import { Aside } from '@astrojs/starlight/components'
+
+Fluenti works with any React SPA built on Vite. See the [Quick Start](/start/quick-start/) for initial setup.
+
+## Provider Setup
+
+Wrap your app with `I18nProvider`:
+
+```tsx
+// src/main.tsx
+import { createRoot } from 'react-dom/client'
+import { I18nProvider } from '@fluenti/react'
+import { App } from './App'
+import en from './locales/compiled/en'
+import zhCN from './locales/compiled/zh-CN'
+
+function Root() {
+  return (
+    <I18nProvider
+      locale="en"
+      fallbackLocale="en"
+      messages={{ en, 'zh-CN': zhCN }}
+    >
+      <App />
+    </I18nProvider>
+  )
+}
+
+createRoot(document.getElementById('root')!).render(<Root />)
+```
+
+## Translation APIs
+
+### Tagged Template (preferred)
+
+The `` t`...` `` tagged template is a compiler macro — no import needed:
+
+```tsx
+function Hero() {
+  const name = 'World'
+  return <h1>{t`Hello, ${name}!`}</h1>
+}
+```
+
+### i18n.t() Function
+
+For dynamic keys or non-component contexts:
+
+```tsx
+import { useI18n } from '@fluenti/react'
+
+function Greeting() {
+  const { i18n } = useI18n()
+  return <p>{i18n.t('Welcome to my app')}</p>
+}
+```
+
+## Rich Text and Plurals
+
+```tsx
+import { Trans, Plural } from '@fluenti/react'
+
+<Trans>Click <a href="/next">here</a> to continue.</Trans>
+<Plural value={count} zero="No items" one="# item" other="# items" />
+```
+
+## Key Differences from Vue
+
+- Uses `<I18nProvider>` instead of a plugin
+- Access i18n via `useI18n()` hook — returns `{ i18n, locale, setLocale, ... }`
+- Call `i18n.t()` directly in JSX — no `useMemo` needed, it's an O(1) hash lookup
+- No `v-t` directive — use `` t`...` `` or `<Trans>` component
+
+## Framework Compatibility
+
+`@fluenti/react` works with any React-based framework:
+
+- **React SPA** (Vite) — full Vite plugin support
+- **React Router** — see [React Router](/frameworks/react/react-router/)
+- **Next.js** — see [Next.js](/frameworks/react/nextjs/)
+- **TanStack Start** — see [TanStack Start](/frameworks/react/tanstack-start/)

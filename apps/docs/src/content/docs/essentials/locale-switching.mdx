@@ -1,0 +1,144 @@
+---
+title: Locale Switching
+description: Switching locales, reactivity, and lazy message descriptors
+---
+
+## Switching Locales
+
+### Vue
+
+```vue
+<script setup>
+import { useI18n } from '@fluenti/vue'
+
+const { locale, setLocale, getLocales, isLoading, preloadLocale } = useI18n()
+</script>
+
+<template>
+  <div class="locale-switcher">
+    <button
+      v-for="l in getLocales()"
+      :key="l"
+      :class="{ active: locale === l }"
+      @click="setLocale(l)"
+      @mouseenter="preloadLocale(l)"
+    >
+      {{ l }}
+    </button>
+    <span v-if="isLoading">Loading...</span>
+  </div>
+</template>
+```
+
+### React
+
+```tsx
+function LocaleSwitcher() {
+  const { i18n, locale, setLocale, isLoading, loadedLocales, preloadLocale } = useI18n()
+
+  return (
+    <div>
+      {loadedLocales.map(l => (
+        <button
+          key={l}
+          className={locale === l ? 'active' : ''}
+          onClick={() => setLocale(l)}
+          onMouseEnter={() => preloadLocale(l)}
+        >
+          {l}
+        </button>
+      ))}
+      {isLoading && <span>Loading...</span>}
+    </div>
+  )
+}
+```
+
+### Solid
+
+```tsx
+function LocaleSwitcher() {
+  const { locale, setLocale, getLocales, isLoading, preloadLocale } = useI18n()
+
+  return (
+    <div>
+      {getLocales().map(l => (
+        <button
+          classList={{ active: locale() === l }}
+          onClick={() => setLocale(l)}
+          onMouseEnter={() => preloadLocale(l)}
+        >
+          {l}
+        </button>
+      ))}
+      {isLoading() && <span>Loading...</span>}
+    </div>
+  )
+}
+```
+
+## Reactivity
+
+When you call `setLocale()`:
+- **Vue:** All `t()` calls in templates re-evaluate (they read `locale.value`). All `t` tagged templates (ComputedRefs) recompute.
+- **React:** The provider creates a new `createFluent()` instance, triggering re-renders for all children consuming the context.
+- **Solid:** All components reading `locale()` re-render. `createMemo` values recompute.
+
+Every `$d()` and `$n()` call also updates automatically.
+
+## Preloading
+
+Call `preloadLocale()` on hover so the catalog is already cached when the user clicks. The switch feels instant:
+
+```tsx
+<button
+  onMouseEnter={() => preloadLocale('ja')}
+  onClick={() => setLocale('ja')}
+>
+  日本語
+</button>
+```
+
+## Lazy Loading with msg\`\`
+
+Use `msg` for translations that need to be defined outside of components — in constants, stores, or route definitions.
+
+### The Problem
+
+```typescript
+// This won't work — t`` needs a component context
+const ROLES = {
+  admin: t`Administrator`,  // Error: no component context
+}
+```
+
+### The Solution: msg\`\`
+
+```typescript
+import { msg } from '@fluenti/core'
+
+const ROLES = {
+  admin: msg`Administrator`,
+  user: msg`Regular User`,
+}
+```
+
+`msg` returns a `MessageDescriptor` — it records the message text without translating it. Resolve it at render time with `t()`:
+
+```vue
+<template>
+  <span>{{ t(ROLES.admin) }}</span>
+</template>
+```
+
+### Use Cases
+
+- **Route meta:** `{ meta: { title: msg`Dashboard` } }`
+- **Store constants:** Error messages, role names, status labels
+- **Config objects:** Menu items, navigation labels
+- **Enum-like maps:** Any mapping where values need translation
+
+## Next steps
+
+- [Code Splitting](/advanced/code-splitting/) — load locale data on demand
+- [Fallback Chains](/advanced/fallback-chains/) — regional variant handling
