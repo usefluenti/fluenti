@@ -15,8 +15,12 @@ PACKAGES=(
   "packages/core/package.json"
   "packages/vue/package.json"
   "packages/solid/package.json"
+  "packages/react/package.json"
   "packages/cli/package.json"
   "packages/vite-plugin/package.json"
+  "packages/next-plugin/package.json"
+  "packages/nuxt/package.json"
+  "packages/vue-i18n-compat/package.json"
 )
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"

@@ -1,6 +1,6 @@
 {
   "name": "@fluenti/vite-plugin",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "type": "module",
   "description": "Vite plugin for Fluenti — build-time transforms, virtual modules, code splitting",
   "homepage": "https://fluenti.dev",
@@ -20,7 +20,7 @@
   "exports": {
     ".": {
       "import": { "types": "./dist/index.d.ts", "default": "./dist/index.js" },
-      "require": { "types": "./dist/index.d.cts", "default": "./dist/index.cjs" }
+      "require": { "types": "./dist/index.d.ts", "default": "./dist/index.cjs" }
     },
     "./client": { "types": "./client.d.ts" }
   },
