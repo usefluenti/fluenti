@@ -24,6 +24,7 @@ export default defineConfig({
     '/guides/vue-i18n-bridge/': '/frameworks/vue/vue-i18n-bridge/',
     '/guides/custom-locale-detection/': '/frameworks/nuxt/locale-detection/',
     '/guides/ssr/': '/advanced/ssr-hydration/',
+    '/guides/vue-i18n-migration/': '/frameworks/vue/migration-from-vue-i18n/',
     '/guides/best-practices/': '/advanced/best-practices/',
     '/frameworks/nuxt/routing/': '/frameworks/nuxt/setup-and-routing/',
   },

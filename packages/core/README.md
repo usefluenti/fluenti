@@ -139,6 +139,8 @@ Date:         {when, date, short}
 | [`@fluenti/solid`](https://www.npmjs.com/package/@fluenti/solid) | SolidJS -- `<Trans>`, `<Plural>`, `<Select>`, `useI18n()` |
 | [`@fluenti/react`](https://www.npmjs.com/package/@fluenti/react) | React 19 -- `<Trans>`, `<Plural>`, `useFluent()` |
 | [`@fluenti/next`](https://www.npmjs.com/package/@fluenti/next) | Next.js 15 -- `withFluenti()`, RSC support, streaming |
+| [`@fluenti/nuxt`](https://www.npmjs.com/package/@fluenti/nuxt) | Nuxt 3 -- locale-prefixed routing, SEO, auto locale detection |
+| [`@fluenti/vue-i18n-compat`](https://www.npmjs.com/package/@fluenti/vue-i18n-compat) | vue-i18n migration bridge -- run both side by side |
 
 ## Documentation
 
