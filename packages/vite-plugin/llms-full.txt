@@ -45,7 +45,7 @@ interface FluentiPluginOptions {
   sourceLocale?: string
   /** Available locales (default: [sourceLocale]) */
   locales?: string[]
-  /** Code splitting strategy (default: false) */
+  /** Code splitting strategy (default: 'dynamic') */
   splitting?: 'dynamic' | 'static' | 'per-route' | false
   /** Default locale for build-time static strategy (default: sourceLocale) */
   defaultBuildLocale?: string
@@ -177,13 +177,13 @@ Rich text `<Trans>` with child JSX elements is not transformed at compile time â
 
 ## Code Splitting Strategies
 
-### `false` (default)
-
-No splitting. All messages bundled together.
-
-### `'dynamic'`
+### `'dynamic'` (default)
 
 Lazy-load locale catalogs on demand. The default locale is loaded statically; other locales are loaded when `switchLocale()` is called. At build time, `$t('hash')` calls are replaced with direct catalog property lookups (`__catalog._hash`), and a catalog import from `virtual:fluenti/runtime` is injected.
+
+### `false`
+
+No splitting. All messages bundled together in a single chunk.
 
 ### `'static'`
 

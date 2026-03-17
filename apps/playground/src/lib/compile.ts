@@ -109,31 +109,11 @@ function selectToJs(node: SelectNode, locale: string): string {
 
 // ─── Public: compile catalog to JS module ───────────────────────────────────
 
-/** Compile catalog to default-export JS module (same as `fluenti compile`) */
-export function compileCatalog(catalog: CatalogData, _locale: string): string {
-  const lines: string[] = []
-  lines.push('export default {')
-
-  const entries = Object.entries(catalog).filter(([, entry]) => !entry.obsolete)
-  for (const [id, entry] of entries) {
-    const translated = entry.translation ?? entry.message ?? ''
-    if (hasVariables(translated)) {
-      const templateStr = messageToTemplateString(escapeTemplateLiteral(translated))
-      lines.push(`  '${escapeStringLiteral(id)}': (v) => \`${templateStr}\`,`)
-    } else {
-      lines.push(`  '${escapeStringLiteral(id)}': '${escapeStringLiteral(translated)}',`)
-    }
-  }
-
-  lines.push('} satisfies Record<string, string | ((v?: any) => string)>')
-  lines.push('')
-  return lines.join('\n')
-}
-
-/** Compile catalog to named-exports JS module (split mode, tree-shakeable) */
-export function compileCatalogSplit(catalog: CatalogData, locale: string): string {
+/** Compile catalog to tree-shakeable named exports with default re-export */
+export function compileCatalog(catalog: CatalogData, locale: string): string {
   const lines: string[] = []
   const entries = Object.entries(catalog).filter(([, entry]) => !entry.obsolete)
+  const exportNames: Array<{ id: string; exportName: string }> = []
 
   for (const [id, entry] of entries) {
     const hash = hashMessage(id)
@@ -154,9 +134,19 @@ export function compileCatalogSplit(catalog: CatalogData, locale: string): strin
     } else {
       lines.push(`/* @__PURE__ */ export const ${exportName} = '${escapeStringLiteral(translated)}'`)
     }
+
+    exportNames.push({ id, exportName })
   }
 
-  if (lines.length === 0) return '// empty catalog\n'
+  if (lines.length === 0) return '// empty catalog\nexport default {}\n'
+
   lines.push('')
+  lines.push('export default {')
+  for (const { id, exportName } of exportNames) {
+    lines.push(`  '${escapeStringLiteral(id)}': ${exportName},`)
+  }
+  lines.push('}')
+  lines.push('')
+
   return lines.join('\n')
 }

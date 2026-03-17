@@ -92,36 +92,20 @@ Catalogs are stored as `{catalogDir}/{locale}.po` or `{catalogDir}/{locale}.json
 Compile PO/JSON catalogs to optimized ES modules.
 
 ```bash
-fluenti compile [--config path] [--split]
+fluenti compile [--config path]
 ```
 
-### Default Mode
-
-Generates TypeScript files with a default export object per locale:
-
-```ts
-// locales/compiled/en.ts
-export default {
-  'greeting': 'Hello',
-  'welcome': (v) => `Hello, ${v.name}!`,
-  'items': (v) => ((c) => {
-    const __cat = new Intl.PluralRules('en').select(c);
-    if (__cat === 'one') return `${c} item`;
-    return `${c} items`;
-  })(v.count)
-}
-```
-
-Output files: `{compileOutDir}/{locale}.ts`
-
-### Split Mode (`--split`)
-
-Generates JavaScript files with named exports per message. Each export has an `@__PURE__` annotation for tree-shaking -- unused messages are removed from the production bundle.
+Generates JavaScript files with tree-shakeable named exports per message. Each export has an `@__PURE__` annotation so bundlers can eliminate unused messages from the production bundle. A `export default { ... }` re-export maps message ID keys to the named exports for default-import compatibility.
 
 ```js
 // locales/compiled/en.js
-/* @__PURE__ */ export const _a1b2c3 = "Hello, world!"
+/* @__PURE__ */ export const _a1b2c3 = 'Hello, world!'
 /* @__PURE__ */ export const _d4e5f6 = (v) => `Hello, ${v.name}!`
+
+export default {
+  'Hello, world!': _a1b2c3,
+  'Hello, {name}!': _d4e5f6,
+}
 ```
 
 Also generates an index module with locale list and lazy loaders:
@@ -136,7 +120,7 @@ export const loaders = {
 }
 ```
 
-In split mode, all locales share the same set of export names (union of all message IDs). Missing translations export an empty string, ensuring consistent imports across locales.
+All locales share the same set of export names (union of all message IDs). Missing translations export an empty string, ensuring consistent imports across locales.
 
 Message ID hashing uses the FNV-1a algorithm for deterministic, short export names.
 
@@ -298,7 +282,7 @@ fluenti translate --provider claude
 # 3. Review and edit translations (optional, use Poedit or similar for PO files)
 
 # 4. Compile to optimized JS modules with tree-shaking
-fluenti compile --split
+fluenti compile
 
 # 5. Check translation progress
 fluenti stats

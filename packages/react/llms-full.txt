@@ -190,7 +190,7 @@ function Home() {
 import { createServerI18n } from '@fluenti/react/server'
 
 export const { setLocale, getI18n, Trans, Plural, DateTime, NumberFormat } = createServerI18n({
-  loadMessages: (locale) => import(`../locales/compiled/${locale}.ts`),
+  loadMessages: (locale) => import(`../locales/compiled/${locale}.js`),
   fallbackLocale: 'en',
   resolveLocale: async () => {
     const { cookies } = await import('next/headers')

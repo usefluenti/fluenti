@@ -1,16 +1,29 @@
 # @fluenti/nuxt
 
-[![npm](https://img.shields.io/npm/v/@fluenti/nuxt?color=4f46e5&label=)](https://www.npmjs.com/package/@fluenti/nuxt)
+[![npm version](https://img.shields.io/npm/v/@fluenti/nuxt?color=4f46e5&label=npm)](https://www.npmjs.com/package/@fluenti/nuxt)
+[![bundle size](https://img.shields.io/bundlephobia/minzip/@fluenti/nuxt?color=16a34a&label=size)](https://bundlephobia.com/package/@fluenti/nuxt)
+[![license](https://img.shields.io/npm/l/@fluenti/nuxt?color=888)](https://github.com/usefluenti/fluenti/blob/main/LICENSE)
 
-Nuxt module for Fluenti — locale-prefixed routing (4 strategies), locale detection chain, SEO head helpers, `<NuxtLinkLocale>` component, SSR/SSG/SPA support, and browser language detection.
+**Compile-time i18n for Nuxt 3** -- locale routing, SEO head tags, and auto-imported composables that feel native to your Nuxt app. Zero runtime parsing, zero boilerplate.
 
-## Install
+## Why @fluenti/nuxt?
+
+- **Auto-imported composables** -- `useLocalePath`, `useSwitchLocalePath`, `useLocaleHead`, and `useI18n` are available everywhere with no imports
+- **SEO-ready** -- `hreflang` alternates, `og:locale` meta, and `html[lang]` generated automatically
+- **Locale routing** -- four URL strategies (`prefix`, `prefix_except_default`, `prefix_and_default`, `no_prefix`)
+- **Smart locale detection** -- configurable chain of path, cookie, header, and query detectors
+- **SSR / SSG / SPA / ISR** -- works in every Nuxt rendering mode out of the box
+- **Compile-time messages** -- translations are compiled at build time via `@fluenti/vite-plugin`, not interpreted at runtime
+
+## Quick Start
+
+### 1. Install
 
 ```bash
 pnpm add @fluenti/nuxt @fluenti/core @fluenti/vue
 ```
 
-## Setup
+### 2. Configure
 
 ```ts
 // nuxt.config.ts
@@ -22,6 +35,219 @@ export default defineNuxtConfig({
     strategy: 'prefix_except_default',
   },
 })
+```
+
+### 3. Use in Pages
+
+```vue
+<script setup>
+// All composables are auto-imported -- no import needed
+const { t, locale, setLocale } = useI18n()
+const localePath = useLocalePath()
+const switchLocalePath = useSwitchLocalePath()
+</script>
+
+<template>
+  <h1>{{ t`Hello, world!` }}</h1>
+
+  <nav>
+    <NuxtLinkLocale to="/about">{{ t`About` }}</NuxtLinkLocale>
+    <NuxtLink :to="localePath('/contact')">{{ t`Contact` }}</NuxtLink>
+  </nav>
+
+  <div>
+    <button @click="setLocale('en')">English</button>
+    <button @click="setLocale('ja')">日本語</button>
+  </div>
+</template>
+```
+
+That's it. Locale routing, cookie persistence, and SEO tags work automatically.
+
+## Syntax Sugar
+
+### `v-t` Directive
+
+The `v-t` directive compiles translations at build time -- no runtime overhead:
+
+```vue
+<template>
+  <h1 v-t>Hello, world!</h1>
+  <p v-t>Welcome to {name}'s site</p>
+</template>
+```
+
+### `<Trans>` Component
+
+For rich text with embedded HTML and components:
+
+```vue
+<template>
+  <Trans>
+    Read the <NuxtLink to="/docs">documentation</NuxtLink> to get started.
+  </Trans>
+</template>
+```
+
+### Template Literal Tag
+
+Use `` t`...` `` in script and template expressions:
+
+```vue
+<script setup>
+const { t } = useI18n()
+const greeting = computed(() => t`Hello, {name}!`)
+</script>
+
+<template>
+  <p>{{ t`You have {count, plural, one {# item} other {# items}}` }}</p>
+</template>
+```
+
+## Auto-imported APIs
+
+Every API below is auto-imported by the module -- no `import` statements required:
+
+| API | Source | Purpose |
+|-----|--------|---------|
+| `useI18n()` | `@fluenti/vue` | Access `t`, `locale`, `setLocale`, and message catalogs |
+| `useLocalePath()` | `@fluenti/nuxt` | Generate locale-prefixed paths |
+| `useSwitchLocalePath()` | `@fluenti/nuxt` | Get the current page path in another locale |
+| `useLocaleHead()` | `@fluenti/nuxt` | Generate SEO `<head>` metadata |
+| `<NuxtLinkLocale>` | `@fluenti/nuxt` | Locale-aware `<NuxtLink>` component |
+
+## Locale Routing
+
+Four URL strategies to match your project requirements:
+
+| Strategy | Default locale | Other locales | Best for |
+|----------|---------------|---------------|----------|
+| `prefix_except_default` | `/about` | `/ja/about` | Most apps -- clean URLs for default locale |
+| `prefix` | `/en/about` | `/ja/about` | Multilingual-first sites |
+| `prefix_and_default` | `/about` + `/en/about` | `/ja/about` | Migration from prefix to no-prefix |
+| `no_prefix` | `/about` | `/about` | Cookie/header detection only |
+
+The module extends your Nuxt pages automatically -- locale-prefixed route variants are generated at build time with zero manual route config.
+
+### Locale Redirect Middleware
+
+With the `prefix` strategy, a global middleware redirects unprefixed URLs:
+
+```
+GET /about    -->  302  -->  /en/about   (detected via cookie/header/fallback)
+GET /ja/about -->  (no redirect)
+```
+
+## SEO Head Tags
+
+Generate `hreflang` alternates and Open Graph locale meta with one composable:
+
+```vue
+<script setup>
+const head = useLocaleHead({
+  addSeoAttributes: true,
+  baseUrl: 'https://example.com',
+})
+
+useHead(head.value)
+</script>
+```
+
+Output:
+
+```html
+<html lang="en">
+<head>
+  <link rel="alternate" hreflang="en" href="https://example.com/about" />
+  <link rel="alternate" hreflang="ja" href="https://example.com/ja/about" />
+  <link rel="alternate" hreflang="x-default" href="https://example.com/about" />
+  <meta property="og:locale" content="en" />
+  <meta property="og:locale:alternate" content="ja" />
+</head>
+```
+
+## Cookie-Based Locale Detection
+
+Persist locale preference across visits with zero setup:
+
+```ts
+// nuxt.config.ts
+export default defineNuxtConfig({
+  fluenti: {
+    locales: ['en', 'ja', 'zh'],
+    defaultLocale: 'en',
+    detectBrowserLanguage: {
+      useCookie: true,
+      cookieKey: 'fluenti_locale',
+      fallbackLocale: 'en',
+    },
+  },
+})
+```
+
+The detection chain runs in order (`detectOrder: ['path', 'cookie', 'header']` by default). The first detector to resolve a locale wins.
+
+| Detector | Reads from | Example |
+|----------|-----------|---------|
+| `path` | URL prefix | `/ja/about` -> `ja` |
+| `cookie` | Cookie value | `fluenti_locale=ja` -> `ja` |
+| `header` | `Accept-Language` | `ja,en;q=0.5` -> `ja` |
+| `query` | Query parameter | `?locale=ja` -> `ja` |
+
+## Components
+
+### `<NuxtLinkLocale>`
+
+A locale-aware drop-in replacement for `<NuxtLink>`:
+
+```vue
+<template>
+  <!-- Automatically prefixes with current locale -->
+  <NuxtLinkLocale to="/about">About</NuxtLinkLocale>
+
+  <!-- Override locale -->
+  <NuxtLinkLocale to="/about" locale="ja">About (JA)</NuxtLinkLocale>
+</template>
+```
+
+All standard `<NuxtLink>` props are forwarded.
+
+## Composables
+
+### `useLocalePath()`
+
+```vue
+<script setup>
+const localePath = useLocalePath()
+</script>
+
+<template>
+  <NuxtLink :to="localePath('/about')">About</NuxtLink>
+  <NuxtLink :to="localePath('/about', 'ja')">About (JA)</NuxtLink>
+</template>
+```
+
+### `useSwitchLocalePath()`
+
+```vue
+<script setup>
+const switchLocalePath = useSwitchLocalePath()
+</script>
+
+<template>
+  <NuxtLink :to="switchLocalePath('en')">English</NuxtLink>
+  <NuxtLink :to="switchLocalePath('ja')">日本語</NuxtLink>
+</template>
+```
+
+### `useLocaleHead()`
+
+```ts
+const head = useLocaleHead({
+  addSeoAttributes: true,  // hreflang + og:locale
+  baseUrl: 'https://example.com',
+})
+useHead(head.value)
 ```
 
 ## Module Options
@@ -49,7 +275,7 @@ export default defineNuxtConfig({
     autoVitePlugin: true,
     componentPrefix: '',
 
-    // ISR (Incremental Static Regeneration)
+    // ISR
     isr: { enabled: true, ttl: 3600 },
   },
 })
@@ -57,328 +283,24 @@ export default defineNuxtConfig({
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `locales` | `string[]` | — | Supported locale codes (required) |
+| `locales` | `string[]` | -- | Supported locale codes (required) |
 | `defaultLocale` | `string` | `'en'` | Default locale code (required) |
 | `strategy` | `Strategy` | `'prefix_except_default'` | URL routing strategy |
 | `detectOrder` | `string[]` | `['path', 'cookie', 'header']` | Ordered list of locale detectors |
-| `detectBrowserLanguage` | `object` | — | Cookie and fallback settings |
+| `detectBrowserLanguage` | `object` | -- | Cookie and fallback settings |
 | `autoVitePlugin` | `boolean` | `true` | Auto-register `@fluenti/vite-plugin` |
 | `componentPrefix` | `string` | `''` | Prefix for i18n components |
-| `isr` | `{ enabled, ttl? }` | — | ISR route rules generation |
+| `isr` | `{ enabled, ttl? }` | -- | ISR route rules generation |
 | `compat` | `boolean` | `false` | Enable vue-i18n bridge mode |
 
-## Routing Strategies
+## SSR / SSG / SPA / ISR
 
-| Strategy | Default locale | Other locales | Example |
-|----------|---------------|---------------|---------|
-| `prefix_except_default` | `/about` | `/ja/about` | Most common — clean URLs for default locale |
-| `prefix` | `/en/about` | `/ja/about` | Every locale gets a prefix |
-| `prefix_and_default` | `/about` + `/en/about` | `/ja/about` | Default locale accessible both ways |
-| `no_prefix` | `/about` | `/about` | No URL prefixes — locale set via cookie/header |
+The module works in every Nuxt rendering mode:
 
-## Locale Detection
-
-When a request arrives, the module runs a detection chain to determine which locale to use. Detectors run in the order specified by `detectOrder`. The first detector to resolve a locale wins.
-
-### Detection Flow
-
-```
-Request → detectOrder chain → fluenti:detect-locale hook → fallback
-                                                              ↓
-                                              fallbackLocale → defaultLocale
-```
-
-### Built-in Detectors
-
-| Detector | Reads from | Example | Notes |
-|----------|-----------|---------|-------|
-| `path` | URL prefix | `/ja/about` → `ja` | Most reliable for SEO |
-| `cookie` | Cookie value | `fluenti_locale=ja` | Persists across visits |
-| `header` | `Accept-Language` | `ja,en;q=0.5` → `ja` | Server-side only, content negotiation |
-| `query` | Query parameter | `?locale=ja` → `ja` | Useful for previewing |
-
-### detectBrowserLanguage
-
-Controls cookie persistence and fallback behavior:
-
-```ts
-detectBrowserLanguage: {
-  useCookie: true,               // persist detected locale in a cookie
-  cookieKey: 'fluenti_locale',   // cookie name (default: 'fluenti_locale')
-  fallbackLocale: 'en',          // used when no detector resolves
-}
-```
-
-When `useCookie` is enabled, the module automatically:
-- Reads the locale from the cookie during detection
-- Writes the cookie whenever the locale changes
-
-The `fallbackLocale` is used when no detector in the chain resolves a locale. If not set, `defaultLocale` is used.
-
-### Custom Detector Hook
-
-Use the `fluenti:detect-locale` Nuxt hook to add custom detection logic. The hook runs after all built-in detectors, but only if no detector has resolved yet.
-
-```ts
-// modules/custom-detect.ts
-import { defineNuxtModule, addPlugin, createResolver } from '@nuxt/kit'
-
-export default defineNuxtModule({
-  setup(_, nuxt) {
-    const { resolve } = createResolver(import.meta.url)
-    addPlugin({ src: resolve('./runtime/detect-plugin'), order: -1 })
-  },
-})
-```
-
-```ts
-// modules/runtime/detect-plugin.ts
-export default defineNuxtPlugin((nuxtApp) => {
-  nuxtApp.hook('fluenti:detect-locale', (ctx) => {
-    if (!ctx.isServer) return
-
-    const event = useRequestEvent()
-    const headerLocale = event?.headers?.get('x-user-locale')
-
-    if (headerLocale && ctx.locales.includes(headerLocale)) {
-      ctx.setLocale(headerLocale)
-    }
-  })
-})
-```
-
-The `LocaleDetectContext` passed to the hook:
-
-| Property | Type | Description |
-|----------|------|-------------|
-| `path` | `string` | The request path |
-| `locales` | `string[]` | Available locale codes |
-| `defaultLocale` | `string` | Default locale |
-| `strategy` | `Strategy` | Routing strategy |
-| `detectedLocale` | `string \| null` | Locale detected so far |
-| `setLocale` | `(locale) => void` | Call to claim a locale and stop the chain |
-| `isServer` | `boolean` | Whether running on the server |
-
-## Locale Redirect Middleware
-
-When using the `prefix` strategy, a global middleware automatically redirects unprefixed URLs to locale-prefixed ones:
-
-```
-GET /about → 302 → /en/about   (detected via cookie/header/fallback)
-GET /ja/about → no redirect     (already has prefix)
-```
-
-The middleware only activates for the `prefix` strategy. For `prefix_except_default`, unprefixed paths are treated as the default locale.
-
-## SSR / SSG / SPA
-
-The module works in all three Nuxt rendering modes with optimized behavior for each.
-
-### SSR (Server-Side Rendering)
-
-```ts
-// nuxt.config.ts — default, no extra config needed
-```
-
-- Server runs the full detection chain (path, cookie, Accept-Language header)
-- Detected locale is stored in `nuxtApp.payload` for hydration
-- Client reads locale from payload to prevent hydration mismatch
-- Route changes sync locale reactively via `watch(route.path)`
-
-### SSG (Static Site Generation)
-
-```ts
-// nuxt.config.ts
-export default defineNuxtConfig({
-  nitro: { preset: 'static' },
-  fluenti: {
-    locales: ['en', 'ja', 'zh'],
-    strategy: 'prefix_except_default',
-  },
-})
-```
-
-- All locale-prefixed routes are pre-rendered automatically (`crawlLinks: true`)
-- Each locale variant is a separate static HTML file
-- Client-side locale switching works via Vue reactivity
-- Cookie persists the user's locale preference
-
-### SPA (Single Page Application)
-
-```ts
-// nuxt.config.ts
-export default defineNuxtConfig({
-  ssr: false,
-  fluenti: {
-    locales: ['en', 'ja', 'zh'],
-    strategy: 'prefix_except_default',
-    detectBrowserLanguage: { useCookie: true },
-  },
-})
-```
-
-- No server-side detection — locale is detected on the client
-- Extracts locale from URL path, then checks cookie, then defaults
-- Initial HTML is a shell — translations render after hydration
-
-### ISR (Incremental Static Regeneration)
-
-```ts
-// nuxt.config.ts
-export default defineNuxtConfig({
-  fluenti: {
-    locales: ['en', 'ja'],
-    strategy: 'prefix_except_default',
-    isr: { enabled: true, ttl: 3600 },
-  },
-})
-```
-
-The module automatically generates `routeRules` for each locale pattern:
-
-```ts
-// Generated route rules:
-{
-  '/**': { isr: 3600 },       // default locale (prefix_except_default)
-  '/ja/**': { isr: 3600 },    // Japanese routes
-}
-```
-
-## Composables
-
-### `useLocalePath()`
-
-Generate locale-prefixed paths.
-
-```vue
-<script setup>
-const localePath = useLocalePath()
-</script>
-
-<template>
-  <NuxtLink :to="localePath('/about')">About</NuxtLink>
-  <NuxtLink :to="localePath('/about', 'ja')">About (JA)</NuxtLink>
-</template>
-```
-
-### `useSwitchLocalePath()`
-
-Get the current page path in a different locale.
-
-```vue
-<script setup>
-const switchLocalePath = useSwitchLocalePath()
-</script>
-
-<template>
-  <!-- If on /ja/about, this returns /about (en is default) -->
-  <NuxtLink :to="switchLocalePath('en')">English</NuxtLink>
-  <NuxtLink :to="switchLocalePath('ja')">日本語</NuxtLink>
-</template>
-```
-
-### `useLocaleHead()`
-
-Generate SEO-friendly `<head>` metadata — `hreflang` alternate links, `og:locale` meta tags, and `html[lang]`.
-
-```vue
-<script setup>
-const head = useLocaleHead({
-  addSeoAttributes: true,
-  baseUrl: 'https://example.com',
-})
-
-useHead(head.value)
-</script>
-```
-
-Generated output:
-
-```html
-<html lang="en">
-<head>
-  <link rel="alternate" hreflang="en" href="https://example.com/about" />
-  <link rel="alternate" hreflang="ja" href="https://example.com/ja/about" />
-  <link rel="alternate" hreflang="x-default" href="https://example.com/about" />
-  <meta property="og:locale" content="en" />
-  <meta property="og:locale:alternate" content="ja" />
-</head>
-```
-
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `addSeoAttributes` | `boolean` | `false` | Generate hreflang and og:locale tags |
-| `baseUrl` | `string` | `''` | Base URL for absolute hreflang links |
-
-## Components
-
-### `<NuxtLinkLocale>`
-
-A locale-aware wrapper around `<NuxtLink>` that automatically prefixes paths based on the current locale and routing strategy.
-
-```vue
-<template>
-  <!-- Uses current locale -->
-  <NuxtLinkLocale to="/about">About</NuxtLinkLocale>
-  <!-- Renders: <a href="/ja/about">About</a> when locale is 'ja' -->
-
-  <!-- Override locale with the locale prop -->
-  <NuxtLinkLocale to="/about" locale="ja">About (JA)</NuxtLinkLocale>
-  <!-- Always renders: <a href="/ja/about">About (JA)</a> -->
-</template>
-```
-
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| `to` | `string \| { path: string }` | — | Target path (required) |
-| `locale` | `string` | current locale | Override locale for this link |
-
-All other `<NuxtLink>` props and attributes are forwarded.
-
-## Route Utilities
-
-For programmatic use or custom module setup:
-
-```ts
-import { localePath, switchLocalePath, extractLocaleFromPath, extendPages } from '@fluenti/nuxt'
-
-// Add locale prefix to a path
-localePath('/about', 'ja', 'en', 'prefix_except_default')
-// → '/ja/about'
-
-// Get current path in another locale
-switchLocalePath('/ja/about', 'en', ['en', 'ja'], 'en', 'prefix_except_default')
-// → '/about'
-
-// Extract locale from a path
-extractLocaleFromPath('/ja/about', ['en', 'ja'])
-// → { locale: 'ja', pathWithoutLocale: '/about' }
-
-// Extend Nuxt pages with locale-prefixed variants
-extendPages(pages, { locales: ['en', 'ja'], defaultLocale: 'en', strategy: 'prefix_except_default' })
-```
-
-## Auto-imported APIs
-
-The module auto-imports the following — no `import` statements needed in components:
-
-| API | Source |
-|-----|--------|
-| `useI18n()` | `@fluenti/vue` |
-| `useLocalePath()` | `@fluenti/nuxt` |
-| `useSwitchLocalePath()` | `@fluenti/nuxt` |
-| `useLocaleHead()` | `@fluenti/nuxt` |
-| `<NuxtLinkLocale>` | `@fluenti/nuxt` (global component) |
-
-## Cookie Persistence
-
-When `detectBrowserLanguage.useCookie` is enabled:
-
-1. On locale detection, the cookie value is checked (after path detection)
-2. When the user switches locale (via `setLocale()` or navigation), the cookie is updated automatically
-3. On return visits, the cookie restores the user's preferred locale
-
-The cookie is set with `path: '/'` and uses the key from `cookieKey` (default: `fluenti_locale`).
+- **SSR** -- Full detection chain on the server; locale is hydrated to the client via payload
+- **SSG** -- Locale-prefixed routes are pre-rendered automatically (`crawlLinks: true`)
+- **SPA** -- Client-side detection from URL path, cookie, then defaults
+- **ISR** -- Auto-generated `routeRules` with configurable TTL per locale pattern
 
 ## Documentation
 

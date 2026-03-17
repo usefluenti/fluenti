@@ -127,25 +127,25 @@ const ROLES = {
 
 ## Code Splitting
 
-By default, all locale messages are bundled together. For apps with many locales or large catalogs, code splitting loads locale data on demand.
+`fluenti compile` always generates tree-shakeable named exports — every message is a `/* @__PURE__ */` annotated export so bundlers can eliminate unused translations. For apps with many locales or large catalogs, code splitting loads locale data on demand.
 
 ### How It Works
 
-1. Run `fluenti compile --split` to generate per-locale ES modules with named exports
-2. Each message becomes a `/* @__PURE__ */` annotated export — unused messages are tree-shaken
+1. Run `fluenti compile` to generate per-locale ES modules with named exports and `@__PURE__` annotations
+2. Each message becomes a tree-shakeable named export — unused messages are removed from the production bundle
 3. Configure `chunkLoader` to dynamically import locale chunks
 4. When `setLocale()` is called, the chunk is loaded before switching
 
 ### Setup
 
-Compile with split mode:
+Compile your catalogs:
 
 ```bash
-npx fluenti compile --split
+npx fluenti compile
 ```
 
 This generates:
-- `locales/compiled/en.js` — named exports per message
+- `locales/compiled/en.js` — named exports per message with `export default` re-export
 - `locales/compiled/zh-CN.js` — same exports, translated
 - `locales/compiled/index.js` — locale list and lazy loaders
 

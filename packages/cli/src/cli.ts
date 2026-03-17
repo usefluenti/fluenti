@@ -10,7 +10,7 @@ import { updateCatalog } from './catalog'
 import type { CatalogData } from './catalog'
 import { readJsonCatalog, writeJsonCatalog } from './json-format'
 import { readPoCatalog, writePoCatalog } from './po-format'
-import { compileCatalog, compileCatalogSplit, compileIndex, collectAllIds } from './compile'
+import { compileCatalog, compileIndex, collectAllIds } from './compile'
 import { translateCatalog } from './translate'
 import type { AIProvider } from './translate'
 import { runMigrate } from './migrate'
@@ -107,7 +107,6 @@ const compile = defineCommand({
   meta: { name: 'compile', description: 'Compile message catalogs to JS modules' },
   args: {
     config: { type: 'string', description: 'Path to config file' },
-    split: { type: 'boolean', description: 'Output ES module named exports for tree-shaking' },
   },
   async run({ args }) {
     const config = await loadConfig(args.config)
@@ -115,41 +114,28 @@ const compile = defineCommand({
 
     mkdirSync(config.compileOutDir, { recursive: true })
 
-    if (args.split) {
-      // Split mode: named exports per message for tree-shaking
-      // First, collect all catalogs and build union of IDs
-      const allCatalogs: Record<string, CatalogData> = {}
-      for (const locale of config.locales) {
-        const catalogPath = resolve(config.catalogDir, `${locale}${ext}`)
-        allCatalogs[locale] = readCatalog(catalogPath, config.format)
-      }
-
-      const allIds = collectAllIds(allCatalogs)
-      consola.info(`Split mode: ${allIds.length} messages across ${config.locales.length} locales`)
-
-      for (const locale of config.locales) {
-        const compiled = compileCatalogSplit(allCatalogs[locale]!, locale, allIds)
-        const outPath = resolve(config.compileOutDir, `${locale}.js`)
-        writeFileSync(outPath, compiled, 'utf-8')
-        consola.success(`Compiled ${locale} → ${outPath}`)
-      }
-
-      // Generate index.js with locale list and lazy loaders
-      const indexCode = compileIndex(config.locales, config.compileOutDir)
-      const indexPath = resolve(config.compileOutDir, 'index.js')
-      writeFileSync(indexPath, indexCode, 'utf-8')
-      consola.success(`Generated index → ${indexPath}`)
-    } else {
-      // Legacy mode: default export object
-      for (const locale of config.locales) {
-        const catalogPath = resolve(config.catalogDir, `${locale}${ext}`)
-        const catalog = readCatalog(catalogPath, config.format)
-        const compiled = compileCatalog(catalog, locale)
-        const outPath = resolve(config.compileOutDir, `${locale}.ts`)
-        writeFileSync(outPath, compiled, 'utf-8')
-        consola.success(`Compiled ${locale} → ${outPath}`)
-      }
+    // Collect all catalogs and build union of IDs
+    const allCatalogs: Record<string, CatalogData> = {}
+    for (const locale of config.locales) {
+      const catalogPath = resolve(config.catalogDir, `${locale}${ext}`)
+      allCatalogs[locale] = readCatalog(catalogPath, config.format)
     }
+
+    const allIds = collectAllIds(allCatalogs)
+    consola.info(`Compiling ${allIds.length} messages across ${config.locales.length} locales`)
+
+    for (const locale of config.locales) {
+      const compiled = compileCatalog(allCatalogs[locale]!, locale, allIds)
+      const outPath = resolve(config.compileOutDir, `${locale}.js`)
+      writeFileSync(outPath, compiled, 'utf-8')
+      consola.success(`Compiled ${locale} → ${outPath}`)
+    }
+
+    // Generate index.js with locale list and lazy loaders
+    const indexCode = compileIndex(config.locales, config.compileOutDir)
+    const indexPath = resolve(config.compileOutDir, 'index.js')
+    writeFileSync(indexPath, indexCode, 'utf-8')
+    consola.success(`Generated index → ${indexPath}`)
   },
 })
 

@@ -41,7 +41,7 @@ import zhCN from './locales/compiled/zh-CN'
   locale="en"
   fallbackLocale="en"
   messages={{ en }}
-  loadMessages={(locale) => import(`./locales/compiled/${locale}.ts`)}
+  loadMessages={(locale) => import(`./locales/compiled/${locale}.js`)}
 >
   <App />
 </I18nProvider>
@@ -225,7 +225,7 @@ Create request-scoped i18n utilities. Uses `React.cache()` to isolate state per 
 import { createServerI18n } from '@fluenti/react/server'
 
 export const { setLocale, getI18n, Trans, Plural, DateTime, NumberFormat } = createServerI18n({
-  loadMessages: (locale) => import(`../locales/compiled/${locale}.ts`),
+  loadMessages: (locale) => import(`../locales/compiled/${locale}.js`),
   fallbackLocale: 'en',
   resolveLocale: async () => {
     const { cookies } = await import('next/headers')
@@ -338,7 +338,7 @@ Server Actions are independent requests that skip the layout tree, so `setLocale
 
 ```ts
 export const { setLocale, getI18n } = createServerI18n({
-  loadMessages: (locale) => import(`../locales/compiled/${locale}.ts`),
+  loadMessages: (locale) => import(`../locales/compiled/${locale}.js`),
   resolveLocale: async () => {
     const { cookies } = await import('next/headers')
     return (await cookies()).get('locale')?.value ?? 'en'

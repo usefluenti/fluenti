@@ -7,7 +7,6 @@ export default defineConfig({
     react(),
     fluenti({
       framework: 'react',
-      splitting: 'dynamic',
       catalogDir: 'src/locales/compiled',
       sourceLocale: 'en',
       locales: ['en', 'ja'],

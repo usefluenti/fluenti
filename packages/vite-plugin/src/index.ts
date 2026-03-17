@@ -1096,7 +1096,7 @@ export function transformSolidJsx(code: string): SolidJsxTransformResult {
 export default function fluentiPlugin(options?: FluentiPluginOptions): Plugin[] {
   const catalogDir = options?.catalogDir ?? 'src/locales/compiled'
   const frameworkOption = options?.framework ?? 'auto'
-  const splitting = options?.splitting ?? false
+  const splitting = options?.splitting ?? 'dynamic'
   const sourceLocale = options?.sourceLocale ?? 'en'
   const locales = options?.locales ?? [sourceLocale]
   const defaultBuildLocale = options?.defaultBuildLocale ?? sourceLocale
