@@ -1,5 +1,5 @@
 import type { CatalogData } from './catalog'
-import { hashMessage } from './hash'
+import { hashMessage } from '@fluenti/core'
 import { parse } from '@fluenti/core'
 import type { ASTNode, PluralNode, SelectNode } from '@fluenti/core'
 
@@ -136,12 +136,16 @@ function selectToJs(node: SelectNode, locale: string): string {
  * Each message becomes a `/* @__PURE__ *​/` annotated named export.
  * A default export maps message IDs to their compiled values for runtime lookup.
  */
+/** Catalog format version. Bump when the compiled output format changes. */
+export const CATALOG_VERSION = 1
+
 export function compileCatalog(
   catalog: CatalogData,
   locale: string,
   allIds: string[],
 ): string {
   const lines: string[] = []
+  lines.push(`// @fluenti/compiled v${CATALOG_VERSION}`)
   const exportNames: Array<{ id: string; exportName: string }> = []
 
   for (const id of allIds) {
@@ -165,8 +169,8 @@ export function compileCatalog(
     exportNames.push({ id, exportName })
   }
 
-  if (lines.length === 0) {
-    return '// empty catalog\nexport default {}\n'
+  if (exportNames.length === 0) {
+    return `// @fluenti/compiled v${CATALOG_VERSION}\n// empty catalog\nexport default {}\n`
   }
 
   // Default export maps message IDs → compiled values for runtime lookup

@@ -93,6 +93,24 @@ test.describe('React SPA Playground', () => {
     await expect(page.getByTestId('trans-bold').locator('strong')).toContainText('important')
   })
 
+  test('Rich text Trans translates when switching to Japanese', async ({ page }) => {
+    await page.goto('/')
+    await page.getByTestId('nav-richtext').click()
+    await page.getByTestId('lang-ja').click()
+    await expect(page.getByTestId('trans-basic').locator('a[href="/docs"]')).toContainText('ドキュメント')
+    await expect(page.getByTestId('trans-bold').locator('strong')).toContainText('重要')
+  })
+
+  test('Rich text Trans preserves element structure after locale switch', async ({ page }) => {
+    await page.goto('/')
+    await page.getByTestId('nav-richtext').click()
+    await page.getByTestId('lang-zh').click()
+    await expect(page.getByTestId('trans-basic').locator('a[href="/docs"]')).toBeVisible()
+    await expect(page.getByTestId('trans-bold').locator('strong')).toBeVisible()
+    await expect(page.getByTestId('trans-multi').locator('a[href="/login"]')).toBeVisible()
+    await expect(page.getByTestId('trans-multi').locator('strong')).toBeVisible()
+  })
+
   test('navigation between sections works', async ({ page }) => {
     await page.goto('/')
     await expect(page.getByTestId('home-section')).toBeVisible()

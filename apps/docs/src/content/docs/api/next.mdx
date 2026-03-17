@@ -31,6 +31,9 @@ All options are optional. Defaults are read from `fluenti.config.ts` in the proj
 | `dateFormats` | `DateFormatOptions?` | — | Custom date format presets (passed to `createServerI18n`) |
 | `numberFormats` | `NumberFormatOptions?` | — | Custom number format presets (passed to `createServerI18n`) |
 | `fallbackChain` | `Record<string, string[]>?` | — | Locale fallback chains (e.g. `{ 'zh-TW': ['zh-CN', 'en'] }`) |
+| `transform` | `(result, id, locale) => string?` | — | Post-translation transform hook |
+| `onLocaleChange` | `(newLocale, prevLocale) => void?` | — | Callback fired when locale changes |
+| `formatters` | `Record<string, CustomFormatter>?` | — | Custom ICU function formatters |
 
 ### What it does
 
@@ -38,7 +41,7 @@ All options are optional. Defaults are read from `fluenti.config.ts` in the proj
    - A `createServerI18n` instance with `setLocale()`, `getI18n()`, and server components
    - A `FluentProvider` async component for layouts
    - A `ClientI18nProvider` with statically imported message catalogs
-2. **Registers a webpack loader** that transforms `` t`...` `` and `t()` calls into `__i18n.t()` lookups
+2. **Registers a webpack loader** that uses AST scope analysis to detect `t` from `useI18n()` bindings and transforms `` t`...` `` and `t()` calls into `__i18n.t()` lookups
 3. **Adds a resolve alias** mapping `@fluenti/next/__generated` to the generated module
 
 ### Webpack loader
@@ -51,6 +54,10 @@ The loader auto-detects server vs client context:
 | Server | `'use server'` directive or `app/` directory | `__getServerI18n()` via `React.cache()` store |
 
 The transform uses a `Proxy` to defer access until render time, so module-level `t`` ` calls work correctly.
+
+Only `t` bindings from `useI18n()` (or `getI18n()` on the server) are transformed. Other variables named `t` are left untouched. The previous regex-based "magic global" approach is deprecated — set `legacyGlobalT: true` in the `withFluenti()` config if you need backward compatibility during migration.
+
+The loader also optimizes `<Trans>` components at build time by pre-computing the message ID and extraction from JSX children, injecting `__id`, `__message`, and `__components` props. This eliminates the runtime `extractMessage()` and `hashMessage()` cost — the optimization is fully transparent.
 
 ## Generated Modules
 

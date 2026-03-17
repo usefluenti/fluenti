@@ -280,6 +280,20 @@ const fluent = createFluentVue({
   componentPrefix: 'I18n',   // registers I18nTrans, I18nPlural, I18nSelect
   splitting: true,
   chunkLoader: (locale) => import(`./locales/${locale}.js`),
+
+  // Post-translation transform applied to every resolved message
+  transform: (result, id, locale) => result,
+
+  // Callback fired whenever the locale changes
+  onLocaleChange: (newLocale, prevLocale) => {
+    document.documentElement.lang = newLocale
+  },
+
+  // Custom ICU function formatters (e.g. {items, list})
+  formatters: {
+    list: (value, style, locale) =>
+      new Intl.ListFormat(locale, { type: style || 'conjunction' }).format(value),
+  },
 })
 ```
 
@@ -295,6 +309,9 @@ const fluent = createFluentVue({
 | `componentPrefix` | `string`                           | `''`    | Prefix for globally registered components                |
 | `splitting`       | `boolean`                          | `false` | Enable async code-splitting mode                         |
 | `chunkLoader`     | `(locale) => Promise<Messages>`    | --      | Async loader for locale chunks (requires `splitting`)    |
+| `transform`       | `(result: string, id: string, locale: string) => string` | -- | Post-interpolation hook applied to every resolved message |
+| `onLocaleChange`  | `(newLocale: string, prevLocale: string) => void` | -- | Callback fired whenever the locale changes via `setLocale()` |
+| `formatters`      | `Record<string, CustomFormatter>`  | --      | Custom ICU function formatters keyed by function name    |
 
 ---
 

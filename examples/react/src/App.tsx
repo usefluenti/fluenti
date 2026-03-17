@@ -8,7 +8,7 @@ const ROLES = {
 }
 
 export function App({ onLocaleChange }: { onLocaleChange: (locale: string) => void }) {
-  const { i18n, d, n, locale, setLocale, isLoading, preloadLocale } = useI18n()
+  const { t, i18n, d, n, locale, setLocale, isLoading, preloadLocale } = useI18n()
   const [page, setPage] = useState<'home' | 'plurals' | 'richtext'>('home')
   const [count, setCount] = useState(0)
   const [gender, setGender] = useState('other')

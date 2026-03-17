@@ -14,7 +14,7 @@ export default defineConfig({
       formats: ['es', 'cjs'],
     },
     rollupOptions: {
-      external: ['react', 'react-dom', 'next', 'webpack', '@fluenti/core', '@fluenti/react', /^node:/],
+      external: ['react', 'react-dom', 'next', 'webpack', /^@fluenti\/core/, /^@fluenti\/react/, /^node:/],
     },
     sourcemap: true,
     emptyOutDir: true,

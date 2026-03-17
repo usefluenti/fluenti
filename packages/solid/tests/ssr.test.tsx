@@ -57,12 +57,6 @@ describe('SSR', () => {
     expect(result).toBe('Hello SSR')
   })
 
-  it('tRaw() deprecated alias works in SSR context', () => {
-    const ctx = createI18nContext({ locale: 'en', messages })
-    const result = ctx.tRaw('Hello {name}', { name: 'SSR' })
-    expect(result).toBe('Hello SSR')
-  })
-
   it('getLocales returns available locale codes', () => {
     const ctx = createI18nContext({ locale: 'en', messages })
     const locales = ctx.getLocales()

@@ -24,13 +24,16 @@ Output: <p>{{ $t('Hello {{ name }}') }}</p>
 
 ## t\`\` Tagged Template Compilation
 
+The `t` function returned by `useI18n()` supports tagged template syntax. The Vite plugin uses AST scope analysis to detect `t` bindings from `useI18n()` and transforms them at build time:
+
 ```
-Input:  const greeting = t`Hello ${name}`
-   ↓ (Vite transform hook)
+Input:  const { t } = useI18n()
+        const greeting = t`Hello ${name}`
+   ↓ (Vite transform hook — scope-aware AST)
 Output: const greeting = computed(() => __i18n.t('Hello {name}', { name: unref(name) }))
 ```
 
-The Vite plugin also auto-injects the necessary imports.
+Only `t` variables originating from `useI18n()` are transformed. Other variables named `t` are left untouched.
 
 ## Message Extraction
 
@@ -50,6 +53,7 @@ The Vite plugin also auto-injects the necessary imports.
 `fluenti compile` converts ICU messages into optimized JavaScript:
 
 ```javascript
+// @fluenti/compiled v1
 /* @__PURE__ */ export const _a1b2c3 = (v) => `Hello ${v.name}`
 /* @__PURE__ */ export const _d4e5f6 = 'Welcome to Fluenti'
 
@@ -59,7 +63,7 @@ export default {
 }
 ```
 
-Static messages become plain strings (zero overhead). Dynamic messages become small functions. The `@__PURE__` annotations enable tree-shaking — unused messages are eliminated from the production bundle. The `export default` re-export allows catalog imports by message ID key.
+Every compiled file starts with a `// @fluenti/compiled v1` version marker (`CATALOG_VERSION`). Static messages become plain strings (zero overhead). Dynamic messages become small functions. The `@__PURE__` annotations enable tree-shaking — unused messages are eliminated from the production bundle. The `export default` re-export allows catalog imports by message ID key.
 
 ## ICU Parser
 

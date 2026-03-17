@@ -1,17 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import fluentiPlugin from '../src/index'
-
-/**
- * FNV-1a hash — identical to @fluenti/cli and build-transform.ts.
- */
-function hashMessage(message: string): string {
-  let hash = 0x811c9dc5
-  for (let i = 0; i < message.length; i++) {
-    hash ^= message.charCodeAt(i)
-    hash = Math.imul(hash, 0x01000193)
-  }
-  return (hash >>> 0).toString(36)
-}
+import { hashMessage } from '@fluenti/core'
 
 function makeCatalogSource(locale: string): string {
   const h1 = hashMessage('Hello')

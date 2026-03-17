@@ -109,7 +109,84 @@ describe('Trans edge cases', () => {
     expect(container.textContent).toContain('<script>alert("xss")</script>')
   })
 
-  // 8. memo: same children don't re-render
+  // 8. Pre-computed props — fast path (build plugin)
+  it('uses pre-computed __id, __message, __components (fast path)', () => {
+    const messages = {
+      en: { 'custom.key': 'Translated <0>docs</0> text.' },
+    }
+
+    const { container } = render(
+      withProvider(
+        createElement(Trans, {
+          __id: 'custom.key',
+          __message: 'Read the <0>documentation</0> for more info.',
+          __components: [createElement('a', { href: '/docs' }, 'documentation')],
+          children: null,
+        }),
+        messages,
+      ),
+    )
+    // Should render the translated message, not the source
+    expect(container.textContent).toContain('Translated')
+    expect(container.textContent).toContain('docs')
+    // The <a> element should be reconstructed
+    const a = container.querySelector('a')
+    expect(a).toBeTruthy()
+    expect(a?.getAttribute('href')).toBe('/docs')
+  })
+
+  // 9. Pre-computed + translation lookup via __id
+  it('looks up translation using pre-computed __id', () => {
+    const messages = {
+      en: { 'my.msg': 'Translated important text.' },
+    }
+
+    const { container } = render(
+      withProvider(
+        createElement(Trans, {
+          __id: 'my.msg',
+          __message: 'This is <0>important</0> information.',
+          __components: [createElement('strong', null, 'important')],
+          children: null,
+        }),
+        messages,
+      ),
+    )
+    expect(container.textContent).toBe('Translated important text.')
+  })
+
+  // 10. Pre-computed __message without __components (plain text)
+  it('handles pre-computed __message without __components', () => {
+    const { container } = render(
+      withProvider(
+        createElement(Trans, {
+          __message: 'Just plain text',
+          children: null,
+        }),
+      ),
+    )
+    expect(container.textContent).toBe('Just plain text')
+  })
+
+  // 11. No pre-computed props — fallback to runtime extraction
+  it('falls back to runtime extraction when no __message provided', () => {
+    const { container } = render(
+      withProvider(
+        createElement(Trans, null,
+          'Read the ',
+          createElement('a', { href: '/docs' }, 'documentation'),
+          ' for more info.',
+        ),
+      ),
+    )
+    expect(container.textContent).toContain('Read the')
+    expect(container.textContent).toContain('documentation')
+    const a = container.querySelector('a')
+    expect(a).toBeTruthy()
+    expect(a?.getAttribute('href')).toBe('/docs')
+  })
+
+  // 12. memo: same children don't re-render
   it('does not re-render when children are the same (memo)', () => {
     const renderCount = vi.fn()
 

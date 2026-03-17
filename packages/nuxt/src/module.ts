@@ -103,6 +103,16 @@ export default defineNuxtModule<FluentNuxtOptions>({
       const prerender = (nitroOpts['prerender'] ?? (nitroOpts['prerender'] = {})) as Record<string, unknown>
       prerender['crawlLinks'] = prerender['crawlLinks'] ?? true
 
+      // For 'prefix' strategy, / has no matching route (all routes are
+      // locale-prefixed). Replace the default / initial route with
+      // /<defaultLocale> so the prerenderer starts from a valid route.
+      if (strategy === 'prefix') {
+        const routes = (prerender['routes'] ?? ['/']) as string[]
+        prerender['routes'] = routes.map((r) =>
+          r === '/' ? `/${options.defaultLocale}` : r,
+        )
+      }
+
       // ISR: generate routeRules for each locale pattern
       if (options.isr?.enabled) {
         const routeRules = (nuxtOpts['routeRules'] ?? (nuxtOpts['routeRules'] = {})) as Record<string, Record<string, unknown>>

@@ -309,17 +309,6 @@ describe('format()', () => {
   })
 })
 
-describe('tRaw() (deprecated alias)', () => {
-  it('delegates to format()', () => {
-    const plugin = createFluentVue({
-      locale: 'en',
-      messages: { en: {} },
-    })
-
-    expect(plugin.global.tRaw('Hello {name}', { name: 'World' })).toBe('Hello World')
-  })
-})
-
 describe('d() with relative style', () => {
   it('formats a recent past date as relative time', () => {
     const plugin = createFluentVue({

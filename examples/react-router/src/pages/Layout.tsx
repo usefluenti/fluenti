@@ -2,7 +2,7 @@ import { Outlet, Link } from 'react-router-dom'
 import { useI18n } from '@fluenti/react'
 
 export function Layout({ onLocaleChange }: { onLocaleChange: (l: string) => void }) {
-  const { locale, setLocale, preloadLocale } = useI18n()
+  const { t, locale, setLocale, preloadLocale } = useI18n()
 
   const handleSwitch = async (loc: string) => {
     await setLocale(loc)

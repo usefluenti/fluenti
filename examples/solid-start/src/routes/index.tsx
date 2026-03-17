@@ -1,7 +1,7 @@
 import { useI18n } from '@fluenti/solid'
 
 export default function HomePage() {
-  const { locale, d, n } = useI18n()
+  const { t, locale, d, n } = useI18n()
   const name = 'Developer'
   const currentLocale = locale()
 

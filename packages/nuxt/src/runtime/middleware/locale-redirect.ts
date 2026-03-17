@@ -1,4 +1,4 @@
-import { defineNuxtRouteMiddleware, navigateTo, useRuntimeConfig } from '#imports'
+import { defineNuxtRouteMiddleware, navigateTo, useNuxtApp, useRuntimeConfig } from '#imports'
 import { extractLocaleFromPath, localePath } from '../path-utils'
 import { runDetectors } from '../detectors'
 import type { FluentNuxtRuntimeConfig } from '../../types'
@@ -23,6 +23,10 @@ export default defineNuxtRouteMiddleware(async (to) => {
   // means the default locale — no redirect needed for prefix_except_default
   if (config.strategy === 'prefix_except_default') return
 
+  // Capture nuxtApp BEFORE any await — async local storage (composable
+  // context) is lost after awaiting, so navigateTo would fail without this.
+  const nuxtApp = useNuxtApp()
+
   // For 'prefix' strategy, we must redirect to a locale-prefixed URL
   // Run detectors excluding 'path' (since we know path has no locale)
   const configWithoutPath = {
@@ -33,6 +37,6 @@ export default defineNuxtRouteMiddleware(async (to) => {
   const targetPath = localePath(to.path, detectedLocale, config.defaultLocale, config.strategy)
 
   if (targetPath !== to.path) {
-    return navigateTo(targetPath, { redirectCode: 302 })
+    return nuxtApp.runWithContext(() => navigateTo(targetPath, { redirectCode: 302 }))
   }
 })

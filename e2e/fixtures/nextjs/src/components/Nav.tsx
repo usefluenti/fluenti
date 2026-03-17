@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useI18n } from '@fluenti/react'
 
 export function Nav() {
-  const { locale, setLocale } = useI18n()
+  const { t, locale, setLocale } = useI18n()
   const router = useRouter()
 
   const switchLocale = async (loc: string) => {

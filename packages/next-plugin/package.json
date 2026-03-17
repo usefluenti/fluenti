@@ -13,26 +13,59 @@
     "url": "https://github.com/usefluenti/fluenti/issues"
   },
   "license": "MIT",
-  "keywords": ["i18n", "internationalization", "compile-time", "icu", "messageformat", "next", "nextjs", "rsc", "server-components"],
+  "keywords": [
+    "i18n",
+    "internationalization",
+    "compile-time",
+    "icu",
+    "messageformat",
+    "next",
+    "nextjs",
+    "rsc",
+    "server-components"
+  ],
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "import": { "types": "./dist/index.d.ts", "default": "./dist/index.js" },
-      "require": { "types": "./dist/index.d.ts", "default": "./dist/index.cjs" }
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.cjs"
+      }
     },
     "./server": {
-      "import": { "types": "./dist/server.d.ts", "default": "./dist/server.js" },
-      "require": { "types": "./dist/server.d.ts", "default": "./dist/server.cjs" }
+      "import": {
+        "types": "./dist/server.d.ts",
+        "default": "./dist/server.js"
+      },
+      "require": {
+        "types": "./dist/server.d.ts",
+        "default": "./dist/server.cjs"
+      }
     },
     "./provider": {
-      "import": { "types": "./dist/provider.d.ts", "default": "./dist/provider.js" },
-      "require": { "types": "./dist/provider.d.ts", "default": "./dist/provider.cjs" }
+      "import": {
+        "types": "./dist/provider.d.ts",
+        "default": "./dist/provider.js"
+      },
+      "require": {
+        "types": "./dist/provider.d.ts",
+        "default": "./dist/provider.cjs"
+      }
     },
-    "./client": { "types": "./client.d.ts" }
+    "./client": {
+      "types": "./client.d.ts"
+    }
   },
-  "files": ["dist", "client.d.ts"],
+  "files": [
+    "dist",
+    "client.d.ts"
+  ],
   "scripts": {
     "build": "vite build",
     "dev": "vite build --watch",
@@ -48,17 +81,17 @@
     "@fluenti/react": "workspace:*"
   },
   "devDependencies": {
-    "typescript": "^5.9",
-    "vite": "^8",
-    "vite-plugin-dts": "^4",
-    "vitest": "^4",
+    "@types/node": "^22",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
     "@vitest/coverage-v8": "^4",
     "next": "^15",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "@types/react": "^19.0.0",
-    "@types/react-dom": "^19.0.0",
-    "webpack": "^5",
-    "@types/node": "^22"
+    "typescript": "^5.9",
+    "vite": "^8",
+    "vite-plugin-dts": "^4",
+    "vitest": "^4",
+    "webpack": "^5"
   }
 }

@@ -25,7 +25,10 @@ export interface FluentConfig {
 
 export interface FluentInstance {
   locale: Locale
+  /** Translate by id or descriptor */
   t(id: string | MessageDescriptor, values?: Record<string, unknown>): string
+  /** Tagged template form: t`Hello ${name}` */
+  t(strings: TemplateStringsArray, ...exprs: unknown[]): string
   setLocale(locale: Locale): void
   loadMessages(locale: Locale, messages: Messages): void
   getLocales(): Locale[]
@@ -146,6 +149,15 @@ export interface NumberFormatOptions {
 export type FormatDateFn = (value: Date | number, style?: string) => string
 export type FormatNumberFn = (value: number, style?: string) => string
 
+// ---- Custom Formatter ----
+
+/**
+ * Custom ICU function formatter.
+ * Called when a `{variable, functionName, style}` node is encountered
+ * and `functionName` matches a registered custom formatter.
+ */
+export type CustomFormatter = (value: unknown, style: string, locale: Locale) => string
+
 // ---- Extended FluentConfig ----
 
 export interface FluentConfigExtended extends FluentConfig {
@@ -154,6 +166,28 @@ export interface FluentConfigExtended extends FluentConfig {
   numberFormats?: NumberFormatOptions
   fallbackChain?: Record<string, Locale[]>
   externalCatalogs?: Array<{ package: string; catalogDir: string }>
+  /**
+   * Post-translation transform applied to every resolved message.
+   * Runs after interpolation. No-op when not set.
+   *
+   * @example
+   * ```ts
+   * transform: (result, id, locale) => result.toUpperCase()
+   * ```
+   */
+  transform?: (result: string, id: string, locale: Locale) => string
+  /**
+   * Callback fired whenever the locale changes via `setLocale()` or the
+   * `locale` property setter.
+   */
+  onLocaleChange?: (newLocale: Locale, prevLocale: Locale) => void
+  /**
+   * Custom ICU function formatters.
+   * Keys are function names used in ICU messages (e.g. `{items, list}`).
+   * When a `FunctionNode` is encountered during runtime interpolation,
+   * the custom formatter is checked first, then the built-in Intl formatters.
+   */
+  formatters?: Record<string, CustomFormatter>
 }
 
 // ---- Extended FluentInstance ----
@@ -163,8 +197,4 @@ export interface FluentInstanceExtended extends FluentInstance {
   n: FormatNumberFn
   /** Format an ICU message string directly (no catalog lookup) */
   format(message: string, values?: Record<string, unknown>): string
-  /**
-   * @deprecated Use `format()` instead. `tRaw` will be removed in a future major version.
-   */
-  tRaw(message: string, values?: Record<string, unknown>): string
 }

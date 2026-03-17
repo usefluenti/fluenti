@@ -32,6 +32,8 @@ export interface I18nContext {
   setLocale(locale: Locale): Promise<void>
   /** Translate a message by id with optional interpolation values */
   t(id: string | MessageDescriptor, values?: Record<string, unknown>): string
+  /** Tagged template form: t`Hello ${name}` */
+  t(strings: TemplateStringsArray, ...exprs: unknown[]): string
   /** Merge additional messages into a locale catalog at runtime */
   loadMessages(locale: Locale, messages: Messages): void
   /** Return all locale codes that have loaded messages */
@@ -42,10 +44,6 @@ export interface I18nContext {
   n(value: number, style?: string): string
   /** Format an ICU message string directly (no catalog lookup) */
   format(message: string, values?: Record<string, unknown>): string
-  /**
-   * @deprecated Use `format()` instead. `tRaw` will be removed in a future major version.
-   */
-  tRaw(message: string, values?: Record<string, unknown>): string
   /** Whether a locale chunk is currently being loaded */
   isLoading: Accessor<boolean>
   /** Set of locales whose messages have been loaded */

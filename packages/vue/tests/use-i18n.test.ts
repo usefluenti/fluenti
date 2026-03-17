@@ -162,7 +162,6 @@ describe('useI18n', () => {
       expect(typeof ctx!.d).toBe('function')
       expect(typeof ctx!.n).toBe('function')
       expect(typeof ctx!.format).toBe('function')
-      expect(typeof ctx!.tRaw).toBe('function')
       expect(typeof ctx!.setLocale).toBe('function')
       expect(typeof ctx!.loadMessages).toBe('function')
       expect(typeof ctx!.getLocales).toBe('function')

@@ -14,6 +14,14 @@ export default defineNuxtPlugin(async (nuxtApp) => {
   const config = useRuntimeConfig().public['fluenti'] as FluentNuxtRuntimeConfig
   const route = useRoute()
 
+  // Hoist useCookie calls BEFORE any await to avoid losing the Nuxt
+  // composable context (async local storage is dropped after await).
+  const cookieCfg = config.detectBrowserLanguage?.useCookie
+    ? config.detectBrowserLanguage
+    : null
+  const cookieKey = cookieCfg?.cookieKey ?? 'fluenti_locale'
+  const localeCookie = cookieCfg ? useCookie(cookieKey) : null
+
   let detectedLocale: string
 
   if (import.meta.server) {
@@ -37,9 +45,7 @@ export default defineNuxtPlugin(async (nuxtApp) => {
     const { locale: pathLocale } = extractLocaleFromPath(route.path, config.locales)
     if (pathLocale) {
       detectedLocale = pathLocale
-    } else if (config.detectBrowserLanguage?.useCookie) {
-      const cookieKey = config.detectBrowserLanguage.cookieKey ?? 'fluenti_locale'
-      const localeCookie = useCookie(cookieKey)
+    } else if (localeCookie) {
       detectedLocale = (localeCookie.value && config.locales.includes(localeCookie.value))
         ? localeCookie.value
         : config.defaultLocale
@@ -64,9 +70,7 @@ export default defineNuxtPlugin(async (nuxtApp) => {
   }
 
   // Persist locale in cookie if detectBrowserLanguage is configured
-  if (config.detectBrowserLanguage?.useCookie) {
-    const cookieKey = config.detectBrowserLanguage.cookieKey ?? 'fluenti_locale'
-    const localeCookie = useCookie(cookieKey)
+  if (localeCookie) {
     watch(currentLocale, (newLocale) => {
       localeCookie.value = newLocale
     })

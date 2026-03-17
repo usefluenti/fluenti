@@ -1,5 +1,5 @@
 import type { ExtractedMessage } from '@fluenti/core'
-import { hashMessage } from './hash'
+import { hashMessage } from '@fluenti/core'
 
 /**
  * Strategy B variable naming for tagged templates:

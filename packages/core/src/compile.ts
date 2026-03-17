@@ -1,4 +1,4 @@
-import type { ASTNode, CompiledMessage, FunctionNode, Locale, PluralNode, SelectNode } from './types'
+import type { ASTNode, CompiledMessage, CustomFormatter, FunctionNode, Locale, PluralNode, SelectNode } from './types'
 import { resolvePluralCategory } from './plural'
 
 /**
@@ -9,7 +9,11 @@ import { resolvePluralCategory } from './plural'
  * - Plural nodes use `Intl.PluralRules` with exact matches checked first.
  * - `#` inside plural branches is substituted with the numeric value (minus offset).
  */
-export function compile(ast: ASTNode[], locale?: Locale): CompiledMessage {
+export function compile(
+  ast: ASTNode[],
+  locale?: Locale,
+  formatters?: Record<string, CustomFormatter>,
+): CompiledMessage {
   // Optimization: single text node returns string directly
   if (ast.length === 1 && ast[0]!.type === 'text') {
     return ast[0]!.value
@@ -23,7 +27,7 @@ export function compile(ast: ASTNode[], locale?: Locale): CompiledMessage {
   const effectiveLocale = locale ?? 'en'
 
   return (values?: Record<string, unknown>): string => {
-    return renderNodes(ast, values ?? {}, effectiveLocale, undefined)
+    return renderNodes(ast, values ?? {}, effectiveLocale, undefined, formatters)
   }
 }
 
@@ -32,10 +36,11 @@ function renderNodes(
   values: Record<string, unknown>,
   locale: string,
   pluralValue: number | undefined,
+  formatters?: Record<string, CustomFormatter>,
 ): string {
   let result = ''
   for (const node of nodes) {
-    result += renderNode(node, values, locale, pluralValue)
+    result += renderNode(node, values, locale, pluralValue, formatters)
   }
   return result
 }
@@ -45,6 +50,7 @@ function renderNode(
   values: Record<string, unknown>,
   locale: string,
   pluralValue: number | undefined,
+  formatters?: Record<string, CustomFormatter>,
 ): string {
   switch (node.type) {
     case 'text':
@@ -59,13 +65,13 @@ function renderNode(
     }
 
     case 'plural':
-      return renderPlural(node, values, locale)
+      return renderPlural(node, values, locale, formatters)
 
     case 'select':
-      return renderSelect(node, values, locale, pluralValue)
+      return renderSelect(node, values, locale, pluralValue, formatters)
 
     case 'function':
-      return renderFunction(node, values, locale)
+      return renderFunction(node, values, locale, formatters)
   }
 }
 
@@ -73,6 +79,7 @@ function renderPlural(
   node: PluralNode,
   values: Record<string, unknown>,
   locale: string,
+  formatters?: Record<string, CustomFormatter>,
 ): string {
   const raw = values[node.variable]
   const count = typeof raw === 'number' ? raw : Number(raw)
@@ -90,7 +97,7 @@ function renderPlural(
   }
   const branch = node.options[key] ?? node.options['other'] ?? []
 
-  return renderNodes(branch, values, locale, adjustedCount)
+  return renderNodes(branch, values, locale, adjustedCount, formatters)
 }
 
 function renderSelect(
@@ -98,21 +105,33 @@ function renderSelect(
   values: Record<string, unknown>,
   locale: string,
   pluralValue: number | undefined,
+  formatters?: Record<string, CustomFormatter>,
 ): string {
   const val = String(values[node.variable] ?? '')
   const branch = node.options[val] ?? node.options['other'] ?? []
 
-  return renderNodes(branch, values, locale, pluralValue)
+  return renderNodes(branch, values, locale, pluralValue, formatters)
 }
 
 function renderFunction(
   node: FunctionNode,
   values: Record<string, unknown>,
   locale: string,
+  formatters?: Record<string, CustomFormatter>,
 ): string {
   const val = values[node.variable]
   if (val === undefined || val === null) {
     return `{${node.variable}}`
+  }
+
+  // Check custom formatters first
+  const customFn = formatters?.[node.fn]
+  if (customFn) {
+    try {
+      return customFn(val, node.style ?? '', locale)
+    } catch {
+      return `{${node.variable}}`
+    }
   }
 
   try {

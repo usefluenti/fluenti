@@ -46,7 +46,7 @@ import { Steps } from '@astrojs/starlight/components'
    })
    ```
 
-4. **Write your component — just use `` t`` `` and `<Trans>`**
+4. **Write your component — just use `t` and `<Trans>`**
 
    ```tsx
    // src/Home.tsx
@@ -54,15 +54,16 @@ import { Steps } from '@astrojs/starlight/components'
    import { Trans, Plural } from '@fluenti/react'
 
    export function Home() {
-     const { setLocale } = useI18n()
+     const { t, setLocale } = useI18n()
      const name = 'World'
      const count = 3
 
      return (
        <div>
-         {/* t`` tagged template — compiler macro, no import needed */}
+         {/* t supports both function calls and tagged templates */}
          <h1>{t`Welcome to my app`}</h1>
          <p>{t`Hello, ${name}!`}</p>
+         <p>{t('You have {count} items', { count })}</p>
 
          {/* Rich text with real HTML — no XSS, no indexed placeholders */}
          <Trans>Read the <a href="/docs">documentation</a> to learn more.</Trans>
@@ -77,7 +78,7 @@ import { Steps } from '@astrojs/starlight/components'
    }
    ```
 
-   No manual keys. No JSON files. The `` t`...` `` tagged template is a compiler macro — the Vite plugin injects it automatically.
+   No manual keys. No JSON files. `t` from `useI18n()` works as both a function call and a tagged template — the Vite plugin optimizes tagged templates at build time via AST scope analysis.
 
 5. **Extract messages**
 

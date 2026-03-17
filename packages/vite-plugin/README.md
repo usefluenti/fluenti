@@ -94,17 +94,18 @@ Rich text with nested elements is supported through `$vtRich()`, and `<Trans>`, 
 
 ### Solid / React JSX Transform
 
-Tagged template literals are transformed during the build:
+The `t` function returned from `useI18n()` supports dual-mode usage -- both `t('message.id', { values })` function calls and `` t`Hello, ${name}` `` tagged template literals. The plugin uses **AST scope analysis** to detect `t` bindings from `useI18n()` destructuring and transforms only those calls:
 
 ```tsx
 // What you write
+const { t } = useI18n()
 const msg = t`Hello, ${name}`
 
 // What ships to the browser
 const msg = __i18n.t('x1y2z3', { name })
 ```
 
-The plugin auto-detects the framework from your source code or can be set explicitly via the `framework` option.
+> **Deprecated**: The magic global `t` (auto-injected without an explicit `useI18n()` binding) still works via a legacy fallback but is deprecated. Prefer `const { t } = useI18n()` for scope-safe transforms.
 
 ### HMR for Catalogs
 

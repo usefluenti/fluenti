@@ -13,7 +13,10 @@ export interface I18nContextValue {
   /** The underlying Fluent instance (escape hatch for advanced use) */
   i18n: FluentInstanceExtended
   /** Translate a message by id with optional interpolation values */
-  t: (id: string | MessageDescriptor, values?: Record<string, unknown>) => string
+  t: {
+    (id: string | MessageDescriptor, values?: Record<string, unknown>): string
+    (strings: TemplateStringsArray, ...exprs: unknown[]): string
+  }
   /** Format a date value for the current locale */
   d: (value: Date | number, style?: string) => string
   /** Format a number value for the current locale */

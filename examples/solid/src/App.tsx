@@ -62,7 +62,7 @@ const LanguageSwitcher: Component = () => {
 }
 
 export const App: Component = () => {
-  const { d, n, format, locale } = useI18n()
+  const { t, d, n, format, locale } = useI18n()
   const [name, setName] = createSignal('Developer')
   const [compileCount, setCompileCount] = createSignal(3)
   const [price, setPrice] = createSignal(29.99)

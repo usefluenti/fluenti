@@ -1,9 +1,11 @@
 import { type App, type InjectionKey, type Ref, ref, shallowReactive } from 'vue'
-import type { AllMessages, Locale, Messages, CompiledMessage } from '@fluenti/core'
-import { interpolate, formatDate, formatNumber } from '@fluenti/core'
+import type { AllMessages, Locale, Messages, CompiledMessage, MessageDescriptor } from '@fluenti/core'
+import { interpolate, formatDate, formatNumber, buildICUMessage } from '@fluenti/core'
 import { Trans } from './components/Trans'
 import { Plural } from './components/Plural'
 import { Select } from './components/Select'
+import { DateTime } from './components/DateTime'
+import { NumberFormat } from './components/NumberFormat'
 
 /** Escape HTML special characters to prevent XSS. @internal */
 function escapeHtml(str: string): string {
@@ -16,7 +18,9 @@ export type ChunkLoader = (locale: string) => Promise<Record<string, CompiledMes
 /** Context object returned by `useI18n()` and available as `$t` etc. on globalProperties */
 export interface FluentVueContext {
   /** Translate a message by id or MessageDescriptor, with optional interpolation values */
-  t(id: string | { id: string; message?: string }, values?: Record<string, unknown>): string
+  t(id: string | MessageDescriptor, values?: Record<string, unknown>): string
+  /** Tagged template form: t`Hello ${name}` */
+  t(strings: TemplateStringsArray, ...exprs: unknown[]): string
   /** Reactive ref for current locale */
   locale: Readonly<Ref<Locale>>
   /** Change the active locale (async when splitting is enabled) */
@@ -31,10 +35,6 @@ export interface FluentVueContext {
   n(value: number, style?: string): string
   /** Format an ICU message string directly (no catalog lookup) */
   format(message: string, values?: Record<string, unknown>): string
-  /**
-   * @deprecated Use `format()` instead. `tRaw` will be removed in a future major version.
-   */
-  tRaw(message: string, values?: Record<string, unknown>): string
   /** Whether a locale chunk is currently being loaded */
   isLoading: Readonly<Ref<boolean>>
   /** Set of locales whose messages have been loaded */
@@ -133,7 +133,22 @@ export function createFluentVue(options: FluentVueOptions): FluentVuePlugin {
     return msgs[id]
   }
 
-  function t(id: string | { id: string; message?: string }, values?: Record<string, unknown>): string {
+  function t(strings: TemplateStringsArray, ...exprs: unknown[]): string
+  function t(id: string | MessageDescriptor, values?: Record<string, unknown>): string
+  function t(idOrStrings: string | MessageDescriptor | TemplateStringsArray, ...rest: unknown[]): string {
+    // Tagged template form: t`Hello ${name}`
+    if (Array.isArray(idOrStrings) && 'raw' in idOrStrings) {
+      const strings = idOrStrings as TemplateStringsArray
+      const icu = buildICUMessage(strings, rest)
+      const values = Object.fromEntries(rest.map((v, i) => [String(i), v]))
+      // Delegate to the function-call path with the ICU string as the id
+      return t(icu, values)
+    }
+
+    // Function call form
+    const id = idOrStrings as string | MessageDescriptor
+    const values = rest[0] as Record<string, unknown> | undefined
+
     // Handle MessageDescriptor objects (from msg``)
     let messageId: string
     let fallbackMessage: string | undefined
@@ -249,11 +264,6 @@ export function createFluentVue(options: FluentVueOptions): FluentVuePlugin {
     return resolveMessage(message, values, locale.value)
   }
 
-  /** @deprecated Use `format()` instead. */
-  function tRaw(message: string, values?: Record<string, unknown>): string {
-    return format(message, values)
-  }
-
   /**
    * Rich text helper for v-t with child elements.
    * Translates the message (which contains `<0>content</0>` placeholders),
@@ -300,7 +310,6 @@ export function createFluentVue(options: FluentVueOptions): FluentVuePlugin {
     d,
     n,
     format,
-    tRaw,
     isLoading,
     loadedLocales,
     preloadLocale,
@@ -315,6 +324,8 @@ export function createFluentVue(options: FluentVueOptions): FluentVuePlugin {
       app.component(`${prefix}Trans`, Trans)
       app.component(`${prefix}Plural`, Plural)
       app.component(`${prefix}Select`, Select)
+      app.component(`${prefix}DateTime`, DateTime)
+      app.component(`${prefix}NumberFormat`, NumberFormat)
       app.config.globalProperties['$t'] = t
       app.config.globalProperties['$d'] = d
       app.config.globalProperties['$n'] = n

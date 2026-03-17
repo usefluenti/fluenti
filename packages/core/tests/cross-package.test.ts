@@ -5,23 +5,7 @@
  * when used together (e.g., hash IDs match, compiled catalogs are consumable).
  */
 import { describe, it, expect } from 'vitest'
-import { msg, parse, compile, interpolate, createFluent, detectLocale } from '../src/index'
-
-/**
- * FNV-1a hash — must match the implementation in @fluenti/cli and @fluenti/vite-plugin.
- * Inlined here to avoid cross-package imports that break rootDir.
- */
-function hashMessage(message: string): string {
-  let hash = 0x811c9dc5
-  for (let i = 0; i < message.length; i++) {
-    hash ^= message.charCodeAt(i)
-    hash = Math.imul(hash, 0x01000193)
-  }
-  return (hash >>> 0).toString(36)
-}
-
-// Alias used in the vite-plugin hash consistency test
-const vitePluginHash = hashMessage
+import { msg, parse, compile, interpolate, createFluent, detectLocale, hashMessage } from '../src/index'
 
 describe('cross-package: hash consistency', () => {
   it('core msg() ID matches cli hashMessage()', () => {
@@ -37,12 +21,9 @@ describe('cross-package: hash consistency', () => {
 
     expect(descriptor.message).toBe(message)
 
-    const cliHash = hashMessage(message)
-    const viteHash = vitePluginHash(message)
+    const coreHash = hashMessage(message)
 
-    expect(descriptor.id).toBe(cliHash)
-    expect(descriptor.id).toBe(viteHash)
-    expect(cliHash).toBe(viteHash)
+    expect(descriptor.id).toBe(coreHash)
   })
 })
 

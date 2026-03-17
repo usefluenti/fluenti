@@ -35,6 +35,9 @@ app.use(i18n)
 | `splitting` | `boolean?` | Enable code-splitting mode |
 | `chunkLoader` | `(locale: string) => Promise<Messages>?` | Async locale loader for splitting |
 | `componentPrefix` | `string?` | Prefix for global components (e.g. `'I18n'` → `I18nTrans`, `I18nPlural`, `I18nSelect`) |
+| `transform` | `(result, id, locale) => string?` | Post-translation transform hook applied to every resolved message |
+| `onLocaleChange` | `(newLocale, prevLocale) => void?` | Callback fired when locale changes |
+| `formatters` | `Record<string, CustomFormatter>?` | Custom ICU function formatters |
 
 ## `useI18n()`
 
@@ -43,7 +46,7 @@ Composable to access the i18n context.
 ```vue
 <script setup>
 import { useI18n } from '@fluenti/vue'
-const { t, format, locale, setLocale, d, n, tRaw, isLoading, loadedLocales, preloadLocale } = useI18n()
+const { t, format, locale, setLocale, d, n, isLoading, loadedLocales, preloadLocale } = useI18n()
 </script>
 ```
 
@@ -59,7 +62,6 @@ const { t, format, locale, setLocale, d, n, tRaw, isLoading, loadedLocales, prel
 | `getLocales` | `() => string[]` | Get all loaded locale codes |
 | `d` | `(value, style?) => string` | Format a date |
 | `n` | `(value, style?) => string` | Format a number |
-| `tRaw` | `(message, values?) => string` | @deprecated Use `format()` instead |
 | `isLoading` | `Ref<boolean>` | Whether a locale chunk is loading |
 | `loadedLocales` | `Ref<ReadonlySet<string>>` | Set of loaded locales |
 | `preloadLocale` | `(locale) => void` | Preload a locale without switching |
@@ -133,13 +135,8 @@ Use native HTML elements directly in the slot:
 
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
-| `message` | `string` | — | @deprecated Use the default slot instead. Message with `<tag>` markers |
 | `values` | `object` | `{}` | Interpolation values |
 | `tag` | `string` | `'span'` | Wrapper element |
-
-:::note[Migration]
-The `message` prop is deprecated. Move your message text into the default slot for automatic extraction and translation.
-:::
 
 ## `<Plural>`
 

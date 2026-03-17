@@ -3,7 +3,7 @@
  * Mirrors @fluenti/cli extraction logic using regex-based approach.
  */
 
-import { hashMessage } from './hash'
+import { hashMessage } from '@fluenti/core'
 
 export interface ExtractedMessage {
   readonly id: string

@@ -1,6 +1,6 @@
 import type { ExtractedMessage } from '@fluenti/core'
 import { parse as parseSFC } from '@vue/compiler-sfc'
-import { hashMessage } from './hash'
+import { hashMessage } from '@fluenti/core'
 import { extractFromTsx } from './tsx-extractor'
 
 // Vue template AST node types

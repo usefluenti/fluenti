@@ -43,6 +43,24 @@ test.describe('Solid Playground', () => {
     await expect(page.locator('a:has-text("links")')).toBeVisible()
   })
 
+  test('Rich Text translates when switching to Japanese', async ({ page }) => {
+    await page.goto('/')
+    await page.locator('button:has-text("日本語")').click()
+    await expect(page.locator('strong:has-text("Fluenti")')).toBeVisible()
+    await expect(page.locator('em:has-text("SolidJS")')).toBeVisible()
+    await expect(page.locator('text=へようこそ').first()).toBeVisible()
+    await expect(page.locator('text=サポート')).toBeVisible()
+  })
+
+  test('Rich Text preserves component structure after locale switch', async ({ page }) => {
+    await page.goto('/')
+    await page.locator('button:has-text("日本語")').click()
+    await expect(page.locator('strong:has-text("Fluenti")')).toBeVisible()
+    await expect(page.locator('strong:has-text("太字")')).toBeVisible()
+    await expect(page.locator('em:has-text("斜体")')).toBeVisible()
+    await expect(page.locator('a:has-text("リンク")')).toBeVisible()
+  })
+
   test('Plural component renders zero state', async ({ page }) => {
     await page.goto('/')
     await expect(page.locator('text=Your cart is empty.')).toBeVisible()

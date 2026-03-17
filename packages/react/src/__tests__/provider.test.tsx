@@ -4,12 +4,13 @@ import { createElement, useContext, useEffect, useState } from 'react'
 import { I18nProvider } from '../provider'
 import { I18nContext } from '../context'
 import { useI18n } from '../hooks/useI18n'
+import { clearGlobalI18n, getGlobalI18n } from '../global-registry'
+import type { I18nContextValue } from '../types'
 
 describe('I18nProvider edge cases', () => {
   afterEach(() => {
     cleanup()
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    delete (globalThis as any).__fluenti_i18n
+    clearGlobalI18n()
   })
 
   // 1. No messages prop (empty default)
@@ -346,7 +347,7 @@ describe('I18nProvider edge cases', () => {
 
   // 12. loadMessages() merges messages and getLocales() reflects update
   it('loadMessages() merges messages; getLocales() returns updated list', () => {
-    let capturedCtx: { loadMessages: (l: string, m: Record<string, unknown>) => void; getLocales: () => string[] } | null = null
+    let capturedCtx: Pick<I18nContextValue, 'loadMessages' | 'getLocales'> | null = null
 
     function Consumer() {
       const ctx = useContext(I18nContext)
@@ -489,17 +490,16 @@ describe('I18nProvider edge cases', () => {
     expect(screen.getByTestId('hook-has-i18n').textContent).toBe('function')
   })
 
-  // 17. Sets globalThis.__fluenti_i18n
-  it('sets globalThis.__fluenti_i18n', () => {
+  // 17. Sets global i18n instance via registry
+  it('sets global i18n instance via registry', () => {
     render(
       createElement(I18nProvider, { locale: 'en', messages: { en: {} }, children: null },
         createElement('div', null, 'child'),
       ),
     )
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    expect((globalThis as any).__fluenti_i18n).toBeDefined()
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    expect(typeof (globalThis as any).__fluenti_i18n.t).toBe('function')
+    const global = getGlobalI18n()
+    expect(global).toBeDefined()
+    expect(typeof global!.t).toBe('function')
   })
 })

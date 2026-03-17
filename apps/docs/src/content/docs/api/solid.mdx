@@ -29,8 +29,14 @@ import zhCN from './locales/compiled/zh-CN'
 | `fallbackLocale` | `string?` | Fallback locale |
 | `messages` | `AllMessages` | Compiled message catalogs (from `fluenti compile`) |
 | `missing` | `(locale, id) => string?` | Missing message handler |
+| `dateFormats` | `DateFormatOptions?` | Custom date format presets |
+| `numberFormats` | `NumberFormatOptions?` | Custom number format presets |
+| `fallbackChain` | `Record<string, string[]>?` | Locale fallback chains |
 | `splitting` | `boolean?` | Enable code-splitting mode |
 | `chunkLoader` | `(locale) => Promise<Messages>?` | Async locale loader |
+| `transform` | `(result, id, locale) => string?` | Post-translation transform hook applied to every resolved message |
+| `onLocaleChange` | `(newLocale, prevLocale) => void?` | Callback fired when locale changes |
+| `formatters` | `Record<string, CustomFormatter>?` | Custom ICU function formatters |
 
 ## `useI18n()`
 
@@ -49,7 +55,7 @@ function MyComponent() {
 
 | Property | Type | Description |
 |----------|------|-------------|
-| `t` | `(id, values?) => string` | Translate a message |
+| `t` | `(id, values?) => string` | Translate a message. Also usable as a tagged template: `` t`Hello ${name}` `` |
 | `format` | `(message, values?) => string` | Direct ICU interpolation without catalog lookup |
 | `locale` | `Accessor<string>` | Current locale (signal) |
 | `setLocale` | `(locale) => Promise<void>` | Change locale (async with splitting) |
@@ -57,7 +63,6 @@ function MyComponent() {
 | `getLocales` | `() => string[]` | Get all loaded locale codes |
 | `d` | `(value, style?) => string` | Format a date |
 | `n` | `(value, style?) => string` | Format a number |
-| `tRaw` | `(message, values?) => string` | @deprecated Use `format()` instead |
 | `isLoading` | `Accessor<boolean>` | Whether a locale chunk is loading |
 | `loadedLocales` | `Accessor<Set<string>>` | Set of loaded locales |
 | `preloadLocale` | `(locale) => void` | Preload a locale without switching |
@@ -77,24 +82,11 @@ function MyComponent() {
 
 Rich text with component interpolation. Globally registered — no import needed.
 
-The default slot is the primary API. The slot content is the source-language message, which is auto-extracted and translated via the catalog:
+Children are the primary API. The child content is the source-language message, which is auto-extracted and translated via the catalog:
 
 ```tsx
 <Trans>Click <a href="/next">here</a> to continue.</Trans>
 ```
-
-You can still use the `message` prop with `components` for explicit component mapping:
-
-```tsx
-<Trans
-  message={t('Click <link>here</link>')}
-  components={{ link: (props) => <a href="/next">{props.children}</a> }}
-/>
-```
-
-:::note[Migration]
-The `message` prop is deprecated. Move your message text into the default slot (children) for automatic extraction and translation.
-:::
 
 ## `<Plural>`
 
@@ -120,6 +112,20 @@ Alternatively, pass options as attributes:
 
 ```tsx
 <Select value={gender()} male="He" female="She" other="They" />
+```
+
+### Tagged template usage
+
+`t` from `useI18n()` also works as a tagged template. The Vite plugin uses AST scope analysis to detect `t` bindings from `useI18n()` and transforms them at build time:
+
+```tsx
+import { useI18n } from '@fluenti/solid'
+
+function Greeting() {
+  const { t } = useI18n()
+  const name = 'World'
+  return <p>{t`Hello ${name}`}</p>
+}
 ```
 
 ## Reactivity

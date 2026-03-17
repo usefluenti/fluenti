@@ -5,7 +5,7 @@
 
 import { parse } from '@fluenti/core'
 import type { ASTNode, PluralNode, SelectNode } from '@fluenti/core'
-import { hashMessage } from './hash'
+import { hashMessage } from '@fluenti/core'
 import type { CatalogData } from './catalog'
 
 const ICU_VAR_REGEX = /\{(\w+)\}/g

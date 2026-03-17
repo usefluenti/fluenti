@@ -1,9 +1,18 @@
 import { describe, it, expect } from 'vitest'
-import { compileCatalog, compileIndex, collectAllIds } from '../src/compile'
-import { hashMessage } from '../src/hash'
+import { compileCatalog, compileIndex, collectAllIds, CATALOG_VERSION } from '../src/compile'
+import { hashMessage } from '@fluenti/core'
 import type { CatalogData } from '../src/catalog'
 
 describe('compileCatalog', () => {
+  it('includes catalog version marker at the top', () => {
+    const catalog: CatalogData = {
+      greeting: { message: 'Hello', translation: 'Bonjour' },
+    }
+    const output = compileCatalog(catalog, 'fr', ['greeting'])
+
+    expect(output.startsWith(`// @fluenti/compiled v${CATALOG_VERSION}`)).toBe(true)
+  })
+
   it('compiles plain text messages as @__PURE__ named exports', () => {
     const catalog: CatalogData = {
       greeting: { message: 'Hello', translation: 'Bonjour' },

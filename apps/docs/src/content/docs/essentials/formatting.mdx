@@ -3,8 +3,6 @@ title: Formatting
 description: ICU interpolation, date formatting, and number formatting
 ---
 
-import { Aside } from '@astrojs/starlight/components'
-
 Fluenti provides ICU message interpolation via `format()`, catalog-based translation via `t()`, and locale-aware date/number formatting via `$d()` and `$n()`.
 
 ## `t()` vs `format()`
@@ -33,10 +31,6 @@ format('{role, select, admin {Full access} other {Limited access}}', { role: 'ad
 ```
 
 Use `format()` when the pattern itself is dynamic or not part of your static catalog — for example, patterns received from an API response or a CMS.
-
-<Aside type="caution">
-`tRaw()` is a deprecated alias for `format()`. Existing code using `tRaw()` will continue to work, but you should migrate to `format()`.
-</Aside>
 
 ## `t()` — Catalog Translation
 
