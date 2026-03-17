@@ -32,8 +32,8 @@ export default defineConfig({
       title: 'Fluenti',
       description: 'Compile-time i18n for modern frameworks',
       logo: {
-        light: './src/assets/logo-light.svg',
-        dark: './src/assets/logo-dark.svg',
+        light: './src/assets/logo-mark-indigo.svg',
+        dark: './src/assets/logo-mark-white.svg',
         replacesTitle: false,
       },
       social: [
