@@ -51,6 +51,61 @@ export const { setLocale, getI18n, Trans, Plural, DateTime, NumberFormat } = cre
 })
 ```
 
+## Request Scope — How It Works Under the Hood
+
+React Server Components cannot use `useContext` because they render on the server without a persistent component tree. Fluenti uses `React.cache()` to provide per-request isolation instead.
+
+### The problem
+
+In traditional React, providers share state via Context. But RSC renders are stateless — there is no component tree to hold context. Each request needs its own isolated i18n instance with the correct locale and messages.
+
+### The solution: `React.cache()`
+
+`React.cache()` creates a memoized function whose cache is scoped to a single server request. Fluenti uses this to create a request-local store:
+
+```ts
+// Simplified from @fluenti/react/server
+const getRequestStore = cache(() => ({
+  locale: null,    // set by setLocale()
+  instance: null,  // cached i18n instance
+}))
+```
+
+When `setLocale('ja')` is called in a layout, it writes to this request-scoped store. All subsequent `getI18n()` calls within the same request read from the same store — regardless of which component calls them.
+
+### Request flow
+
+```
+Request 1 (page render)          Request 2 (Server Action)
+────────────────────────          ─────────────────────────
+Layout                            action handler
+  └─ setLocale('ja')                └─ getI18n()
+  └─ Page                               ├─ store.locale == null
+       └─ getI18n()                      │  (setLocale was never called)
+            ├─ store.locale = 'ja'       ├─ resolveLocale() → 'ja'
+            └─ returns i18n(ja)          └─ returns i18n(ja)
+```
+
+### Why Server Actions need `resolveLocale`
+
+Server Actions are independent HTTP requests — they don't go through the layout, so `setLocale()` is never called. The `React.cache()` store starts empty. Without `resolveLocale`, `getI18n()` would throw.
+
+By providing `resolveLocale` (e.g., reading from a cookie), the action can auto-detect the locale:
+
+```ts
+const { getI18n } = createServerI18n({
+  loadMessages: (locale) => import(`../locales/compiled/${locale}.js`),
+  resolveLocale: async () => {
+    const { cookies } = await import('next/headers')
+    return (await cookies()).get('locale')?.value ?? 'en'
+  },
+})
+```
+
+### Suspense and streaming fallback
+
+When a component renders inside a `<Suspense>` boundary during streaming, the `React.cache()` store may not be populated yet. Fluenti handles this with a module-level fallback (`_lastInstance`) that caches the most recently created i18n instance. This ensures streamed components can still resolve translations synchronously without throwing.
+
 ## Usage in Server Components
 
 ### Translation function
@@ -101,7 +156,27 @@ export default async function Page() {
 
 ## `resolveLocale` for Server Actions
 
-Server Actions are separate requests that don't go through the layout's `setLocale()` call. The `resolveLocale` option in `createServerI18n` handles this — it's called automatically when `getI18n()` is invoked without a prior `setLocale()`:
+Server Actions are separate requests that don't go through the layout's `setLocale()` call. The `resolveLocale` function is called automatically to determine the active locale.
+
+### Using `` t`...` `` (recommended)
+
+When using `withFluenti()`, the `` t`...` `` macro works directly in `'use server'` files — the plugin detects the directive and injects the server-side i18n accessor:
+
+```ts
+// app/actions.ts
+'use server'
+
+export async function searchAction(query: string) {
+  if (!query) return { error: t`Please enter a search term` }
+  // ...
+}
+```
+
+No imports needed — `withFluenti()` handles the transform automatically.
+
+### Using `getI18n()` manually
+
+For dynamic message keys or when using `createServerI18n` directly:
 
 ```ts
 // app/actions.ts
@@ -114,6 +189,43 @@ export async function searchAction(query: string) {
   // ...
 }
 ```
+
+## Custom Locale Resolution
+
+By default, `withFluenti()` reads the locale from a `locale` cookie. If you store locale preferences in a database, JWT, or external API, pass a `resolveLocale` module path:
+
+```typescript
+// next.config.ts
+import { withFluenti } from '@fluenti/next'
+
+export default withFluenti({
+  resolveLocale: './lib/resolve-locale',
+})({ reactStrictMode: true })
+```
+
+The module must default-export an async function that returns the locale string:
+
+```ts
+// lib/resolve-locale.ts
+import { cookies } from 'next/headers'
+import { auth } from './auth'
+import { db } from './db'
+
+export default async function resolveLocale(): Promise<string> {
+  // 1. Try logged-in user's DB preference
+  const session = await auth()
+  if (session?.user) {
+    const user = await db.user.findUnique({ where: { id: session.user.id } })
+    if (user?.locale) return user.locale
+  }
+
+  // 2. Fall back to cookie
+  const cookieStore = await cookies()
+  return cookieStore.get('locale')?.value ?? 'en'
+}
+```
+
+This is especially important for **Server Actions**, which skip the layout and rely entirely on `resolveLocale` to determine the active locale.
 
 ## Streaming & Suspense
 

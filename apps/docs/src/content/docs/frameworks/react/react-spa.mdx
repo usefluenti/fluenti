@@ -69,6 +69,220 @@ import { Trans, Plural } from '@fluenti/react'
 <Plural value={count} zero="No items" one="# item" other="# items" />
 ```
 
+## Select Component
+
+Use `<Select>` for categorical values like gender, role, or status:
+
+```tsx
+import { Select } from '@fluenti/react'
+
+function Notification({ gender }: { gender: string }) {
+  return (
+    <Select
+      value={gender}
+      male="He updated his profile"
+      female="She updated her profile"
+      other="They updated their profile"
+    />
+  )
+}
+```
+
+Any additional props beyond `value` and `other` are treated as case options — use whatever keys match your data.
+
+## DateTime and NumberFormat Components
+
+Format dates and numbers with locale-aware components:
+
+```tsx
+import { DateTime, NumberFormat } from '@fluenti/react'
+
+function OrderSummary({ date, total }: { date: Date; total: number }) {
+  return (
+    <div>
+      <p>Order placed: <DateTime value={date} style="long" /></p>
+      <p>Total: <NumberFormat value={total} style="currency" /></p>
+    </div>
+  )
+}
+```
+
+Format styles (`"long"`, `"currency"`, etc.) are defined via the `dateFormats` and `numberFormats` props on `<I18nProvider>`.
+
+## `useI18n()` Hook
+
+The `useI18n()` hook provides the full i18n API:
+
+```tsx
+import { useI18n } from '@fluenti/react'
+
+function Dashboard() {
+  const { i18n, locale, setLocale, isLoading, loadedLocales, preloadLocale } = useI18n()
+
+  return (
+    <div>
+      <p>{i18n.t('Welcome back, {name}!', { name: 'Alice' })}</p>
+      <p>{i18n.t('You have {count, plural, one {# notification} other {# notifications}}', { count: 5 })}</p>
+      <p>Today: {i18n.d(new Date(), 'long')}</p>
+      <p>Balance: {i18n.n(1234.5, 'currency')}</p>
+    </div>
+  )
+}
+```
+
+### Return values
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `i18n` | `FluentInstanceExtended` | Core instance with `t()`, `d()`, `n()`, `format()` |
+| `locale` | `string` | Current active locale |
+| `setLocale` | `(locale) => Promise<void>` | Switch locale (loads messages if needed) |
+| `isLoading` | `boolean` | `true` while a locale is being loaded |
+| `loadedLocales` | `string[]` | Locales with messages already in memory |
+| `preloadLocale` | `(locale) => Promise<void>` | Load a locale without switching to it |
+
+### `i18n.t(message, values?)`
+
+Translate a message. Uses an O(1) hash lookup — safe to call directly in JSX without `useMemo`:
+
+```tsx
+i18n.t('Hello')                              // simple
+i18n.t('Hello, {name}!', { name: 'World' })  // ICU interpolation
+```
+
+### `i18n.d(value, style?)`
+
+Format a date using `Intl.DateTimeFormat` with an optional named style:
+
+```tsx
+i18n.d(new Date())          // default format
+i18n.d(new Date(), 'long')  // named preset from dateFormats config
+```
+
+### `i18n.n(value, style?)`
+
+Format a number using `Intl.NumberFormat` with an optional named style:
+
+```tsx
+i18n.n(1234.5)              // default format
+i18n.n(1234.5, 'currency')  // named preset from numberFormats config
+```
+
+### `i18n.format(message, values?)`
+
+Direct ICU interpolation without catalog lookup — useful for one-off formatting:
+
+```tsx
+i18n.format('{count, plural, one {# item} other {# items}}', { count: 3 })
+```
+
+## `msg` — Lazy Messages
+
+Use `msg` to define translatable messages outside the component tree (routes, constants, config objects). The message is resolved at render time, so it always reflects the current locale:
+
+```tsx
+import { msg } from '@fluenti/react'
+import { useI18n } from '@fluenti/react'
+
+// Define at module level — no i18n context needed
+const NAV_ITEMS = [
+  { path: '/', label: msg`Home` },
+  { path: '/about', label: msg`About` },
+  { path: '/contact', label: msg`Contact` },
+]
+
+// Resolve at render time
+function Nav() {
+  const { i18n } = useI18n()
+
+  return (
+    <nav>
+      {NAV_ITEMS.map((item) => (
+        <a key={item.path} href={item.path}>
+          {i18n.t(item.label)}
+        </a>
+      ))}
+    </nav>
+  )
+}
+```
+
+## Lazy Loading
+
+Load locale messages on demand instead of bundling them all upfront:
+
+```tsx
+<I18nProvider
+  locale="en"
+  fallbackLocale="en"
+  messages={{ en }}
+  loadMessages={(locale) => import(`./locales/compiled/${locale}.js`)}
+>
+  <App />
+</I18nProvider>
+```
+
+### Loading state
+
+Show a loading indicator while messages are being fetched:
+
+```tsx
+function LocaleSwitcher() {
+  const { locale, setLocale, isLoading } = useI18n()
+
+  return (
+    <select
+      value={locale}
+      onChange={(e) => setLocale(e.target.value)}
+      disabled={isLoading}
+    >
+      <option value="en">English</option>
+      <option value="ja">日本語</option>
+      <option value="zh-CN">中文</option>
+    </select>
+  )
+}
+```
+
+### Preloading on hover
+
+Preload a locale before the user switches, eliminating perceived latency:
+
+```tsx
+function LocaleButton({ code, label }: { code: string; label: string }) {
+  const { setLocale, preloadLocale } = useI18n()
+
+  return (
+    <button
+      onMouseEnter={() => preloadLocale(code)}
+      onClick={() => setLocale(code)}
+    >
+      {label}
+    </button>
+  )
+}
+```
+
+## Missing Message Handler
+
+Handle untranslated messages with the `missing` prop — useful for development debugging or fallback logic:
+
+```tsx
+<I18nProvider
+  locale="ja"
+  fallbackLocale="en"
+  messages={{ en, ja }}
+  missing={(locale, id) => {
+    console.warn(`[i18n] Missing "${id}" for locale "${locale}"`)
+    return undefined // fall through to fallbackLocale
+  }}
+>
+  <App />
+</I18nProvider>
+```
+
+Return a `string` to use as the translation, or `undefined` to fall through to the fallback locale.
+
 ## Key Differences from Vue
 
 - Uses `<I18nProvider>` instead of a plugin

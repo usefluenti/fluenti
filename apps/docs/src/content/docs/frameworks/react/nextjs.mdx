@@ -9,7 +9,7 @@ Fluenti integrates with Next.js App Router via `@fluenti/next`, supporting both 
 
 ## Recommended Setup with `withFluenti`
 
-The `withFluenti()` wrapper in `next.config.ts` is the recommended way to set up Fluenti in Next.js. It adds the compiler plugin and generates the modules your app needs:
+The `withFluenti()` wrapper in `next.config.ts` is the recommended way to set up Fluenti in Next.js:
 
 ```typescript
 // next.config.ts
@@ -19,6 +19,42 @@ export default withFluenti()({
   reactStrictMode: true,
 })
 ```
+
+### What it does
+
+`withFluenti()` performs three things at build time:
+
+1. **Generates a server module** (`node_modules/.fluenti/server.js`) that bundles `createServerI18n`, message imports, and a `FluentProvider` component — aliased as `@fluenti/next/__generated`
+2. **Registers a webpack loader** that transforms `` t`...` `` tagged templates and `t()` calls into `__i18n.t()` lookups, auto-detecting server vs client context
+3. **Adds a resolve alias** so `@fluenti/next/__generated` points to the generated module
+
+The loader detects context automatically:
+- Files with `'use client'` → client mode (reads from `globalThis.__fluenti_i18n`, set by `I18nProvider`)
+- Files with `'use server'` or inside `app/` → server mode (reads from `React.cache()`-scoped store)
+
+### Config options
+
+All options are optional — defaults are read from `fluenti.config.ts`:
+
+```typescript
+export default withFluenti({
+  locales: ['en', 'ja', 'zh-CN'],
+  defaultLocale: 'en',
+  resolveLocale: './lib/resolve-locale',
+})({ reactStrictMode: true })
+```
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `locales` | `string[]?` | from config file | Override locale list |
+| `defaultLocale` | `string?` | from config file | Override default/fallback locale |
+| `compiledDir` | `string?` | from config file | Path to compiled message catalogs |
+| `resolveLocale` | `string?` | reads `locale` cookie | Module path that default-exports `() => string \| Promise<string>` |
+| `serverModule` | `string?` | auto-generated | Custom server module path (skips generation) |
+| `serverModuleOutDir` | `string?` | `node_modules/.fluenti` | Where to write generated files |
+| `dateFormats` | `DateFormatOptions?` | — | Custom date format presets |
+| `numberFormats` | `NumberFormatOptions?` | — | Custom number format presets |
+| `fallbackChain` | `Record<string, string[]>?` | — | Locale fallback chains |
 
 ### FluentProvider
 
@@ -120,9 +156,37 @@ export default async function DashboardPage() {
 }
 ```
 
+### Custom Locale Resolution
+
+By default, `withFluenti()` reads the locale from a `locale` cookie. To resolve the locale from a database, JWT, or external API, pass a module path:
+
+```typescript
+// next.config.ts
+export default withFluenti({
+  resolveLocale: './lib/resolve-locale',
+})({ reactStrictMode: true })
+```
+
+The module must default-export an async function returning the locale string:
+
+```ts
+// lib/resolve-locale.ts
+import { cookies } from 'next/headers'
+import { auth } from './auth'
+
+export default async function resolveLocale(): Promise<string> {
+  const session = await auth()
+  if (session?.user?.locale) return session.user.locale
+  const cookieStore = await cookies()
+  return cookieStore.get('locale')?.value ?? 'en'
+}
+```
+
+This is critical for **Server Actions**, which skip the layout and rely on `resolveLocale`. See [Custom Locale Resolution](/frameworks/react/server-components/#custom-locale-resolution) for a full example.
+
 ### Generated Server Module
 
-`withFluenti()` also generates a server module for advanced use cases. You can create your own if you need custom `resolveLocale` logic:
+For full control, you can bypass `withFluenti()` generation and create your own server module with `createServerI18n`:
 
 ```ts
 // lib/i18n.server.ts
@@ -168,7 +232,31 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
 ## Server Actions
 
-Server Actions are independent requests that skip the layout. Use `` t`...` `` or provide `resolveLocale` in `createServerI18n` to auto-detect the locale:
+Server Actions are independent requests that skip the layout's `setLocale()` call. The `resolveLocale` function is called automatically to determine the active locale.
+
+### Using `` t`...` `` (recommended)
+
+The `` t`...` `` macro works in `'use server'` files — the plugin detects the directive and injects the server-side i18n accessor automatically:
+
+```ts
+// app/actions.ts
+'use server'
+
+export async function greetAction() {
+  return t`Hello from server action`
+}
+
+export async function searchAction(query: string) {
+  if (!query) return { error: t`Please enter a search term` }
+  // ...
+}
+```
+
+No imports needed — `withFluenti()` handles everything.
+
+### Using `getI18n()` manually
+
+For cases where you need the full i18n instance (e.g. dynamic message keys):
 
 ```ts
 // app/actions.ts
@@ -176,8 +264,8 @@ Server Actions are independent requests that skip the layout. Use `` t`...` `` o
 import { getI18n } from '@/lib/i18n.server'
 
 export async function greetAction() {
-  const i18n = await getI18n() // resolveLocale called automatically
-  return i18n.t('Hello from server action')
+  const { t } = await getI18n() // resolveLocale called automatically
+  return t('Hello from server action')
 }
 ```
 
