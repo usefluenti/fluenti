@@ -21,7 +21,17 @@ export { NumberFormat } from './components/Number'
 export { msg } from './msg'
 
 // Types
-export type { I18nContextValue, I18nProviderProps } from './types'
+export type {
+  I18nContextValue,
+  I18nProviderProps,
+  Messages,
+  AllMessages,
+  MessageDescriptor,
+  Locale,
+  DateFormatOptions,
+  NumberFormatOptions,
+  FluentInstanceExtended,
+} from './types'
 export type { TransProps } from './components/Trans'
 export type { PluralProps } from './components/Plural'
 export type { SelectProps } from './components/Select'

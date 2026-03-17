@@ -8,7 +8,7 @@ const ROLES = {
 }
 
 export default function Home() {
-  const { i18n, locale } = useI18n()
+  const { i18n, d, n, locale } = useI18n()
   const name = 'World'
   const count = 3
 
@@ -19,8 +19,8 @@ export default function Home() {
       <p data-testid="greeting">{t`Hello, ${name}!`}</p>
       <p data-testid="items">{t`You have ${count} items in your cart.`}</p>
       <p data-testid="current-locale">{t`Current locale: ${locale}`}</p>
-      <p data-testid="date">{i18n.d(new Date(2025, 0, 15))}</p>
-      <p data-testid="number">{i18n.n(1234.5)}</p>
+      <p data-testid="date">{d(new Date(2025, 0, 15))}</p>
+      <p data-testid="number">{n(1234.5)}</p>
 
       <div data-testid="msg-roles">
         <span data-testid="msg-admin">{i18n.t(ROLES.admin)}</span>

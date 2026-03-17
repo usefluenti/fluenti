@@ -10,8 +10,20 @@ import type {
 } from '@fluenti/core'
 
 export interface I18nContextValue {
-  /** The underlying Fluent instance */
+  /** The underlying Fluent instance (escape hatch for advanced use) */
   i18n: FluentInstanceExtended
+  /** Translate a message by id with optional interpolation values */
+  t: (id: string | MessageDescriptor, values?: Record<string, unknown>) => string
+  /** Format a date value for the current locale */
+  d: (value: Date | number, style?: string) => string
+  /** Format a number value for the current locale */
+  n: (value: number, style?: string) => string
+  /** Format an ICU message string directly (no catalog lookup) */
+  format: (message: string, values?: Record<string, unknown>) => string
+  /** Merge additional messages into a locale catalog at runtime */
+  loadMessages: (locale: string, messages: Messages) => void
+  /** Return all locale codes that have loaded messages */
+  getLocales: () => string[]
   /** Current locale */
   locale: string
   /** Change the active locale (async when lazy loading) */

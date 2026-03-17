@@ -55,8 +55,8 @@ Access the i18n context from the nearest provider. Throws if used outside an `<I
 import { useI18n } from '@fluenti/react'
 
 function MyComponent() {
-  const { i18n, locale, setLocale, isLoading, loadedLocales, preloadLocale } = useI18n()
-  return <p>{i18n.t('Hello, {name}!', { name: 'World' })}</p>
+  const { t, d, n, locale, setLocale, isLoading, loadedLocales, preloadLocale } = useI18n()
+  return <p>{t('Hello, {name}!', { name: 'World' })}</p>
 }
 ```
 
@@ -64,47 +64,53 @@ function MyComponent() {
 
 | Property | Type | Description |
 |----------|------|-------------|
-| `i18n` | `FluentInstanceExtended` | Fluent instance with `t()`, `d()`, `n()`, `format()` methods |
+| `t` | `(id, values?) => string` | Translate a message by ID or descriptor |
+| `d` | `(value, style?) => string` | Format a date for the current locale |
+| `n` | `(value, style?) => string` | Format a number for the current locale |
+| `format` | `(message, values?) => string` | Direct ICU interpolation (no catalog lookup) |
+| `loadMessages` | `(locale, messages) => void` | Merge messages into a locale catalog at runtime |
+| `getLocales` | `() => string[]` | Return all locale codes with loaded messages |
+| `i18n` | `FluentInstanceExtended` | Core instance (escape hatch for advanced use) |
 | `locale` | `string` | Current locale |
 | `setLocale` | `(locale) => Promise<void>` | Change locale (async if loading is needed) |
 | `isLoading` | `boolean` | Whether a locale is being loaded |
 | `loadedLocales` | `string[]` | Array of loaded locale codes |
 | `preloadLocale` | `(locale) => Promise<void>` | Preload a locale without switching |
 
-### `i18n.t(message, values?)`
+### `t(message, values?)`
 
 Translate a message. O(1) hash lookup — safe to call directly in JSX without `useMemo`.
 
 ```tsx
-i18n.t('Welcome to my app')
-i18n.t('Hello, {name}!', { name: 'World' })
-i18n.t('You have {count} items', { count: 5 })
+t('Welcome to my app')
+t('Hello, {name}!', { name: 'World' })
+t('You have {count} items', { count: 5 })
 ```
 
-### `i18n.d(value, style?)`
+### `d(value, style?)`
 
 Format a date.
 
 ```tsx
-i18n.d(new Date())          // default format
-i18n.d(new Date(), 'long')  // named preset
+d(new Date())          // default format
+d(new Date(), 'long')  // named preset
 ```
 
-### `i18n.n(value, style?)`
+### `n(value, style?)`
 
 Format a number.
 
 ```tsx
-i18n.n(1234.5)              // default format
-i18n.n(1234.5, 'currency')  // named preset
+n(1234.5)              // default format
+n(1234.5, 'currency')  // named preset
 ```
 
-### `i18n.format(message, values?)`
+### `format(message, values?)`
 
 Direct ICU interpolation without catalog lookup.
 
 ```tsx
-i18n.format('Hello {name}!', { name: 'World' })
+format('Hello {name}!', { name: 'World' })
 ```
 
 ## `<Trans>`
@@ -206,8 +212,8 @@ const ROLES = {
 
 // Resolve at render time:
 function RoleBadge({ role }) {
-  const { i18n } = useI18n()
-  return <span>{i18n.t(ROLES[role])}</span>
+  const { t } = useI18n()
+  return <span>{t(ROLES[role])}</span>
 }
 ```
 
@@ -379,7 +385,7 @@ React's re-render cycle handles reactivity automatically. When `setLocale()` is 
 2. A new `createFluent()` instance is created with the new locale
 3. All child components re-render with updated translations
 
-Since `i18n.t()` is an O(1) hash lookup, calling it directly in JSX is efficient — no `useMemo` needed.
+Since `t()` is an O(1) hash lookup, calling it directly in JSX is efficient — no `useMemo` needed.
 
 ## Vite Plugin Integration
 

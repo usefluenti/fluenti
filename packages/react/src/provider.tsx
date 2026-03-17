@@ -120,6 +120,12 @@ export function I18nProvider({
   const ctx = useMemo(
     () => ({
       i18n,
+      t: i18n.t.bind(i18n),
+      d: i18n.d.bind(i18n),
+      n: i18n.n.bind(i18n),
+      format: i18n.format.bind(i18n),
+      loadMessages: i18n.loadMessages.bind(i18n),
+      getLocales: i18n.getLocales.bind(i18n),
       locale: currentLocale,
       setLocale: handleSetLocale,
       isLoading,

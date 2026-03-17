@@ -57,18 +57,18 @@ const { t } = useI18n()
 import { useI18n } from '@fluenti/react'
 
 function Greeting() {
-  const { i18n } = useI18n()
+  const { t } = useI18n()
   const name = 'World'
   return (
     <div>
-      <p>{i18n.t('Welcome to Fluenti')}</p>
-      <p>{i18n.t('Hello, {name}!', { name })}</p>
+      <p>{t('Welcome to Fluenti')}</p>
+      <p>{t('Hello, {name}!', { name })}</p>
     </div>
   )
 }
 ```
 
-Prefer `` t`…` `` tagged template over `i18n.t()` — see the [Tagged Templates](#tagged-templates) section below.
+Prefer `` t`…` `` tagged template over `t()` — see the [Tagged Templates](#tagged-templates) section below.
 </TabItem>
 
 <TabItem label="Solid">
@@ -362,4 +362,4 @@ For programmatic usage, pass an `options` object instead of individual props:
 | Rich text with embedded HTML | `<Trans>` component |
 | Plural forms | `<Plural>` component |
 | Outside component lifecycle (routes, stores) | `msg` tagged template |
-| Dynamic message IDs from API | `t()` / `i18n.t()` function |
+| Dynamic message IDs from API | `t()` function |

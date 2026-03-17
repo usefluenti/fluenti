@@ -12,8 +12,8 @@ Fluenti compiles your messages at build time and pairs them with Solid's fine-gr
 
 - **Compile-time transforms** -- messages are resolved during the build; the runtime ships precompiled functions, not an ICU parser.
 - **Signal-driven locale** -- `locale()` is a Solid signal; any computation that reads it re-runs automatically.
-- **`<Trans>`, `<Plural>`, `<Select>`** -- declarative components that map directly to ICU MessageFormat.
-- **`t()` / `d()` / `n()`** -- imperative API for strings, dates, and numbers.
+- **`<Trans>`, `<Plural>`, `<Select>`, `<DateTime>`, `<NumberFormat>`** -- declarative components that map directly to ICU MessageFormat.
+- **`t()` / `d()` / `n()` / `msg()`** -- imperative API for strings, dates, numbers, and lazy message definitions.
 - **Code splitting** -- load locale chunks on demand with a single `chunkLoader` option.
 - **SSR-ready** -- first-class SolidStart support with per-request isolation.
 
@@ -200,6 +200,38 @@ ICU select patterns as a component:
 | `value` | `string` | -- | The value to match (required) |
 | `options` | `Record<string, string \| JSX.Element>` | -- | Named options map |
 | `other` | `string \| JSX.Element` | `''` | Fallback when no option matches |
+
+#### `<DateTime>` -- Date formatting
+
+```tsx
+import { DateTime } from '@fluenti/solid'
+
+<DateTime value={new Date()} style="long" />
+```
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `value` | `Date \| number` | -- | The date value to format (required) |
+| `style` | `string` | -- | Named date format style |
+
+#### `<NumberFormat>` -- Number formatting
+
+```tsx
+import { NumberFormat } from '@fluenti/solid'
+
+<NumberFormat value={1234.56} style="currency" />
+```
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `value` | `number` | -- | The number to format (required) |
+| `style` | `string` | -- | Named number format style |
+
+### Utilities
+
+| Export | Description |
+|--------|-------------|
+| `msg` | Tag for lazy message definitions outside the component tree |
 
 ## Code Splitting
 

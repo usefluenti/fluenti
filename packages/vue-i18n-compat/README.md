@@ -1,7 +1,8 @@
 # @fluenti/vue-i18n-compat
 
 [![npm](https://img.shields.io/npm/v/@fluenti/vue-i18n-compat?color=4f46e5&label=npm)](https://www.npmjs.com/package/@fluenti/vue-i18n-compat)
-[![license](https://img.shields.io/npm/l/@fluenti/vue-i18n-compat?color=22c55e)](https://github.com/usefluenti/fluenti/blob/main/LICENSE)
+[![bundle size](https://img.shields.io/bundlephobia/minzip/@fluenti/vue-i18n-compat?color=22c55e&label=size)](https://bundlephobia.com/package/@fluenti/vue-i18n-compat)
+[![license](https://img.shields.io/npm/l/@fluenti/vue-i18n-compat?color=gray)](https://github.com/usefluenti/fluenti/blob/main/LICENSE)
 
 **Drop-in migration from vue-i18n to Fluenti.** Keep your existing `$t()` calls, swap one plugin, and adopt compile-time i18n at your own pace.
 
