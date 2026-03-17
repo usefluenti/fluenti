@@ -1,6 +1,6 @@
 {
   "name": "@fluenti/nuxt",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "type": "module",
   "description": "Nuxt module for Fluenti — locale-prefixed routes, SEO helpers, auto locale detection",
   "homepage": "https://fluenti.dev",
@@ -20,15 +20,15 @@
   "exports": {
     ".": {
       "import": { "types": "./dist/module.d.ts", "default": "./dist/module.js" },
-      "require": { "types": "./dist/module.d.cts", "default": "./dist/module.cjs" }
+      "require": { "types": "./dist/module.d.ts", "default": "./dist/module.cjs" }
     },
     "./runtime": {
       "import": { "types": "./dist/runtime/index.d.ts", "default": "./dist/runtime/index.js" },
-      "require": { "types": "./dist/runtime/index.d.cts", "default": "./dist/runtime/index.cjs" }
+      "require": { "types": "./dist/runtime/index.d.ts", "default": "./dist/runtime/index.cjs" }
     },
     "./client": {
       "import": { "types": "./dist/runtime/client.d.ts", "default": "./dist/runtime/client.js" },
-      "require": { "types": "./dist/runtime/client.d.cts", "default": "./dist/runtime/client.cjs" }
+      "require": { "types": "./dist/runtime/client.d.ts", "default": "./dist/runtime/client.cjs" }
     }
   },
   "files": ["dist"],
