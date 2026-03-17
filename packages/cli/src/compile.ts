@@ -9,17 +9,6 @@ function hasVariables(message: string): boolean {
   return ICU_VAR_REGEX.test(message)
 }
 
-function extractVariableNames(message: string): string[] {
-  const names: string[] = []
-  let match: RegExpExecArray | null
-  const regex = new RegExp(ICU_VAR_REGEX.source, 'g')
-  while ((match = regex.exec(message)) !== null) {
-    if (!names.includes(match[1]!)) {
-      names.push(match[1]!)
-    }
-  }
-  return names
-}
 
 function escapeStringLiteral(str: string): string {
   return str
@@ -42,30 +31,6 @@ function messageToTemplateString(message: string): string {
   return message.replace(ICU_VAR_REGEX, (_match, name: string) => `\${v.${name}}`)
 }
 
-/** Compile a catalog to optimized JS module */
-export function compileCatalog(catalog: CatalogData, _locale: string): string {
-  const lines: string[] = []
-  lines.push('export default {')
-
-  const entries = Object.entries(catalog).filter(([, entry]) => !entry.obsolete)
-
-  for (const [id, entry] of entries) {
-    const translated = entry.translation ?? entry.message ?? ''
-
-    if (hasVariables(translated)) {
-      extractVariableNames(translated) // validate variables exist
-      const templateStr = messageToTemplateString(escapeTemplateLiteral(translated))
-      lines.push(`  '${escapeStringLiteral(id)}': (v) => \`${templateStr}\`,`)
-    } else {
-      lines.push(`  '${escapeStringLiteral(id)}': '${escapeStringLiteral(translated)}',`)
-    }
-  }
-
-  lines.push('} satisfies Record<string, string | ((v?: any) => string)>')
-  lines.push('')
-
-  return lines.join('\n')
-}
 
 // ─── ICU → JS code generation for split mode ───────────────────────────────
 
@@ -167,15 +132,17 @@ function selectToJs(node: SelectNode, locale: string): string {
 }
 
 /**
- * Compile a catalog to ES module with named exports for tree-shaking.
+ * Compile a catalog to ES module with tree-shakeable named exports.
  * Each message becomes a `/* @__PURE__ *​/` annotated named export.
+ * A default export maps message IDs to their compiled values for runtime lookup.
  */
-export function compileCatalogSplit(
+export function compileCatalog(
   catalog: CatalogData,
   locale: string,
   allIds: string[],
 ): string {
   const lines: string[] = []
+  const exportNames: Array<{ id: string; exportName: string }> = []
 
   for (const id of allIds) {
     const hash = hashMessage(id)
@@ -194,13 +161,23 @@ export function compileCatalogSplit(
     } else {
       lines.push(`/* @__PURE__ */ export const ${exportName} = '${escapeStringLiteral(translated)}'`)
     }
+
+    exportNames.push({ id, exportName })
   }
 
   if (lines.length === 0) {
-    return '// empty catalog\n'
+    return '// empty catalog\nexport default {}\n'
   }
 
+  // Default export maps message IDs → compiled values for runtime lookup
   lines.push('')
+  lines.push('export default {')
+  for (const { id, exportName } of exportNames) {
+    lines.push(`  '${escapeStringLiteral(id)}': ${exportName},`)
+  }
+  lines.push('}')
+  lines.push('')
+
   return lines.join('\n')
 }
 

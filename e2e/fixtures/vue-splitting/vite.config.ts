@@ -7,7 +7,6 @@ export default defineConfig({
     vue(),
     fluenti({
       framework: 'vue',
-      splitting: 'dynamic',
       catalogDir: 'src/locales/compiled',
       sourceLocale: 'en',
       locales: ['en', 'ja'],

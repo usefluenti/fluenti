@@ -50,11 +50,16 @@ The Vite plugin also auto-injects the necessary imports.
 `fluenti compile` converts ICU messages into optimized JavaScript:
 
 ```javascript
-export const _a1b2c3 = (v) => `Hello ${v.name}`
-export const _d4e5f6 = 'Welcome to Fluenti'
+/* @__PURE__ */ export const _a1b2c3 = (v) => `Hello ${v.name}`
+/* @__PURE__ */ export const _d4e5f6 = 'Welcome to Fluenti'
+
+export default {
+  'Hello {name}': _a1b2c3,
+  'Welcome to Fluenti': _d4e5f6,
+}
 ```
 
-Static messages become plain strings (zero overhead). Dynamic messages become small functions.
+Static messages become plain strings (zero overhead). Dynamic messages become small functions. The `@__PURE__` annotations enable tree-shaking — unused messages are eliminated from the production bundle. The `export default` re-export allows catalog imports by message ID key.
 
 ## ICU Parser
 

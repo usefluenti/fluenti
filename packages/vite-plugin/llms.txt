@@ -33,7 +33,7 @@ export default {
 - `catalogDir`: path to compiled message catalogs (default: `'src/locales/compiled'`)
 - `sourceLocale`: source locale (default: `'en'`)
 - `locales`: available locales (default: `[sourceLocale]`)
-- `splitting`: code splitting strategy (default: `false`)
+- `splitting`: code splitting strategy (default: `'dynamic'`)
 - `defaultBuildLocale`: locale for static splitting (default: `sourceLocale`)
 
 ## Compile-time Transforms
@@ -45,8 +45,8 @@ export default {
 
 ## Code Splitting Strategies
 
-- `false`: no splitting (default)
-- `'dynamic'`: lazy-load locale catalogs on demand
+- `'dynamic'`: lazy-load locale catalogs on demand (default)
+- `false`: no splitting
 - `'static'`: single locale inlined at build time, ideal for SSR
 - `'per-route'`: messages automatically split by route
 

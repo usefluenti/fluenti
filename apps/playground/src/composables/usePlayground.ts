@@ -1,7 +1,7 @@
 import { ref, computed, watch } from 'vue'
 import { extractMessages, type SourceLanguage, type ExtractedMessage } from '../lib/extract'
 import { buildCatalog, writeJsonCatalog, writePoCatalog } from '../lib/catalog'
-import { compileCatalog, compileCatalogSplit } from '../lib/compile'
+import { compileCatalog } from '../lib/compile'
 import { transformCode } from '../lib/transform'
 import { presets } from '../lib/presets'
 
@@ -65,14 +65,6 @@ export function usePlayground() {
     }
   })
 
-  const compiledSplit = computed(() => {
-    try {
-      return compileCatalogSplit(catalog.value, locale.value)
-    } catch (e) {
-      return `// Compilation failed: ${e instanceof Error ? e.message : 'unknown error'}`
-    }
-  })
-
   // ─── Transform preview ───────────────────────────────────────────────────
 
   const transformedCode = computed(() => {
@@ -91,7 +83,7 @@ export function usePlayground() {
     jsonOutput,
     poOutput,
     compiledDefault,
-    compiledSplit,
+    compiledSplit: compiledDefault,
     transformedCode,
   }
 }

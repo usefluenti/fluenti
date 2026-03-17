@@ -211,7 +211,7 @@ const i18n = createI18n({
   locale: 'en',
   messages: { en },
   splitting: true,
-  chunkLoader: (locale) => import(`./locales/compiled/${locale}.ts`).then(m => m.default),
+  chunkLoader: (locale) => import(`./locales/compiled/${locale}.js`).then(m => m.default),
 })
 ```
 

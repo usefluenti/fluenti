@@ -2,9 +2,9 @@ import { Links, Meta, Outlet, Scripts, ScrollRestoration, Link } from '@remix-ru
 import { I18nProvider, useI18n } from '@fluenti/react'
 import { getDirection } from '@fluenti/core'
 import { useState } from 'react'
-import en from './locales/compiled/en'
-import ja from './locales/compiled/ja'
-import ar from './locales/compiled/ar'
+import en from './locales/compiled/en.js'
+import ja from './locales/compiled/ja.js'
+import ar from './locales/compiled/ar.js'
 
 const allMessages = { en, ja, ar }
 

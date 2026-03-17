@@ -1,6 +1,6 @@
-import { defineConfig } from 'vite'
+import { defineConfig } from 'vitest/config'
 import dts from 'vite-plugin-dts'
-import { useClientPlugin } from '../use-client-plugin'
+import { useClientPlugin } from '../../scripts/use-client-plugin'
 
 export default defineConfig({
   build: {
