@@ -1,10 +1,18 @@
 import { memo, useContext, type ReactNode } from 'react'
+import { hashMessage } from '@fluenti/core'
 import { I18nContext } from '../context'
-import { resolveCategory, replaceHash, type PluralCategory } from './plural-core'
+import { PLURAL_CATEGORIES, type PluralCategory } from './plural-core'
+import { buildICUPluralMessage, renderRichTranslation, serializeRichForms } from './icu-rich'
 
 export interface PluralProps {
   /** The count value */
   value: number
+  /** Override the auto-generated synthetic ICU message id */
+  id?: string
+  /** Message context used for identity and translator disambiguation */
+  context?: string
+  /** Translator-facing note preserved in extraction catalogs */
+  comment?: string
   /** Text for zero (if language supports) */
   zero?: ReactNode
   /** Singular form. `#` replaced with value */
@@ -29,25 +37,23 @@ export interface PluralProps {
  * <Plural value={count} zero="No messages" one="# message" other="# messages" />
  * ```
  */
-export const Plural = memo(function Plural({ value, zero, one, two, few, many, other, offset }: PluralProps) {
+export const Plural = memo(function Plural({
+  value,
+  id,
+  context,
+  comment,
+  zero,
+  one,
+  two,
+  few,
+  many,
+  other,
+  offset,
+}: PluralProps) {
   const ctx = useContext(I18nContext)
   if (!ctx) {
     throw new Error('[fluenti] <Plural> must be used within an <I18nProvider>')
   }
-
-  const adjustedValue = offset ? value - offset : value
-  const locale = ctx.locale
-
-  const available: Record<string, boolean> = {
-    zero: zero !== undefined,
-    one: one !== undefined,
-    two: two !== undefined,
-    few: few !== undefined,
-    many: many !== undefined,
-    other: true,
-  }
-
-  const category = resolveCategory(adjustedValue, locale, available)
 
   const forms: Record<PluralCategory, ReactNode | undefined> = {
     zero,
@@ -57,9 +63,25 @@ export const Plural = memo(function Plural({ value, zero, one, two, few, many, o
     many,
     other,
   }
+  const { messages, components } = serializeRichForms(PLURAL_CATEGORIES, forms)
+  const icuMessage = buildICUPluralMessage(
+    {
+      ...(messages.zero !== undefined && { zero: messages.zero }),
+      ...(messages.one !== undefined && { one: messages.one }),
+      ...(messages.two !== undefined && { two: messages.two }),
+      ...(messages.few !== undefined && { few: messages.few }),
+      ...(messages.many !== undefined && { many: messages.many }),
+      other: messages.other ?? '',
+    },
+    offset,
+  )
 
-  const selected = forms[category] ?? other
-  const formatted = ctx.i18n.n(value)
+  const descriptor = {
+    id: id ?? (context === undefined ? icuMessage : hashMessage(icuMessage, context)),
+    message: icuMessage,
+    ...(context !== undefined ? { context } : {}),
+    ...(comment !== undefined ? { comment } : {}),
+  }
 
-  return <>{replaceHash(selected, formatted)}</>
+  return <>{renderRichTranslation(descriptor, { count: value }, (desc, values) => ctx.i18n.t(desc, values), components)}</>
 })

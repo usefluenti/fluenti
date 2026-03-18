@@ -51,6 +51,8 @@ function generateRuntimeModule(options: VirtualModuleOptions): string {
   const { catalogDir, locales, sourceLocale, defaultBuildLocale, framework } = options
   const defaultLocale = defaultBuildLocale || sourceLocale
   const absoluteCatalogDir = resolve(process.cwd(), catalogDir)
+  const runtimeKey = `fluenti.runtime.${framework}`
+  const lazyLocales = locales.filter((locale) => locale !== defaultLocale)
 
   if (framework === 'react') {
     // React uses I18nProvider for state management, so the virtual runtime
@@ -65,7 +67,7 @@ let __loading = false
 const __cache = new Map()
 
 const __loaders = {
-${locales.map((l) => `  '${l}': () => import('${absoluteCatalogDir}/${l}.js'),`).join('\n')}
+${lazyLocales.map((l) => `  '${l}': () => import('${absoluteCatalogDir}/${l}.js'),`).join('\n')}
 }
 
 async function __switchLocale(locale) {
@@ -95,6 +97,8 @@ async function __preloadLocale(locale) {
   } catch {}
 }
 
+globalThis[Symbol.for('${runtimeKey}')] = { __switchLocale, __preloadLocale }
+
 export { __catalog, __switchLocale, __preloadLocale, __currentLocale, __loading, __loadedLocales }
 `
   }
@@ -111,7 +115,7 @@ const __loading = ref(false)
 const __cache = new Map()
 
 const __loaders = {
-${locales.map((l) => `  '${l}': () => import('${absoluteCatalogDir}/${l}.js'),`).join('\n')}
+${lazyLocales.map((l) => `  '${l}': () => import('${absoluteCatalogDir}/${l}.js'),`).join('\n')}
 }
 
 async function __switchLocale(locale) {
@@ -141,6 +145,8 @@ async function __preloadLocale(locale) {
   } catch {}
 }
 
+globalThis[Symbol.for('${runtimeKey}')] = { __switchLocale, __preloadLocale }
+
 export { __catalog, __switchLocale, __preloadLocale, __currentLocale, __loading, __loadedLocales }
 `
   }
@@ -158,7 +164,7 @@ const [__loading, __setLoading] = createSignal(false)
 const __cache = new Map()
 
 const __loaders = {
-${locales.map((l) => `  '${l}': () => import('${absoluteCatalogDir}/${l}.js'),`).join('\n')}
+${lazyLocales.map((l) => `  '${l}': () => import('${absoluteCatalogDir}/${l}.js'),`).join('\n')}
 }
 
 async function __switchLocale(locale) {
@@ -187,6 +193,8 @@ async function __preloadLocale(locale) {
     __loadedLocales.add(locale)
   } catch {}
 }
+
+globalThis[Symbol.for('${runtimeKey}')] = { __switchLocale, __preloadLocale }
 
 export { __catalog, __switchLocale, __preloadLocale, __currentLocale, __loading, __loadedLocales }
 `
@@ -218,6 +226,8 @@ export function generateRouteRuntimeModule(options: VirtualModuleOptions): strin
   const { catalogDir, locales, sourceLocale, defaultBuildLocale, framework } = options
   const defaultLocale = defaultBuildLocale || sourceLocale
   const absoluteCatalogDir = resolve(process.cwd(), catalogDir)
+  const runtimeKey = `fluenti.runtime.${framework}`
+  const lazyLocales = locales.filter((locale) => locale !== defaultLocale)
 
   if (framework === 'vue') {
     return `
@@ -232,7 +242,7 @@ const __cache = new Map()
 const __loadedRoutes = new Set()
 
 const __loaders = {
-${locales.map((l) => `  '${l}': () => import('${absoluteCatalogDir}/${l}.js'),`).join('\n')}
+${lazyLocales.map((l) => `  '${l}': () => import('${absoluteCatalogDir}/${l}.js'),`).join('\n')}
 }
 
 const __routeLoaders = {}
@@ -279,6 +289,8 @@ async function __preloadLocale(locale) {
   } catch {}
 }
 
+globalThis[Symbol.for('${runtimeKey}')] = { __switchLocale, __preloadLocale }
+
 export { __catalog, __switchLocale, __preloadLocale, __loadRoute, __registerRouteLoader, __currentLocale, __loading, __loadedLocales }
 `
   }
@@ -297,7 +309,7 @@ const __cache = new Map()
 const __loadedRoutes = new Set()
 
 const __loaders = {
-${locales.map((l) => `  '${l}': () => import('${absoluteCatalogDir}/${l}.js'),`).join('\n')}
+${lazyLocales.map((l) => `  '${l}': () => import('${absoluteCatalogDir}/${l}.js'),`).join('\n')}
 }
 
 const __routeLoaders = {}
@@ -344,6 +356,8 @@ async function __preloadLocale(locale) {
   } catch {}
 }
 
+globalThis[Symbol.for('${runtimeKey}')] = { __switchLocale, __preloadLocale }
+
 export { __catalog, __switchLocale, __preloadLocale, __loadRoute, __registerRouteLoader, __currentLocale, __loading, __loadedLocales }
 `
-}
+  }

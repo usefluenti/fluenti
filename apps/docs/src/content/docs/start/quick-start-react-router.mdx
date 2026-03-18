@@ -99,6 +99,8 @@ import { Steps } from '@astrojs/starlight/components'
 
    ```tsx
    // src/pages/Home.tsx
+   import { t } from '@fluenti/react'
+
    export function Home({ onLocaleChange }: { onLocaleChange: (loc: string) => void }) {
      const name = 'World'
 
@@ -115,7 +117,7 @@ import { Steps } from '@astrojs/starlight/components'
    }
    ```
 
-   The `` t`...` `` tagged template is a compiler macro injected by the Vite plugin — no import needed.
+   The `` t`...` `` tagged template is optimized from Fluenti's direct-import `t`.
 
 6. **Extract, translate, and compile**
 

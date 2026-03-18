@@ -4,7 +4,7 @@
  * Provides:
  * - `withFluenti()` — wraps next.config.ts with t`` transform support
  * - FluentProvider — async server component (exported from generated module)
- * - Webpack loader for t`` and t() in both RSC and client components
+ * - Webpack loader for strict, binding-aware tagged-template optimization
  *
  * @example
  * ```ts

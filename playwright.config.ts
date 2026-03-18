@@ -7,6 +7,7 @@ const serverMap: Record<string, { command: string; port: number; timeout?: numbe
   nuxt:              { command: 'cd examples/nuxt && pnpm build && pnpm preview', port: 5175 },
   'solid-start':     { command: 'cd examples/solid-start && pnpm build && pnpm preview', port: 5176 },
   react:             { command: 'cd examples/react && pnpm build && pnpm preview --port 5177', port: 5177 },
+  'tanstack-start':  { command: 'cd examples/tanstack-start && pnpm build && pnpm exec vite preview --host 127.0.0.1 --port 5178', port: 5178 },
   'splitting-vue':   { command: 'cd e2e/fixtures/vue-splitting && pnpm build && pnpm preview --port 5180', port: 5180 },
   'vue-i18n-bridge': { command: 'cd e2e/fixtures/vue-i18n-bridge && pnpm build && pnpm preview --port 5181', port: 5181 },
   'vue-routes':      { command: 'cd e2e/fixtures/vue-routes && pnpm build && pnpm preview --port 5191', port: 5191 },
@@ -21,6 +22,8 @@ const serverMap: Record<string, { command: string; port: number; timeout?: numbe
   nextjs:            { command: 'cd e2e/fixtures/nextjs && pnpm build && pnpm start -p 5190', port: 5190, timeout: 120_000 },
   'react-no-plugin': { command: 'cd e2e/fixtures/react-no-plugin && pnpm build && pnpm preview --port 5192', port: 5192 },
   'solid-no-plugin': { command: 'cd e2e/fixtures/solid-no-plugin && pnpm build && pnpm preview --port 5193', port: 5193 },
+  'vue-no-plugin':   { command: 'cd e2e/fixtures/vue-no-plugin && pnpm build && pnpm preview --port 5194', port: 5194 },
+  'splitting-solid': { command: 'cd e2e/fixtures/solid-splitting && pnpm build && pnpm preview --port 5195', port: 5195 },
 }
 
 // Filter webServers to only those needed by the selected projects.
@@ -49,6 +52,7 @@ export default defineConfig({
     { name: 'nuxt', use: { baseURL: 'http://localhost:5175' }, testMatch: '**/nuxt.spec.ts' },
     { name: 'solid-start', use: { baseURL: 'http://localhost:5176' }, testMatch: '**/solid-start.spec.ts' },
     { name: 'react', use: { baseURL: 'http://localhost:5177' }, testMatch: '**/react.spec.ts' },
+    { name: 'tanstack-start', use: { baseURL: 'http://localhost:5178' }, testMatch: '**/tanstack-start.spec.ts' },
     { name: 'splitting-vue', use: { baseURL: 'http://localhost:5180' }, testMatch: '**/splitting-vue.spec.ts' },
     { name: 'vue-i18n-bridge', use: { baseURL: 'http://localhost:5181' }, testMatch: '**/vue-i18n-bridge.spec.ts' },
     { name: 'vue-routes', use: { baseURL: 'http://localhost:5191' }, testMatch: '**/vue-routes.spec.ts' },
@@ -63,6 +67,8 @@ export default defineConfig({
     { name: 'nextjs', use: { baseURL: 'http://localhost:5190' }, testMatch: '**/nextjs.spec.ts' },
     { name: 'react-no-plugin', use: { baseURL: 'http://localhost:5192' }, testMatch: '**/react-no-plugin.spec.ts' },
     { name: 'solid-no-plugin', use: { baseURL: 'http://localhost:5193' }, testMatch: '**/solid-no-plugin.spec.ts' },
+    { name: 'vue-no-plugin', use: { baseURL: 'http://localhost:5194' }, testMatch: '**/vue-no-plugin.spec.ts' },
+    { name: 'splitting-solid', use: { baseURL: 'http://localhost:5195' }, testMatch: '**/splitting-solid.spec.ts' },
   ],
   webServer,
 })

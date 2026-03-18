@@ -1,6 +1,11 @@
 import { describe, it, expect } from 'vitest'
+import { hashMessage } from '@fluenti/core'
 import { readPoCatalog, writePoCatalog } from '../src/po-format'
 import type { CatalogData } from '../src/catalog'
+
+function key(message: string, context?: string): string {
+  return hashMessage(message, context)
+}
 
 describe('PO format', () => {
   describe('writePoCatalog', () => {
@@ -47,10 +52,10 @@ msgstr "Bonjour"
 `
       const catalog = readPoCatalog(po)
 
-      expect(catalog['Hello']).toBeDefined()
-      expect(catalog['Hello']!.message).toBe('Hello')
-      expect(catalog['Hello']!.translation).toBe('Bonjour')
-      expect(catalog['Hello']!.origin).toBe('App.vue:3')
+      expect(catalog[key('Hello')]).toBeDefined()
+      expect(catalog[key('Hello')]!.message).toBe('Hello')
+      expect(catalog[key('Hello')]!.translation).toBe('Bonjour')
+      expect(catalog[key('Hello')]!.origin).toBe('App.vue:3')
     })
 
     it('reads entries without translation', () => {
@@ -63,8 +68,8 @@ msgstr ""
 `
       const catalog = readPoCatalog(po)
 
-      expect(catalog['Hello']).toBeDefined()
-      expect(catalog['Hello']!.translation).toBeUndefined()
+      expect(catalog[key('Hello')]).toBeDefined()
+      expect(catalog[key('Hello')]!.translation).toBeUndefined()
     })
   })
 
@@ -76,10 +81,9 @@ msgstr ""
       const po = writePoCatalog(original)
       const restored = readPoCatalog(po)
 
-      // PO uses msgid as key, so lookup by message
-      expect(restored['Hello']).toBeDefined()
-      expect(restored['Hello']!.translation).toBe('Bonjour')
-      expect(restored['Hello']!.origin).toBe('App.vue:3')
+      expect(restored['abc']).toBeDefined()
+      expect(restored['abc']!.translation).toBe('Bonjour')
+      expect(restored['abc']!.origin).toBe('App.vue:3')
     })
   })
 
@@ -96,9 +100,9 @@ msgid "Welcome"
 msgstr "Bienvenue"
 `
       const catalog = readPoCatalog(po)
-      expect(catalog['Welcome']).toBeDefined()
-      expect(catalog['Welcome']!.message).toBe('Welcome')
-      expect(catalog['Welcome']!.translation).toBe('Bienvenue')
+      expect(catalog[key('Welcome')]).toBeDefined()
+      expect(catalog[key('Welcome')]!.message).toBe('Welcome')
+      expect(catalog[key('Welcome')]!.translation).toBe('Bienvenue')
     })
 
     it('reads empty PO file (header only)', () => {
@@ -120,9 +124,9 @@ msgid "Old message"
 msgstr "Ancien message"
 `
       const catalog = readPoCatalog(po)
-      expect(catalog['Old message']).toBeDefined()
-      expect(catalog['Old message']!.obsolete).toBe(true)
-      expect(catalog['Old message']!.translation).toBe('Ancien message')
+      expect(catalog[key('Old message')]).toBeDefined()
+      expect(catalog[key('Old message')]!.obsolete).toBe(true)
+      expect(catalog[key('Old message')]!.translation).toBe('Ancien message')
     })
 
     it('reads reference comments as origin', () => {
@@ -135,7 +139,7 @@ msgid "Test"
 msgstr ""
 `
       const catalog = readPoCatalog(po)
-      expect(catalog['Test']!.origin).toBe('src/App.vue:15')
+      expect(catalog[key('Test')]!.origin).toBe('src/App.vue:15')
     })
 
     it('reads Unicode messages', () => {
@@ -147,7 +151,7 @@ msgid "Hello"
 msgstr "こんにちは"
 `
       const catalog = readPoCatalog(po)
-      expect(catalog['Hello']!.translation).toBe('こんにちは')
+      expect(catalog[key('Hello')]!.translation).toBe('こんにちは')
     })
 
     it('reads multiline msgstr', () => {
@@ -161,8 +165,8 @@ msgstr ""
 "second part"
 `
       const catalog = readPoCatalog(po)
-      expect(catalog['Long text']).toBeDefined()
-      expect(catalog['Long text']!.translation).toBe('First part second part')
+      expect(catalog[key('Long text')]).toBeDefined()
+      expect(catalog[key('Long text')]!.translation).toBe('First part second part')
     })
   })
 
@@ -204,10 +208,10 @@ msgstr ""
       const po = writePoCatalog(original)
       const restored = readPoCatalog(po)
 
-      expect(restored['Simple']!.translation).toBe('Einfach')
-      expect(restored['Simple']!.origin).toBe('A.vue:1')
-      expect(restored['No translation']).toBeDefined()
-      expect(restored['No translation']!.translation).toBeUndefined()
+      expect(restored['a']!.translation).toBe('Einfach')
+      expect(restored['a']!.origin).toBe('A.vue:1')
+      expect(restored['b']).toBeDefined()
+      expect(restored['b']!.translation).toBeUndefined()
     })
   })
 })

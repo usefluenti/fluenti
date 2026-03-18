@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { render } from '@solidjs/testing-library'
 import type { Component, JSX } from 'solid-js'
+import { hashMessage } from '@fluenti/core'
 import { I18nProvider, Trans } from '../src'
 
 describe('Trans component', () => {
@@ -233,5 +234,26 @@ describe('Trans component', () => {
 
     expect(container.textContent).toBe('Hello override!')
     expect(container.querySelector('strong')?.textContent).toBe('override')
+  })
+
+  it('translates children-only rich content without the build plugin', () => {
+    const { container } = render(() => (
+      <I18nProvider
+        locale="ja"
+        messages={{
+          ja: {
+            [hashMessage('Click <0>here</0> to continue')]: '<0>こちら</0>を押して続行',
+          },
+        }}
+      >
+        <Trans>
+          Click <a href="/next">here</a> to continue
+        </Trans>
+      </I18nProvider>
+    ))
+
+    expect(container.textContent).toBe('こちらを押して続行')
+    expect(container.querySelector('a')?.getAttribute('href')).toBe('/next')
+    expect(container.querySelector('a')?.textContent).toBe('こちら')
   })
 })

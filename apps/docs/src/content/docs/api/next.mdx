@@ -41,23 +41,21 @@ All options are optional. Defaults are read from `fluenti.config.ts` in the proj
    - A `createServerI18n` instance with `setLocale()`, `getI18n()`, and server components
    - A `FluentProvider` async component for layouts
    - A `ClientI18nProvider` with statically imported message catalogs
-2. **Registers a webpack loader** that uses AST scope analysis to detect `t` from `useI18n()` bindings and transforms `` t`...` `` and `t()` calls into `__i18n.t()` lookups
+2. **Registers a webpack loader** that uses AST scope analysis to detect Fluenti's authoring imports and rewrites them to the correct runtime bindings
 3. **Adds a resolve alias** mapping `@fluenti/next/__generated` to the generated module
 
 ### Webpack loader
 
-The loader auto-detects server vs client context:
+The loader does not inject globals or proxy accessors. In a `withFluenti()` app, the recommended authoring surface is the same on both sides:
 
-| Context | Detection | i18n source |
-|---------|-----------|-------------|
-| Client | `'use client'` directive or `pages/` directory | `globalThis.__fluenti_i18n` (set by `I18nProvider`) |
-| Server | `'use server'` directive or `app/` directory | `__getServerI18n()` via `React.cache()` store |
+- Client: `import { t } from '@fluenti/react'`
+- Server: `import { t } from '@fluenti/react'`
 
-The transform uses a `Proxy` to defer access until render time, so module-level `t`` ` calls work correctly.
+Imported `t` is compile-time only. It supports tagged templates and descriptor calls, but not `t('message.id')`. For runtime lookup, use `useI18n().t()` on the client or `await getI18n()` on the server.
 
-Only `t` bindings from `useI18n()` (or `getI18n()` on the server) are transformed. Other variables named `t` are left untouched. The previous regex-based "magic global" approach is deprecated — set `legacyGlobalT: true` in the `withFluenti()` config if you need backward compatibility during migration.
+On the server, the loader also reroutes `Trans`, `Plural`, `Select`, `DateTime`, and `NumberFormat` imported from `@fluenti/react` to the generated server module. `useI18n()` remains client-only; importing it in a server file is a compile-time error.
 
-The loader also optimizes `<Trans>` components at build time by pre-computing the message ID and extraction from JSX children, injecting `__id`, `__message`, and `__components` props. This eliminates the runtime `extractMessage()` and `hashMessage()` cost — the optimization is fully transparent.
+The loader also optimizes `<Trans>` components at build time by pre-computing the context-aware message ID and extraction from JSX children, injecting `__id`, `__message`, and `__components` props. This eliminates the runtime `extractMessage()` and `hashMessage()` fast-path cost.
 
 ## Generated Modules
 
@@ -70,13 +68,17 @@ The loader also optimizes `<Trans>` components at build time by pre-computing th
 import { FluentProvider } from '@fluenti/next/__generated'
 ```
 
+This module is primarily the Next runtime/integration surface. For ordinary translation authoring in a `withFluenti()` app, prefer `@fluenti/react`.
+
 | Export | Type | Description |
 |--------|------|-------------|
 | `FluentProvider` | async server component | Sets server locale + wraps children in `ClientI18nProvider` |
 | `setLocale` | `(locale: string) => void` | Set locale for the current request (`React.cache()` scoped) |
 | `getI18n` | `() => Promise<FluentInstance>` | Get the i18n instance for the current request |
+| `t` | `CompileTimeT` | Compile-time translation API for tagged templates and descriptor calls |
 | `Trans` | async server component | Rich text translation |
 | `Plural` | async server component | Locale-aware pluralization |
+| `Select` | async server component | Locale-aware categorical selection |
 | `DateTime` | async server component | Date formatting |
 | `NumberFormat` | async server component | Number formatting |
 

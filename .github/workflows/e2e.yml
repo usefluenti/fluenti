@@ -18,26 +18,35 @@ jobs:
           - vue
           - solid
           - react
+          - app-router
           - nuxt
           - vue-fixtures
+          - nuxt-fixtures
           - react-fixtures
+          - solid-fixtures
 
         include:
           # examples
           - shard: vue
             projects: vue
           - shard: solid
-            projects: solid
+            projects: solid,solid-start
           - shard: react
-            projects: react
+            projects: react,tanstack-start
+          - shard: app-router
+            projects: nextjs
           - shard: nuxt
             projects: nuxt,nuxt-spa,nuxt-custom-detect
 
           # fixtures
           - shard: vue-fixtures
-            projects: splitting-vue,vue-i18n-bridge,vue-routes
+            projects: splitting-vue,vue-i18n-bridge,vue-routes,vue-no-plugin
+          - shard: nuxt-fixtures
+            projects: nuxt-routes,nuxt-prefix,nuxt-ssg
           - shard: react-fixtures
-            projects: react-router,remix,nextjs
+            projects: react-router,remix,splitting-react,react-no-plugin
+          - shard: solid-fixtures
+            projects: solid-no-plugin,splitting-solid
 
     steps:
       - name: Checkout

@@ -68,6 +68,9 @@ fluenti extract [--config path]
 - `v-t.plural` modifier: pipe-separated plural forms converted to ICU plural syntax
 - `<Trans>` component: `message` prop or rich text children
 - `<Plural>` component: category props (`zero`, `one`, `two`, `few`, `many`, `other`)
+- `<Select>` component: direct case props or `options`
+- direct-import `t` from `@fluenti/vue`
+- runtime `t` bindings from `useI18n()`
 - Template expressions: `{{ t('message.id') }}`
 
 **TSX/JSX files:**
@@ -75,6 +78,9 @@ fluenti extract [--config path]
 - Function calls: `t('Hello')` extracts the string literal
 - `<Trans>` component with `message` prop or children
 - `<Plural>` component with category props
+- `<Select>` component with direct case props or `options`
+- direct-import `t` from framework packages
+- runtime `t` bindings from `useI18n()`
 
 ### Catalog Update Behavior
 

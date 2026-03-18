@@ -14,7 +14,7 @@ import Default from '@astrojs/starlight/components/Footer.astro';
       <p class="footer-tagline">Compile-time i18n for modern frameworks</p>
     </div>
     <div class="footer-links">
-      <a href="/getting-started/quick-start-vue/">Quick Start</a>
+      <a href="/start/quick-start/">Quick Start</a>
       <a href="/api/core/">API Reference</a>
       <a href="https://github.com/usefluenti/fluenti">GitHub</a>
     </div>
@@ -28,6 +28,10 @@ import Default from '@astrojs/starlight/components/Footer.astro';
     padding: 2rem 2rem 1.5rem;
     text-align: center;
     font-family: var(--sl-font);
+  }
+
+  :root:not([data-has-hero]) .fluenti-footer {
+    margin-top: clamp(2.25rem, 4vw, 3rem);
   }
 
   :root[data-theme='dark'] .fluenti-footer {

@@ -44,6 +44,39 @@ describe('extractFromTsx', () => {
     expect(messages[0]!.message).toBe('Hello World')
   })
 
+  it('extracts imported t tagged templates with alias bindings', () => {
+    const code = `
+import { t as tt } from '@fluenti/react'
+export function Hero() {
+  return <h1>{tt\`Hello \${name}\`}</h1>
+}
+`
+    const messages = extractFromTsx(code, 'Hero.tsx')
+    expect(messages).toHaveLength(1)
+    expect(messages[0]!.message).toBe('Hello {name}')
+  })
+
+  it('extracts imported t descriptor calls with context/comment metadata', () => {
+    const code = `
+import { t } from '@fluenti/react'
+const label = t({ message: 'Home', context: 'nav', comment: 'main link' })
+`
+    const messages = extractFromTsx(code, 'Nav.tsx')
+    expect(messages).toHaveLength(1)
+    expect(messages[0]!.message).toBe('Home')
+    expect(messages[0]!.context).toBe('nav')
+    expect(messages[0]!.comment).toBe('main link')
+  })
+
+  it('does not extract unsupported imported t string calls', () => {
+    const code = `
+import { t } from '@fluenti/react'
+const label = t('nav.home')
+`
+    const messages = extractFromTsx(code, 'Nav.tsx')
+    expect(messages).toHaveLength(0)
+  })
+
   it('extracts t() with double quotes', () => {
     const code = `const msg = t("Hello World")`
     const messages = extractFromTsx(code, 'App.tsx')
@@ -76,7 +109,7 @@ describe('extractFromTsx', () => {
     const code = `const el = <Plural zero="no items" one="one item" other="{count} items" count="n"/>`
     const messages = extractFromTsx(code, 'App.tsx')
     expect(messages).toHaveLength(1)
-    expect(messages[0]!.message).toContain('zero {no items}')
+    expect(messages[0]!.message).toContain('=0 {no items}')
   })
 
   it('extracts multiple messages', () => {
@@ -143,7 +176,7 @@ const c = <Trans message="Goodbye"/>
     const messages = extractFromTsx(code, 'App.tsx')
     expect(messages).toHaveLength(1)
     expect(messages[0]!.message).toContain('{n, plural,')
-    expect(messages[0]!.message).toContain('zero {No items}')
+    expect(messages[0]!.message).toContain('=0 {No items}')
   })
 
   // ─── Edge cases ─────────────────────────────────────────────────────────────
@@ -251,7 +284,7 @@ export default App
     const messages = extractFromTsx(code, 'App.tsx')
     expect(messages).toHaveLength(1)
     expect(messages[0]!.message).toContain('{items, plural,')
-    expect(messages[0]!.message).toContain('zero {Nothing}')
+    expect(messages[0]!.message).toContain('=0 {Nothing}')
     expect(messages[0]!.message).toContain('one {# thing}')
     expect(messages[0]!.message).toContain('other {# things}')
   })

@@ -1,11 +1,19 @@
 import type { Component, JSX } from 'solid-js'
 import { Dynamic } from 'solid-js/web'
+import { hashMessage } from '@fluenti/core'
 import { useI18n } from './use-i18n'
+import { buildICUSelectMessage, normalizeSelectForms, reconstruct, serializeRichForms } from './rich-dom'
 
 /** Props for the `<Select>` component */
 export interface SelectProps {
   /** The value to match against prop keys */
   value: string
+  /** Override the auto-generated synthetic ICU message id */
+  id?: string
+  /** Message context used for identity and translator disambiguation */
+  context?: string
+  /** Translator-facing note preserved in extraction catalogs */
+  comment?: string
   /** Fallback message when no key matches */
   other: string | JSX.Element
   /**
@@ -44,36 +52,38 @@ export interface SelectProps {
  * Falls back to the `other` prop when no key matches.
  */
 export const SelectComp: Component<SelectProps> = (props) => {
-  useI18n() // ensure provider is installed
+  const { t } = useI18n()
 
   const resolvedTag = () => props.tag ?? 'span'
 
-  /** Resolve a value that may be a Solid accessor function from createMemo */
-  const resolve = (val: unknown): unknown =>
-    typeof val === 'function' && !(val as { length?: number }).length ? (val as () => unknown)() : val
-
   const content = () => {
-    // options prop takes precedence over attrs
-    if (props.options !== undefined) {
-      const match = props.options[props.value]
-      if (match !== undefined) {
-        return resolve(match)
+    const forms: Record<string, unknown> = props.options !== undefined
+      ? { ...props.options, other: props.other }
+      : {
+        ...Object.fromEntries(
+          Object.entries(props).filter(([key]) => !['value', 'id', 'context', 'comment', 'options', 'other', 'tag'].includes(key)),
+        ),
+        other: props.other,
       }
-      return resolve(props.other)
-    }
 
-    // Fall back to attrs for backwards compatibility
-    const attrMatch = props[props.value]
-    if (
-      attrMatch !== undefined &&
-      props.value !== 'value' &&
-      props.value !== 'other' &&
-      props.value !== 'options' &&
-      props.value !== 'tag'
-    ) {
-      return resolve(attrMatch)
-    }
-    return resolve(props.other)
+    const orderedKeys = [...Object.keys(forms).filter(key => key !== 'other'), 'other'] as const
+    const { messages, components } = serializeRichForms(orderedKeys, forms)
+    const normalized = normalizeSelectForms(
+      Object.fromEntries([...orderedKeys].map((key) => [key, messages[key] ?? ''])),
+    )
+    const translated = t(
+      {
+        id: props.id ?? (props.context === undefined
+          ? buildICUSelectMessage(normalized.forms)
+          : hashMessage(buildICUSelectMessage(normalized.forms), props.context)),
+        message: buildICUSelectMessage(normalized.forms),
+        ...(props.context !== undefined ? { context: props.context } : {}),
+        ...(props.comment !== undefined ? { comment: props.comment } : {}),
+      },
+      { value: normalized.valueMap[props.value] ?? 'other' },
+    )
+
+    return components.length > 0 ? reconstruct(translated, components) : translated
   }
 
   return (<Dynamic component={resolvedTag()}>{content()}</Dynamic>) as JSX.Element

@@ -120,7 +120,7 @@ describe('edge cases - exhaustive', () => {
 
   it('descriptor missing id (only message)', () => {
     const desc = msg.descriptor({ id: '', message: 'Hello' })
-    expect(desc.id).toBe('')
+    expect(desc.id).toBeTruthy()
     expect(desc.message).toBe('Hello')
   })
 

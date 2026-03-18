@@ -1,6 +1,6 @@
 import { type App, type InjectionKey, type Ref, ref, shallowReactive } from 'vue'
 import type { AllMessages, Locale, Messages, CompiledMessage, MessageDescriptor } from '@fluenti/core'
-import { interpolate, formatDate, formatNumber, buildICUMessage } from '@fluenti/core'
+import { interpolate, formatDate, formatNumber, buildICUMessage, resolveDescriptorId } from '@fluenti/core'
 import { Trans } from './components/Trans'
 import { Plural } from './components/Plural'
 import { Select } from './components/Select'
@@ -12,8 +12,32 @@ function escapeHtml(str: string): string {
   return str.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 }
 
-/** Compiled message chunk loader */
-export type ChunkLoader = (locale: string) => Promise<Record<string, CompiledMessage>>
+/** Compiled message chunk loader for lazy locale loading */
+export type ChunkLoader = (
+  locale: string,
+) => Promise<Record<string, CompiledMessage> | { default: Record<string, CompiledMessage> }>
+
+interface SplitRuntimeModule {
+  __switchLocale?: (locale: string) => Promise<void>
+  __preloadLocale?: (locale: string) => Promise<void>
+}
+
+const SPLIT_RUNTIME_KEY = Symbol.for('fluenti.runtime.vue')
+
+function getSplitRuntimeModule(): SplitRuntimeModule | null {
+  const runtime = (globalThis as Record<PropertyKey, unknown>)[SPLIT_RUNTIME_KEY]
+  return typeof runtime === 'object' && runtime !== null
+    ? runtime as SplitRuntimeModule
+    : null
+}
+
+function resolveChunkMessages(
+  loaded: Record<string, CompiledMessage> | { default: Record<string, CompiledMessage> },
+): Record<string, CompiledMessage> {
+  return typeof loaded === 'object' && loaded !== null && 'default' in loaded
+    ? (loaded as { default: Record<string, CompiledMessage> }).default
+    : loaded
+}
 
 /** Context object returned by `useI18n()` and available as `$t` etc. on globalProperties */
 export interface FluentVueContext {
@@ -23,7 +47,7 @@ export interface FluentVueContext {
   t(strings: TemplateStringsArray, ...exprs: unknown[]): string
   /** Reactive ref for current locale */
   locale: Readonly<Ref<Locale>>
-  /** Change the active locale (async when splitting is enabled) */
+  /** Change the active locale (async when lazy locale loading is enabled) */
   setLocale(locale: Locale): Promise<void>
   /** Dynamically load messages for a locale */
   loadMessages(locale: Locale, messages: Messages): void
@@ -59,10 +83,10 @@ export interface FluentVueOptions {
   dateFormats?: Record<string, Intl.DateTimeFormatOptions | 'relative'>
   numberFormats?: Record<string, Intl.NumberFormatOptions | ((locale: string) => Intl.NumberFormatOptions)>
   fallbackChain?: Record<string, string[]>
-  /** Async chunk loader for code-splitting mode */
+  /** Async chunk loader for lazy locale loading */
   chunkLoader?: ChunkLoader
-  /** Enable code-splitting mode */
-  splitting?: boolean
+  /** Enable lazy locale loading through chunkLoader */
+  lazyLocaleLoading?: boolean
   /**
    * Prefix for globally registered components (Trans, Plural, Select).
    *
@@ -118,6 +142,9 @@ function getModifierAttr(modifiers: Partial<Record<string, boolean>>): string | 
  * so it is safe to call once per SSR request.
  */
 export function createFluentVue(options: FluentVueOptions): FluentVuePlugin {
+  const lazyLocaleLoading = options.lazyLocaleLoading
+    ?? (options as FluentVueOptions & { splitting?: boolean }).splitting
+    ?? false
   const locale = ref(options.locale)
   const catalogs = shallowReactive<AllMessages>({ ...options.messages })
   const isLoading = ref(false)
@@ -153,7 +180,7 @@ export function createFluentVue(options: FluentVueOptions): FluentVuePlugin {
     let messageId: string
     let fallbackMessage: string | undefined
     if (typeof id === 'object' && id !== null) {
-      messageId = id.id
+      messageId = resolveDescriptorId(id) ?? ''
       fallbackMessage = id.message
     } else {
       messageId = id
@@ -165,16 +192,22 @@ export function createFluentVue(options: FluentVueOptions): FluentVuePlugin {
     // Build the chain of locales to try
     const chain: Locale[] = [currentLocale]
 
-    // Add fallbackChain entries if configured (locale-specific, then wildcard '*')
-    if (options.fallbackChain?.[currentLocale]) {
-      chain.push(...options.fallbackChain[currentLocale])
-    } else if (options.fallbackChain?.['*']) {
-      chain.push(...options.fallbackChain['*'])
-    }
-
-    // Add the explicit fallbackLocale if not already included
     if (options.fallbackLocale && !chain.includes(options.fallbackLocale)) {
       chain.push(options.fallbackLocale)
+    }
+
+    if (options.fallbackChain?.[currentLocale]) {
+      for (const fallback of options.fallbackChain[currentLocale]) {
+        if (!chain.includes(fallback)) {
+          chain.push(fallback)
+        }
+      }
+    } else if (options.fallbackChain?.['*']) {
+      for (const fallback of options.fallbackChain['*']) {
+        if (!chain.includes(fallback)) {
+          chain.push(fallback)
+        }
+      }
     }
 
     for (const loc of chain) {
@@ -204,14 +237,18 @@ export function createFluentVue(options: FluentVueOptions): FluentVuePlugin {
   }
 
   async function setLocale(newLocale: Locale): Promise<void> {
-    if (!options.splitting || !options.chunkLoader) {
-      // Synchronous path: no splitting, just switch
+    if (!lazyLocaleLoading || !options.chunkLoader) {
       locale.value = newLocale
       return
     }
 
+    const splitRuntime = getSplitRuntimeModule()
+
     if (loadedLocalesSet.has(newLocale)) {
       // Already loaded, instant switch
+      if (splitRuntime?.__switchLocale) {
+        await splitRuntime.__switchLocale(newLocale)
+      }
       locale.value = newLocale
       return
     }
@@ -219,10 +256,13 @@ export function createFluentVue(options: FluentVueOptions): FluentVuePlugin {
     // Async load
     isLoading.value = true
     try {
-      const messages = await options.chunkLoader(newLocale)
+      const messages = resolveChunkMessages(await options.chunkLoader(newLocale))
       catalogs[newLocale] = { ...catalogs[newLocale], ...messages }
       loadedLocalesSet.add(newLocale)
       loadedLocales.value = new Set(loadedLocalesSet)
+      if (splitRuntime?.__switchLocale) {
+        await splitRuntime.__switchLocale(newLocale)
+      }
       locale.value = newLocale
     } finally {
       isLoading.value = false
@@ -236,11 +276,16 @@ export function createFluentVue(options: FluentVueOptions): FluentVuePlugin {
   }
 
   function preloadLocale(loc: string): void {
-    if (loadedLocalesSet.has(loc) || !options.chunkLoader) return
-    options.chunkLoader(loc).then((messages) => {
+    if (!lazyLocaleLoading || loadedLocalesSet.has(loc) || !options.chunkLoader) return
+    const splitRuntime = getSplitRuntimeModule()
+    options.chunkLoader(loc).then(async (loaded) => {
+      const messages = resolveChunkMessages(loaded)
       catalogs[loc] = { ...catalogs[loc], ...messages }
       loadedLocalesSet.add(loc)
       loadedLocales.value = new Set(loadedLocalesSet)
+      if (splitRuntime?.__preloadLocale) {
+        await splitRuntime.__preloadLocale(loc)
+      }
     }).catch(() => {
       // Silent failure for preload
     })
@@ -360,4 +405,3 @@ export function createFluentVue(options: FluentVueOptions): FluentVuePlugin {
     global: context,
   }
 }
-

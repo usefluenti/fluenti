@@ -1,6 +1,7 @@
 import { describe, it, expect, afterEach } from 'vitest'
 import { render, screen, cleanup } from '@testing-library/react'
-import { __useI18n, I18nProvider } from '../src'
+import { I18nProvider } from '../src'
+import { __useI18n } from '../src/hooks/__useI18n'
 
 describe('__useI18n (internal hook)', () => {
   afterEach(cleanup)

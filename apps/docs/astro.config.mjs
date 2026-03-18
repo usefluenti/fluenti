@@ -57,10 +57,10 @@ export default defineConfig({
           items: [
             { label: 'Introduction', slug: 'start/introduction' },
             { label: 'How It Works', slug: 'start/how-it-works' },
+            { label: 'Quick Start', slug: 'start/quick-start' },
             {
-              label: 'Quick Start',
+              label: 'Framework Quick Starts',
               items: [
-                { label: 'Overview', slug: 'start/quick-start' },
                 { label: 'Vue', slug: 'start/quick-start-vue' },
                 { label: 'React', slug: 'start/quick-start-react' },
                 { label: 'SolidJS', slug: 'start/quick-start-solid' },

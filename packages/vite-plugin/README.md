@@ -4,7 +4,7 @@
 [![bundle size](https://img.shields.io/bundlephobia/minzip/@fluenti/vite-plugin?color=16a34a&label=size)](https://bundlephobia.com/package/@fluenti/vite-plugin)
 [![license](https://img.shields.io/npm/l/@fluenti/vite-plugin?color=737373)](https://github.com/usefluenti/fluenti/blob/main/LICENSE)
 
-**The build-time engine behind Fluenti.** This plugin compiles away i18n at build time so your production bundle ships zero runtime interpretation overhead. Message catalogs are served through virtual modules for zero-config catalog loading -- no manual import wiring, no boilerplate.
+**The build-time engine behind Fluenti.** This plugin compiles away i18n at build time so your production bundle ships zero runtime interpretation overhead. It uses internal virtual modules to wire locale chunks automatically, so app code can stay on Fluenti's public authoring and runtime APIs.
 
 ## How It Works
 
@@ -14,7 +14,7 @@ During Vite's transform pipeline, `@fluenti/vite-plugin` rewrites your i18n patt
 
 - **`v-t` directive** is a Vue compiler `nodeTransform`, not a runtime directive. It rewrites `<h1 v-t>Hello</h1>` into `<h1>{{ $t('abc123') }}</h1>` during template compilation.
 - **`<Trans>`, `<Plural>`, `<Select>` components** are compiled into optimized render calls -- no component overhead at runtime.
-- **`t\`...\`` tagged templates** in React and Solid are transformed into direct `__i18n.t()` calls with auto-injected imports.
+- **Direct-import `t`** -- `import { t } from '@fluenti/react' | '@fluenti/vue' | '@fluenti/solid'` is the primary compile-time path
 
 The result: your users get fully resolved translations with the same performance as hardcoded strings.
 
@@ -38,30 +38,19 @@ export default {
       framework: 'vue',       // 'vue' | 'react' | 'solid' | 'auto'
       sourceLocale: 'en',
       locales: ['en', 'ja', 'zh-CN'],
-      splitting: 'dynamic',   // 'dynamic' | 'static' | 'per-route' | false
+      splitting: 'dynamic',   // 'dynamic' | 'static' | false
     }),
   ],
 }
 ```
 
-That's it. The plugin auto-detects your framework when set to `'auto'`, serves compiled catalogs through virtual modules, and handles HMR during development.
+That's it. The plugin auto-detects your framework when set to `'auto'`, manages locale chunks internally, and handles HMR during development.
 
 ## Features
 
-### Virtual Modules
+### Internal virtual modules
 
-Compiled message catalogs are served through Vite virtual modules -- no file paths to manage, no manual imports to wire up:
-
-| Module | Purpose |
-|--------|---------|
-| `virtual:fluenti/runtime` | Reactive catalog with `__switchLocale()` and `__preloadLocale()` |
-| `virtual:fluenti/messages` | Static re-export for SSR builds |
-| `virtual:fluenti/route-runtime` | Per-route catalog with `__loadRoute()` for code-split apps |
-
-```ts
-// These imports "just work" -- resolved by the plugin at build time
-import { __switchLocale } from 'virtual:fluenti/runtime'
-```
+The plugin uses Vite virtual modules under the hood to connect transformed message lookups to the compiled locale catalogs. Those modules are internal implementation details; application code should stay on `import { t }`, `useI18n()`, `setLocale()`, `preloadLocale()`, `loadMessages()`, and framework-level `chunkLoader` APIs.
 
 ### Code Splitting
 
@@ -71,7 +60,6 @@ Control how message catalogs are bundled with the `splitting` option:
 |----------|----------|----------|
 | `'dynamic'` | Default locale loaded statically; others lazy-loaded on `switchLocale()` (default) | SPAs with multiple locales |
 | `'static'` | All messages for a single locale inlined at build time | SSR, static site generation |
-| `'per-route'` | Messages automatically split by route; shared messages go to a common chunk | Large apps with many routes |
 | `false` | All messages bundled in a single chunk | Small apps, simple setups |
 
 ### Vue Template Transform
@@ -92,20 +80,30 @@ The `v-t` directive is compiled away during Vue template compilation via a `node
 
 Rich text with nested elements is supported through `$vtRich()`, and `<Trans>`, `<Plural>`, `<Select>` components are all compiled into optimized output.
 
-### Solid / React JSX Transform
+### Client-Side `t` Transform
 
-The `t` function returned from `useI18n()` supports dual-mode usage -- both `t('message.id', { values })` function calls and `` t`Hello, ${name}` `` tagged template literals. The plugin uses **AST scope analysis** to detect `t` bindings from `useI18n()` destructuring and transforms only those calls:
+The plugin uses **AST scope analysis** to detect Fluenti's direct-import `t` inside supported component/setup scopes and rewrites it to the runtime `useI18n()` binding:
 
 ```tsx
 // What you write
-const { t } = useI18n()
+import { t } from '@fluenti/react'
 const msg = t`Hello, ${name}`
 
 // What ships to the browser
-const msg = __i18n.t('x1y2z3', { name })
+const { t } = useI18n()
+const msg = t('Hello, {name}', { name })
 ```
 
-> **Deprecated**: The magic global `t` (auto-injected without an explicit `useI18n()` binding) still works via a legacy fallback but is deprecated. Prefer `const { t } = useI18n()` for scope-safe transforms.
+Supported direct-import shapes:
+
+- `` t`Hello, ${name}` ``
+- `t({ message: 'Hello {name}', context: 'hero' }, { name })`
+
+Unsupported direct-import shapes are compile-time errors:
+
+- `t('message.id')`
+- `t('Hello {name}', { name })`
+- module-top-level usage outside supported component/setup scopes
 
 ### HMR for Catalogs
 
@@ -133,14 +131,12 @@ interface FluentiPluginOptions {
 
   /** Code splitting strategy.
    *  @default 'dynamic' */
-  splitting?: 'dynamic' | 'static' | 'per-route' | false
+  splitting?: 'dynamic' | 'static' | false
 
   /** Locale used for static build-time inlining.
    *  @default sourceLocale */
   defaultBuildLocale?: string
 
-  /** Path to a fluenti config file. */
-  configPath?: string
 }
 ```
 
@@ -160,24 +156,6 @@ export default {
       sourceLocale: 'en',
       locales: ['en', 'ja', 'zh-CN'],
       splitting: 'dynamic',
-    }),
-  ],
-}
-```
-
-**React with per-route splitting:**
-
-```ts
-import react from '@vitejs/plugin-react'
-import fluenti from '@fluenti/vite-plugin'
-
-export default {
-  plugins: [
-    react(),
-    fluenti({
-      framework: 'react',
-      splitting: 'per-route',
-      catalogDir: 'src/i18n/compiled',
     }),
   ],
 }

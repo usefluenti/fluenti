@@ -1,6 +1,8 @@
 import { Dynamic } from 'solid-js/web'
 import type { Component, JSX } from 'solid-js'
+import { hashMessage } from '@fluenti/core'
 import { useI18n } from './use-i18n'
+import { reconstruct, serializeRichForms } from './rich-dom'
 
 /** Plural category names in a stable order for ICU message building. */
 const PLURAL_CATEGORIES = ['zero', 'one', 'two', 'few', 'many', 'other'] as const
@@ -17,6 +19,7 @@ type PluralCategory = (typeof PLURAL_CATEGORIES)[number]
  */
 function buildICUPluralMessage(
   forms: Partial<Record<PluralCategory, string>> & { other: string },
+  offset?: number,
 ): string {
   const parts: string[] = []
   for (const cat of PLURAL_CATEGORIES) {
@@ -30,29 +33,22 @@ function buildICUPluralMessage(
       parts.push(`${key} {${text}}`)
     }
   }
-  return `{count, plural, ${parts.join(' ')}}`
-}
-
-/**
- * Resolve which plural category to use for rich content rendering.
- * Checks for exact =0 match first, then falls back to CLDR rules.
- * @internal
- */
-function resolveCategory(
-  value: number,
-  locale: string,
-  available: (cat: PluralCategory) => boolean,
-): PluralCategory {
-  if (value === 0 && available('zero')) return 'zero'
-  const cldr = new Intl.PluralRules(locale).select(value) as PluralCategory
-  if (available(cldr)) return cldr
-  return 'other'
+  const offsetPrefix = offset ? `offset:${offset} ` : ''
+  return `{count, plural, ${offsetPrefix}${parts.join(' ')}}`
 }
 
 /** Props for the `<Plural>` component */
 export interface PluralProps {
   /** The numeric value to pluralise */
   value: number
+  /** Override the auto-generated synthetic ICU message id */
+  id?: string
+  /** Message context used for identity and translator disambiguation */
+  context?: string
+  /** Translator-facing note preserved in extraction catalogs */
+  comment?: string
+  /** Offset from value before selecting form */
+  offset?: number
   /** Message for the "zero" plural category */
   zero?: string | JSX.Element
   /** Message for the "one" plural category */
@@ -95,7 +91,7 @@ export interface PluralProps {
  * ```
  */
 export const Plural: Component<PluralProps> = (props) => {
-  const { t, locale } = useI18n()
+  const { t } = useI18n()
 
   /** Resolve a category prop value — handles string, accessor function, and JSX */
   function resolveProp(val: string | JSX.Element | undefined): string | JSX.Element | undefined {
@@ -104,8 +100,6 @@ export const Plural: Component<PluralProps> = (props) => {
   }
 
   return (() => {
-    const currentLocale = locale()
-
     // Resolve all category values (handles Solid accessors from createMemo)
     const resolvedValues: Partial<Record<PluralCategory, string | JSX.Element>> = {}
     for (const cat of PLURAL_CATEGORIES) {
@@ -114,37 +108,29 @@ export const Plural: Component<PluralProps> = (props) => {
         resolvedValues[cat] = resolved
       }
     }
+    const { messages, components } = serializeRichForms(PLURAL_CATEGORIES, resolvedValues)
+    const icuMessage = buildICUPluralMessage(
+      {
+        ...(messages['zero'] !== undefined && { zero: messages['zero'] }),
+        ...(messages['one'] !== undefined && { one: messages['one'] }),
+        ...(messages['two'] !== undefined && { two: messages['two'] }),
+        ...(messages['few'] !== undefined && { few: messages['few'] }),
+        ...(messages['many'] !== undefined && { many: messages['many'] }),
+        other: messages['other'] ?? '',
+      },
+      props.offset,
+    )
 
-    // Check if any category prop contains JSX (non-string) content
-    const hasRichContent = PLURAL_CATEGORIES.some(cat => {
-      const val = resolvedValues[cat]
-      return val !== undefined && typeof val !== 'string'
-    })
+    const translated = t(
+      {
+        id: props.id ?? (props.context === undefined ? icuMessage : hashMessage(icuMessage, props.context)),
+        message: icuMessage,
+        ...(props.context !== undefined ? { context: props.context } : {}),
+        ...(props.comment !== undefined ? { comment: props.comment } : {}),
+      },
+      { count: props.value },
+    )
 
-    if (hasRichContent) {
-      const cat = resolveCategory(props.value, currentLocale, c => resolvedValues[c] !== undefined)
-      const content = resolvedValues[cat] ?? resolvedValues.other ?? props.other
-      return (<Dynamic component={props.tag ?? 'span'}>{content}</Dynamic>) as JSX.Element
-    }
-
-    // Existing string ICU path
-    const forms: Partial<Record<PluralCategory, string>> & { other: string } = {
-      ...(resolvedValues.zero !== undefined && { zero: resolvedValues.zero as string }),
-      ...(resolvedValues.one !== undefined && { one: resolvedValues.one as string }),
-      ...(resolvedValues.two !== undefined && { two: resolvedValues.two as string }),
-      ...(resolvedValues.few !== undefined && { few: resolvedValues.few as string }),
-      ...(resolvedValues.many !== undefined && { many: resolvedValues.many as string }),
-      other: (resolvedValues.other ?? props.other) as string,
-    }
-
-    // Build the ICU message key from source-language props
-    const icuMessage = buildICUPluralMessage(forms)
-
-    // Use t() for catalog lookup — if a translation exists for this ICU key,
-    // it will be returned (as a compiled function result). If not found, t()
-    // now falls back to interpolating inline ICU via core's interpolate.
-    const text = t(icuMessage, { count: props.value })
-
-    return (<Dynamic component={props.tag ?? 'span'}>{text}</Dynamic>) as JSX.Element
+    return (<Dynamic component={props.tag ?? 'span'}>{components.length > 0 ? reconstruct(translated, components) : translated}</Dynamic>) as JSX.Element
   }) as unknown as JSX.Element
 }

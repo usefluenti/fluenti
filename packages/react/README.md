@@ -18,7 +18,7 @@ Fluenti compiles your translations at build time so your production bundle ships
 - **React 19 compatible** -- tested against React 19, works with 18+
 - **Tagged template literals** -- write `t`\`Hello, {name}!\`` directly in JSX
 - **Rich text components** -- `<Trans>`, `<Plural>`, `<Select>`, `<DateTime>`, `<NumberFormat>`
-- **Lazy loading** -- load translations per-route with dynamic imports
+- **Lazy loading** -- load locale catalogs on demand with dynamic imports
 - **Type-safe** -- full TypeScript support with strict types
 
 ---
@@ -70,17 +70,15 @@ function App() {
 ### 4. Translate
 
 ```tsx
-import { useI18n, Trans, Plural, Select } from '@fluenti/react'
+import { t, useI18n, Trans, Plural, Select } from '@fluenti/react'
 
 function Dashboard() {
-  const { t, d, n, locale, setLocale } = useI18n()
+  const { d, n, locale, setLocale } = useI18n()
+  const name = 'Alice'
 
   return (
     <div>
-      {/* Function call with catalog lookup */}
-      <h1>{t('Welcome back, {name}!', { name: 'Alice' })}</h1>
-
-      {/* Tagged template literal */}
+      {/* Compile-time tagged template */}
       <h1>{t`Welcome back, ${name}!`}</h1>
 
       {/* Rich text with embedded components */}
@@ -121,6 +119,17 @@ What ships to production:
 ```
 
 The ICU parser is a dev dependency only -- it never reaches your users.
+
+## Direct-Import `t`
+
+`import { t } from '@fluenti/react'` is Fluenti's primary compile-time API.
+
+It supports:
+
+- `` t`Hello ${name}` ``
+- `t({ message: 'Hello {name}', context: 'hero' }, { name })`
+
+It does not support ID lookup. For `t('message.id')`, locale switching, formatting helpers, or other imperative runtime APIs, use `useI18n()`.
 
 ---
 
@@ -193,7 +202,7 @@ Server components are async and use `React.cache()` for request-scoped state -- 
 |------|---------|
 | `useI18n()` | `{ t, d, n, format, loadMessages, getLocales, i18n, locale, setLocale, ... }` |
 
-The `t` function supports dual-mode usage: `t('message.id', { values })` for catalog lookup and `` t`Hello ${name}` `` as a tagged template literal. Convenience methods `d()`, `n()`, `format()`, `loadMessages()`, `getLocales()` are also available directly. The `i18n` object is retained as an escape hatch.
+`useI18n().t` remains the full runtime API for ID lookup, descriptor lookup, and imperative usage. Convenience methods `d()`, `n()`, `format()`, `loadMessages()`, `getLocales()` are also available directly. The `i18n` object is retained as an escape hatch.
 
 ### Server API (`@fluenti/react/server`)
 
@@ -203,16 +212,6 @@ The `t` function supports dual-mode usage: `t('message.id', { values })` for cat
 | `setLocale(locale)` | Set locale for the current request |
 | `getI18n()` | Get the i18n instance (async) |
 | `Trans`, `Plural`, `DateTime`, `NumberFormat` | Async server components |
-
-### Global Registry
-
-For module-level access to the i18n instance (used by build-time transforms and plugin loaders):
-
-| Export | Description |
-|--------|-------------|
-| `getGlobalI18n()` | Get the global i18n instance (set by `I18nProvider` on mount) |
-| `setGlobalI18n(instance)` | Set the global i18n instance manually |
-| `clearGlobalI18n()` | Clear the global instance (primarily for testing) |
 
 ### Utilities
 

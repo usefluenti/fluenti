@@ -31,14 +31,13 @@ export function App() {
 
 ## Translation APIs
 
-### t() Function
+### Direct-Import `t`
 
 ```tsx
-import { useI18n } from '@fluenti/solid'
+import { t } from '@fluenti/solid'
 
 function Greeting() {
-  const { t } = useI18n()
-  return <p>{t('Hello, {name}!', { name: 'World' })}</p>
+  return <p>{t`Hello, ${name()}`}</p>
 }
 ```
 
@@ -53,11 +52,10 @@ function Greeting() {
 
 - Uses `<I18nProvider>` instead of a plugin
 - Signals (`name()`) instead of refs (`name.value`)
-- JSX instead of templates — use `t()` directly in JSX expressions
+- JSX instead of templates — use `t` inline in JSX expressions
 - Naturally reactive — `t()` reads the `locale()` signal, so JSX auto-tracks it
 
 ## Key Differences from React
 
 - Uses signals — `locale()` is an accessor, not a string
-- `t()` is called directly (not `i18n.t()`)
-- `createMemo` wrapper for `` t`...` `` tagged template (vs direct call in React)
+- Direct-import `t` works inline in JSX, while `useI18n().t()` remains the runtime escape hatch

@@ -49,13 +49,13 @@ import { Steps, Tabs, TabItem, Aside } from '@astrojs/starlight/components'
    ```vue
    <!-- pages/index.vue -->
    <script setup>
-   import { useI18n } from '@fluenti/vue'
+   import { t, useI18n } from '@fluenti/vue'
    import { ref } from 'vue'
 
    const { setLocale } = useI18n()
    const name = ref('World')
 
-   // t`` tagged template — auto-reactive, no import needed
+   // t`` tagged template — optimized from direct import
    const greeting = t`Hello, ${name}!`
    </script>
 

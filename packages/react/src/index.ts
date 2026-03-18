@@ -8,7 +8,7 @@ export { I18nContext } from './context'
 
 // Hooks
 export { useI18n } from './hooks/useI18n'
-export { __useI18n } from './hooks/__useI18n'
+export { t } from './compile-time-t'
 
 // Components
 export { Trans } from './components/Trans'
@@ -20,9 +20,6 @@ export { NumberFormat } from './components/Number'
 // Lazy messages
 export { msg } from './msg'
 
-// Global i18n registry (used by build plugins)
-export { getGlobalI18n, setGlobalI18n, clearGlobalI18n } from './global-registry'
-
 // Types
 export type {
   I18nContextValue,
@@ -30,6 +27,8 @@ export type {
   Messages,
   AllMessages,
   MessageDescriptor,
+  CompileTimeMessageDescriptor,
+  CompileTimeT,
   Locale,
   DateFormatOptions,
   NumberFormatOptions,

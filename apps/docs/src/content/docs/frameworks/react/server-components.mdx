@@ -5,7 +5,7 @@ description: Deep dive into using Fluenti with React Server Components (RSC)
 
 import { Aside } from '@astrojs/starlight/components'
 
-React Server Components render on the server and never ship JavaScript to the client. Fluenti supports RSC via the `` t`...` `` tagged template (when using `withFluenti()`) or `createServerI18n` from `@fluenti/react/server`.
+React Server Components render on the server and never ship JavaScript to the client. Fluenti supports RSC via `import { t } from '@fluenti/react'` with `withFluenti()`, or via `createServerI18n` from `@fluenti/react/server`.
 
 For a general overview of Next.js integration, see the [Next.js guide](/frameworks/react/nextjs/).
 
@@ -15,6 +15,8 @@ When using `withFluenti()` in your `next.config.ts`, Server Components can use t
 
 ```tsx
 // app/page.tsx (Server Component — no 'use client')
+import { t } from '@fluenti/react'
+
 export default async function Page() {
   return (
     <div>
@@ -24,8 +26,6 @@ export default async function Page() {
   )
 }
 ```
-
-No imports needed — `withFluenti()` handles the setup automatically.
 
 ## Advanced: `createServerI18n`
 
@@ -160,19 +160,19 @@ Server Actions are separate requests that don't go through the layout's `setLoca
 
 ### Using `` t`...` `` (recommended)
 
-When using `withFluenti()`, the `` t`...` `` macro works directly in `'use server'` files — the plugin detects the directive and injects the server-side i18n accessor:
+When using `withFluenti()`, imported `t` works directly in `'use server'` files — the plugin detects the directive and injects the server-side i18n accessor:
 
 ```ts
 // app/actions.ts
 'use server'
+
+import { t } from '@fluenti/react'
 
 export async function searchAction(query: string) {
   if (!query) return { error: t`Please enter a search term` }
   // ...
 }
 ```
-
-No imports needed — `withFluenti()` handles the transform automatically.
 
 ### Using `getI18n()` manually
 

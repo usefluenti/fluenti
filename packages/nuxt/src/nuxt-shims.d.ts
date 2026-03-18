@@ -20,6 +20,9 @@ declare module '#imports' {
   }
   export function useRequestHeaders(headers?: string[]): Record<string, string | undefined>
   export function useCookie(key: string): { value: string | null | undefined }
+  export function useNuxtApp(): {
+    runWithContext<T>(fn: () => T): T
+  }
   export function defineNuxtPlugin(plugin: (nuxtApp: any) => any): any
   export function defineNuxtRouteMiddleware(middleware: (to: any, from?: any) => any): any
   export function navigateTo(to: string, options?: { redirectCode?: number }): any

@@ -50,7 +50,7 @@ import { Steps } from '@astrojs/starlight/components'
 
    ```tsx
    // src/Home.tsx
-   import { useI18n } from '@fluenti/solid'
+   import { t, useI18n, Trans, Plural } from '@fluenti/solid'
    import { createSignal } from 'solid-js'
 
    export function Home() {
@@ -58,14 +58,10 @@ import { Steps } from '@astrojs/starlight/components'
      const [name] = createSignal('World')
      const [count] = createSignal(3)
 
-     // t`` tagged template — compiler macro, no import needed
-     // Returns a createMemo — naturally reactive with signals
-     const greeting = t`Hello, ${name}!`
-
      return (
        <div>
          <h1>{t`Welcome to my app`}</h1>
-         <p>{greeting()}</p>
+         <p>{t`Hello, ${name()}`}</p>
 
          {/* Rich text with real HTML */}
          <Trans>Read the <a href="/docs">documentation</a> to learn more.</Trans>
@@ -80,7 +76,7 @@ import { Steps } from '@astrojs/starlight/components'
    }
    ```
 
-   No manual keys. No JSON files. The Vite plugin injects `` t`...` `` automatically — just use it.
+   No manual keys. No JSON files. `import { t }` is the primary compile-time path, and `useI18n()` stays available for locale switching plus runtime lookup.
 
 5. **Extract messages**
 
@@ -136,8 +132,8 @@ import { Steps } from '@astrojs/starlight/components'
 
 - Uses `<I18nProvider>` instead of a plugin
 - Signals (`name()`) instead of refs (`name.value`)
-- JSX instead of templates — use `t()` directly in JSX expressions
-- Naturally reactive — `t()` reads the `locale()` signal, so JSX auto-tracks it
+- JSX instead of templates — use `t` inline in JSX expressions
+- Naturally reactive — JSX expressions that call `t` re-run inside Solid's reactive scopes
 
 ## Rich text with `<Trans>`
 

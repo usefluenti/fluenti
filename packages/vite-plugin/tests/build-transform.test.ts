@@ -26,7 +26,7 @@ describe('transformForDynamicSplit', () => {
     expect(result.usedHashes.size).toBe(2)
   })
 
-  it('returns false for needsCatalogImport when no $t calls', () => {
+  it('returns false for needsCatalogImport when no tracked translation calls exist', () => {
     const code = `const x = 1`
     const result = transformForDynamicSplit(code)
 
@@ -58,6 +58,76 @@ describe('transformForDynamicSplit', () => {
 
     expect(result.code).toContain('__catalog._')
     expect(result.code).not.toContain('$setup.__catalog')
+  })
+
+  it('transforms runtime t() destructured from useI18n()', () => {
+    const code = [
+      "import { useI18n } from '@fluenti/react'",
+      'function Home(name) {',
+      '  const { t } = useI18n()',
+      "  return t('Hello, {name}!', { name })",
+      '}',
+    ].join('\n')
+    const result = transformForDynamicSplit(code)
+
+    expect(result.needsCatalogImport).toBe(true)
+    expect(result.code).toContain(`__catalog._${hashMessage('Hello, {name}!')}({ name })`)
+    expect(result.code).not.toContain("t('Hello, {name}!', { name })")
+  })
+
+  it('transforms aliased runtime t() destructured from useI18n()', () => {
+    const code = [
+      "import { useI18n } from '@fluenti/vue'",
+      'function Home(name) {',
+      '  const { t: translate } = useI18n()',
+      "  return translate('Welcome')",
+      '}',
+    ].join('\n')
+    const result = transformForDynamicSplit(code)
+
+    expect(result.needsCatalogImport).toBe(true)
+    expect(result.code).toContain(`__catalog._${hashMessage('Welcome')}`)
+    expect(result.code).not.toContain("translate('Welcome')")
+  })
+
+  it('transforms scope-transform descriptor calls', () => {
+    const code = [
+      "import { useI18n } from '@fluenti/react'",
+      'function Home(name) {',
+      '  const { t: __fluenti_t } = useI18n()',
+      "  return __fluenti_t({ id: 'hero.greeting', message: 'Hello, {name}!' }, { name })",
+      '}',
+    ].join('\n')
+    const result = transformForDynamicSplit(code)
+
+    expect(result.needsCatalogImport).toBe(true)
+    expect(result.code).toContain(`__catalog._${hashMessage('hero.greeting')}({ name })`)
+    expect(result.usedHashes.has(hashMessage('hero.greeting'))).toBe(true)
+  })
+
+  it('handles _ctx.t() pattern from Vue useI18n exposure', () => {
+    const code = `_toDisplayString(_ctx.t('Hello world'))`
+    const result = transformForDynamicSplit(code)
+
+    expect(result.needsCatalogImport).toBe(true)
+    expect(result.code).toContain('__catalog._')
+    expect(result.code).not.toContain('_ctx.__catalog')
+  })
+
+  it('handles _unref(t)() pattern from Vue compiled setup bindings', () => {
+    const code = [
+      "import { unref as _unref } from 'vue'",
+      "import { useI18n } from '@fluenti/vue'",
+      'function render() {',
+      '  const { t } = useI18n()',
+      "  return _toDisplayString(_unref(t)('Hello world'))",
+      '}',
+    ].join('\n')
+    const result = transformForDynamicSplit(code)
+
+    expect(result.needsCatalogImport).toBe(true)
+    expect(result.code).toContain('__catalog._')
+    expect(result.code).not.toContain("_unref(t)('Hello world')")
   })
 
   it('handles backtick-quoted $t() from Vue 3 compiled templates', () => {
@@ -183,6 +253,22 @@ describe('transformForStaticSplit', () => {
     expect(result.code).toMatch(/_toDisplayString\(_\w+\)/)
   })
 
+  it('handles _unref(t)() pattern for static split', () => {
+    const code = [
+      "import { unref as _unref } from 'vue'",
+      "import { useI18n } from '@fluenti/vue'",
+      'function render() {',
+      '  const { t } = useI18n()',
+      "  return _toDisplayString(_unref(t)('Hello world'))",
+      '}',
+    ].join('\n')
+    const result = transformForStaticSplit(code)
+
+    expect(result.needsCatalogImport).toBe(true)
+    expect(result.code).toMatch(/_toDisplayString\(_\w+\)/)
+    expect(result.code).not.toContain("_unref(t)('Hello world')")
+  })
+
   it('generates named imports for static split', () => {
     const code = `$t('Alpha'); $t('Beta')`
     const result = transformForStaticSplit(code)
@@ -194,6 +280,21 @@ describe('transformForStaticSplit', () => {
     expect(result.code).toContain(`_${hashA}`)
     expect(result.code).toContain(`_${hashB}`)
     expect(result.code).not.toContain('__catalog')
+  })
+
+  it('transforms runtime t() destructured from useI18n()', () => {
+    const code = [
+      "import { useI18n } from '@fluenti/solid'",
+      'function Home() {',
+      '  const { t } = useI18n()',
+      "  return t('Home')",
+      '}',
+    ].join('\n')
+    const result = transformForStaticSplit(code)
+
+    expect(result.needsCatalogImport).toBe(true)
+    expect(result.code).toContain(`_${hashMessage('Home')}`)
+    expect(result.code).not.toContain("__catalog")
   })
 })
 
@@ -283,7 +384,7 @@ describe('CLI ↔ vite-plugin hash consistency', () => {
 
   it('hash consistency for multiple messages', () => {
     const messages = ['Hello', 'Goodbye', 'Welcome {name}']
-    const cliHashes = messages.map(hashMessage)
+    const cliHashes = messages.map((message) => hashMessage(message))
 
     const code = messages.map(m => `$t('${m}')`).join('; ')
     const result = transformForDynamicSplit(code)

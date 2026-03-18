@@ -5,7 +5,7 @@ function createSplitPlugin(chunkLoader: (locale: string) => Promise<Record<strin
   return createFluentVue({
     locale: 'en',
     messages: { en: { hello: 'Hello', bye: 'Goodbye' } },
-    splitting: true,
+    lazyLocaleLoading: true,
     chunkLoader,
   })
 }
@@ -123,6 +123,19 @@ describe('splitting mode', () => {
 
     expect(loader).toHaveBeenCalledTimes(1)
     expect(loader).toHaveBeenCalledWith('fr')
+  })
+
+  it('accepts chunkLoader results shaped like dynamic import modules', async () => {
+    const loader = vi.fn().mockResolvedValue({
+      default: { hello: 'Bonjour', bye: 'Au revoir' },
+    })
+    const plugin = createSplitPlugin(loader)
+    const { global: ctx } = plugin
+
+    await ctx.setLocale('fr')
+
+    expect(ctx.locale.value).toBe('fr')
+    expect(ctx.t('hello')).toBe('Bonjour')
   })
 
   it('without splitting, setLocale is synchronous', async () => {

@@ -63,9 +63,11 @@ function App() {
 
 ## Translations with `` t`...` ``
 
-The `` t`...` `` tagged template is the primary translation API. The Vite plugin injects it automatically — no import needed:
+The `` t`...` `` tagged template is the primary translation API via direct import:
 
 ```tsx
+import { t } from '@fluenti/react'
+
 function ProductCard({ product }: { product: Product }) {
   return (
     <div>

@@ -1,0 +1,9 @@
+{
+  "extends": "./tsconfig.base.json",
+  "include": [
+    "./vue-quick-start.ts",
+    "./vue-code-splitting.ts",
+    "./vue-imported-t.ts",
+    "./without-build-plugin-vue.ts"
+  ]
+}

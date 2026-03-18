@@ -6,8 +6,15 @@
 export type Locale = string
 
 export interface MessageDescriptor {
-  id: string
+  id?: string
   message?: string
+  comment?: string
+  context?: string
+}
+
+export interface CompileTimeMessageDescriptor {
+  id?: string
+  message: string
   comment?: string
   context?: string
 }
@@ -127,6 +134,11 @@ export type MsgTaggedTemplate = (
 ) => MessageDescriptor
 
 export type MsgDescriptor = (descriptor: MessageDescriptor) => MessageDescriptor
+
+export interface CompileTimeT {
+  (descriptor: CompileTimeMessageDescriptor, values?: Record<string, unknown>): string
+  (strings: TemplateStringsArray, ...exprs: unknown[]): string
+}
 
 // ---- Namespace ----
 

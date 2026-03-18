@@ -143,7 +143,7 @@ const msg = t\`Hello \${name}\`
 `
     const result = scopeTransform(code, { framework: 'vue' })
     expect(result.transformed).toBe(true)
-    expect(result.code).toContain("t('Hello {name}', { name: unref(name) })")
+    expect(result.code).toContain("t('Hello {name}', { name: name })")
   })
 
   it('handles dotted expressions — uses last segment as name', () => {
@@ -200,5 +200,71 @@ const msg = t\`Hello \${name}\`
     // React: no unref() wrapping
     expect(result.code).toContain("t('Hello {name}', { name: name })")
     expect(result.code).not.toContain('unref')
+  })
+
+  it('throws a stable error for unsupported imported t() runtime lookups', () => {
+    const code = `
+import { t } from '@fluenti/react'
+export function Card() {
+  return t('nav.home')
+}
+`
+
+    expect(() => scopeTransform(code, opts)).toThrow(
+      '[fluenti] Imported `t` only supports tagged templates and static descriptor calls. ' +
+        'Use useI18n().t(...) or await getI18n() for runtime lookups.',
+    )
+  })
+
+  it('throws a stable error for unsupported direct-import client scopes', () => {
+    const code = `
+import { t } from '@fluenti/react'
+const label = t\`Hello\`
+`
+
+    expect(() => scopeTransform(code, opts)).toThrow(
+      "[fluenti] Imported `t` from '@fluenti/react' is a compile-time API. " +
+        'Use it only inside a component or custom hook.',
+    )
+  })
+
+  it('throws a stable error for imported t in sync server scopes', () => {
+    const code = `
+import { t } from '@fluenti/react'
+export default function Page() {
+  return <h1>{t\`Hello\`}</h1>
+}
+`
+
+    expect(() => scopeTransform(code, {
+      framework: 'react',
+      serverModuleImport: '@fluenti/next/__generated',
+      treatFrameworkDirectImportsAsServer: true,
+      rerouteServerAuthoringImports: true,
+    })).toThrow(
+      "[fluenti] Imported `t` from '@fluenti/react' requires an async server scope. " +
+        'Make the current component/action/handler async, or use await getI18n().',
+    )
+  })
+
+  it('throws a stable error when useI18n() is imported in a Next server file', () => {
+    const code = `
+import { useI18n } from '@fluenti/react'
+export default async function Page() {
+  const { t } = useI18n()
+  return <h1>{t('Welcome')}</h1>
+}
+`
+
+    expect(() => scopeTransform(code, {
+      framework: 'react',
+      serverModuleImport: '@fluenti/next/__generated',
+      treatFrameworkDirectImportsAsServer: true,
+      rerouteServerAuthoringImports: true,
+      errorOnServerUseI18n: true,
+    })).toThrow(
+      "[fluenti] useI18n() is client-only in Next server files. " +
+        "Use direct imports from '@fluenti/react' for authoring, or await getI18n() from '@fluenti/next/__generated' for runtime access.",
+    )
   })
 })

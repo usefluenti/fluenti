@@ -21,7 +21,7 @@ export default defineConfig({
 fluenti({
   framework: 'auto',     // 'vue' | 'react' | 'solid' | 'auto'
   catalogDir: 'src/locales/compiled',
-  configPath: './fluenti.config.ts',
+  splitting: 'dynamic',  // 'dynamic' | 'static' | false
 })
 ```
 
@@ -29,67 +29,53 @@ fluenti({
 |--------|------|---------|-------------|
 | `framework` | `'vue' \| 'react' \| 'solid' \| 'auto'` | `'auto'` | Framework detection mode |
 | `catalogDir` | `string` | `'src/locales/compiled'` | Compiled catalogs directory |
-| `configPath` | `string?` | — | Path to fluenti config |
+| `sourceLocale` | `string` | `'en'` | Source locale used for descriptor fallback and build transforms |
+| `locales` | `string[]` | `[sourceLocale]` | Locale codes available to the build |
+| `splitting` | `'dynamic' \| 'static' \| false` | `false` | Build-time locale chunking strategy |
+| `defaultBuildLocale` | `string` | `sourceLocale` | Locale inlined for `'static'` builds |
 
 ## What it does
 
 The plugin provides several sub-plugins, each implemented as a dedicated module:
 
-1. **fluenti:virtual** — Resolves `virtual:fluenti/messages/{locale}` imports (`virtual-modules.ts`)
-2. **fluenti:vt-transform** — Pre-transforms `v-t` directives in Vue SFCs (`vt-transform.ts`)
-3. **fluenti:sfc-transform** — Transforms `<script setup>` in Vue SFCs (`sfc-transform.ts`)
-4. **fluenti:tagged-template** — Transforms `` t`…` `` tagged templates (`tagged-template.ts`)
-5. **fluenti:trans-transform** — Compile-time optimization for `<Trans>` components (`trans-transform.ts`)
-6. **fluenti:solid-jsx** — SolidJS JSX-specific transforms (`solid-jsx-transform.ts`)
-7. **fluenti:build-split** — Code-splitting transforms for production builds (`build-transform.ts`)
-8. **fluenti:dev** — HMR support for catalog changes
+1. **fluenti:virtual** — Internal virtual-module layer used by the build output (`virtual-modules.ts`)
+2. **fluenti:vue-template** — Pre-transforms Vue `v-t`, `<Trans>`, and `<Plural>` template usage (`sfc-transform.ts`)
+3. **fluenti:solid-jsx** — Reserved compatibility slot for Solid JSX handling (`solid-jsx-transform.ts`)
+4. **fluenti:script-transform** — Strict AST-only tagged-template optimization (`scope-transform.ts`, `trans-transform.ts`)
+5. **fluenti:build-split** — Code-splitting transforms for production builds (`build-transform.ts`)
+6. **fluenti:dev** — HMR support for catalog changes
 
 Framework detection (`framework-detect.ts`) auto-detects the framework from project dependencies when `framework: 'auto'`.
 
-## Virtual modules
+## Splitting strategies
 
-```typescript
-import messages from 'virtual:fluenti/messages/en'
-import messages from 'virtual:fluenti/messages/zh-CN'
-```
+Use `splitting: 'dynamic'` for locale chunks loaded on demand, `splitting: 'static'` for a single inlined build locale, or `false` to bundle every catalog together.
+
+The plugin's internal virtual modules (`virtual:fluenti/runtime`, `virtual:fluenti/messages`, `virtual:fluenti/route-runtime`) are implementation details, not the primary public API. App code should use framework runtime APIs such as `setLocale()`, `preloadLocale()`, `loadMessages()`, and `chunkLoader`.
 
 ## Script transforms
 
-The plugin uses **AST scope analysis** to detect `t` bindings destructured from `useI18n()` and transforms tagged templates and function calls at build time. Only `t` variables that originate from `useI18n()` are transformed — other variables named `t` are left untouched.
+The plugin uses **AST scope analysis** to detect Fluenti's direct-import `t` inside supported component/setup scopes and rewrites it at build time. Other variables named `t` are left untouched.
 
-**Vue mode:**
-
+```ts
+import { t } from '@fluenti/react'
+const greeting = t`Hello ${name}`
 ```
+
+```ts
 const { t } = useI18n()
-t`Hello ${name}` → computed(() => __i18n.t('hash', { name: unref(name) }))
+const greeting = t('Hello {name}', { name: name })
 ```
 
-**React mode:**
+Supported compile-time forms:
 
-```
-const { t } = useI18n()
-t`Hello ${name}` → __i18n.t('hash', { name })
-```
+- `` import { t } from '@fluenti/react'; t`Hello ${name}` ``
+- `import { t } from '@fluenti/vue'`
+- `import { t } from '@fluenti/solid'`
+- `t({ message: 'Hello {name}', context: 'hero' }, { name })`
 
-React uses direct calls (no wrapper) since React's re-render cycle handles reactivity.
-
-**Solid mode:**
-
-```
-const { t } = useI18n()
-t`Hello ${name()}` → createMemo(() => __i18n.t('hash', { name: name() }))
-```
-
-### Legacy global `t` (deprecated)
-
-Previous versions used a "magic global" `t` that required no import — the plugin injected it via regex matching. This approach is deprecated. To maintain backward compatibility, set `legacyGlobalT: true` in the plugin options:
-
-```typescript
-fluenti({ legacyGlobalT: true })
-```
-
-Migrate to `const { t } = useI18n()` — the scope-aware transform is more reliable and does not interfere with unrelated `t` variables.
+Runtime lookup such as `t('message.id')` still belongs to `useI18n().t()`.
 
 ## `<Trans>` compile-time optimization
 
-The plugin also optimizes `<Trans>` components at build time. It statically extracts the message string from JSX children and pre-computes the message hash, injecting `__id`, `__message`, and `__components` props. This eliminates the runtime `extractMessage()` and `hashMessage()` cost — the optimization is fully transparent and requires no code changes.
+The plugin also optimizes JSX `<Trans>` components at build time. It statically extracts the message string from children and pre-computes the context-aware message ID, injecting `__id`, `__message`, and `__components` props. This eliminates the runtime `extractMessage()` / `hashMessage()` fast-path cost without changing the component API.

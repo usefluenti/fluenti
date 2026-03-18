@@ -8,6 +8,8 @@
 
 ```tsx
 // Server Component — zero client JS
+import { t } from '@fluenti/react'
+
 export default async function Page() {
   return <h1>{t`Welcome, ${user.name}!`}</h1>
 }
@@ -16,6 +18,8 @@ export default async function Page() {
 ```tsx
 // Client Component — same syntax
 'use client'
+import { t } from '@fluenti/react'
+
 export default function Counter() {
   return <p>{t`You have ${count} items in your cart.`}</p>
 }
@@ -28,7 +32,7 @@ No runtime parsing. No bundle bloat. Messages are compiled at build time and tre
 - **App Router native** — first-class RSC, streaming SSR, and server actions support
 - **Next.js 14 & 15** compatible (`next >= 14.0.0`)
 - **`t\`\`` tagged templates** — write messages inline, extract them with the CLI
-- **Automatic server/client detection** — the webpack loader injects the right import based on file context
+- **Binding-aware transforms** — the webpack loader rewrites tagged templates only for proven Fluenti bindings
 - **`FluentProvider`** — async server component that sets up both server and client i18n in one place
 - **`withLocale()`** — per-component locale isolation in RSC
 - **ICU MessageFormat** — plurals, selects, nested arguments, custom formatters
@@ -57,7 +61,7 @@ const nextConfig: NextConfig = {
 export default withFluenti()(nextConfig)
 ```
 
-`withFluenti()` adds a webpack loader that transforms `t\`\`` calls and generates a server module for RSC i18n. It reads your `fluenti.config.ts` automatically.
+`withFluenti()` adds a webpack loader that rewrites direct-import authoring APIs in supported client/server scopes and generates a server module for RSC i18n. It reads your `fluenti.config.ts` automatically.
 
 You can pass overrides directly:
 
@@ -99,6 +103,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
 ```tsx
 // app/rsc/page.tsx
+import { t } from '@fluenti/react'
+
 export default async function RSCPage() {
   return (
     <div>
@@ -114,18 +120,16 @@ export default async function RSCPage() {
 ```tsx
 // app/page.tsx
 'use client'
-import { useI18n } from '@fluenti/react'
+import { t, useI18n } from '@fluenti/react'
 
 export default function Home() {
-  const { t } = useI18n()
+  const { setLocale, preloadLocale } = useI18n()
   const name = 'World'
   return <h1>{t`Hello, ${name}!`}</h1>
 }
 ```
 
-The `t` function supports dual-mode usage: `t('message.id', { values })` for catalog lookup and `` t`Hello ${name}` `` as a tagged template literal. The webpack loader uses **AST scope analysis** to detect `t` bindings from `useI18n()` destructuring and transforms only those calls.
-
-> **Deprecated**: The magic global `t` (auto-injected without an explicit import) still works via a legacy fallback but is deprecated. Prefer `const { t } = useI18n()` for scope-safe transforms.
+`import { t }` is the primary compile-time API. It supports tagged templates and descriptor calls, but not `t('message.id')` lookup. In Next apps using `withFluenti()`, ordinary authoring imports come from `@fluenti/react` on both the client and the server. For runtime lookup or full imperative access, use `await getI18n()` on the server or `useI18n()` on the client.
 
 ### 5. Extract and compile messages
 
@@ -152,8 +156,8 @@ export default async function Page({ searchParams }) {
   const params = await searchParams
   if (params.lang) setLocale(params.lang)
 
-  const i18n = await getI18n()
-  return <p>{t`Current server locale: ${i18n.locale}`}</p>
+  const { t, locale } = await getI18n()
+  return <p>{t`Current server locale: ${locale}`}</p>
 }
 ```
 
@@ -165,6 +169,8 @@ Works with `Suspense` boundaries — streamed content is translated on the serve
 import { Suspense } from 'react'
 
 async function SlowContent() {
+  const { getI18n } = await import('@fluenti/next/__generated')
+  const { t } = await getI18n()
   await fetchData()
   return <p>{t`Streamed content loaded!`}</p>
 }
@@ -180,15 +186,14 @@ export default async function StreamingPage() {
 
 ### Server Actions
 
-`t\`\`` works in `'use server'` functions:
+Direct-import `t` works in `'use server'` functions:
 
 ```ts
 'use server'
 
-import { getI18n } from '@fluenti/next/__generated'
+import { t } from '@fluenti/react'
 
 export async function greetAction(): Promise<string> {
-  const i18n = await getI18n()
   return t`Hello from server action`
 }
 ```
@@ -299,8 +304,10 @@ Server utility (imported from `@fluenti/next/server`). Executes `fn` with a temp
 | `FluentProvider` | Async server component for layouts |
 | `setLocale(locale)` | Set the request-scoped locale |
 | `getI18n()` | Get the i18n instance (async) |
+| `t` | Compile-time translation API, preserved for advanced/server-specific imports |
 | `Trans` | Server component for rich text |
 | `Plural` | Server component for plurals |
+| `Select` | Server component for categorical selection |
 | `DateTime` | Server component for date formatting |
 | `NumberFormat` | Server component for number formatting |
 

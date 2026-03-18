@@ -193,7 +193,7 @@ npx fluenti compile
 ## Key Behavioral Differences
 
 1. **No runtime parser** — messages are compiled at build time, so syntax errors are caught early
-2. **No lazy locale loading by default** — use `loadMessages` callback with code splitting for dynamic loading
+2. **No lazy locale loading by default** — use `lazyLocaleLoading: true` with a `chunkLoader` for dynamic locale chunks
 3. **No global `$t`** — use `useI18n()` composable or `v-t` directive
 4. **ICU MessageFormat** — standard plural/select/number/date formatting, not custom vue-i18n syntax
 5. **PO file support** — compatible with professional translation tools (Poedit, Crowdin, Weblate)

@@ -72,13 +72,11 @@ test.describe('Build output verification', () => {
   test('compiled locale catalogs are separate chunks', () => {
     const files = readdirSync(ASSETS_DIR)
 
-    // Default locale (en) should be a separate chunk (statically imported)
+    // Default locale stays in the initial graph; only non-default locales are lazy chunks
     const enChunk = files.find((f) => f.startsWith('en-') && f.endsWith('.js'))
-    expect(enChunk).toBeDefined()
-    const enCode = readFileSync(resolve(ASSETS_DIR, enChunk!), 'utf-8')
-    expect(enCode).toContain('Welcome to Fluenti')
+    expect(enChunk).toBeUndefined()
 
-    // Japanese locale should also be a separate chunk (dynamically imported)
+    // Japanese locale should be emitted as a separate dynamically loaded chunk
     const jaChunk = files.find((f) => f.startsWith('ja-') && f.endsWith('.js'))
     expect(jaChunk).toBeDefined()
   })
@@ -211,7 +209,7 @@ test.describe('React splitting — runtime', () => {
     await expect(page.getByTestId('welcome')).toContainText('Welcome to Fluenti')
 
     // No additional chunk requests should be made (English is the default locale, already loaded)
-    expect(requestsAfterSwitch.filter((u) => u.includes('en.'))).toHaveLength(0)
+    expect(requestsAfterSwitch.filter((u) => u.includes('/en-'))).toHaveLength(0)
   })
 
   test('locale switching persists across route navigation', async ({ page }) => {

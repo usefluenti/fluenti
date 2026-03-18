@@ -15,8 +15,8 @@ export default async function RSCPage({
 
   return (
     <div data-testid="rsc-page">
-      <h1 data-testid="rsc-title">{t`Server rendered`}</h1>
-      <p data-testid="rsc-desc">{t`This page is a React Server Component.`}</p>
+      <h1 data-testid="rsc-title">{i18n.t('Server rendered')}</h1>
+      <p data-testid="rsc-desc">{i18n.t('This page is a React Server Component.')}</p>
       <p data-testid="rsc-locale">{i18n.t('Current server locale: {locale}', { locale: i18n.locale })}</p>
     </div>
   )

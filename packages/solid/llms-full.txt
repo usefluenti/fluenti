@@ -1,230 +1,191 @@
 # @fluenti/solid
 
-> SolidJS bindings for Fluenti — compile-time i18n with signals-based reactivity.
+> SolidJS bindings for Fluenti — compile-time `t`, runtime-capable components, and signal-based locale switching.
 
-## Overview
+@fluenti/solid is the Solid runtime layer for Fluenti. It supports:
 
-@fluenti/solid provides SolidJS components, hooks, and context for internationalization. It uses SolidJS signals for reactive locale switching — any computation that calls `t()` will automatically re-run when the locale changes. Built on @fluenti/core.
+- compile-time authoring with `import { t } from '@fluenti/solid'`
+- runtime lookup and imperative APIs through `useI18n()`
+- signal-driven locale reactivity
+- runtime-capable components that keep working without the build plugin
 
-- Package: @fluenti/solid
-- Docs: https://fluenti.dev
-- Repository: https://github.com/usefluenti/fluenti/tree/main/packages/solid
-- Peer dependency: solid-js ^1.8
-- Dependency: @fluenti/core
-- License: MIT
-
-## Installation
+## Install
 
 ```bash
 pnpm add @fluenti/core @fluenti/solid @fluenti/vite-plugin
 ```
 
-## Exports
+## Public Exports
 
-### createI18n(config)
+- `createI18n`
+- `createI18nContext`
+- `I18nProvider`
+- `I18nCtx`
+- `useI18n`
+- `t`
+- `Trans`
+- `Plural`
+- `Select`
+- `DateTime`
+- `NumberFormat`
+- `msg`
 
-Initialize the global i18n singleton. Call once at app startup before any `useI18n()`. Signals are created inside a `createRoot` so they outlive any component scope.
+Types:
 
-In browser environments, sets the global singleton automatically. In SSR, logs a warning recommending `<I18nProvider>` for per-request isolation (but still sets the global as a fallback).
+- `I18nContext`
+- `I18nConfig`
+- `TransProps`
+- `PluralProps`
+- `SelectProps`
 
-Config accepts FluentConfig or I18nConfig (extended):
-- locale (string, required): Initial locale
-- fallbackLocale (string, optional): Fallback when translation missing
-- messages (Record<string, Messages>, optional): Static message catalogs
-- missing ((locale, id) => string | undefined, optional): Missing key handler
+## Context model
 
-I18nConfig extensions:
-- chunkLoader ((locale: string) => Promise<Record<string, CompiledMessage>>, optional): Async chunk loader for code-splitting
-- splitting (boolean, optional): Enable code-splitting mode
-- dateFormats (DateFormatOptions, optional): Named date format styles
-- numberFormats (NumberFormatOptions, optional): Named number format styles
+### `createI18n(config)`
 
-Returns I18nContext.
+Creates an app-level singleton context, intended for SPA startup code.
 
-### createI18nContext(config)
+### `createI18nContext(config)`
 
-Create a reactive i18n context backed by Solid signals. Unlike `createI18n()`, does not wrap in `createRoot` and does not set the global singleton. Used internally by I18nProvider, and useful for per-component contexts.
+Creates an isolated reactive context without registering a global singleton.
 
-Accepts same config as createI18n(). Returns I18nContext.
+### `I18nProvider`
 
-### I18nProvider
+Creates and provides the nearest Solid context boundary for its subtree.
 
-Component providing i18n context to the component tree. Also registers the context as the global singleton so `useI18n()` works in child components rendered outside the tree (e.g. portals).
+### `useI18n()`
 
-Props: Same as I18nConfig (locale, fallbackLocale, messages, chunkLoader, splitting, dateFormats, numberFormats, missing).
+Resolution order:
 
-```tsx
-<I18nProvider locale="en" fallbackLocale="en" messages={{ en, ja }}>
-  <App />
-</I18nProvider>
-```
+1. nearest `<I18nProvider>`
+2. singleton created by `createI18n()`
 
-Or with a pre-created context:
+This is the public runtime API for translations, locale switching, and formatting.
 
-```tsx
-const i18n = createI18n({ locale: 'en', messages: { en } })
-render(() => (
-  <I18nProvider i18n={i18n}>
-    <App />
-  </I18nProvider>
-), root)
-```
-
-### useI18n()
-
-Access the i18n context. Resolution order:
-1. Module-level singleton created by `createI18n()`
-2. Nearest `<I18nProvider>` in the component tree
-
-Throws if neither is available.
-
-Returns I18nContext:
-- locale(): Reactive accessor (Solid signal) for current locale
-- setLocale(locale: string): Promise<void> — Set active locale. Synchronous when splitting is disabled; async when splitting is enabled and the locale hasn't been loaded yet.
-- t(id: string | MessageDescriptor, values?: Record<string, unknown>): string — Translate a message. Reads the locale() signal for reactivity. Supports both string IDs and MessageDescriptor objects with id/message fields.
-- d(value: Date | number, style?: string): string — Format a date using Intl.DateTimeFormat via @fluenti/core's formatDate
-- n(value: number, style?: string): string — Format a number using Intl.NumberFormat via @fluenti/core's formatNumber
-- format(message: string, values?: Record<string, unknown>): string — Format an ICU message string directly (no catalog lookup)
-- tRaw(message, values?) — Deprecated, use format() instead
-- loadMessages(locale: string, messages: Messages): void — Merge additional messages into a locale catalog at runtime
-- getLocales(): string[] — Return all locale codes that have loaded messages
-- isLoading: Accessor<boolean> — Whether a locale chunk is currently being loaded
-- loadedLocales: Accessor<Set<string>> — Set of locales whose messages have been loaded
-- preloadLocale(locale: string): void — Preload a locale in the background without switching to it. Silent failure on error.
-
-### Components
-
-**Trans**: Rich text with JSX element interpolation.
-```tsx
-<Trans>Read the <a href="/docs">documentation</a></Trans>
-```
-
-**Plural**: Locale-aware pluralization. Supports both string props and rich text via JSX element props.
-```tsx
-<Plural value={count} zero="No items" one="1 item" other="{count} items" />
-
-<Plural
-  value={count}
-  zero={<>No <strong>items</strong> left</>}
-  one={<><em>1</em> item remaining</>}
-  other={<><strong>{count}</strong> items remaining</>}
-/>
-```
-
-**Select**: Categorical value selection (gender, role, etc.). Supports string props and rich text via options object.
-```tsx
-<Select value={gender} male="He" female="She" other="They" />
-
-<Select
-  value={gender}
-  options={{
-    male: <><strong>He</strong> liked this</>,
-    female: <><strong>She</strong> liked this</>,
-  }}
-  other={<><em>They</em> liked this</>}
-/>
-```
-
-**DateTime**: Date formatting component.
-
-**NumberFormat**: Number formatting component.
-
-### msg
-
-Lazy message descriptor (re-exported from @fluenti/core). For use outside the component tree where auto-injection cannot work.
-
-### Exported Types
-
-- I18nContext: The reactive context interface
-- I18nConfig: Extended config with splitting/chunk loader support
-- TransProps
-- PluralProps
-- SelectProps
-
-## Vite Plugin Setup
-
-```ts
-// vite.config.ts
-import solidPlugin from 'vite-plugin-solid'
-import fluenti from '@fluenti/vite-plugin'
-
-export default {
-  plugins: [solidPlugin(), fluenti({ framework: 'solid' })],
-}
-```
-
-## Full Example
+## Example
 
 ```tsx
-// index.tsx
 import { render } from 'solid-js/web'
-import { I18nProvider, createI18n } from '@fluenti/solid'
-import App from './App'
+import { I18nProvider, useI18n, t } from '@fluenti/solid'
 
-const i18n = createI18n({
-  locale: 'en',
-  fallbackLocale: 'en',
-  messages: { en, ja },
-})
-
-render(
-  () => (
-    <I18nProvider i18n={i18n}>
-      <App />
-    </I18nProvider>
-  ),
-  document.getElementById('root')!,
-)
-```
-
-```tsx
-// App.tsx
-import { useI18n, Trans, Plural, Select } from '@fluenti/solid'
-
-function App() {
-  const { t, d, n, locale, setLocale } = useI18n()
+function Greeting() {
+  const name = 'Fluenti'
+  const headline = t`Hello ${name}`
+  const { setLocale, preloadLocale } = useI18n()
 
   return (
-    <div>
-      <p>{t('Hello, {name}!', { name: 'World' })}</p>
-      <p>{d(new Date(), 'long')}</p>
-      <p>{n(1234.5, 'currency')}</p>
-
-      <Trans>Read the <a href="/docs">documentation</a></Trans>
-
-      <Plural value={5} one="# item" other="# items" />
-
-      <Select value="male" male="He" female="She" other="They" />
-
-      <button onClick={() => setLocale('ja')}>Japanese</button>
-    </div>
+    <>
+      <h1>{headline}</h1>
+      <button onMouseEnter={() => preloadLocale('ja')} onClick={() => void setLocale('ja')}>
+        日本語
+      </button>
+    </>
   )
+}
+
+render(() => (
+  <I18nProvider locale="en" messages={{ en, ja }}>
+    <Greeting />
+  </I18nProvider>
+), document.getElementById('root')!)
+```
+
+## `I18nConfig`
+
+`I18nConfig` extends the core config with Solid-specific lazy-loading support:
+
+```ts
+{
+  locale: 'en',
+  messages: { en },
+  fallbackLocale: 'en',
+  fallbackChain: { ja: ['en'] },
+  lazyLocaleLoading: true,
+  chunkLoader: (locale) => import(`./locales/compiled/${locale}.js`),
+  dateFormats: { short: { dateStyle: 'medium' } },
+  numberFormats: { currency: { style: 'currency', currency: 'USD' } },
 }
 ```
 
-## Code-Splitting Support
+Fields added on top of the core runtime:
 
-@fluenti/solid supports lazy-loading locale chunks:
+- `lazyLocaleLoading?: boolean`
+- `chunkLoader?: (locale) => Promise<Messages | { default: Messages }>`
+- `fallbackChain?`
+- `dateFormats?`
+- `numberFormats?`
+
+## `useI18n()` return shape
+
+- `locale(): string`
+- `setLocale(locale): Promise<void>`
+- `t(idOrDescriptor, values?)`
+- tagged-template `t\`\``
+- `d(value, style?)`
+- `n(value, style?)`
+- `format(message, values?)`
+- `loadMessages(locale, messages)`
+- `getLocales()`
+- `isLoading()`
+- `loadedLocales()`
+- `preloadLocale(locale)`
+
+Any reactive computation that reads `t()` re-runs when `locale()` changes.
+
+## Compile-time `t`
+
+Imported `t` is compile-time only:
+
+```ts
+import { t } from '@fluenti/solid'
+
+const title = t`Hello ${name}`
+const label = t({ message: 'Hello {name}', context: 'home.hero' }, { name })
+```
+
+Use `useI18n().t()` for runtime lookup by ID or other imperative scenarios.
+
+If imported `t` runs at runtime without the build plugin, it throws a clear error.
+
+## Runtime-capable components
+
+These components continue to work without the build plugin:
+
+- `Trans`
+- `Plural`
+- `Select`
+- `DateTime`
+- `NumberFormat`
+
+Cross-framework contract highlights:
+
+- `Plural` supports `id`, `context`, `comment`, and `offset`
+- `zero` maps to exact `=0`
+- `#` uses the adjusted count
+- `Select` supports `options`, which take precedence over direct case props
+
+## Lazy locale loading
 
 ```tsx
 const i18n = createI18n({
   locale: 'en',
   messages: { en },
-  splitting: true,
-  chunkLoader: (locale) => import(`./locales/compiled/${locale}.js`).then(m => m.default),
+  lazyLocaleLoading: true,
+  chunkLoader: (locale) => import(`./locales/compiled/${locale}.js`),
 })
 ```
 
-When `splitting` is enabled:
-- `setLocale()` becomes async: it loads the chunk before switching
-- `isLoading` signal reflects the loading state
-- `preloadLocale()` can prefetch locales in the background
-- `loadedLocales` tracks which locales are available
+Behavior:
 
-## Internal Details
+- default locale can be loaded eagerly
+- additional locales load on demand
+- `setLocale()` becomes async when a chunk must be fetched
+- `preloadLocale()` fetches a locale without switching
 
-- `getGlobalI18nContext()` and `setGlobalI18nContext()` are internal functions used by useI18n and I18nProvider to manage the module-level singleton
-- `resetGlobalI18nContext()` is an internal function for testing only
-- The `I18nCtx` Solid context object is exported for advanced use cases
-- Translation resolution falls back to the fallbackLocale, then the missing handler, then returns the message ID as-is
-- The `t()` function reads the `locale()` signal, making all translations reactive — when locale changes via `setLocale()`, all components using `t()` automatically re-render
+## Build plugin relationship
+
+`@fluenti/solid` is the runtime layer. `@fluenti/vite-plugin` provides compile-time transforms for:
+
+- direct-import `t`
+- JSX component optimizations
+
+The component layer remains runtime-correct without the plugin.

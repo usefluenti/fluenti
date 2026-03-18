@@ -1,63 +1,41 @@
 # @fluenti/solid
 
-> SolidJS bindings for Fluenti — compile-time i18n with signals-based reactivity.
+> SolidJS bindings for Fluenti — compile-time `t`, runtime-capable components, and signal-based locale switching.
 
-## Overview
+@fluenti/solid provides Solid-specific runtime APIs for Fluenti. The recommended public path is:
 
-@fluenti/solid provides SolidJS components, hooks, and context for internationalization. It uses SolidJS signals for reactive locale switching. Built on @fluenti/core.
+- compile-time authoring: `import { t } from '@fluenti/solid'`
+- runtime / imperative access: `useI18n()`
+- runtime-capable components: `Trans`, `Plural`, `Select`, `DateTime`, `NumberFormat`
 
-- Package: @fluenti/solid
-- Docs: https://fluenti.dev
-- Repository: https://github.com/usefluenti/fluenti/tree/main/packages/solid
-- Peer dependency: solid-js ^1.8
-- License: MIT
+## Install
 
-## Exports
-
-- createI18n(config): Global singleton (createRoot-wrapped), call once at app startup
-- createI18nContext(config): Per-component context backed by Solid signals
-- I18nProvider: Component providing i18n context to the tree (also sets global singleton)
-- useI18n(): Hook returning I18nContext (resolves global singleton first, then nearest provider)
-- Trans: Rich text with JSX component interpolation
-- Plural: Locale-aware pluralization
-- Select: Categorical value selection
-- DateTime: Date formatting
-- NumberFormat: Number formatting
-- msg: Lazy message descriptor
-
-## Quick Start
-
-```tsx
-import { I18nProvider, createI18n, useI18n, Trans, Plural } from '@fluenti/solid'
-
-const i18n = createI18n({
-  locale: 'en',
-  fallbackLocale: 'en',
-  messages: { en, ja },
-})
-
-render(() => (
-  <I18nProvider i18n={i18n}>
-    <App />
-  </I18nProvider>
-), document.getElementById('root')!)
-
-function Greeting() {
-  const { t, d, n, locale, setLocale } = useI18n()
-  return <p>{t('Hello, {name}!', { name: 'World' })}</p>
-}
+```bash
+pnpm add @fluenti/core @fluenti/solid @fluenti/vite-plugin
 ```
 
-## useI18n() Return Value (I18nContext)
+## Main Exports
 
-- locale(): Reactive accessor for current locale
-- setLocale(locale): Set active locale (async when splitting enabled)
-- t(id, values?): Translate a message (supports string or MessageDescriptor)
-- d(value, style?): Format a date
-- n(value, style?): Format a number
-- format(message, values?): Format an ICU message string directly
-- loadMessages(locale, messages): Merge additional messages at runtime
-- getLocales(): Return all locale codes with loaded messages
-- isLoading: Accessor<boolean> for chunk loading state
-- loadedLocales: Accessor<Set<string>> of loaded locales
-- preloadLocale(locale): Preload a locale in the background
+- `createI18n(config)` — app-level singleton bootstrap
+- `createI18nContext(config)` — explicit context factory
+- `I18nProvider` — provider component
+- `useI18n()` — access the nearest provider or fallback singleton
+- `t` — compile-time-only authoring API
+- `Trans`, `Plural`, `Select`, `DateTime`, `NumberFormat`
+- `msg`
+
+## Config Extensions
+
+- `lazyLocaleLoading?: boolean`
+- `chunkLoader?: (locale) => Promise<Messages | { default: Messages }>`
+
+## Important Boundaries
+
+- imported `t` is compile-time only and requires the Fluenti Vite plugin
+- `useI18n().t()` is the full runtime API
+- `Trans / Plural / Select / DateTime / NumberFormat` remain runtime-capable without the build plugin
+
+## Docs
+
+- Full docs: https://fluenti.dev
+- Source: https://github.com/usefluenti/fluenti

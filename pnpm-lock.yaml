@@ -402,6 +402,28 @@ importers:
         specifier: ^2
         version: 2.11.11(solid-js@1.9.11)(vite@8.0.0(@types/node@24.12.0)(esbuild@0.27.4)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))
 
+  e2e/fixtures/solid-splitting:
+    dependencies:
+      '@fluenti/solid':
+        specifier: workspace:*
+        version: link:../../../packages/solid
+      '@fluenti/vite-plugin':
+        specifier: workspace:*
+        version: link:../../../packages/vite-plugin
+      solid-js:
+        specifier: ^1.8
+        version: 1.9.11
+    devDependencies:
+      typescript:
+        specifier: ^5.9
+        version: 5.9.3
+      vite:
+        specifier: ^8
+        version: 8.0.0(@types/node@24.12.0)(esbuild@0.27.4)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)
+      vite-plugin-solid:
+        specifier: ^2
+        version: 2.11.11(solid-js@1.9.11)(vite@8.0.0(@types/node@24.12.0)(esbuild@0.27.4)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))
+
   e2e/fixtures/vue-i18n-bridge:
     dependencies:
       '@fluenti/core':
@@ -419,6 +441,25 @@ importers:
       vue-i18n:
         specifier: ^10
         version: 10.0.8(vue@3.5.30(typescript@5.9.3))
+    devDependencies:
+      '@vitejs/plugin-vue':
+        specifier: ^6
+        version: 6.0.5(vite@8.0.0(@types/node@24.12.0)(esbuild@0.27.4)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))(vue@3.5.30(typescript@5.9.3))
+      typescript:
+        specifier: ^5.9
+        version: 5.9.3
+      vite:
+        specifier: ^8
+        version: 8.0.0(@types/node@24.12.0)(esbuild@0.27.4)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)
+
+  e2e/fixtures/vue-no-plugin:
+    dependencies:
+      '@fluenti/vue':
+        specifier: workspace:*
+        version: link:../../../packages/vue
+      vue:
+        specifier: ^3.5
+        version: 3.5.30(typescript@5.9.3)
     devDependencies:
       '@vitejs/plugin-vue':
         specifier: ^6
@@ -466,6 +507,9 @@ importers:
       '@fluenti/vite-plugin':
         specifier: workspace:*
         version: link:../../../packages/vite-plugin
+      '@fluenti/vue':
+        specifier: workspace:*
+        version: link:../../../packages/vue
       vue:
         specifier: ^3.5
         version: 3.5.30(typescript@5.9.3)
@@ -793,9 +837,12 @@ importers:
 
   packages/core:
     dependencies:
-      acorn:
-        specifier: ^8.16.0
-        version: 8.16.0
+      '@babel/generator':
+        specifier: ^7.29.1
+        version: 7.29.1
+      '@babel/parser':
+        specifier: ^7.28.4
+        version: 7.29.0
     devDependencies:
       '@vitest/coverage-v8':
         specifier: ^4
@@ -871,6 +918,9 @@ importers:
         specifier: ^3.0.0
         version: 3.21.2(magicast@0.5.2)
     devDependencies:
+      '@vitest/coverage-v8':
+        specifier: ^4
+        version: 4.1.0(vitest@4.1.0(@types/node@24.12.0)(happy-dom@20.8.4)(vite@8.0.0(@types/node@24.12.0)(esbuild@0.27.4)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)))
       nuxt:
         specifier: ^3.17
         version: 3.21.2(@parcel/watcher@2.5.6)(@types/node@24.12.0)(@vue/compiler-sfc@3.5.30)(cac@6.7.14)(db0@0.3.4)(ioredis@5.10.0)(lightningcss@1.32.0)(magicast@0.5.2)(oxlint@1.55.0)(rolldown@1.0.0-rc.9)(rollup-plugin-visualizer@6.0.11(rolldown@1.0.0-rc.9)(rollup@4.59.0))(rollup@4.59.0)(terser@5.46.0)(tsx@4.21.0)(typescript@5.9.3)(vite@8.0.0(@types/node@24.12.0)(esbuild@0.27.4)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))(vue-tsc@3.2.5(typescript@5.9.3))(yaml@2.8.2)
@@ -1032,6 +1082,9 @@ importers:
         specifier: workspace:*
         version: link:../vue
     devDependencies:
+      '@vitest/coverage-v8':
+        specifier: ^4
+        version: 4.1.0(vitest@4.1.0(@types/node@24.12.0)(happy-dom@20.8.4)(vite@8.0.0(@types/node@24.12.0)(esbuild@0.27.4)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)))
       '@vue/test-utils':
         specifier: ^2
         version: 2.4.6

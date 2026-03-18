@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "jsx": "react-jsx"
+  },
+  "include": [
+    "./react-quick-start.tsx",
+    "./react-code-splitting.tsx",
+    "./next-client-authoring.tsx",
+    "./next-server-authoring.tsx",
+    "./without-build-plugin-react.tsx"
+  ]
+}

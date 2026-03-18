@@ -42,6 +42,28 @@ describe('Select component', () => {
 
       expect(container.textContent).toBe('Fallback')
     })
+
+    it('uses catalog translation for string options', () => {
+      const { container } = render(() => (
+        <I18nProvider
+          locale="ja"
+          messages={{
+            ja: {
+              '{value, select, male {He liked it} female {She liked it} other {They liked it}}':
+                '{value, select, male {彼が気に入りました} female {彼女が気に入りました} other {その人が気に入りました}}',
+            },
+          }}
+        >
+          <Select
+            value="male"
+            options={{ male: 'He liked it', female: 'She liked it' }}
+            other="They liked it"
+          />
+        </I18nProvider>
+      ))
+
+      expect(container.textContent).toBe('彼が気に入りました')
+    })
   })
 
   describe('attrs-based API (backwards compatible)', () => {
@@ -267,6 +289,31 @@ describe('Select component', () => {
       ))
 
       expect(container.querySelector('strong')?.textContent).toBe('He')
+    })
+
+    it('translates rich JSX options without the build plugin', () => {
+      const { container } = render(() => (
+        <I18nProvider
+          locale="ja"
+          messages={{
+            ja: {
+              '{value, select, male {<0>He</0> liked this} other {<1>They</1> liked this}}':
+                '{value, select, male {<0>彼</0>が気に入りました} other {<1>その人</1>が気に入りました}}',
+            },
+          }}
+        >
+          <Select
+            value="male"
+            options={{
+              male: [<strong>He</strong>, ' liked this'],
+            }}
+            other={[<em>They</em>, ' liked this']}
+          />
+        </I18nProvider>
+      ))
+
+      expect(container.textContent).toBe('彼が気に入りました')
+      expect(container.querySelector('strong')?.textContent).toBe('彼')
     })
   })
 })

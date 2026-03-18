@@ -13,6 +13,8 @@ export interface TransProps {
   children: ReactNode
   /** Override auto-generated hash ID */
   id?: string
+  /** Message context used for identity and translator disambiguation */
+  context?: string
   /** Context comment for translators */
   comment?: string
   /** Custom render wrapper */
@@ -36,6 +38,8 @@ export interface TransProps {
 export const Trans = memo(function Trans({
   children,
   id,
+  context,
+  comment,
   render,
   __id,
   __message,
@@ -56,13 +60,17 @@ export const Trans = memo(function Trans({
     [hasPrecomputed, __message, __components, children],
   )
   const messageId = useMemo(
-    () => id ?? __id ?? hashMessage(message),
-    [id, __id, message],
+    () => id ?? __id ?? hashMessage(message, context),
+    [id, __id, message, context],
   )
 
-  // Look up translation; fall back to source message
   const translated = ctx.i18n.t(
-    { id: messageId, message },
+    {
+      id: messageId,
+      message,
+      ...(context !== undefined ? { context } : {}),
+      ...(comment !== undefined ? { comment } : {}),
+    },
   )
 
   const result = reconstruct(translated, components)

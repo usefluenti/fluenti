@@ -1,0 +1,18 @@
+{
+  "name": "e2e-vue-no-plugin",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@fluenti/vue": "workspace:*",
+    "vue": "^3.5"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^6",
+    "typescript": "^5.9",
+    "vite": "^8"
+  }
+}

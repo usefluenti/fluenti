@@ -1,6 +1,4 @@
 export interface FluentiPluginOptions {
-  /** Path to fluenti config file */
-  configPath?: string
   /** Framework mode: 'vue' | 'solid' | 'react' | 'auto' */
   framework?: 'vue' | 'solid' | 'react' | 'auto'
   /** Directory containing compiled message catalogs */
@@ -9,8 +7,8 @@ export interface FluentiPluginOptions {
   sourceLocale?: string
   /** Available locales */
   locales?: string[]
-  /** Code splitting strategy: 'dynamic' (reactive catalog), 'static' (direct imports), 'per-route' (automatic route-level splitting), false (off) */
-  splitting?: 'dynamic' | 'static' | 'per-route' | false
+  /** Code splitting strategy: 'dynamic' (reactive catalog), 'static' (direct imports), false (off) */
+  splitting?: 'dynamic' | 'static' | false
   /** Default locale for build-time static strategy */
   defaultBuildLocale?: string
 }

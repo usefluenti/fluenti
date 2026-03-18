@@ -80,14 +80,33 @@ function MyComponent() {
 | `loadedLocales` | `string[]` | Array of loaded locale codes |
 | `preloadLocale` | `(locale) => Promise<void>` | Preload a locale without switching |
 
-### `t(message, values?)`
+## `t` (compile-time import)
 
-Translate a message. O(1) hash lookup — safe to call directly in JSX without `useMemo`.
-
-`t` supports two calling styles:
+`import { t } from '@fluenti/react'` is the primary compile-time translation API.
 
 ```tsx
-// Function call — explicit ID and values
+import { t } from '@fluenti/react'
+
+function Hero({ name }: { name: string }) {
+  return <h1>{t`Hello ${name}`}</h1>
+}
+```
+
+Supported forms:
+
+- `` t`Hello ${name}` ``
+- `t({ message: 'Hello {name}', context: 'hero' }, { name })`
+
+`imported t` is not a runtime lookup API. It does not support `t('message.id')`. Use `useI18n().t()` when you need ID lookup, imperative access, or the full runtime surface.
+
+Without the Fluenti build plugin or Next loader, imported `t` throws at runtime. The runtime-capable fallback APIs are `useI18n().t()` and the translation components below.
+
+### `useI18n().t(messageOrId, values?)`
+
+`useI18n().t()` is the runtime lookup API. It supports plain message strings, explicit IDs, descriptors, and tagged-template usage on the hook binding:
+
+```tsx
+// Function call — explicit message or id
 t('Welcome to my app')
 t('Hello, {name}!', { name: 'World' })
 t('You have {count} items', { count: 5 })
@@ -97,7 +116,7 @@ t`Welcome to my app`
 t`Hello ${name}, you have ${count} items`
 ```
 
-The Vite plugin (or Next.js loader) uses AST scope analysis to detect `t` from `useI18n()` bindings and transforms tagged templates at build time.
+The Vite plugin (or Next.js loader) keeps `useI18n().t()` as the runtime API. For compile-time syntax, prefer the direct-import `t` export.
 
 ### `d(value, style?)`
 
@@ -143,11 +162,16 @@ The component extracts text content as the source message (e.g., `Click <0>here<
 | Prop | Type | Description |
 |------|------|-------------|
 | `children` | `ReactNode` | Source-language content with HTML elements |
-| `tag` | `string?` | Wrapper element (default: `'span'`) |
+| `id` | `string?` | Override the auto-generated message ID |
+| `context` | `string?` | Message context used for identity and translator disambiguation |
+| `comment` | `string?` | Translator-facing comment preserved in extraction output |
+| `render` | `(translation) => ReactNode` | Custom render wrapper |
 
 :::tip[Compile-time optimization]
 When using `@fluenti/vite-plugin` or `@fluenti/next`, the build plugin automatically pre-computes the message ID and extraction from `<Trans>` children. This eliminates the runtime `extractMessage()` and `hashMessage()` cost. No code changes needed — the optimization is transparent.
 :::
+
+`Trans` still works without the build plugin. The plugin only skips runtime extraction work.
 
 ## `<Plural>`
 
@@ -166,6 +190,9 @@ Use `#` as a placeholder for the numeric value.
 | Prop | Type | Description |
 |------|------|-------------|
 | `value` | `number` | **(required)** The numeric value to pluralize on |
+| `id` | `string?` | Override the synthetic ICU message ID |
+| `context` | `string?` | Message context used for identity and translator disambiguation |
+| `comment` | `string?` | Translator-facing comment preserved in extraction output |
 | `zero` | `string?` | Exact zero match |
 | `one` | `string?` | CLDR "one" category |
 | `two` | `string?` | CLDR "two" category |
@@ -173,7 +200,8 @@ Use `#` as a placeholder for the numeric value.
 | `many` | `string?` | CLDR "many" category |
 | `other` | `string` | **(required)** Fallback for all other values |
 | `offset` | `number?` | Offset to subtract before selecting category |
-| `tag` | `string?` | Wrapper element (default: `'span'`) |
+
+`Plural` still works without the build plugin. Runtime rendering performs normal catalog lookup through a synthetic ICU plural message.
 
 ## `<Select>`
 
@@ -190,9 +218,14 @@ import { Select } from '@fluenti/react'
 | Prop | Type | Description |
 |------|------|-------------|
 | `value` | `string` | **(required)** The value to select on |
-| `other` | `string` | **(required)** Fallback when no match |
-| `tag` | `string?` | Wrapper element (default: `'span'`) |
-| `[key]` | `string` | Any additional props are treated as case options |
+| `id` | `string?` | Override the synthetic ICU message ID |
+| `context` | `string?` | Message context used for identity and translator disambiguation |
+| `comment` | `string?` | Translator-facing comment preserved in extraction output |
+| `options` | `Record<string, ReactNode>?` | Preferred named options map. Takes precedence over direct case props |
+| `other` | `ReactNode` | **(required)** Fallback when no match |
+| `[key]` | `ReactNode` | Any additional props are treated as case options |
+
+`Select` still works without the build plugin. Runtime rendering performs normal catalog lookup through a synthetic ICU select message and reconstructs rich content when present.
 
 ## `<DateTime>`
 
@@ -246,7 +279,7 @@ Create request-scoped i18n utilities. Uses `React.cache()` to isolate state per 
 ```ts
 import { createServerI18n } from '@fluenti/react/server'
 
-export const { setLocale, getI18n, Trans, Plural, DateTime, NumberFormat } = createServerI18n({
+export const { setLocale, getI18n, Trans, Plural, Select, DateTime, NumberFormat } = createServerI18n({
   loadMessages: (locale) => import(`../locales/compiled/${locale}.js`),
   fallbackLocale: 'en',
   resolveLocale: async () => {
@@ -279,6 +312,7 @@ export const { setLocale, getI18n, Trans, Plural, DateTime, NumberFormat } = cre
 | `getI18n` | `() => Promise<FluentInstanceExtended>` | Get the i18n instance |
 | `Trans` | async component | Rich text with component interpolation |
 | `Plural` | async component | Locale-aware pluralization |
+| `Select` | async component | Locale-aware categorical selection |
 | `DateTime` | async component | Date formatting |
 | `NumberFormat` | async component | Number formatting |
 
@@ -396,20 +430,6 @@ Re-exported from `@fluenti/core` for convenience:
 
 ---
 
-## Global Instance Registry
-
-For build-time transforms (Vite plugin and Next.js loader), Fluenti uses a global registry to access the i18n instance from module-level code. The `<I18nProvider>` sets the global instance on mount.
-
-```typescript
-import { getGlobalI18n, setGlobalI18n, clearGlobalI18n } from '@fluenti/react'
-
-getGlobalI18n()    // FluentInstanceExtended | undefined
-setGlobalI18n(i18n) // Set by <I18nProvider> on mount
-clearGlobalI18n()  // Clear (primarily for testing)
-```
-
-These are used internally by the build plugins. You rarely need to call them directly, but they are useful for testing or advanced integration scenarios.
-
 ## Reactivity
 
 React's re-render cycle handles reactivity automatically. When `setLocale()` is called:
@@ -422,11 +442,11 @@ Since `t()` is an O(1) hash lookup, calling it directly in JSX is efficient — 
 
 ## Vite Plugin Integration
 
-When using `@fluenti/vite-plugin` with `framework: 'react'`, the plugin uses AST scope analysis to detect `t` destructured from `useI18n()` and transforms tagged templates at build time:
+When using `@fluenti/vite-plugin` with `framework: 'react'`, the plugin uses AST scope analysis to detect direct-import `t` and transforms it at build time:
 
 ```tsx
-const { t } = useI18n()
-t`Hello ${name}` → __i18n.t('hash', { name })
+import { t } from '@fluenti/react'
+t`Hello ${name}` → t('Hello {name}', { name })
 ```
 
-Only `t` bindings from `useI18n()` are transformed — other variables named `t` are left untouched. Unlike Vue (`computed`) and Solid (`createMemo`), React uses direct calls since re-renders handle reactivity.
+Only Fluenti's imported `t` is transformed. Other variables named `t` are left untouched. Runtime lookup remains on `useI18n().t()`.

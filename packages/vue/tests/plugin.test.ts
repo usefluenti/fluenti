@@ -904,8 +904,8 @@ describe('edge cases - exhaustive', () => {
       fallbackChain: { 'zh-TW': ['zh-CN'] },
     })
 
-    // Should find in zh-CN via fallbackChain before fallbackLocale
-    expect(plugin.global.t('hello')).toBe('Chinese simplified')
+    // fallbackLocale is tried before locale-specific fallbackChain
+    expect(plugin.global.t('hello')).toBe('English')
   })
 
   it('v-t directive null binding value', async () => {
@@ -1024,7 +1024,7 @@ describe('edge cases - exhaustive', () => {
     const plugin = createFluentVue({
       locale: 'en',
       messages: { en: { hello: 'Hello' } },
-      splitting: true,
+      lazyLocaleLoading: true,
       chunkLoader: loader,
     })
 

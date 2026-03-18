@@ -6,7 +6,7 @@ function createSplitContext(chunkLoader: (locale: string) => Promise<Record<stri
   return createI18nContext({
     locale: 'en',
     messages: { en: { hello: 'Hello', bye: 'Goodbye' } },
-    splitting: true,
+    lazyLocaleLoading: true,
     chunkLoader,
   } as I18nConfig)
 }
@@ -104,6 +104,18 @@ describe('splitting mode', () => {
     await ctx.setLocale('fr')
 
     expect(loader).toHaveBeenCalledTimes(1)
+  })
+
+  it('accepts chunkLoader results shaped like dynamic import modules', async () => {
+    const loader = vi.fn().mockResolvedValue({
+      default: { hello: 'Bonjour', bye: 'Au revoir' },
+    })
+    const ctx = createSplitContext(loader)
+
+    await ctx.setLocale('fr')
+
+    expect(ctx.locale()).toBe('fr')
+    expect(ctx.t('hello')).toBe('Bonjour')
   })
 
   it('without splitting, setLocale is synchronous', async () => {

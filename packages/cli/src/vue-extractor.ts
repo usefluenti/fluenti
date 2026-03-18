@@ -1,6 +1,6 @@
 import type { ExtractedMessage } from '@fluenti/core'
 import { parse as parseSFC } from '@vue/compiler-sfc'
-import { hashMessage } from '@fluenti/core'
+import { createMessageId } from '@fluenti/core/internal'
 import { extractFromTsx } from './tsx-extractor'
 
 // Vue template AST node types
@@ -71,15 +71,18 @@ function buildPluralICUFromProps(props: Record<string, string>): string {
   const countVar = props['count'] ?? 'count'
   const categories = ['zero', 'one', 'two', 'few', 'many', 'other']
   const options: string[] = []
+  const offset = props['offset']
 
   for (const cat of categories) {
     if (props[cat] !== undefined) {
-      options.push(`${cat} {${props[cat]}}`)
+      const key = cat === 'zero' ? '=0' : cat
+      options.push(`${key} {${props[cat]}}`)
     }
   }
 
   if (options.length === 0) return ''
-  return `{${countVar}, plural, ${options.join(' ')}}`
+  const offsetPrefix = offset ? `offset:${offset} ` : ''
+  return `{${countVar}, plural, ${offsetPrefix}${options.join(' ')}}`
 }
 
 function walkTemplate(
@@ -110,7 +113,7 @@ function walkTemplate(
       if (isPlural) {
         const countVar = vtDirective.exp?.content ?? 'count'
         const message = buildPluralICUFromPipe(textContent, countVar)
-        const id = explicitId ?? hashMessage(message)
+        const id = explicitId ?? createMessageId(message)
         messages.push({
           id,
           message,
@@ -121,7 +124,7 @@ function walkTemplate(
           },
         })
       } else if (textContent) {
-        const id = explicitId ?? hashMessage(textContent)
+        const id = explicitId ?? createMessageId(textContent)
         messages.push({
           id,
           message: textContent,
@@ -141,14 +144,24 @@ function walkTemplate(
       const idProp = node.props?.find(
         (p) => p.type === ATTRIBUTE_PROP && getPropName(p) === 'id',
       )
+      const contextProp = node.props?.find(
+        (p) => p.type === ATTRIBUTE_PROP && getPropName(p) === 'context',
+      )
+      const commentProp = node.props?.find(
+        (p) => p.type === ATTRIBUTE_PROP && getPropName(p) === 'comment',
+      )
+      const context = contextProp?.value?.content
+      const comment = commentProp?.value?.content
 
       if (messageProp?.value) {
         // Old API: <Trans message="..." />
         const message = messageProp.value.content
-        const id = idProp?.value?.content ?? hashMessage(message)
+        const id = idProp?.value?.content ?? createMessageId(message, context)
         messages.push({
           id,
           message,
+          ...(context !== undefined ? { context } : {}),
+          ...(comment !== undefined ? { comment } : {}),
           origin: {
             file: filename,
             line: node.loc.start.line,
@@ -159,10 +172,12 @@ function walkTemplate(
         // New API: <Trans>content with <a>rich text</a></Trans>
         const richText = extractRichTextFromTemplateChildren(node.children)
         if (richText.message) {
-          const id = idProp?.value?.content ?? hashMessage(richText.message)
+          const id = idProp?.value?.content ?? createMessageId(richText.message, context)
           messages.push({
             id,
             message: richText.message,
+            ...(context !== undefined ? { context } : {}),
+            ...(comment !== undefined ? { comment } : {}),
             origin: {
               file: filename,
               line: node.loc.start.line,
@@ -176,6 +191,7 @@ function walkTemplate(
     if (node.tag === 'Plural') {
       const propsMap: Record<string, string> = {}
       let valueExpr: string | undefined
+      let offsetExpr: string | undefined
       for (const prop of node.props ?? []) {
         if (prop.type === ATTRIBUTE_PROP && prop.value) {
           propsMap[getPropName(prop)] = prop.value.content
@@ -184,13 +200,21 @@ function walkTemplate(
         if (prop.type === DIRECTIVE_PROP && getPropName(prop) === 'bind' && prop.arg?.content === 'value' && prop.exp) {
           valueExpr = prop.exp.content
         }
+        if (prop.type === DIRECTIVE_PROP && getPropName(prop) === 'bind' && prop.arg?.content === 'offset' && prop.exp) {
+          offsetExpr = prop.exp.content
+        }
       }
 
       // Use :value binding expression as count variable, fall back to 'count' static prop
       const countVar = valueExpr ?? propsMap['count'] ?? 'count'
-      const pluralMessage = buildPluralICUFromProps({ ...propsMap, count: countVar })
+      const offset = offsetExpr ?? propsMap['offset']
+      const pluralMessage = buildPluralICUFromProps({
+        ...propsMap,
+        count: countVar,
+        ...(offset !== undefined ? { offset } : {}),
+      })
       if (pluralMessage) {
-        const id = propsMap['id'] ?? hashMessage(pluralMessage)
+        const id = propsMap['id'] ?? createMessageId(pluralMessage)
         messages.push({
           id,
           message: pluralMessage,
@@ -241,6 +265,36 @@ function getPropName(prop: TemplateProp): string {
   return prop.name.content
 }
 
+function extractTemplateInterpolations(
+  content: string,
+  filename: string,
+): ExtractedMessage[] {
+  const messages: ExtractedMessage[] = []
+  const interpolationRegex = /\{\{([\s\S]*?)\}\}/g
+  let match: RegExpExecArray | null
+
+  while ((match = interpolationRegex.exec(content)) !== null) {
+    const expression = match[1]?.trim()
+    if (!expression) continue
+
+    const extracted = extractFromTsx(expression, filename)
+    if (extracted.length === 0) continue
+
+    const lineOffset = content.slice(0, match.index).split('\n').length - 1
+    for (const msg of extracted) {
+      messages.push({
+        ...msg,
+        origin: {
+          ...msg.origin,
+          line: msg.origin.line + lineOffset,
+        },
+      })
+    }
+  }
+
+  return messages
+}
+
 /** Extract messages from Vue SFC files */
 export function extractFromVue(code: string, filename: string): ExtractedMessage[] {
   const messages: ExtractedMessage[] = []
@@ -259,6 +313,19 @@ export function extractFromVue(code: string, filename: string): ExtractedMessage
     const lineOffset = templateLoc.start.line - 1
     const existingIds = new Set(messages.map((m) => m.id))
     for (const msg of templateMessages) {
+      if (!existingIds.has(msg.id)) {
+        messages.push({
+          ...msg,
+          origin: {
+            ...msg.origin,
+            line: msg.origin.line + lineOffset,
+          },
+        })
+      }
+    }
+
+    const interpolationMessages = extractTemplateInterpolations(descriptor.template.content, filename)
+    for (const msg of interpolationMessages) {
       if (!existingIds.has(msg.id)) {
         messages.push({
           ...msg,

@@ -49,13 +49,31 @@ describe('Plural', () => {
       </I18nProvider>,
     )
     // offset=1, value=3, adjustedValue=2, so uses "other" form
-    // # is replaced with the original value (3)
-    expect(screen.getByText('3 other people')).toBeDefined()
+    // # is replaced with the adjusted value (2)
+    expect(screen.getByText('2 other people')).toBeDefined()
   })
 
   it('throws if used outside Provider', () => {
     expect(() =>
       render(<Plural value={1} other="items" />),
     ).toThrow('<Plural> must be used within an <I18nProvider>')
+  })
+
+  it('uses catalog translation for synthetic ICU plural messages', () => {
+    render(
+      <I18nProvider
+        locale="ja"
+        messages={{
+          ja: {
+            '{count, plural, =0 {No apples} one {# apple} other {# apples}}':
+              '{count, plural, =0 {りんごなし} one {りんご # 個} other {りんご # 個}}',
+          },
+        }}
+      >
+        <Plural value={5} zero="No apples" one="# apple" other="# apples" />
+      </I18nProvider>,
+    )
+
+    expect(screen.getByText('りんご 5 個')).toBeDefined()
   })
 })

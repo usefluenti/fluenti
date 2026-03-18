@@ -118,7 +118,7 @@ const { t, d, n, format, locale, setLocale, isLoading } = useI18n()
 | `n` | `(value: number, style?) => string` | Format a number using named presets or Intl defaults |
 | `format` | `(message: string, values?) => string` | Format an ICU message string directly (no catalog lookup) |
 | `locale` | `Accessor<string>` | Reactive signal for the current locale |
-| `setLocale` | `(locale: string) => Promise<void>` | Change locale (async when code splitting is enabled) |
+| `setLocale` | `(locale: string) => Promise<void>` | Change locale (async when lazy locale loading is enabled) |
 | `loadMessages` | `(locale: string, messages) => void` | Merge additional messages into a locale catalog at runtime |
 | `getLocales` | `() => string[]` | List all locales that have loaded messages |
 | `preloadLocale` | `(locale: string) => void` | Preload a locale chunk in the background without switching |
@@ -249,10 +249,10 @@ import { NumberFormat } from '@fluenti/solid'
 Load locale messages on demand instead of bundling everything upfront:
 
 ```tsx
-<I18nProvider
+  <I18nProvider
   locale="en"
   messages={{ en }}
-  splitting
+  lazyLocaleLoading
   chunkLoader={(locale) => import(`./locales/compiled/${locale}.js`)}
 >
   <App />

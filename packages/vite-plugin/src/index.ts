@@ -9,16 +9,13 @@ import { scopeTransform } from './scope-transform'
 import { transformTransComponents } from './trans-transform'
 import { detectFramework } from './framework-detect'
 import { transformVtDirectives } from './sfc-transform'
-import { transformTaggedTemplate, injectImport } from './tagged-template'
 import { transformSolidJsx } from './solid-jsx-transform'
 
 export type { FluentiPluginOptions } from './types'
-export type { NodeTransform } from './vt-transform'
-export { createVtNodeTransform } from './vt-transform'
-export { transformSolidJsx } from './solid-jsx-transform'
 
 const VIRTUAL_PREFIX = 'virtual:fluenti/messages/'
 const RESOLVED_PREFIX = '\0virtual:fluenti/messages/'
+type InternalSplitStrategy = FluentiPluginOptions['splitting'] | 'per-route'
 
 // ─── Plugin entry ────────────────────────────────────────────────────────────
 
@@ -26,7 +23,7 @@ const RESOLVED_PREFIX = '\0virtual:fluenti/messages/'
 export default function fluentiPlugin(options?: FluentiPluginOptions): Plugin[] {
   const catalogDir = options?.catalogDir ?? 'src/locales/compiled'
   const frameworkOption = options?.framework ?? 'auto'
-  const splitting = options?.splitting ?? false
+  const splitting = (options?.splitting as InternalSplitStrategy | undefined) ?? false
   const sourceLocale = options?.sourceLocale ?? 'en'
   const locales = options?.locales ?? [sourceLocale]
   const defaultBuildLocale = options?.defaultBuildLocale ?? sourceLocale
@@ -74,9 +71,8 @@ export default function fluentiPlugin(options?: FluentiPluginOptions): Plugin[] 
     enforce: 'pre',
 
     // SFC pre-transform: rewrites v-t directives, <Trans>, and <Plural> in <template>
-    // before Vue compiler runs.
-    // The nodeTransform (createVtNodeTransform) is exported separately for users who want
-    // to configure it manually via @vitejs/plugin-vue's compilerOptions.nodeTransforms.
+    // before Vue compiler runs. Manual compiler-level transforms are treated as
+    // internal implementation details; the supported public path is this plugin.
     transform(code, id) {
       if (!id.endsWith('.vue')) return undefined
       if (!/\bv-t\b/.test(code) && !/<Trans[\s>]/.test(code) && !/<Plural[\s/>]/.test(code)) return undefined
@@ -109,22 +105,17 @@ export default function fluentiPlugin(options?: FluentiPluginOptions): Plugin[] 
       }
 
       // ── t`` / t() scope-aware transform ────────────────────────────────
-      if (/\bt[`(]/.test(result)) {
+      if (hasScopeTransformCandidate(result)) {
         const framework = frameworkOption === 'auto'
           ? detectFramework(id, result)
           : frameworkOption
 
-        // Try scope-aware transform first (AST-based, zero false positives)
-        const scoped = scopeTransform(result, { framework })
+        const scoped = scopeTransform(result, {
+          framework,
+          allowTopLevelImportedT: framework === 'vue' && id.includes('.vue'),
+        })
         if (scoped.transformed) {
           return { code: scoped.code, map: null }
-        }
-
-        // Fall back to legacy regex transform for files without useI18n import
-        const transformed = transformTaggedTemplate(result, framework)
-        if (transformed.needsImport) {
-          const finalCode = injectImport(transformed.code, framework)
-          return { code: finalCode, map: null }
         }
       }
 
@@ -146,9 +137,6 @@ export default function fluentiPlugin(options?: FluentiPluginOptions): Plugin[] 
       if (id.includes('node_modules')) return undefined
       if (!id.match(/\.(vue|tsx|jsx|ts|js)(\?|$)/)) return undefined
 
-      // Only transform compiled template output (contains $t calls)
-      if (!code.includes('$t(')) return undefined
-
       // Detect framework for this file
       if (frameworkOption === 'auto') {
         detectedFramework = detectFramework(id, code)
@@ -162,12 +150,12 @@ export default function fluentiPlugin(options?: FluentiPluginOptions): Plugin[] 
         ? transformForStaticSplit(code)
         : transformForDynamicSplit(code)
 
-      if (!transformed.needsCatalogImport) return undefined
-
       // Track hashes per module for per-route generateBundle
-      if (splitting === 'per-route') {
+      if (splitting === 'per-route' && transformed.usedHashes.size > 0) {
         moduleMessages.set(id, transformed.usedHashes)
       }
+
+      if (!transformed.needsCatalogImport) return undefined
 
       const importStrategy = splitting === 'per-route' ? 'per-route' : strategy
       const finalCode = injectCatalogImport(transformed.code, importStrategy, transformed.usedHashes)
@@ -291,4 +279,17 @@ export default function fluentiPlugin(options?: FluentiPluginOptions): Plugin[] 
   }
 
   return [virtualPlugin, vueTemplatePlugin, solidJsxPlugin, scriptTransformPlugin, buildSplitPlugin, devPlugin]
+}
+
+function hasScopeTransformCandidate(code: string): boolean {
+  if (/(?<![.\w$])t\(\s*['"]/.test(code) || /[A-Za-z_$][\w$]*\(\s*\{/.test(code)) {
+    return true
+  }
+
+  if (/[A-Za-z_$][\w$]*`/.test(code) && (code.includes('useI18n') || code.includes('getI18n'))) {
+    return true
+  }
+
+  return /import\s*\{\s*t(?:\s+as\s+[A-Za-z_$][\w$]*)?[\s,}]/.test(code)
+    && /@fluenti\/(react|vue|solid|next\/__generated)/.test(code)
 }

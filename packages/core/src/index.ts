@@ -23,6 +23,8 @@ export type {
   FormatDateFn,
   FormatNumberFn,
   NamespaceMapping,
+  CompileTimeMessageDescriptor,
+  CompileTimeT,
 } from './types'
 
 export { parse, FluentParseError } from './parser'
@@ -33,6 +35,7 @@ export { Catalog } from './catalog'
 export { negotiateLocale, parseLocale, isRTL, getDirection } from './locale'
 export type { ParsedLocale } from './locale'
 export { msg, buildICUMessage, hashMessage } from './msg'
+export { resolveDescriptorId } from './identity'
 export { detectLocale, getSSRLocaleScript, getHydratedLocale } from './ssr'
 export { formatNumber, DEFAULT_NUMBER_FORMATS, LOCALE_CURRENCY_MAP } from './formatters/number'
 export { formatDate, DEFAULT_DATE_FORMATS } from './formatters/date'
@@ -50,6 +53,7 @@ import { interpolate } from './interpolate'
 import { formatNumber } from './formatters/number'
 import { formatDate } from './formatters/date'
 import { buildICUMessage } from './msg'
+import { resolveDescriptorId } from './identity'
 
 /**
  * Create a Fluenti instance with full i18n support.
@@ -98,7 +102,7 @@ export function createFluent(config: FluentConfigExtended): FluentInstanceExtend
     return result
   }
 
-  function resolveMessage(id: string, values?: Record<string, unknown>): string {
+  function lookupCatalog(id: string, values?: Record<string, unknown>): string | undefined {
     // Try current locale
     const msg = catalog.get(currentLocale, id)
     if (msg !== undefined) {
@@ -133,16 +137,32 @@ export function createFluent(config: FluentConfigExtended): FluentInstanceExtend
       }
     }
 
-    // Missing handler
-    if (config.missing) {
-      try {
-        const result = config.missing(currentLocale, id)
-        if (result !== undefined) {
-          return applyTransform(result, id)
-        }
-      } catch {
-        // Missing handler threw — fall through to returning the id
+    return undefined
+  }
+
+  function resolveMissing(id: string): string | undefined {
+    if (!config.missing) return undefined
+
+    try {
+      const result = config.missing(currentLocale, id)
+      if (result !== undefined) {
+        return applyTransform(result, id)
       }
+    } catch {
+      // Missing handler threw — fall through to next resolution path
+    }
+    return undefined
+  }
+
+  function resolveMessage(id: string, values?: Record<string, unknown>): string {
+    const catalogResult = lookupCatalog(id, values)
+    if (catalogResult !== undefined) {
+      return catalogResult
+    }
+
+    const missingResult = resolveMissing(id)
+    if (missingResult !== undefined) {
+      return missingResult
     }
 
     // If the id looks like an ICU message, interpolate it directly
@@ -178,15 +198,30 @@ export function createFluent(config: FluentConfigExtended): FluentInstanceExtend
       // Function call form: t('id', values) or t(descriptor, values)
       const id = idOrStrings as string | MessageDescriptor
       const values = rest[0] as Record<string, unknown> | undefined
-      const messageId = typeof id === 'string' ? id : id.id
-      const descriptor = typeof id === 'object' ? id : undefined
+      if (typeof id === 'object') {
+        const descriptor = id
+        const messageId = resolveDescriptorId(descriptor)
+        if (messageId) {
+          const catalogResult = lookupCatalog(messageId, values)
+          if (catalogResult !== undefined) {
+            return catalogResult
+          }
 
-      // If descriptor has a message and it's not in the catalog, use it as source
-      if (descriptor?.message && !catalog.has(currentLocale, messageId)) {
-        return interp(descriptor.message, values, currentLocale)
+          const missingResult = resolveMissing(messageId)
+          if (missingResult !== undefined) {
+            return missingResult
+          }
+        }
+
+        if (descriptor.message !== undefined) {
+          const fallbackId = messageId || descriptor.message
+          return applyTransform(interp(descriptor.message, values, currentLocale), fallbackId)
+        }
+
+        return messageId
       }
 
-      return resolveMessage(messageId, values)
+      return resolveMessage(id, values)
     },
 
     setLocale(locale: Locale): void {

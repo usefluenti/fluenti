@@ -165,7 +165,7 @@ export default {
     const messages = extractFromVue(code, 'App.vue')
     expect(messages).toHaveLength(1)
     expect(messages[0]!.message).toContain('{count, plural,')
-    expect(messages[0]!.message).toContain('zero {No items}')
+    expect(messages[0]!.message).toContain('=0 {No items}')
     expect(messages[0]!.message).toContain('one {# item}')
     expect(messages[0]!.message).toContain('other {# items}')
   })

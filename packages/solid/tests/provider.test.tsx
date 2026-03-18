@@ -165,7 +165,7 @@ describe('I18nProvider', () => {
       <I18nProvider
         locale="en"
         messages={messages}
-        splitting={true}
+        lazyLocaleLoading={true}
         chunkLoader={() => loaderPromise}
       >
         <Child />

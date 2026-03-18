@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { t } from '@fluenti/react'
 import { greetAction } from './actions'
 
 export default function ServerActionPage() {

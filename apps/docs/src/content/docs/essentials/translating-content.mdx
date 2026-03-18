@@ -5,19 +5,28 @@ description: All translation APIs — v-t, t(), tagged templates, Trans, Plural,
 
 import { Tabs, TabItem, Aside } from '@astrojs/starlight/components'
 
-Fluenti offers multiple ways to translate content, all processed at **compile time** for zero runtime parsing overhead. Choose the right API for each situation:
+Fluenti offers multiple ways to translate content. Direct-import `t` is a compile-time API, while component APIs such as `Trans`, `Plural`, and `Select` remain runtime-correct even without a build plugin. Choose the right API for each situation:
 
 | Priority | API | Where | Framework |
 |---|---|---|---|
 | 1 | `v-t` directive | Vue templates | Vue only |
-| 2 | `` t`…` `` tagged template | `<script setup>` / JSX / JS modules | Vue, React, Solid |
+| 2 | `` import { t } …; t`…` `` | `<script setup>` / JSX / supported server scopes | Vue, React, Solid, Next |
 | 3 | `<Trans>` / `<Plural>` / `<Select>` | Templates (all frameworks) | All |
 | 4 | `msg` tagged template | Outside components (routes, stores) | All |
-| 5 | `t()` function call | Fallback | All |
+| 5 | `useI18n().t()` / `await getI18n()` | Runtime lookup / escape hatch | All |
 
 <Aside type="tip">
-The `t` function returned by `useI18n()` supports both function calls (`t('id', values)`) and tagged templates (`` t`Hello ${name}` ``). The `v-t` directive requires no import — it is a compile-time template transform.
+The primary Fluenti DX is `import { t }` from your framework package. It is a compile-time API for tagged templates and descriptor calls. Use `useI18n().t()` or `await getI18n()` when you need runtime ID lookup or the full imperative API.
 </Aside>
+
+## Without Build Plugin
+
+Fluenti draws a hard line between its compile-time authoring API and its runtime-capable components:
+
+- `import { t }` requires the Fluenti build plugin or loader. If it reaches runtime untransformed, it throws a clear error.
+- `<Trans>`, `<Plural>`, `<Select>`, `<DateTime>`, and `<NumberFormat>` continue to work without the build plugin in React, Vue, and Solid.
+- Build-time transforms only optimize these components by precomputing IDs and extraction metadata. They do not change the rendered result.
+- In Next.js server files, the unified `@fluenti/react` authoring surface still requires `withFluenti()`. Without it, only the explicit server runtime APIs remain supported.
 
 ## v-t Directive (Vue)
 
@@ -90,49 +99,42 @@ function Greeting() {
 
 ### Compile-Time Transform
 
-The Vite plugin transforms `t()` calls at build time:
+The Vite plugin rewrites direct-import `t` into the runtime `useI18n()` binding at build time:
 
 ```typescript
 // Input
-const greeting = t('Hello, {name}!', { name })
+const greeting = t`Hello ${name}`
 
-// Output (Vue)
-const greeting = __i18n.t('_hash123', { name: unref(name) })
-
-// Output (Solid)
-const greeting = __i18n.t('_hash123', { name: name() })
+// Output
+const greeting = t('Hello {name}', { name: name })
 ```
 
 ## Tagged Templates
 
-The `t` function from `useI18n()` doubles as a tagged template literal. The Vite plugin uses AST scope analysis to detect `t` bindings from `useI18n()` and optimizes them at compile time.
+Direct-import `t` is Fluenti's main compile-time translation API. The Vite plugin and Next loader use AST scope analysis to detect it inside supported scopes and optimize it at build time.
 
 <Tabs>
 <TabItem label="Vue">
 ```vue
 <script setup>
-import { useI18n } from '@fluenti/vue'
-const { t } = useI18n()
+import { t } from '@fluenti/vue'
 
 const pageTitle = t`Welcome to Fluenti`
-const greeting = t`Hello ${name}, you have ${count} items`
 </script>
 
 <template>
   <h1>{{ pageTitle }}</h1>
-  <p>{{ greeting }}</p>
 </template>
 ```
 
-Returns a `ComputedRef` — automatically updates when any referenced reactive value changes.
+Compile-time authoring path for `<script setup>`. The transformed expression produces a plain string value. Use `useI18n().t()` inside a computed or template expression when you need reactive script-driven text.
 </TabItem>
 
 <TabItem label="React">
 ```tsx
-import { useI18n } from '@fluenti/react'
+import { t } from '@fluenti/react'
 
 function Dashboard() {
-  const { t } = useI18n()
   const name = 'World'
   const count = 5
 
@@ -150,25 +152,25 @@ Returns a plain value — React's re-render cycle handles reactivity. Works in b
 
 <TabItem label="Solid">
 ```tsx
-import { useI18n } from '@fluenti/solid'
+import { t } from '@fluenti/solid'
 
 function Dashboard() {
-  const { t } = useI18n()
-  const pageTitle = t`Welcome to Fluenti`
-  const greeting = t`Hello ${name}, you have ${count} items`
-
   return (
     <div>
-      <h1>{pageTitle()}</h1>
-      <p>{greeting()}</p>
+      <h1>{t`Welcome to Fluenti`}</h1>
+      <p>{t`Hello ${name()}, you have ${count()} items`}</p>
     </div>
   )
 }
 ```
 
-Returns a `createMemo` — similarly reactive.
+Use direct-import `t` inline in JSX or another reactive scope. It does not return a `createMemo`.
 </TabItem>
 </Tabs>
+
+<Aside type="caution">
+Direct-import `t` is compile-time only. It is the main DX path, but it is not the fallback path. If you cannot run the Fluenti plugin or loader, use `useI18n().t()` / `await getI18n()` or the runtime-capable components below.
+</Aside>
 
 ### Variable Naming
 
@@ -217,7 +219,7 @@ When translations contain HTML elements or framework components, use `<Trans>` w
 </template>
 ```
 
-`Trans`, `Plural`, and `Select` are globally registered by the Fluenti plugin — no import needed.
+`Trans`, `Plural`, and `Select` are globally registered by the Vue plugin.
 </TabItem>
 
 <TabItem label="React">
@@ -241,8 +243,10 @@ import { Trans } from '@fluenti/react'
 
 The `<Trans>` component extracts the text content of its default slot (including HTML tags) as the source message. During compilation, translators see the tags as placeholders, and at runtime the translated message is rendered with the original elements restored.
 
+`Trans` works both with and without the build plugin. The plugin only removes runtime extraction work by precomputing the message ID and component list.
+
 <Aside type="tip">
-`Trans` accepts an optional `tag` prop (default: `'span'`) to control the wrapper element. Set `tag="p"` or `tag="div"` as needed.
+Vue and Solid expose a `tag` prop when you need a wrapper element. React uses the `render` prop instead when you want to control wrapping.
 </Aside>
 
 ## Plural
@@ -271,6 +275,8 @@ Fluenti uses `Intl.PluralRules` for locale-aware pluralization, supporting all C
 </TabItem>
 </Tabs>
 
+`Plural` is runtime-capable without the build plugin. Fluenti constructs a synthetic ICU plural message, looks it up through the catalog, and falls back to the source forms if needed.
+
 ### Props
 
 | Prop | When used |
@@ -282,7 +288,7 @@ Fluenti uses `Intl.PluralRules` for locale-aware pluralization, supporting all C
 | `few` | CLDR "few" category (e.g., Russian 2-4) |
 | `many` | CLDR "many" category (e.g., Arabic 11-99) |
 | `other` | **(required)** Fallback for all other values |
-| `tag` | Wrapper element (default: `'span'`) |
+| `offset` | ICU plural offset before category selection |
 
 ### Catalog extraction
 
@@ -361,7 +367,9 @@ For programmatic usage, pass an `options` object instead of individual props:
 <Select value={role} options={{ admin: 'Full access', editor: 'Can edit', other: 'Unknown' }} />
 ```
 
-**Props:** `value` (required), `other` (required), `options` (optional object), plus any string keys as individual props. `tag` optional.
+`Select` is also runtime-capable without the build plugin. Fluenti constructs a synthetic ICU select message, performs normal catalog lookup, and reconstructs any rich content.
+
+**Props:** `value` (required), `other` (required), `options` (preferred object form), plus any string keys as individual props. `options` takes precedence over direct case props.
 
 ## When to Use What
 

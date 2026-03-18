@@ -24,16 +24,16 @@ Output: <p>{{ $t('Hello {{ name }}') }}</p>
 
 ## t\`\` Tagged Template Compilation
 
-The `t` function returned by `useI18n()` supports tagged template syntax. The Vite plugin uses AST scope analysis to detect `t` bindings from `useI18n()` and transforms them at build time:
+Direct-import `t` is Fluenti's compile-time surface. The Vite plugin and Next loader use AST scope analysis to detect it and transform it at build time:
 
 ```
-Input:  const { t } = useI18n()
+Input:  import { t } from '@fluenti/react'
         const greeting = t`Hello ${name}`
    ↓ (Vite transform hook — scope-aware AST)
-Output: const greeting = computed(() => __i18n.t('Hello {name}', { name: unref(name) }))
+Output: const greeting = t('Hello {name}', { name: name })
 ```
 
-Only `t` variables originating from `useI18n()` are transformed. Other variables named `t` are left untouched.
+Only Fluenti's imported `t` inside supported scopes is transformed. Other variables named `t` are left untouched.
 
 ## Message Extraction
 

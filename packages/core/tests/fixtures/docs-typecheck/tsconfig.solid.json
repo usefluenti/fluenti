@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "jsx": "preserve",
+    "jsxImportSource": "solid-js"
+  },
+  "include": [
+    "./solid-quick-start.tsx",
+    "./solid-code-splitting.tsx",
+    "./without-build-plugin-solid.tsx"
+  ]
+}

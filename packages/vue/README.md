@@ -247,7 +247,7 @@ const { t, d, n, locale, setLocale } = useI18n()
 | `te`            | `(key: string, locale?) => boolean`                            | Check if a translation key exists                        |
 | `tm`            | `(key: string, locale?) => CompiledMessage \| undefined`       | Get the raw compiled message without interpolation       |
 | `locale`        | `Ref<string>` (readonly)                                       | Reactive ref for the current locale                      |
-| `setLocale`     | `(locale: string) => Promise<void>`                            | Change locale (async when splitting is enabled)          |
+| `setLocale`     | `(locale: string) => Promise<void>`                            | Change locale (async when lazy locale loading is enabled) |
 | `loadMessages`  | `(locale: string, messages: Messages) => void`                 | Dynamically add messages for a locale at runtime         |
 | `getLocales`    | `() => string[]`                                               | Get all locales that have loaded messages                |
 | `preloadLocale` | `(locale: string) => void`                                     | Preload a locale chunk in the background                 |
@@ -278,7 +278,7 @@ const fluent = createFluentVue({
   },
   missing: (locale, id) => `[missing: ${id}]`,
   componentPrefix: 'I18n',   // registers I18nTrans, I18nPlural, I18nSelect
-  splitting: true,
+  lazyLocaleLoading: true,
   chunkLoader: (locale) => import(`./locales/${locale}.js`),
 
   // Post-translation transform applied to every resolved message
@@ -307,8 +307,8 @@ const fluent = createFluentVue({
 | `numberFormats`   | `Record<string, NumberFormatOptions>` | --   | Named number format presets for `n()`                    |
 | `missing`         | `(locale, id) => string \| undefined` | --  | Handler called when a translation key is not found       |
 | `componentPrefix` | `string`                           | `''`    | Prefix for globally registered components                |
-| `splitting`       | `boolean`                          | `false` | Enable async code-splitting mode                         |
-| `chunkLoader`     | `(locale) => Promise<Messages>`    | --      | Async loader for locale chunks (requires `splitting`)    |
+| `lazyLocaleLoading` | `boolean`                        | `false` | Enable async locale loading through `chunkLoader`        |
+| `chunkLoader`     | `(locale) => Promise<Messages>`    | --      | Async loader for locale chunks (requires `lazyLocaleLoading`) |
 | `transform`       | `(result: string, id: string, locale: string) => string` | -- | Post-interpolation hook applied to every resolved message |
 | `onLocaleChange`  | `(newLocale: string, prevLocale: string) => void` | -- | Callback fired whenever the locale changes via `setLocale()` |
 | `formatters`      | `Record<string, CustomFormatter>`  | --      | Custom ICU function formatters keyed by function name    |
@@ -323,7 +323,7 @@ For large apps, load locale messages on demand instead of bundling everything up
 const fluent = createFluentVue({
   locale: 'en',
   messages: { en },           // only the default locale is bundled
-  splitting: true,
+  lazyLocaleLoading: true,
   chunkLoader: (locale) => import(`./locales/compiled/${locale}.js`),
 })
 

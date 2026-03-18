@@ -32,8 +32,8 @@ app.use(i18n)
 | `dateFormats` | `Record<string, DateTimeFormatOptions \| 'relative'>?` | Named date styles |
 | `numberFormats` | `Record<string, NumberFormatOptions>?` | Named number styles |
 | `fallbackChain` | `Record<string, string[]>?` | Locale fallback chains |
-| `splitting` | `boolean?` | Enable code-splitting mode |
-| `chunkLoader` | `(locale: string) => Promise<Messages>?` | Async locale loader for splitting |
+| `lazyLocaleLoading` | `boolean?` | Enable async locale loading through `chunkLoader` |
+| `chunkLoader` | `(locale: string) => Promise<Messages>?` | Async locale loader used when `lazyLocaleLoading` is enabled |
 | `componentPrefix` | `string?` | Prefix for global components (e.g. `'I18n'` → `I18nTrans`, `I18nPlural`, `I18nSelect`) |
 | `transform` | `(result, id, locale) => string?` | Post-translation transform hook applied to every resolved message |
 | `onLocaleChange` | `(newLocale, prevLocale) => void?` | Callback fired when locale changes |
@@ -57,7 +57,7 @@ const { t, format, locale, setLocale, d, n, isLoading, loadedLocales, preloadLoc
 | `t` | `(id, values?) => string` | Translate a message |
 | `format` | `(message, values?) => string` | Direct ICU interpolation without catalog lookup |
 | `locale` | `Ref<string>` | Current locale (reactive) |
-| `setLocale` | `(locale) => Promise<void>` | Change locale (async with splitting) |
+| `setLocale` | `(locale) => Promise<void>` | Change locale (async with lazy locale loading) |
 | `loadMessages` | `(locale, messages) => void` | Load messages at runtime |
 | `getLocales` | `() => string[]` | Get all loaded locale codes |
 | `d` | `(value, style?) => string` | Format a date |
@@ -65,6 +65,32 @@ const { t, format, locale, setLocale, d, n, isLoading, loadedLocales, preloadLoc
 | `isLoading` | `Ref<boolean>` | Whether a locale chunk is loading |
 | `loadedLocales` | `Ref<ReadonlySet<string>>` | Set of loaded locales |
 | `preloadLocale` | `(locale) => void` | Preload a locale without switching |
+
+## `t` (compile-time import)
+
+`import { t } from '@fluenti/vue'` is the primary compile-time translation API for `<script setup>` and supported setup scopes.
+
+```vue
+<script setup>
+import { t } from '@fluenti/vue'
+const pageTitle = t`Welcome to Fluenti`
+</script>
+
+<template>
+  <h1>{{ pageTitle }}</h1>
+</template>
+```
+
+Supported forms:
+
+- `` t`Hello ${name}` ``
+- `t({ message: 'Hello {name}', context: 'hero' }, { name })`
+
+For runtime lookup, locale switching, or reactive script-driven values, use `useI18n().t()`.
+
+Without the Fluenti build plugin, imported `t` is not available as a runtime fallback. Use `useI18n().t()` for imperative lookup, while the components below continue to work normally.
+
+TypeScript users can also import the public component prop types directly from `@fluenti/vue`: `TransProps`, `PluralProps`, `SelectProps`, `DateTimeProps`, and `NumberFormatProps`.
 
 ## `format()`
 
@@ -135,8 +161,12 @@ Use native HTML elements directly in the slot:
 
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
-| `values` | `object` | `{}` | Interpolation values |
+| `id` | `string` | — | Override the auto-generated message ID |
+| `context` | `string` | — | Message context used for identity and translator disambiguation |
+| `comment` | `string` | — | Translator-facing comment preserved in extraction output |
 | `tag` | `string` | `'span'` | Wrapper element |
+
+`Trans` remains runtime-correct without the build plugin. The plugin only removes runtime extraction work.
 
 ## `<Plural>`
 
@@ -147,6 +177,8 @@ Plural forms are source-language text, auto-extracted and translated via the cat
 ```vue
 <Plural :value="count" one="# item" other="# items" />
 ```
+
+`Plural` remains runtime-correct without the build plugin. It performs catalog lookup through a synthetic ICU plural message at runtime.
 
 ## `<Select>`
 
@@ -163,3 +195,5 @@ Alternatively, pass options as attributes:
 ```vue
 <Select :value="gender" male="He" female="She" other="They" />
 ```
+
+`Select` also remains runtime-correct without the build plugin. `options` takes precedence over direct case attributes, and the component performs catalog lookup through a synthetic ICU select message at runtime.

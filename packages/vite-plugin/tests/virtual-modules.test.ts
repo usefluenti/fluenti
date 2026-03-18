@@ -45,10 +45,10 @@ describe('loadVirtualSplitModule', () => {
       expect(code).toContain('export { __catalog')
     })
 
-    it('includes all locale loaders', () => {
+    it('includes only non-default locale loaders', () => {
       const code = loadVirtualSplitModule('\0virtual:fluenti/runtime', defaultOptions)!
 
-      expect(code).toContain("'en': () => import(")
+      expect(code).not.toContain("'en': () => import(")
       expect(code).toContain("'fr': () => import(")
       expect(code).toContain("'ja': () => import(")
     })
@@ -58,6 +58,7 @@ describe('loadVirtualSplitModule', () => {
 
       expect(code).toContain('__switchLocale')
       expect(code).toContain('__preloadLocale')
+      expect(code).toContain("globalThis[Symbol.for('fluenti.runtime.vue')]")
     })
 
     it('exports loading state', () => {
@@ -117,10 +118,10 @@ describe('loadVirtualSplitModule', () => {
       expect(code).toContain('__preloadLocale')
     })
 
-    it('includes all locale loaders', () => {
+    it('includes only non-default locale loaders', () => {
       const code = loadVirtualSplitModule('\0virtual:fluenti/route-runtime', defaultOptions)!
 
-      expect(code).toContain("'en': () => import(")
+      expect(code).not.toContain("'en': () => import(")
       expect(code).toContain("'fr': () => import(")
       expect(code).toContain("'ja': () => import(")
     })
@@ -154,15 +155,16 @@ describe('loadVirtualSplitModule', () => {
       expect(code).not.toContain('createStore')
     })
 
-    it('includes all locale loaders for React', () => {
+    it('includes only non-default locale loaders for React', () => {
       const code = loadVirtualSplitModule('\0virtual:fluenti/runtime', {
         ...defaultOptions,
         framework: 'react',
       })!
 
-      expect(code).toContain("'en': () => import(")
+      expect(code).not.toContain("'en': () => import(")
       expect(code).toContain("'fr': () => import(")
       expect(code).toContain("'ja': () => import(")
+      expect(code).toContain("globalThis[Symbol.for('fluenti.runtime.react')]")
     })
   })
 
@@ -209,14 +211,15 @@ describe('loadVirtualSplitModule', () => {
       expect(code).toContain('/en.js')
     })
 
-    it('runtime module contains loader entries for all configured locales', () => {
+    it('runtime module contains loader entries for non-default configured locales', () => {
       const locales = ['en', 'fr', 'ja', 'de', 'es']
       const code = loadVirtualSplitModule('\0virtual:fluenti/runtime', {
         ...defaultOptions,
         locales,
       })!
 
-      for (const locale of locales) {
+      expect(code).not.toContain("'en': () => import(")
+      for (const locale of locales.filter((locale) => locale !== 'en')) {
         expect(code).toContain(`'${locale}': () => import(`)
       }
     })

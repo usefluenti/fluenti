@@ -1,6 +1,8 @@
-import { defineComponent, h, computed } from 'vue'
-import type { PropType, SetupContext } from 'vue'
+import { defineComponent, h } from 'vue'
+import type { ExtractPropTypes, PropType, SetupContext, VNodeChild } from 'vue'
+import { hashMessage } from '@fluenti/core'
 import { useI18n } from '../use-i18n'
+import { buildICUSelectMessage, normalizeSelectForms, reconstruct, serializeRichForms } from './rich-text'
 
 /**
  * `<Select>` component — shorthand for ICU select patterns.
@@ -29,56 +31,81 @@ import { useI18n } from '../use-i18n'
  * </Select>
  * ```
  */
+const selectProps = {
+  /** The value to select on (e.g. `"male"`, `"female"`) */
+  value: { type: String, required: true },
+  /** Override the auto-generated synthetic ICU message id */
+  id: String,
+  /** Message context used for identity and translator disambiguation */
+  context: String,
+  /** Translator-facing note preserved in extraction catalogs */
+  comment: String,
+  /** Fallback text when no option matches `value` */
+  other: { type: String, default: undefined },
+  /**
+   * Named options map. Keys are match values, values are display strings.
+   * Takes precedence over attrs when both are provided.
+   *
+   * @example `{ male: 'He', female: 'She' }`
+   */
+  options: {
+    type: Object as PropType<Record<string, string>>,
+    default: undefined,
+  },
+  /** Wrapper element tag name (default: `span`) */
+  tag: { type: String, default: 'span' },
+} as const
+
+export type SelectProps = Readonly<ExtractPropTypes<typeof selectProps>>
+
 export const Select = defineComponent({
   name: 'Select',
   inheritAttrs: false,
-  props: {
-    /** The value to select on (e.g. `"male"`, `"female"`) */
-    value: { type: String, required: true },
-    /** Fallback text when no option matches `value` */
-    other: { type: String, default: undefined },
-    /**
-     * Named options map. Keys are match values, values are display strings.
-     * Takes precedence over attrs when both are provided.
-     *
-     * @example `{ male: 'He', female: 'She' }`
-     */
-    options: {
-      type: Object as PropType<Record<string, string>>,
-      default: undefined,
-    },
-    /** Wrapper element tag name (default: `span`) */
-    tag: { type: String, default: 'span' },
-  },
+  props: selectProps,
   setup(props, { attrs, slots }: SetupContext) {
-    useI18n() // ensure plugin is installed
-
-    const text = computed(() => {
-      // options prop takes precedence over attrs
-      if (props.options !== undefined) {
-        const match = props.options[props.value]
-        if (typeof match === 'string') {
-          return match
-        }
-        return props.other ?? ''
-      }
-
-      // Fall back to attrs for backwards compatibility
-      if (props.value in attrs && typeof attrs[props.value] === 'string') {
-        return attrs[props.value] as string
-      }
-      return props.other ?? ''
-    })
+    const { t } = useI18n()
 
     return () => {
-      // Check for named slots matching the value or 'other'
-      const hasSlots = !!slots[props.value] || !!slots['other']
-      if (hasSlots) {
-        const slotFn = slots[props.value] ?? slots['other']
-        return h(props.tag, null, slotFn?.({ value: props.value }))
+      const forms: Record<string, VNodeChild | undefined> = {}
+
+      if (props.options !== undefined) {
+        for (const [key, value] of Object.entries(props.options)) {
+          forms[key] = value
+        }
+        forms['other'] = props.other ?? ''
+      } else {
+        for (const [key, value] of Object.entries(attrs)) {
+          if (typeof value === 'string') {
+            forms[key] = value
+          }
+        }
+        forms['other'] = props.other ?? ''
       }
-      // Existing string path (unchanged)
-      return h(props.tag, null, text.value)
+
+      for (const [key, slot] of Object.entries(slots)) {
+        if (key === 'default' || !slot) continue
+        forms[key] = slot({ value: '{value}' })
+      }
+
+      const orderedKeys = [...Object.keys(forms).filter(key => key !== 'other'), 'other'] as const
+      const { messages, components } = serializeRichForms(orderedKeys, forms)
+      const normalized = normalizeSelectForms(
+        Object.fromEntries(
+          [...orderedKeys].map((key) => [key, messages[key] ?? '']),
+        ),
+      )
+      const icuMessage = buildICUSelectMessage(normalized.forms)
+      const translated = t(
+        {
+          id: props.id ?? (props.context === undefined ? icuMessage : hashMessage(icuMessage, props.context)),
+          message: icuMessage,
+          ...(props.context !== undefined ? { context: props.context } : {}),
+          ...(props.comment !== undefined ? { comment: props.comment } : {}),
+        },
+        { value: normalized.valueMap[props.value] ?? 'other' },
+      )
+      const result = components.length > 0 ? reconstruct(translated, components) : translated
+      return h(props.tag, undefined, result ?? undefined)
     }
   },
 })

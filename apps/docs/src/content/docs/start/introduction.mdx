@@ -67,7 +67,7 @@ Fluenti preserves your actual markup. Translators see HTML they already understa
 | **Keys** | Manual key strings | Auto-generated IDs | Source text = key |
 | **Rich text** | `v-html` (XSS risk) | `<0>indexed</0>` placeholders | Native `<a>`, `<strong>`, etc. |
 | **Runtime cost** | Full parser in bundle | Compiled messages | Compiled + `v-t` zero-cost |
-| **Code splitting** | Manual | Per-route | Per-route (built-in) |
+| **Code splitting** | Manual | Manual | Built-in locale chunks |
 | **Catalog format** | JSON only | PO / JSON | PO / JSON |
 | **SSR** | Plugin config required | Custom setup | Built-in locale detection |
 | **Frameworks** | Vue only | React only | Vue, React, Solid |
@@ -103,7 +103,7 @@ Fluenti's pipeline turns your source text into optimized, per-locale bundles at 
 
 4. **Compile** with `fluenti compile` — generates optimized JS modules, one per locale, ready for code splitting
 
-5. **Ship** — Vite bundles compiled translations automatically via `@fluenti/vite-plugin`, lazy-loading per route
+5. **Ship** — Vite bundles compiled translations automatically via `@fluenti/vite-plugin`, with static or dynamic locale loading
 
 </Steps>
 
@@ -116,7 +116,7 @@ Fluenti's pipeline turns your source text into optimized, per-locale bundles at 
 | `@fluenti/react` | React integration: `I18nProvider`, `<Trans>`, `<Plural>`, `<Select>`, `useI18n()` hook |
 | `@fluenti/solid` | SolidJS integration: `I18nProvider`, `<Trans>`, `<Plural>`, `<Select>`, `useI18n()` hook |
 | `@fluenti/cli` | Message extraction (Vue SFC + TSX), PO/JSON catalog format, compilation |
-| `@fluenti/vite-plugin` | Vite plugin: virtual modules, build-time `v-t` transforms, per-route code splitting |
+| `@fluenti/vite-plugin` | Vite plugin: build-time `v-t` transforms, compile-time `t`` optimization, and locale chunk loading |
 | `@fluenti/nuxt` | Nuxt module: locale-prefixed routing (4 strategies), SEO helpers, composables |
 | `@fluenti/vue-i18n-compat` | Progressive migration bridge — run vue-i18n and Fluenti side by side |
 

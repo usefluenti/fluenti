@@ -1,6 +1,8 @@
-import { defineComponent, h, computed } from 'vue'
-import type { SetupContext } from 'vue'
+import { defineComponent, h } from 'vue'
+import type { ExtractPropTypes, SetupContext, VNodeChild } from 'vue'
+import { hashMessage } from '@fluenti/core'
 import { useI18n } from '../use-i18n'
+import { reconstruct, serializeRichForms } from './rich-text'
 
 /** Plural category names in a stable order for ICU message building. */
 const PLURAL_CATEGORIES = ['zero', 'one', 'two', 'few', 'many', 'other'] as const
@@ -17,6 +19,7 @@ type PluralCategory = (typeof PLURAL_CATEGORIES)[number]
  */
 function buildICUPluralMessage(
   forms: Partial<Record<PluralCategory, string>> & { other: string },
+  offset?: number,
 ): string {
   const parts: string[] = []
   for (const cat of PLURAL_CATEGORIES) {
@@ -30,23 +33,8 @@ function buildICUPluralMessage(
       parts.push(`${key} {${text}}`)
     }
   }
-  return `{count, plural, ${parts.join(' ')}}`
-}
-
-/**
- * Resolve which plural category to use for slot-based rendering.
- * Checks for exact =0 match first, then falls back to CLDR rules.
- * @internal
- */
-function resolveCategory(
-  value: number,
-  locale: string,
-  available: (cat: PluralCategory) => boolean,
-): PluralCategory {
-  if (value === 0 && available('zero')) return 'zero'
-  const cldr = new Intl.PluralRules(locale).select(value) as PluralCategory
-  if (available(cldr)) return cldr
-  return 'other'
+  const offsetPrefix = offset ? `offset:${offset} ` : ''
+  return `{count, plural, ${offsetPrefix}${parts.join(' ')}}`
 }
 
 /**
@@ -74,60 +62,82 @@ function resolveCategory(
  * <Plural :value="count" zero="No items" one="# item" other="# items" />
  * ```
  */
+const pluralProps = {
+  /** The numeric value to pluralise on */
+  value: { type: Number, required: true },
+  /** Override the auto-generated synthetic ICU message id */
+  id: String,
+  /** Message context used for identity and translator disambiguation */
+  context: String,
+  /** Translator-facing note preserved in extraction catalogs */
+  comment: String,
+  /** Text for zero items (maps to `=0`) */
+  zero: String,
+  /** Text for singular (maps to `one`) */
+  one: String,
+  /** Text for dual (maps to `two`) */
+  two: String,
+  /** Text for few (maps to `few`) */
+  few: String,
+  /** Text for many (maps to `many`) */
+  many: String,
+  /** Text for the default/other category */
+  other: { type: String, default: undefined },
+  /** Offset from value before selecting form */
+  offset: Number,
+  /** Wrapper element tag name (default: `span`) */
+  tag: { type: String, default: 'span' },
+} as const
+
+export type PluralProps = Readonly<ExtractPropTypes<typeof pluralProps>>
+
 export const Plural = defineComponent({
   name: 'Plural',
-  props: {
-    /** The numeric value to pluralise on */
-    value: { type: Number, required: true },
-    /** Text for zero items (maps to `=0`) */
-    zero: String,
-    /** Text for singular (maps to `one`) */
-    one: String,
-    /** Text for dual (maps to `two`) */
-    two: String,
-    /** Text for few (maps to `few`) */
-    few: String,
-    /** Text for many (maps to `many`) */
-    many: String,
-    /** Text for the default/other category */
-    other: { type: String, default: undefined },
-    /** Wrapper element tag name (default: `span`) */
-    tag: { type: String, default: 'span' },
-  },
+  props: pluralProps,
   setup(props, { slots }: SetupContext) {
-    const { t, locale } = useI18n()
+    const { t } = useI18n()
 
-    const text = computed(() => {
-      const forms: Partial<Record<PluralCategory, string>> & { other: string } = {
-        ...(props.zero !== undefined && { zero: props.zero }),
-        ...(props.one !== undefined && { one: props.one }),
-        ...(props.two !== undefined && { two: props.two }),
-        ...(props.few !== undefined && { few: props.few }),
-        ...(props.many !== undefined && { many: props.many }),
+    return () => {
+      const forms: Partial<Record<PluralCategory, VNodeChild>> & Record<string, VNodeChild | undefined> = {
+        zero: props.zero,
+        one: props.one,
+        two: props.two,
+        few: props.few,
+        many: props.many,
         other: props.other ?? '',
       }
 
-      // Build the ICU message key from source-language props
-      const icuMessage = buildICUPluralMessage(forms)
+      for (const cat of PLURAL_CATEGORIES) {
+        const slot = slots[cat]
+        if (slot) {
+          forms[cat] = slot({ count: '#' })
+        }
+      }
 
-      // Use MessageDescriptor form: if the catalog has a translation for this
-      // ICU key, it is used; otherwise the source ICU message is the fallback.
-      // In both cases, `t()` interpolates the values into the ICU plural pattern.
-      return t(
-        { id: icuMessage, message: icuMessage },
+      const { messages, components } = serializeRichForms(PLURAL_CATEGORIES, forms)
+      const icuMessage = buildICUPluralMessage(
+        {
+          ...(messages['zero'] !== undefined && { zero: messages['zero'] }),
+          ...(messages['one'] !== undefined && { one: messages['one'] }),
+          ...(messages['two'] !== undefined && { two: messages['two'] }),
+          ...(messages['few'] !== undefined && { few: messages['few'] }),
+          ...(messages['many'] !== undefined && { many: messages['many'] }),
+          other: messages['other'] ?? '',
+        },
+        props.offset,
+      )
+      const translated = t(
+        {
+          id: props.id ?? (props.context === undefined ? icuMessage : hashMessage(icuMessage, props.context)),
+          message: icuMessage,
+          ...(props.context !== undefined ? { context: props.context } : {}),
+          ...(props.comment !== undefined ? { comment: props.comment } : {}),
+        },
         { count: props.value },
       )
-    })
 
-    return () => {
-      const hasSlots = PLURAL_CATEGORIES.some(cat => slots[cat])
-      if (hasSlots) {
-        const cat = resolveCategory(props.value, locale.value, c => !!slots[c])
-        const slotFn = slots[cat] ?? slots['other']
-        return h(props.tag, null, slotFn?.({ count: props.value }))
-      }
-      // Existing string-prop ICU path (unchanged)
-      return h(props.tag, null, text.value)
+      const result = components.length > 0 ? reconstruct(translated, components) : translated
+      return h(props.tag, undefined, result ?? undefined)
     }
   },
 })

@@ -1,8 +1,19 @@
 # @fluenti/vue
 
-> Vue 3 compile-time i18n integration with v-t directive, components, and useI18n() composable.
+> Vue 3 bindings for Fluenti — compile-time `t`, `v-t`, runtime-capable components, and a `useI18n()` composable.
 
-@fluenti/vue provides internationalization for Vue 3 applications. The v-t directive is compiled away at build time by @fluenti/vite-plugin, producing zero-runtime overhead for static translations. The plugin is SSR-safe — each call to createFluentVue() creates entirely fresh state with no module-level singletons, so it is safe to call once per SSR request.
+@fluenti/vue is the Vue runtime layer for Fluenti. It combines:
+
+- compile-time authoring via `import { t } from '@fluenti/vue'`
+- template authoring via `v-t`
+- runtime access via `useI18n()`
+- runtime-capable components such as `<Trans>`, `<Plural>`, and `<Select>`
+
+The recommended public path is:
+
+- compile-time authoring: `t`
+- runtime lookup / imperative APIs: `useI18n()`
+- locale loading: `lazyLocaleLoading + chunkLoader`
 
 ## Install
 
@@ -11,8 +22,6 @@ pnpm add @fluenti/core @fluenti/vue @fluenti/vite-plugin
 ```
 
 ## Setup
-
-### main.ts
 
 ```ts
 import { createApp } from 'vue'
@@ -25,323 +34,180 @@ const fluent = createFluentVue({
   messages: { en, ja },
 })
 
-const app = createApp(App)
-app.use(fluent)
-app.mount('#app')
+createApp(App).use(fluent).mount('#app')
 ```
 
-### vite.config.ts
+## Public Exports
+
+- `createFluentVue`
+- `useI18n`
+- `t`
+- `Trans`
+- `Plural`
+- `Select`
+- `DateTime`
+- `NumberFormat`
+- `msg`
+- `FLUENTI_KEY`
+
+Types:
+
+- `FluentVueOptions`
+- `FluentVuePlugin`
+- `FluentVueContext`
+- `TransProps`
+- `PluralProps`
+- `SelectProps`
+- `DateTimeProps`
+- `NumberFormatProps`
+
+## `createFluentVue(options)`
+
+Creates one Vue plugin instance with isolated state. This is SSR-safe and intended to be called once per app instance or once per request.
+
+### Options
 
 ```ts
-import vue from '@vitejs/plugin-vue'
-import fluenti from '@fluenti/vite-plugin'
-
-export default {
-  plugins: [vue(), fluenti({ framework: 'vue' })],
-}
-```
-
-## Exports
-
-- `createFluentVue(options)` — Plugin factory (SSR-safe, one instance per request)
-- `useI18n()` — Composable returning the i18n context
-- `FLUENTI_KEY` — Vue InjectionKey for providing/injecting the context
-- `Trans` — Rich text translation component
-- `Plural` — Plural forms component
-- `Select` — Gender/option selection component
-- Types: `FluentVueOptions`, `FluentVuePlugin`, `FluentVueContext`
-
-## Plugin Options
-
-```ts
-const fluent = createFluentVue({
-  // Required
+createFluentVue({
   locale: 'en',
-  messages: { en, ja, zh },
-
-  // Optional
+  messages: { en, ja },
   fallbackLocale: 'en',
-  fallbackChain: { 'zh-TW': ['zh', 'en'], '*': ['en'] },
+  fallbackChain: { 'zh-TW': ['zh-CN', 'en'], '*': ['en'] },
   dateFormats: {
     short: { year: 'numeric', month: 'short', day: 'numeric' },
-    long: { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' },
     relative: 'relative',
   },
   numberFormats: {
     currency: { style: 'currency', currency: 'USD' },
-    percent: { style: 'percent', minimumFractionDigits: 1 },
   },
-  missing: (locale, id) => `[missing: ${id}]`,
+  missing: (locale, id) => `[missing:${id}]`,
   componentPrefix: 'I18n',
-  splitting: true,
-  chunkLoader: (locale) => import(`./locales/${locale}.js`),
+  lazyLocaleLoading: true,
+  chunkLoader: (locale) => import(`./locales/compiled/${locale}.js`),
 })
 ```
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `locale` | `string` | — | Active locale code (required) |
-| `messages` | `Record<string, Messages>` | — | Pre-loaded message catalogs (required) |
-| `fallbackLocale` | `string` | — | Locale to try when a key is missing in the active locale |
-| `fallbackChain` | `Record<string, string[]>` | — | Locale-specific fallback chains. Use `'*'` for a default chain |
-| `dateFormats` | `Record<string, DateTimeFormatOptions \| 'relative'>` | — | Named date format presets for `d()` |
-| `numberFormats` | `Record<string, NumberFormatOptions>` | — | Named number format presets for `n()` |
-| `missing` | `(locale, id) => string \| undefined` | — | Handler called when a translation key is not found |
-| `componentPrefix` | `string` | `''` | Prefix for globally registered components (e.g. 'I18n' registers I18nTrans, I18nPlural, I18nSelect) |
-| `splitting` | `boolean` | `false` | Enable async code-splitting mode |
-| `chunkLoader` | `(locale) => Promise<Messages>` | — | Async loader for locale chunks (requires `splitting: true`) |
+Key behavior:
 
-### Fallback Chain
+- `lazyLocaleLoading` controls async locale loading
+- `chunkLoader` is only used when `lazyLocaleLoading` is enabled
+- `componentPrefix` changes the globally registered component names
+- fallback order follows Fluenti core semantics
 
-When `t()` cannot find a key in the current locale, it tries each locale in the chain:
+## `useI18n()`
+
+Returns the full reactive Vue context.
+
+```vue
+<script setup lang="ts">
+import { t, useI18n } from '@fluenti/vue'
+
+const name = 'Fluenti'
+const headline = t`Hello ${name}`
+
+const { setLocale, preloadLocale, isLoading } = useI18n()
+</script>
+
+<template>
+  <h1>{{ headline }}</h1>
+  <button @mouseenter="preloadLocale('ja')" @click="setLocale('ja')">
+    {{ isLoading ? 'Loading…' : '日本語' }}
+  </button>
+</template>
+```
+
+### Context API
+
+- `t(idOrDescriptor, values?)`
+- tagged-template `t\`\``
+- `d(value, style?)`
+- `n(value, style?)`
+- `format(message, values?)`
+- `te(key, locale?)`
+- `tm(key, locale?)`
+- `locale: Readonly<Ref<string>>`
+- `setLocale(locale): Promise<void>`
+- `loadMessages(locale, messages): void`
+- `getLocales(): string[]`
+- `preloadLocale(locale): void`
+- `isLoading: Readonly<Ref<boolean>>`
+- `loadedLocales: Readonly<Ref<ReadonlySet<string>>>`
+
+`useI18n().t()` is the full runtime API. It supports string ID lookup, descriptors, and tagged templates.
+
+## Compile-time `t`
+
+`import { t } from '@fluenti/vue'` is a compile-time authoring API.
+
+Supported forms:
 
 ```ts
-createFluentVue({
-  locale: 'zh-TW',
-  fallbackChain: {
-    'zh-TW': ['zh', 'en'],  // zh-TW -> zh -> en
-    'ja': ['en'],            // ja -> en
-    '*': ['en'],             // all others -> en
-  },
-})
+t`Hello ${name}`
+t({ message: 'Hello {name}', context: 'home.hero' }, { name })
 ```
 
-Resolution order: current locale -> `fallbackChain[locale]` -> `fallbackLocale` -> key ID as-is.
+Not supported as the main direct-import surface:
 
-### Code Splitting
+```ts
+t('message.id')
+t('Hello {name}', { name })
+```
 
-Load locale messages on demand instead of bundling all upfront:
+If the build plugin is missing and the imported `t` function executes at runtime, it throws a clear error.
+
+## `v-t`
+
+`v-t` is primarily a compile-time feature handled by `@fluenti/vite-plugin`.
+
+Supported authoring shapes include:
+
+- plain text translation
+- translated attributes such as `.alt`, `.placeholder`, `.title`
+- `v-t.plural`
+
+The runtime component layer still works without compile-time optimization, but the plugin path is the recommended authoring experience.
+
+## Runtime-capable components
+
+These components continue to work even without the build plugin:
+
+- `<Trans>`
+- `<Plural>`
+- `<Select>`
+- `<DateTime>`
+- `<NumberFormat>`
+
+Cross-framework contract highlights:
+
+- `Plural` supports `id`, `context`, `comment`, and `offset`
+- `zero` maps to exact `=0`
+- `#` uses the adjusted value
+- `Select` supports `options` plus direct case props, with `options` taking precedence
+
+## Async locale loading
 
 ```ts
 const fluent = createFluentVue({
   locale: 'en',
-  messages: { en },           // only default locale bundled
-  splitting: true,
+  messages: { en },
+  lazyLocaleLoading: true,
   chunkLoader: (locale) => import(`./locales/compiled/${locale}.js`),
 })
-
-// Switching locale triggers async loading
-await fluent.global.setLocale('ja')  // loads ja chunk, then switches
 ```
 
-## useI18n() Composable
+Behavior:
 
-Returns the full Fluenti context. Must be called inside a component that has the plugin installed. Throws if the plugin has not been installed.
+- the default locale can be bundled eagerly
+- other locales load on demand through `chunkLoader`
+- `setLocale()` becomes async when loading is required
+- `preloadLocale()` fetches a locale without switching
 
-```vue
-<script setup>
-import { useI18n } from '@fluenti/vue'
+## Build plugin relationship
 
-const { t, d, n, locale, setLocale } = useI18n()
-</script>
+`@fluenti/vue` is the runtime layer. `@fluenti/vite-plugin` provides compile-time transforms for:
 
-<template>
-  <p>{{ t('Hello, {name}!', { name: 'World' }) }}</p>
-  <p>{{ d(new Date(), 'long') }}</p>
-  <p>{{ n(1234.5, 'currency') }}</p>
-  <button @click="setLocale('ja')">Japanese</button>
-</template>
-```
+- direct-import `t`
+- `v-t`
+- template component optimization
 
-### Full API Reference
-
-| Method | Signature | Description |
-|--------|-----------|-------------|
-| `t` | `(id: string \| MessageDescriptor, values?) => string` | Translate a key with optional interpolation |
-| `d` | `(value: Date \| number, style?) => string` | Format a date (uses `dateFormats` presets or Intl defaults) |
-| `n` | `(value: number, style?) => string` | Format a number (uses `numberFormats` presets or Intl defaults) |
-| `format` | `(message: string, values?) => string` | Format an ICU message string directly (no catalog lookup) |
-| `te` | `(key: string, locale?) => boolean` | Check if a translation key exists |
-| `tm` | `(key: string, locale?) => CompiledMessage \| undefined` | Get the raw compiled message without interpolation |
-| `locale` | `Ref<string>` (readonly) | Reactive ref for the current locale |
-| `setLocale` | `(locale: string) => Promise<void>` | Change locale (async when splitting is enabled) |
-| `loadMessages` | `(locale: string, messages: Messages) => void` | Dynamically add messages for a locale at runtime |
-| `getLocales` | `() => string[]` | Get all locales that have loaded messages |
-| `preloadLocale` | `(locale: string) => void` | Preload a locale chunk in the background without switching |
-| `isLoading` | `Ref<boolean>` (readonly) | Whether a locale chunk is currently being loaded |
-| `loadedLocales` | `Ref<ReadonlySet<string>>` (readonly) | Set of locales whose messages have been loaded |
-| `tRaw` | `(message: string, values?) => string` | **Deprecated.** Use `format()` instead |
-
-### te() — Translation Existence Check
-
-```vue
-<script setup>
-const { te, t } = useI18n()
-</script>
-
-<template>
-  <p v-if="te('welcome.premium')">{{ t('welcome.premium') }}</p>
-  <p v-else>{{ t('welcome.default') }}</p>
-</template>
-```
-
-### format() — Direct ICU Formatting
-
-Format an ICU message string without looking up a key in the catalog:
-
-```vue
-<script setup>
-const { format } = useI18n()
-const msg = format('{count, plural, =0 {No items} one {# item} other {# items}}', { count: 5 })
-// -> "5 items"
-</script>
-```
-
-### Async Locale Loading
-
-```vue
-<script setup>
-const { setLocale, isLoading, loadedLocales, preloadLocale } = useI18n()
-
-// Preload Japanese in the background (e.g. on hover)
-function onHover() {
-  preloadLocale('ja')
-}
-
-// Switch locale (instant if preloaded, async otherwise)
-async function switchToJa() {
-  await setLocale('ja')
-}
-</script>
-
-<template>
-  <button @mouseenter="onHover" @click="switchToJa" :disabled="isLoading">
-    {{ isLoading ? 'Loading...' : '日本語' }}
-  </button>
-  <p>Loaded: {{ [...loadedLocales].join(', ') }}</p>
-</template>
-```
-
-## v-t Directive
-
-The v-t directive is compiled away at build time by @fluenti/vite-plugin. A runtime fallback is also registered for cases where the compile-time transform is not used.
-
-```vue
-<template>
-  <h1 v-t>Hello, world!</h1>
-  <p v-t.plural="count">one apple | {count} apples</p>
-  <img v-t.alt alt="Welcome banner" src="banner.png" />
-  <input v-t.placeholder placeholder="Search..." />
-</template>
-```
-
-### Modifiers
-
-| Modifier | Effect |
-|----------|--------|
-| _(none)_ | Translates text content |
-| `.plural` | Enables plural forms with pipe syntax |
-| `.alt` | Translates the `alt` attribute |
-| `.placeholder` | Translates the `placeholder` attribute |
-| `.title` | Translates the `title` attribute |
-| `.{attr}` | Translates any named attribute |
-
-## Components
-
-### Trans — Rich Text
-
-Render translated text containing HTML elements or Vue components:
-
-```vue
-<template>
-  <Trans>Read the <a href="/docs">documentation</a></Trans>
-  <Trans>Click <RouterLink to="/next">here</RouterLink> to continue.</Trans>
-</template>
-```
-
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| `tag` | `string` | `'span'` | Wrapper element |
-
-### Plural — Plural Forms
-
-ICU plural patterns as a component. Supports string props or rich text via named slots.
-
-```vue
-<template>
-  <!-- String props (simple) -->
-  <Plural :value="count" zero="No items" one="1 item" other="{count} items" />
-
-  <!-- Rich text via named slots -->
-  <Plural :value="count">
-    <template #zero>No <strong>items</strong> left</template>
-    <template #one><em>1</em> item remaining</template>
-    <template #other><strong>{{ count }}</strong> items remaining</template>
-  </Plural>
-</template>
-```
-
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| `value` | `number` | — | The count to pluralise on (required) |
-| `zero` | `string` | — | Text for zero items (maps to ICU `=0`) |
-| `one` | `string` | — | Singular form |
-| `two` | `string` | — | Dual form |
-| `few` | `string` | — | Few form (used in some languages) |
-| `many` | `string` | — | Many form (used in some languages) |
-| `other` | `string` | `''` | Default/other form |
-| `tag` | `string` | `'span'` | Wrapper element |
-
-Slots: `#zero`, `#one`, `#two`, `#few`, `#many`, `#other` — each receives `{ count }` as slot props.
-
-### Select — Gender / Option Selection
-
-ICU select patterns as a component:
-
-```vue
-<template>
-  <!-- String props -->
-  <Select :value="gender" male="He" female="She" other="They" />
-
-  <!-- Type-safe options prop -->
-  <Select
-    :value="role"
-    :options="{ admin: 'Administrator', editor: 'Editor' }"
-    other="Viewer"
-  />
-
-  <!-- Rich text via named slots -->
-  <Select :value="gender">
-    <template #male><strong>He</strong> liked this</template>
-    <template #female><strong>She</strong> liked this</template>
-    <template #other><em>They</em> liked this</template>
-  </Select>
-</template>
-```
-
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| `value` | `string` | — | The value to match against (required) |
-| `options` | `Record<string, string>` | — | Named options map |
-| `other` | `string` | `''` | Fallback when no option matches |
-| `tag` | `string` | `'span'` | Wrapper element |
-
-Slots: Named slots matching option keys, each receives `{ value }` as slot props.
-
-## Global Properties
-
-The plugin registers the following on `app.config.globalProperties`:
-
-- `$t` — Same as `t()` from useI18n()
-- `$d` — Same as `d()` from useI18n()
-- `$n` — Same as `n()` from useI18n()
-- `$vtRich` — Internal rich text helper for compile-time v-t transforms
-
-## SSR Safety
-
-`createFluentVue()` creates entirely fresh state per call — no module-level singletons. Call it once per SSR request to avoid locale leaking between users.
-
-## TypeScript
-
-All types are exported:
-
-```ts
-import type { FluentVueOptions, FluentVuePlugin, FluentVueContext } from '@fluenti/vue'
-```
-
-## Documentation
-
-- Full docs: https://fluenti.dev
-- llms.txt: Concise summary
-- Source: https://github.com/usefluenti/fluenti
-- License: MIT
+The components themselves remain runtime-capable, so correctness does not depend on the plugin.

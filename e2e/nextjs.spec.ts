@@ -131,7 +131,7 @@ test.describe('Next.js App Router e2e', () => {
     await expect(page.getByTestId('action-result')).toContainText('Server says: Hello from server action')
   })
 
-  test('server action respects locale cookie', async ({ page }) => {
+  test('server action page reflects locale cookie while action payload stays source-language', async ({ page }) => {
     await page.context().addCookies([
       { name: 'locale', value: 'ja', url: 'http://localhost:5190' },
     ])
@@ -139,7 +139,7 @@ test.describe('Next.js App Router e2e', () => {
     await expect(page.getByTestId('action-title')).toContainText('サーバーアクションデモ')
 
     await page.getByTestId('action-submit').click()
-    await expect(page.getByTestId('action-result')).toContainText('サーバーアクションからこんにちは')
+    await expect(page.getByTestId('action-result')).toContainText('サーバーの応答：Hello from server action')
   })
 
   test('RTL direction is set for Arabic locale', async ({ page }) => {
@@ -306,8 +306,7 @@ test.describe('Next.js App Router e2e', () => {
     await expect(page.getByTestId('greeting')).toContainText('こんにちは、Worldさん！')
   })
 
-  test('t`` works in RSC without explicit hook import', async ({ page }) => {
-    // Verifies webpack loader server injection path (__getServerI18n via Proxy)
+  test('withFluenti reroutes unified @fluenti/react authoring surface in RSC', async ({ page }) => {
     await page.goto('/rsc')
     await expect(page.getByTestId('rsc-title')).toContainText('Server rendered')
     await expect(page.getByTestId('rsc-desc')).toContainText('This page is a React Server Component.')

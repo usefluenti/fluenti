@@ -1,5 +1,5 @@
 import { cache } from 'react'
-import { createFluent } from '@fluenti/core'
+import { createFluent, hashMessage as hashSyntheticMessage } from '@fluenti/core'
 import type {
   FluentInstanceExtended,
   FluentConfigExtended,
@@ -10,7 +10,8 @@ import type {
 } from '@fluenti/core'
 import { createElement, Fragment, type ReactNode, type ReactElement } from 'react'
 import { hashMessage, extractMessage, reconstruct } from './components/trans-core'
-import { resolveCategory, replaceHash, type PluralCategory } from './components/plural-core'
+import { PLURAL_CATEGORIES, type PluralCategory } from './components/plural-core'
+import { buildICUPluralMessage, buildICUSelectMessage, normalizeSelectForms, renderRichTranslation, serializeRichForms } from './components/icu-rich'
 
 // Re-export SSR utilities from core for convenience
 export { detectLocale, getSSRLocaleScript, getHydratedLocale, isRTL, getDirection } from '@fluenti/core'
@@ -64,6 +65,8 @@ export interface ServerTransProps {
   children: ReactNode
   /** Override auto-generated hash ID */
   id?: string
+  /** Message context used for identity and translator disambiguation */
+  context?: string
   /** Context comment for translators */
   comment?: string
   /** Custom render wrapper */
@@ -73,6 +76,12 @@ export interface ServerTransProps {
 export interface ServerPluralProps {
   /** The count value */
   value: number
+  /** Override the auto-generated synthetic ICU message id */
+  id?: string
+  /** Message context used for identity and translator disambiguation */
+  context?: string
+  /** Translator-facing note preserved in extraction catalogs */
+  comment?: string
   /** Text for zero (if language supports) */
   zero?: ReactNode
   /** Singular form. `#` replaced with value */
@@ -87,6 +96,23 @@ export interface ServerPluralProps {
   other: ReactNode
   /** Offset from value before selecting form */
   offset?: number
+}
+
+export interface ServerSelectProps {
+  /** The selector value */
+  value: string
+  /** Override the auto-generated synthetic ICU message id */
+  id?: string
+  /** Message context used for identity and translator disambiguation */
+  context?: string
+  /** Translator-facing note preserved in extraction catalogs */
+  comment?: string
+  /** Default case */
+  other: ReactNode
+  /** Type-safe named options. Takes precedence over direct case props. */
+  options?: Record<string, ReactNode>
+  /** Named cases — any string key maps to a ReactNode */
+  [key: string]: ReactNode | Record<string, ReactNode> | string | undefined
 }
 
 export interface ServerDateTimeProps {
@@ -107,6 +133,7 @@ export interface ServerNumberProps {
 
 type ServerTransComponent = (props: ServerTransProps) => Promise<ReactElement>
 type ServerPluralComponent = (props: ServerPluralProps) => Promise<ReactElement>
+type ServerSelectComponent = (props: ServerSelectProps) => Promise<ReactElement>
 type ServerDateTimeComponent = (props: ServerDateTimeProps) => Promise<ReactElement>
 type ServerNumberComponent = (props: ServerNumberProps) => Promise<ReactElement>
 
@@ -157,6 +184,16 @@ export interface ServerI18n {
   Plural: ServerPluralComponent
 
   /**
+   * `<Select>` for React Server Components.
+   *
+   * @example
+   * ```tsx
+   * <Select value={gender} male="He liked this" other="They liked this" />
+   * ```
+   */
+  Select: ServerSelectComponent
+
+  /**
    * `<DateTime>` for React Server Components.
    *
    * @example
@@ -195,7 +232,7 @@ export interface ServerI18n {
  * // lib/i18n.server.ts — define once
  * import { createServerI18n } from '@fluenti/react/server'
  *
- * export const { setLocale, getI18n, Trans, Plural, DateTime, NumberFormat } = createServerI18n({
+ * export const { setLocale, getI18n, Trans, Plural, Select, DateTime, NumberFormat } = createServerI18n({
  *   loadMessages: (locale) => import(`../messages/${locale}.json`),
  *   fallbackLocale: 'en',
  * })
@@ -214,13 +251,14 @@ export interface ServerI18n {
  *
  * ```tsx
  * // app/[locale]/page.tsx — use Trans, Plural, etc. directly
- * import { Trans, Plural } from '@/lib/i18n.server'
+ * import { Trans, Plural, Select } from '@/lib/i18n.server'
  *
  * export default async function Page() {
  *   return (
  *     <div>
  *       <Trans>Read the <a href="/docs">documentation</a>.</Trans>
  *       <Plural value={5} one="# item" other="# items" />
+ *       <Select value="male" male="He liked this" other="They liked this" />
  *     </div>
  *   )
  * }
@@ -317,30 +355,34 @@ export function createServerI18n(config: ServerI18nConfig): ServerI18n {
 
   // ─── Async Server Components ─────────────────────────────────────────────
 
-  async function Trans({ children, id, render }: ServerTransProps): Promise<ReactElement> {
+  async function Trans({ children, id, context, comment, render }: ServerTransProps): Promise<ReactElement> {
     const i18n = await getI18n()
     const { message, components } = extractMessage(children)
-    const messageId = id ?? hashMessage(message)
-    const translated = i18n.t({ id: messageId, message })
+    const messageId = id ?? hashMessage(message, context)
+    const translated = i18n.t({
+      id: messageId,
+      message,
+      ...(context !== undefined ? { context } : {}),
+      ...(comment !== undefined ? { comment } : {}),
+    })
     const result = reconstruct(translated, components)
     return createElement(Fragment, null, render ? render(result) : result)
   }
 
-  async function Plural({ value, zero, one, two, few, many, other, offset }: ServerPluralProps): Promise<ReactElement> {
+  async function Plural({
+    value,
+    id,
+    context,
+    comment,
+    zero,
+    one,
+    two,
+    few,
+    many,
+    other,
+    offset,
+  }: ServerPluralProps): Promise<ReactElement> {
     const i18n = await getI18n()
-    const adjustedValue = offset ? value - offset : value
-
-    const available: Record<string, boolean> = {
-      zero: zero !== undefined,
-      one: one !== undefined,
-      two: two !== undefined,
-      few: few !== undefined,
-      many: many !== undefined,
-      other: true,
-    }
-
-    const category = resolveCategory(adjustedValue, i18n.locale, available)
-
     const forms: Record<PluralCategory, ReactNode | undefined> = {
       zero,
       one,
@@ -349,11 +391,78 @@ export function createServerI18n(config: ServerI18nConfig): ServerI18n {
       many,
       other,
     }
+    const { messages, components } = serializeRichForms(PLURAL_CATEGORIES, forms)
+    const icuMessage = buildICUPluralMessage(
+      {
+        ...(messages.zero !== undefined && { zero: messages.zero }),
+        ...(messages.one !== undefined && { one: messages.one }),
+        ...(messages.two !== undefined && { two: messages.two }),
+        ...(messages.few !== undefined && { few: messages.few }),
+        ...(messages.many !== undefined && { many: messages.many }),
+        other: messages.other ?? '',
+      },
+      offset,
+    )
 
-    const selected = forms[category] ?? other
-    const formatted = i18n.n(value)
+    const result = renderRichTranslation(
+      {
+        id: id ?? (context === undefined ? icuMessage : hashSyntheticMessage(icuMessage, context)),
+        message: icuMessage,
+        ...(context !== undefined ? { context } : {}),
+        ...(comment !== undefined ? { comment } : {}),
+      },
+      { count: value },
+      (descriptor, values) => i18n.t(descriptor, values),
+      components,
+    )
 
-    return createElement(Fragment, null, replaceHash(selected, formatted))
+    return createElement(Fragment, null, result)
+  }
+
+  async function Select({
+    value,
+    id,
+    context,
+    comment,
+    other,
+    options,
+    ...cases
+  }: ServerSelectProps): Promise<ReactElement> {
+    const i18n = await getI18n()
+    const forms: Record<string, ReactNode | undefined> = options === undefined
+      ? {
+        ...Object.fromEntries(
+          Object.entries(cases).filter(([key]) => !['value', 'id', 'context', 'comment', 'options', 'other'].includes(key)),
+        ),
+        other,
+      }
+      : {
+        ...options,
+        other,
+      }
+
+    const orderedKeys = [...Object.keys(forms).filter(key => key !== 'other'), 'other'] as const
+    const { messages, components } = serializeRichForms(orderedKeys, forms)
+    const normalized = normalizeSelectForms(
+      Object.fromEntries(
+        [...orderedKeys].map((key) => [key, messages[key] ?? '']),
+      ),
+    )
+    const icuMessage = buildICUSelectMessage(normalized.forms)
+
+    const result = renderRichTranslation(
+      {
+        id: id ?? (context === undefined ? icuMessage : hashSyntheticMessage(icuMessage, context)),
+        message: icuMessage,
+        ...(context !== undefined ? { context } : {}),
+        ...(comment !== undefined ? { comment } : {}),
+      },
+      { value: normalized.valueMap[value] ?? 'other' },
+      (descriptor, values) => i18n.t(descriptor, values),
+      components,
+    )
+
+    return createElement(Fragment, null, result)
   }
 
   async function DateTime({ value, style }: ServerDateTimeProps): Promise<ReactElement> {
@@ -409,5 +518,5 @@ export function createServerI18n(config: ServerI18nConfig): ServerI18n {
     return store.instance
   }
 
-  return { setLocale, getI18n, __getSyncInstance, Trans, Plural, DateTime, NumberFormat }
+  return { setLocale, getI18n, __getSyncInstance, Trans, Plural, Select, DateTime, NumberFormat }
 }

@@ -173,14 +173,13 @@ export function transformTransComponents(code: string): TransTransformResult {
     const extracted = extractChildren(children)
     if (!extracted.message) return fullMatch
 
-    // Compute hash ID, unless user provided an explicit id prop
-    const customIdMatch = attrStr.match(/\bid\s*=\s*(?:"([^"]*)"|'([^']*)'|{([^}]*)})/)
-    const messageId = customIdMatch
-      ? (customIdMatch[1] ?? customIdMatch[2] ?? customIdMatch[3]!)
-      : hashMessage(extracted.message)
+    const customId = readStaticJsxAttribute(attrStr, 'id')
+    if (customId.kind === 'dynamic') return fullMatch
 
-    // For custom id with JSX expression {id}, skip (can't statically determine)
-    if (customIdMatch?.[3]) return fullMatch
+    const context = readStaticJsxAttribute(attrStr, 'context')
+    if (!customId.value && context.kind === 'dynamic') return fullMatch
+
+    const messageId = customId.value ?? hashMessage(extracted.message, context.value)
 
     // Build __components array JSX
     const componentsJsx = extracted.componentSources.length > 0
@@ -198,4 +197,30 @@ export function transformTransComponents(code: string): TransTransformResult {
   })
 
   return { code: result, transformed }
+}
+
+interface StaticAttributeValue {
+  kind: 'missing' | 'static' | 'dynamic'
+  value?: string
+}
+
+function readStaticJsxAttribute(
+  attrs: string,
+  name: string,
+): StaticAttributeValue {
+  const dynamicPattern = new RegExp(`\\b${name}\\s*=\\s*\\{`)
+  if (dynamicPattern.test(attrs)) {
+    return { kind: 'dynamic' }
+  }
+
+  const staticPattern = new RegExp(`\\b${name}\\s*=\\s*(?:"([^"]*)"|'([^']*)')`)
+  const match = attrs.match(staticPattern)
+  if (!match) {
+    return { kind: 'missing' }
+  }
+
+  return {
+    kind: 'static',
+    value: match[1] ?? match[2] ?? '',
+  }
 }

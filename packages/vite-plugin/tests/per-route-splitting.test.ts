@@ -45,7 +45,7 @@ describe('per-route splitting', () => {
       sourceLocale: 'en',
       locales: ['en', 'ja'],
       framework: 'vue',
-    })
+    } as Parameters<typeof fluentiPlugin>[0] & { splitting: 'per-route' })
   })
 
   function getBuildSplitPlugin() {
