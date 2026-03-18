@@ -12,7 +12,7 @@ export default defineConfig({
     },
     rollupOptions: {
       external: [
-        '@fluenti/core',
+        /^@fluenti\/core(?:\/.*)?$/,
         '@vue/compiler-sfc',
         'gettext-parser',
         'citty',

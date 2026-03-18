@@ -212,12 +212,23 @@ function classifyExpression(expr: string): string {
 }
 
 const require = createRequire(import.meta.url)
-const generatorModule = require('@babel/generator') as {
-  default?: (ast: unknown, options?: unknown) => { code: string }
+let generateCode:
+  | ((ast: unknown, options?: unknown) => { code: string })
+  | null = null
+
+function getGenerateCode(): (ast: unknown, options?: unknown) => { code: string } {
+  if (generateCode) return generateCode
+
+  const generatorModule = require('@babel/generator') as {
+    default?: (ast: unknown, options?: unknown) => { code: string }
+  }
+
+  generateCode = typeof generatorModule.default === 'function'
+    ? generatorModule.default
+    : (generatorModule as unknown as (ast: unknown, options?: unknown) => { code: string })
+
+  return generateCode
 }
-const generateCode = typeof generatorModule.default === 'function'
-  ? generatorModule.default
-  : (generatorModule as unknown as (ast: unknown, options?: unknown) => { code: string })
 
 export function scopeTransform(
   code: string,
@@ -440,7 +451,7 @@ export function scopeTransform(
 
   injectHelpers(program, targets, helperLocals)
 
-  const output = generateCode(program as never, {
+  const output = getGenerateCode()(program as never, {
     retainLines: true,
     jsescOption: { quotes: 'single', minimal: true },
   }).code
