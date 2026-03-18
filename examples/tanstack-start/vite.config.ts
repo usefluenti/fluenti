@@ -9,7 +9,9 @@ export default defineConfig({
     port: 5191,
   },
   plugins: [
-    tsConfigPaths(),
+    tsConfigPaths({
+      projects: ['./tsconfig.json'],
+    }),
     fluenti({ framework: 'react' }),
     tanstackStart(),
     react(),

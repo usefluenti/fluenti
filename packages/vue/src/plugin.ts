@@ -317,7 +317,7 @@ export function createFluentVue(options: FluentVueOptions): FluentVuePlugin {
    * @internal
    */
   function vtRich(
-    message: string,
+    message: string | MessageDescriptor,
     elements: Array<{ tag: string; attrs: Record<string, string> }>,
     values?: Record<string, unknown>,
   ): string {

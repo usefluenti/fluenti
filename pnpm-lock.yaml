@@ -880,6 +880,9 @@ importers:
       '@fluenti/react':
         specifier: workspace:*
         version: link:../react
+      jiti:
+        specifier: ^2
+        version: 2.6.1
     devDependencies:
       '@types/node':
         specifier: ^22

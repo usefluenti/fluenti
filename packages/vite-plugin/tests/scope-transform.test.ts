@@ -14,7 +14,8 @@ const msg = t\`Hello\`
 `
     const result = scopeTransform(code, { framework: 'react' })
     expect(result.transformed).toBe(true)
-    expect(result.code).toContain("t('Hello')")
+    expect(result.code).toContain("t({ id:")
+    expect(result.code).toContain("message: 'Hello' })")
   })
 
   it('returns unchanged when no useI18n import', () => {

@@ -83,6 +83,13 @@ interface CallExpressionNode extends SourceNode {
   arguments: SourceNode[]
 }
 
+interface MemberExpressionNode extends SourceNode {
+  type: 'MemberExpression'
+  object: SourceNode
+  property: SourceNode
+  computed: boolean
+}
+
 interface AwaitExpressionNode extends SourceNode {
   type: 'AwaitExpression'
   argument: SourceNode
@@ -347,8 +354,13 @@ export function scopeTransform(
             throwDirectImportScopeError(directBinding, options)
           }
 
-          const helperName = ensureTargetHelper(target, directBinding.kind)
-          const replacement = buildImportedTaggedTemplateCall(code, tagged, helperName)
+          const replacement = directBinding.kind === 'server'
+            ? buildImportedServerTaggedTemplateCall(
+              code,
+              tagged,
+              ensureTargetHelper(target, directBinding.kind),
+            )
+            : buildImportedTaggedTemplateCall(code, tagged, ensureTargetHelper(target, directBinding.kind))
           overwriteNode(tagged, replacement)
           consumedDirectBindings.add(directBinding.local)
           transformed = true
@@ -389,8 +401,10 @@ export function scopeTransform(
           throwDirectImportScopeError(directBinding, options)
         }
 
-        const helperName = ensureTargetHelper(target, directBinding.kind)
-        overwriteNode(call, buildImportedDescriptorCall(call, helperName))
+        const replacement = directBinding.kind === 'server'
+          ? buildImportedServerDescriptorCall(call, ensureTargetHelper(target, directBinding.kind))
+          : buildImportedDescriptorCall(call, ensureTargetHelper(target, directBinding.kind))
+        overwriteNode(call, replacement)
         consumedDirectBindings.add(directBinding.local)
         transformed = true
         if (directBinding.kind === 'client' && importBindings.useI18n.size === 0) {
@@ -824,7 +838,7 @@ function ensureTargetHelper(
   }
 
   const helperName = createUniqueName(
-    '__fluenti_t',
+    kind === 'server' ? '__fluenti_get_i18n' : '__fluenti_t',
     target.scope.bindings,
   )
   target.helperNames[kind] = helperName
@@ -839,7 +853,12 @@ function buildRuntimeTaggedTemplateCall(
   calleeName: string,
 ): SourceNode {
   const parts = extractTemplateTranslationParts(code, expression)
-  const args: SourceNode[] = [stringLiteral(parts.message)]
+  const descriptorProperties: SourceNode[] = [
+    objectProperty(identifier('id'), stringLiteral(createMessageId(parts.message))),
+    objectProperty(identifier('message'), stringLiteral(parts.message)),
+  ]
+
+  const args: SourceNode[] = [objectExpression(descriptorProperties)]
   if (parts.values.length > 0) {
     args.push(objectExpression(parts.values))
   }
@@ -899,6 +918,68 @@ function buildImportedDescriptorCall(
   }
 
   return callExpression(identifier(helperName), args, call)
+}
+
+function buildImportedServerTaggedTemplateCall(
+  code: string,
+  expression: TaggedTemplateExpressionNode,
+  helperName: string,
+): SourceNode {
+  const parts = extractTemplateTranslationParts(code, expression)
+  const descriptorProperties: SourceNode[] = [
+    objectProperty(identifier('id'), stringLiteral(createMessageId(parts.message))),
+    objectProperty(identifier('message'), stringLiteral(parts.message)),
+  ]
+
+  const args: SourceNode[] = [objectExpression(descriptorProperties)]
+  if (parts.values.length > 0) {
+    args.push(objectExpression(parts.values))
+  }
+
+  return callExpression(
+    memberExpression(awaitExpression(callExpression(identifier(helperName), [])), identifier('t')),
+    args,
+    expression,
+  )
+}
+
+function buildImportedServerDescriptorCall(
+  call: CallExpressionNode,
+  helperName: string,
+): SourceNode {
+  if (call.arguments.length === 0) {
+    throw new Error(
+      '[fluenti] Imported `t` only supports tagged templates and static descriptor calls. ' +
+        'Use useI18n().t(...) or await getI18n() for runtime lookups.',
+    )
+  }
+
+  const descriptor = extractStaticDescriptor(call.arguments[0]!)
+  if (!descriptor) {
+    throw new Error(
+      '[fluenti] Imported `t` only supports tagged templates and static descriptor calls. ' +
+        'Use useI18n().t(...) or await getI18n() for runtime lookups.',
+    )
+  }
+
+  const runtimeDescriptor = [
+    objectProperty(identifier('id'), stringLiteral(descriptor.id ?? createMessageId(descriptor.message, descriptor.context))),
+    objectProperty(identifier('message'), stringLiteral(descriptor.message)),
+  ]
+  if (descriptor.context !== undefined) {
+    runtimeDescriptor.push(objectProperty(identifier('context'), stringLiteral(descriptor.context)))
+  }
+
+  const args: SourceNode[] = [objectExpression(runtimeDescriptor)]
+  if (call.arguments[1]) {
+    args.push(call.arguments[1]!)
+  }
+
+  return callExpression(
+    memberExpression(awaitExpression(callExpression(identifier(helperName), [])), identifier('t')),
+    args,
+    call,
+  )
 }
 
 function extractTemplateTranslationParts(
@@ -1123,7 +1204,7 @@ function injectHelpers(
     }
 
     if (target.needsHelper.has('server')) {
-      statements.push(buildHelperDeclaration(target.helperNames.server!, helperLocals.server, true))
+      statements.push(...buildServerHelperDeclarations(target, helperLocals.server))
     }
 
     if (statements.length === 0) continue
@@ -1174,6 +1255,31 @@ function buildHelperDeclaration(
       init,
     ),
   ])
+}
+
+function buildServerHelperDeclarations(
+  target: TargetContext,
+  calleeName: string,
+): SourceNode[] {
+  const helperName = target.helperNames.server!
+  const cacheName = createUniqueName(`${helperName}_cache`, target.scope.bindings)
+  target.scope.bindings.add(cacheName)
+
+  const helperProgram = parseSourceModule(`
+let ${cacheName}
+const ${helperName} = async () => {
+  if (${cacheName} === undefined) {
+    ${cacheName} = await ${calleeName}()
+  }
+  return ${cacheName}
+}
+`)
+
+  if (!helperProgram || helperProgram.type !== 'Program') {
+    throw new Error('[fluenti] Failed to build server helper for imported `t`.')
+  }
+
+  return [...(helperProgram['body'] as SourceNode[])]
 }
 
 function throwDirectImportScopeError(
@@ -1297,6 +1403,15 @@ function callExpression(callee: SourceNode, args: SourceNode[], original?: Sourc
     ...(original?.start != null ? { start: original.start } : {}),
     ...(original?.end != null ? { end: original.end } : {}),
     ...(original?.loc != null ? { loc: original.loc } : {}),
+  }
+}
+
+function memberExpression(object: SourceNode, property: SourceNode): MemberExpressionNode {
+  return {
+    type: 'MemberExpression',
+    object,
+    property,
+    computed: false,
   }
 }
 

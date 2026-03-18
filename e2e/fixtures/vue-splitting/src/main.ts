@@ -2,7 +2,7 @@ import { createApp } from 'vue'
 import { createFluentVue } from '@fluenti/vue'
 import App from './App.vue'
 import router from './router'
-import en from './locales/compiled/en'
+import en from './locales/compiled/en.js'
 
 function loadLocaleMessages(locale: string) {
   if (locale === 'en') {

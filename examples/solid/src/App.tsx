@@ -1,8 +1,8 @@
 import { createSignal, type Component, type JSX } from 'solid-js'
 import { createI18n, useI18n, Trans, Plural, Select } from '@fluenti/solid'
-import en from './locales/compiled/en'
-import zhCN from './locales/compiled/zh-CN'
-import ja from './locales/compiled/ja'
+import en from './locales/compiled/en.js'
+import zhCN from './locales/compiled/zh-CN.js'
+import ja from './locales/compiled/ja.js'
 
 createI18n({
   locale: 'en',

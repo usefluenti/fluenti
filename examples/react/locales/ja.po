@@ -58,6 +58,18 @@ msgstr "削除"
 msgid "Reset"
 msgstr "リセット"
 
+#. Trans: Read the <a>documentation</a> for more info.
+msgid "Read the <0>documentation</0> for more info."
+msgstr "<0>ドキュメント</0>の詳細を読む。"
+
+#. Trans: This is <strong>important</strong> information.
+msgid "This is <0>important</0> information."
+msgstr "これは<0>重要</0>な情報です。"
+
+#. Trans: Please <a>sign in</a> or <strong>register</strong> to continue.
+msgid "Please <0>sign in</0> or <1>register</1> to continue."
+msgstr "続行するには<0>サインイン</0>するか、<1>登録</1>してください。"
+
 #. msg`Administrator`
 msgid "1d03gh6"
 msgstr "管理者"

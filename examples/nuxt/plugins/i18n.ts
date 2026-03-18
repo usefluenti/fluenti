@@ -1,7 +1,7 @@
 import { createFluentVue } from '@fluenti/vue'
 import { getHydratedLocale } from '@fluenti/core'
-import en from '~/locales/compiled/en'
-import ja from '~/locales/compiled/ja'
+import en from '~/locales/compiled/en.js'
+import ja from '~/locales/compiled/ja.js'
 
 export default defineNuxtPlugin((nuxtApp) => {
   // On the server, read locale from the event context (set by server plugin).

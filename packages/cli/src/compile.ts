@@ -143,6 +143,7 @@ export function compileCatalog(
   catalog: CatalogData,
   locale: string,
   allIds: string[],
+  sourceLocale?: string,
 ): string {
   const lines: string[] = []
   lines.push(`// @fluenti/compiled v${CATALOG_VERSION}`)
@@ -152,9 +153,11 @@ export function compileCatalog(
     const hash = hashMessage(id)
     const exportName = `_${hash}`
     const entry = catalog[id]
-    const translated = entry?.translation ?? entry?.message ?? id
+    const translated = resolveCompiledMessage(entry, id, locale, sourceLocale)
 
-    if (hasIcuPluralOrSelect(translated)) {
+    if (translated === undefined) {
+      lines.push(`/* @__PURE__ */ export const ${exportName} = undefined`)
+    } else if (hasIcuPluralOrSelect(translated)) {
       // Parse ICU and compile to JS
       const ast = parse(translated)
       const jsExpr = astToJsExpression(ast, locale)
@@ -183,6 +186,29 @@ export function compileCatalog(
   lines.push('')
 
   return lines.join('\n')
+}
+
+function resolveCompiledMessage(
+  entry: CatalogData[string] | undefined,
+  id: string,
+  locale: string,
+  sourceLocale: string | undefined,
+): string | undefined {
+  const effectiveSourceLocale = sourceLocale ?? locale
+
+  if (!entry) {
+    return undefined
+  }
+
+  if (entry.translation !== undefined && entry.translation.length > 0) {
+    return entry.translation
+  }
+
+  if (locale === effectiveSourceLocale) {
+    return entry.message ?? id
+  }
+
+  return undefined
 }
 
 /**

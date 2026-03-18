@@ -125,7 +125,12 @@ const compile = defineCommand({
     consola.info(`Compiling ${allIds.length} messages across ${config.locales.length} locales`)
 
     for (const locale of config.locales) {
-      const compiled = compileCatalog(allCatalogs[locale]!, locale, allIds)
+      const compiled = compileCatalog(
+        allCatalogs[locale]!,
+        locale,
+        allIds,
+        config.sourceLocale,
+      )
       const outPath = resolve(config.compileOutDir, `${locale}.js`)
       writeFileSync(outPath, compiled, 'utf-8')
       consola.success(`Compiled ${locale} → ${outPath}`)

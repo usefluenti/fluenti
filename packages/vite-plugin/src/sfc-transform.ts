@@ -3,6 +3,21 @@
 
 import { hashMessage } from '@fluenti/core'
 
+function escapeSingleQuotedString(value: string): string {
+  return value.replace(/\\/g, '\\\\').replace(/'/g, "\\'")
+}
+
+function buildDescriptorExpression(
+  message: string,
+  options?: {
+    id?: string | undefined
+    context?: string | undefined
+  },
+): string {
+  const id = options?.id ?? hashMessage(message, options?.context)
+  return `{ id: '${escapeSingleQuotedString(id)}', message: '${escapeSingleQuotedString(message)}' }`
+}
+
 export function transformVtDirectives(sfc: string): string {
   const tmplOpen = sfc.match(/<template(\s[^>]*)?>/)
   if (!tmplOpen) return sfc
@@ -47,7 +62,7 @@ function transformVtAttribute(template: string): string {
     if (!attrMatch) return _match
 
     const attrValue = attrMatch[1]!
-    const msgId = attrValue
+    const descriptor = buildDescriptorExpression(attrValue)
 
     let newBefore = before.replace(/\s*\bv-t\.\w+\b/, '')
     let newAfter = after.replace(/\s*\bv-t\.\w+\b/, '')
@@ -56,7 +71,7 @@ function transformVtAttribute(template: string): string {
     newBefore = newBefore.replace(staticAttrPattern, '')
     newAfter = newAfter.replace(staticAttrPattern, '')
 
-    return `<${tag}${newBefore} :${attrName}="$t('${msgId}')"${newAfter}>`
+    return `<${tag}${newBefore} :${attrName}="$t(${descriptor})"${newAfter}>`
   })
 }
 
@@ -100,8 +115,8 @@ function transformVtContent(template: string): string {
         : ['one', 'other', 'zero', 'few', 'many'].slice(0, forms.length)
       const icuParts = categories.map((cat, i) => `${cat} {${forms[i] ?? ''}}`)
       const icuMessage = `{${bindExpr}, plural, ${icuParts.join(' ')}}`
-      const msgId = explicitId ?? icuMessage
-      return `<${tag}${cleanBefore}${cleanAfter}>{{ $t('${msgId}', { ${bindExpr} }) }}</${tag}>`
+      const descriptor = buildDescriptorExpression(icuMessage, { id: explicitId })
+      return `<${tag}${cleanBefore}${cleanAfter}>{{ $t(${descriptor}, { ${bindExpr} }) }}</${tag}>`
     }
 
     const rawContent = content.trim()
@@ -124,28 +139,26 @@ function transformVtContent(template: string): string {
           return `<${idx}>${innerContent}</${idx}>`
         },
       )
-      const msgId = explicitId ?? richMessage
-      const escapedMsgId = msgId.replace(/'/g, "\\'")
+      const descriptor = buildDescriptorExpression(richMessage, { id: explicitId })
       // Build elements as JS array literal to avoid JSON quote conflicts with v-html="..."
       const elemEntries = elements.map(el => {
         const attrEntries = Object.entries(el.attrs)
-          .map(([k, v]) => `${k}: '${v.replace(/'/g, "\\'")}'`)
+          .map(([k, v]) => `${k}: '${escapeSingleQuotedString(v)}'`)
           .join(', ')
         return `{ tag: '${el.tag}', attrs: { ${attrEntries} } }`
       })
       const elementsLiteral = `[${elemEntries.join(', ')}]`
-      return `<${tag}${cleanBefore}${cleanAfter} v-html="$vtRich('${escapedMsgId}', ${elementsLiteral})"></${tag}>`
+      return `<${tag}${cleanBefore}${cleanAfter} v-html="$vtRich(${descriptor}, ${elementsLiteral})"></${tag}>`
     }
 
     const { message, vars } = extractTemplateVars(rawContent)
-    const msgId = explicitId ?? message
-    const escapedMsgId = msgId.replace(/'/g, "\\'")
+    const descriptor = buildDescriptorExpression(message, { id: explicitId })
 
     if (vars.length > 0) {
-      return `<${tag}${cleanBefore}${cleanAfter}>{{ $t('${escapedMsgId}', { ${vars.join(', ')} }) }}</${tag}>`
+      return `<${tag}${cleanBefore}${cleanAfter}>{{ $t(${descriptor}, { ${vars.join(', ')} }) }}</${tag}>`
     }
 
-    return `<${tag}${cleanBefore}${cleanAfter}>{{ $t('${escapedMsgId}') }}</${tag}>`
+    return `<${tag}${cleanBefore}${cleanAfter}>{{ $t(${descriptor}) }}</${tag}>`
   })
 }
 
@@ -201,22 +214,26 @@ function transformTransSFC(template: string): string {
           return `<${idx}>${innerContent}</${idx}>`
         },
       )
-      const translationId = explicitId.value ?? hashMessage(richMessage, context.value)
-      const escapedMsg = translationId.replace(/'/g, "\\'")
+      const descriptor = buildDescriptorExpression(richMessage, {
+        id: explicitId.value,
+        context: context.value,
+      })
       const elemEntries = elements.map(el => {
         const attrEntries = Object.entries(el.attrs)
-          .map(([k, v]) => `${k}: '${v.replace(/'/g, "\\'")}'`)
+          .map(([k, v]) => `${k}: '${escapeSingleQuotedString(v)}'`)
           .join(', ')
         return `{ tag: '${el.tag}', attrs: { ${attrEntries} } }`
       })
       const elementsLiteral = `[${elemEntries.join(', ')}]`
-      return `<${wrapperTag}${cleanAttrs} v-html="$vtRich('${escapedMsg}', ${elementsLiteral})"></${wrapperTag}>`
+      return `<${wrapperTag}${cleanAttrs} v-html="$vtRich(${descriptor}, ${elementsLiteral})"></${wrapperTag}>`
     }
 
     // Plain text
-    const translationId = explicitId.value ?? hashMessage(rawContent, context.value)
-    const escapedMsg = translationId.replace(/'/g, "\\'")
-    return `<${wrapperTag}${cleanAttrs}>{{ $t('${escapedMsg}') }}</${wrapperTag}>`
+    const descriptor = buildDescriptorExpression(rawContent, {
+      id: explicitId.value,
+      context: context.value,
+    })
+    return `<${wrapperTag}${cleanAttrs}>{{ $t(${descriptor}) }}</${wrapperTag}>`
   })
 }
 
@@ -227,6 +244,10 @@ function transformPluralSFC(template: string): string {
   const pluralSlotRegex = /<Plural(\s[^>]*?)>([\s\S]*?)<\/Plural>/g
   template = template.replace(pluralSlotRegex, (_match, attrStr: string, content: string) => {
     const attrs = attrStr ?? ''
+    const explicitId = readStaticSfcAttr(attrs, 'id')
+    const context = readStaticSfcAttr(attrs, 'context')
+    if (explicitId.kind === 'dynamic') return _match
+    if (!explicitId.value && context.kind === 'dynamic') return _match
 
     // Check if content has template slots
     const templateSlotRegex = /<template\s+#(\w+)\s*>([\s\S]*?)<\/template>/g
@@ -285,27 +306,36 @@ function transformPluralSFC(template: string): string {
     if (icuParts.length === 0) return _match
 
     const icuMessage = `{count, plural, ${icuParts.join(' ')}}`
-    const escapedMsg = icuMessage.replace(/'/g, "\\'")
+    const descriptor = buildDescriptorExpression(icuMessage, {
+      id: explicitId.value,
+      context: context.value,
+    })
 
     // Collect remaining attrs (strip Plural-specific ones)
     let cleanAttrs = attrs
     cleanAttrs = cleanAttrs.replace(/:value\s*=\s*"[^"]*"/, '')
     cleanAttrs = cleanAttrs.replace(/\btag\s*=\s*"[^"]*"/, '')
+    cleanAttrs = cleanAttrs.replace(/\s*\bid\s*=\s*"[^"]*"/, '')
+    cleanAttrs = cleanAttrs.replace(/\s*:id\s*=\s*"[^"]*"/, '')
+    cleanAttrs = cleanAttrs.replace(/\s*\bcontext\s*=\s*"[^"]*"/, '')
+    cleanAttrs = cleanAttrs.replace(/\s*:context\s*=\s*"[^"]*"/, '')
+    cleanAttrs = cleanAttrs.replace(/\s*\bcomment\s*=\s*"[^"]*"/, '')
+    cleanAttrs = cleanAttrs.replace(/\s*:comment\s*=\s*"[^"]*"/, '')
     cleanAttrs = cleanAttrs.replace(/\s+/g, ' ').trim()
     const attrsPart = cleanAttrs ? ` ${cleanAttrs}` : ''
 
     if (allElements.length > 0) {
       const elemEntries = allElements.map(el => {
         const attrEntries = Object.entries(el.attrs)
-          .map(([k, v]) => `${k}: '${v.replace(/'/g, "\\'")}'`)
+          .map(([k, v]) => `${k}: '${escapeSingleQuotedString(v)}'`)
           .join(', ')
         return `{ tag: '${el.tag}', attrs: { ${attrEntries} } }`
       })
       const elementsLiteral = `[${elemEntries.join(', ')}]`
-      return `<${wrapperTag}${attrsPart} v-html="$vtRich('${escapedMsg}', ${elementsLiteral}, { count: ${valueExpr} })"></${wrapperTag}>`
+      return `<${wrapperTag}${attrsPart} v-html="$vtRich(${descriptor}, ${elementsLiteral}, { count: ${valueExpr} })"></${wrapperTag}>`
     }
 
-    return `<${wrapperTag}${attrsPart} v-text="$t('${escapedMsg}', { ${valueExpr} })"></${wrapperTag}>`
+    return `<${wrapperTag}${attrsPart} v-text="$t(${descriptor}, { count: ${valueExpr} })"></${wrapperTag}>`
   })
 
   // Then handle <Plural ... /> (self-closing) or <Plural ...></Plural> without slot content
@@ -313,6 +343,10 @@ function transformPluralSFC(template: string): string {
 
   return template.replace(pluralRegex, (_match, attrStr: string) => {
     const attrs = attrStr ?? ''
+    const explicitId = readStaticSfcAttr(attrs, 'id')
+    const context = readStaticSfcAttr(attrs, 'context')
+    if (explicitId.kind === 'dynamic') return _match
+    if (!explicitId.value && context.kind === 'dynamic') return _match
 
     // Extract :value binding
     const valueMatch = attrs.match(/:value\s*=\s*"([^"]*)"/)
@@ -339,20 +373,29 @@ function transformPluralSFC(template: string): string {
 
     if (icuParts.length === 0) return _match
 
-    const icuMessage = `{${valueExpr}, plural, ${icuParts.join(' ')}}`
-    const escapedMsg = icuMessage.replace(/'/g, "\\'")
+    const icuMessage = `{count, plural, ${icuParts.join(' ')}}`
+    const descriptor = buildDescriptorExpression(icuMessage, {
+      id: explicitId.value,
+      context: context.value,
+    })
 
     // Collect remaining attrs (strip Plural-specific ones)
     let cleanAttrs = attrs
     cleanAttrs = cleanAttrs.replace(/:value\s*=\s*"[^"]*"/, '')
     cleanAttrs = cleanAttrs.replace(/\btag\s*=\s*"[^"]*"/, '')
+    cleanAttrs = cleanAttrs.replace(/\s*\bid\s*=\s*"[^"]*"/, '')
+    cleanAttrs = cleanAttrs.replace(/\s*:id\s*=\s*"[^"]*"/, '')
+    cleanAttrs = cleanAttrs.replace(/\s*\bcontext\s*=\s*"[^"]*"/, '')
+    cleanAttrs = cleanAttrs.replace(/\s*:context\s*=\s*"[^"]*"/, '')
+    cleanAttrs = cleanAttrs.replace(/\s*\bcomment\s*=\s*"[^"]*"/, '')
+    cleanAttrs = cleanAttrs.replace(/\s*:comment\s*=\s*"[^"]*"/, '')
     for (const cat of PLURAL_CATEGORIES) {
       cleanAttrs = cleanAttrs.replace(new RegExp(`(?<!:)\\b${cat}\\s*=\\s*"[^"]*"`), '')
     }
     cleanAttrs = cleanAttrs.replace(/\s+/g, ' ').trim()
     const attrsPart = cleanAttrs ? ` ${cleanAttrs}` : ''
 
-    return `<${wrapperTag}${attrsPart} v-text="$t('${escapedMsg}', { ${valueExpr} })"></${wrapperTag}>`
+    return `<${wrapperTag}${attrsPart} v-text="$t(${descriptor}, { count: ${valueExpr} })"></${wrapperTag}>`
   })
 }
 

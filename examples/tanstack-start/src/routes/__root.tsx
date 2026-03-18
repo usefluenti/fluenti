@@ -9,9 +9,9 @@ import { useState } from 'react'
 import { I18nProvider, useI18n } from '@fluenti/react'
 import { getDirection } from '@fluenti/core'
 import type { ReactNode } from 'react'
-import en from '../locales/compiled/en'
-import zhCN from '../locales/compiled/zh-CN'
-import ja from '../locales/compiled/ja'
+import en from '../locales/compiled/en.js'
+import zhCN from '../locales/compiled/zh-CN.js'
+import ja from '../locales/compiled/ja.js'
 
 const messages = { en, 'zh-CN': zhCN, ja }
 

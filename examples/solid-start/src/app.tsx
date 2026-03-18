@@ -2,7 +2,7 @@ import { Router } from '@solidjs/router'
 import { FileRoutes } from '@solidjs/start/router'
 import { Suspense, type Component, type JSX } from 'solid-js'
 import { isServer } from 'solid-js/web'
-import { I18nProvider, useI18n } from '@fluenti/solid'
+import { I18nProvider, useI18n, t } from '@fluenti/solid'
 import { allMessages, DEFAULT_LOCALE, getInitialLocale } from './lib/i18n'
 
 const LanguageSwitcher: Component = () => {

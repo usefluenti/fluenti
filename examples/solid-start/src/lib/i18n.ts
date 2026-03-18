@@ -1,7 +1,7 @@
 import type { Locale, Messages } from '@fluenti/core'
 import { getHydratedLocale } from '@fluenti/core'
-import en from '../locales/compiled/en'
-import ja from '../locales/compiled/ja'
+import en from '../locales/compiled/en.js'
+import ja from '../locales/compiled/ja.js'
 
 export const AVAILABLE_LOCALES: Locale[] = ['en', 'ja']
 export const DEFAULT_LOCALE: Locale = 'en'

@@ -131,7 +131,7 @@ test.describe('Next.js App Router e2e', () => {
     await expect(page.getByTestId('action-result')).toContainText('Server says: Hello from server action')
   })
 
-  test('server action page reflects locale cookie while action payload stays source-language', async ({ page }) => {
+  test('server action page reflects locale cookie across both UI and action payload', async ({ page }) => {
     await page.context().addCookies([
       { name: 'locale', value: 'ja', url: 'http://localhost:5190' },
     ])
@@ -139,7 +139,7 @@ test.describe('Next.js App Router e2e', () => {
     await expect(page.getByTestId('action-title')).toContainText('サーバーアクションデモ')
 
     await page.getByTestId('action-submit').click()
-    await expect(page.getByTestId('action-result')).toContainText('サーバーの応答：Hello from server action')
+    await expect(page.getByTestId('action-result')).toContainText('サーバーの応答：サーバーアクションからこんにちは')
   })
 
   test('RTL direction is set for Arabic locale', async ({ page }) => {
