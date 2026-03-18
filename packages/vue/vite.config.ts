@@ -19,6 +19,8 @@ export default defineConfig({
   ],
   test: {
     environment: 'happy-dom',
+    testTimeout: process.env.CI ? 15_000 : 5_000,
+    hookTimeout: process.env.CI ? 15_000 : 5_000,
     coverage: {
       provider: 'v8',
       reporter: ['text', 'lcov'],

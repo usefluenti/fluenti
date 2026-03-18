@@ -1,6 +1,6 @@
 import { createRoot } from 'react-dom/client'
 import { I18nProvider } from '@fluenti/react'
-import en from './locales/compiled/en'
+import en from './locales/compiled/en.js'
 import App from './App'
 
 function loadLocaleMessages(locale: string) {

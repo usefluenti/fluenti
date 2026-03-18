@@ -22,6 +22,12 @@ interface POData {
   translations: Record<string, Record<string, POTranslation>>
 }
 
+interface ParsedExtractedComment {
+  comment?: string
+  customId?: string
+  sourceMessage?: string
+}
+
 /** Read a PO catalog file */
 export function readPoCatalog(content: string): CatalogData {
   const po = gettextParser.po.parse(content) as POData
@@ -36,11 +42,16 @@ export function readPoCatalog(content: string): CatalogData {
       const translation = entry.msgstr?.[0] ?? undefined
       const origin = entry.comments?.reference ?? undefined
       const isObsolete = entry.comments?.flag?.includes('fuzzy') ?? false
-      const { comment, customId } = parseExtractedComment(entry.comments?.extracted)
-      const id = customId ?? hashMessage(msgid, context)
+      const { comment, customId, sourceMessage } = parseExtractedComment(entry.comments?.extracted)
+      const resolvedSourceMessage = sourceMessage
+        && hashMessage(sourceMessage, context) === msgid
+        ? sourceMessage
+        : undefined
+      const id = customId
+        ?? (resolvedSourceMessage ? msgid : hashMessage(msgid, context))
 
       catalog[id] = {
-        message: msgid,
+        message: resolvedSourceMessage ?? msgid,
         ...(context !== undefined ? { context } : {}),
         ...(comment !== undefined ? { comment } : {}),
         ...(translation ? { translation } : {}),
@@ -104,18 +115,27 @@ export function writePoCatalog(catalog: CatalogData): string {
 
 function parseExtractedComment(
   extracted: string | undefined,
-): { comment?: string; customId?: string } {
+): ParsedExtractedComment {
   if (!extracted) {
     return {}
   }
 
   const lines = extracted.split('\n').map((line) => line.trim()).filter(Boolean)
   let customId: string | undefined
+  let sourceMessage: string | undefined
   const commentLines: string[] = []
 
   for (const line of lines) {
     if (line.startsWith(CUSTOM_ID_MARKER)) {
       customId = line.slice(CUSTOM_ID_MARKER.length).trim() || undefined
+      continue
+    }
+    if (line.startsWith('msg`') && line.endsWith('`')) {
+      sourceMessage = line.slice(4, -1)
+      continue
+    }
+    if (line.startsWith('Trans: ')) {
+      sourceMessage = normalizeRichTextComment(line.slice('Trans: '.length))
       continue
     }
     commentLines.push(line)
@@ -124,7 +144,30 @@ function parseExtractedComment(
   return {
     ...(commentLines.length > 0 ? { comment: commentLines.join('\n') } : {}),
     ...(customId ? { customId } : {}),
+    ...(sourceMessage ? { sourceMessage } : {}),
   }
+}
+
+function normalizeRichTextComment(comment: string): string {
+  const stack: Array<{ tag: string; index: number }> = []
+  let nextIndex = 0
+
+  return comment.replace(/<\/?([a-zA-Z][\w-]*)>/g, (match, rawTag: string) => {
+    const tag = rawTag
+    if (match.startsWith('</')) {
+      for (let index = stack.length - 1; index >= 0; index--) {
+        const entry = stack[index]
+        if (entry?.tag !== tag) continue
+        stack.splice(index, 1)
+        return `</${entry.index}>`
+      }
+      return match
+    }
+
+    const index = nextIndex++
+    stack.push({ tag, index })
+    return `<${index}>`
+  })
 }
 
 function buildExtractedComment(

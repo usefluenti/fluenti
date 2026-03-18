@@ -24,7 +24,8 @@ describe('fluentLoader', () => {
 
     const result = fluentLoader.call(ctx as never, source)
     expect(result.indexOf("'use client'")).toBe(0)
-    expect(result).toContain("return t('Home')")
+    expect(result).toContain("return t({ id:")
+    expect(result).toContain("message: 'Home' })")
     expect(result).not.toContain('globalThis.__fluenti_i18n')
     expect(result).not.toContain('t`Home`')
   })
@@ -40,7 +41,8 @@ describe('fluentLoader', () => {
     ].join('\n')
 
     const result = fluentLoader.call(ctx as never, source)
-    expect(result).toContain("return t('Welcome')")
+    expect(result).toContain("return t({ id:")
+    expect(result).toContain("message: 'Welcome' })")
     expect(result).not.toContain('__getServerI18n')
     expect(result).not.toContain('t`Welcome`')
   })
@@ -56,7 +58,8 @@ describe('fluentLoader', () => {
     ].join('\n')
 
     const result = fluentLoader.call(ctx as never, source)
-    expect(result).toContain("return translate('Stats')")
+    expect(result).toContain("return translate({ id:")
+    expect(result).toContain("message: 'Stats' })")
     expect(result).not.toContain('translate`Stats`')
   })
 
@@ -71,8 +74,9 @@ describe('fluentLoader', () => {
 
     const result = fluentLoader.call(ctx as never, source)
     expect(result).toContain("import { getI18n } from '@fluenti/next/__generated'")
-    expect(result).toMatch(/const \{ t: __fluenti(?:_server)?_t \} = await getI18n\(\)/)
-    expect(result).toMatch(/__fluenti(?:_server)?_t\(\{ id:/)
+    expect(result).toMatch(/const __fluenti(?:_server)?_get_i18n = async \(\) =>/)
+    expect(result).toContain('await getI18n()')
+    expect(result).toMatch(/\(await __fluenti(?:_server)?_get_i18n\(\)\)\.t\(\{ id:/)
     expect(result).not.toContain("import { t } from '@fluenti/next/__generated'")
   })
 
@@ -87,8 +91,9 @@ describe('fluentLoader', () => {
 
     const result = fluentLoader.call(ctx as never, source)
     expect(result).toContain("import { getI18n } from '@fluenti/next/__generated'")
-    expect(result).toMatch(/const \{ t: __fluenti(?:_server)?_t \} = await getI18n\(\)/)
-    expect(result).toMatch(/__fluenti(?:_server)?_t\(\{ id:/)
+    expect(result).toMatch(/const __fluenti(?:_server)?_get_i18n = async \(\) =>/)
+    expect(result).toContain('await getI18n()')
+    expect(result).toMatch(/\(await __fluenti(?:_server)?_get_i18n\(\)\)\.t\(\{ id:/)
     expect(result).not.toContain("import { t } from '@fluenti/react'")
   })
 

@@ -58,7 +58,8 @@ describe('fluentiPlugin', () => {
       const input = '<template><h1 v-t>Hello World</h1></template><script setup></script>'
       const result = callHook(plugin.transform, {}, input, 'App.vue') as { code: string } | undefined
 
-      expect(result?.code).toContain("$t('Hello World')")
+      expect(result?.code).toContain(`id: '${hashMessage('Hello World')}'`)
+      expect(result?.code).toContain("message: 'Hello World'")
       expect(result?.code).not.toContain('v-t')
     })
 
@@ -67,7 +68,8 @@ describe('fluentiPlugin', () => {
       const input = '<template><Trans context="nav" comment="main header">Home</Trans></template><script setup></script>'
       const result = callHook(plugin.transform, {}, input, 'App.vue') as { code: string } | undefined
 
-      expect(result?.code).toContain(`$t('${hashMessage('Home', 'nav')}')`)
+      expect(result?.code).toContain(`id: '${hashMessage('Home', 'nav')}'`)
+      expect(result?.code).toContain("message: 'Home'")
       expect(result?.code).not.toContain('context="nav"')
       expect(result?.code).not.toContain('comment="main header"')
     })
@@ -77,7 +79,8 @@ describe('fluentiPlugin', () => {
       const input = '<template><Trans id="nav.home">Home</Trans></template><script setup></script>'
       const result = callHook(plugin.transform, {}, input, 'App.vue') as { code: string } | undefined
 
-      expect(result?.code).toContain("$t('nav.home')")
+      expect(result?.code).toContain("id: 'nav.home'")
+      expect(result?.code).toContain("message: 'Home'")
       expect(result?.code).not.toContain('id="nav.home"')
     })
 
@@ -88,6 +91,8 @@ describe('fluentiPlugin', () => {
 
       expect(result?.code).toContain('=0 {No items}')
       expect(result?.code).not.toContain('zero {No items}')
+      expect(result?.code).toContain(`id: '${hashMessage('{count, plural, =0 {No items} other {# items}}')}'`)
+      expect(result?.code).toContain("message: '{count, plural, =0 {No items} other {# items}}'")
     })
   })
 
@@ -101,7 +106,8 @@ const msg = t\`Hello \${name}\`
 `
       const result = callHook(plugin.transform, {}, code, 'App.vue?type=script') as { code: string } | undefined
 
-      expect(result?.code).toContain("t('Hello {name}', { name: name })")
+      expect(result?.code).toContain("t({ id:")
+      expect(result?.code).toContain("message: 'Hello {name}' }, { name: name })")
       expect(result?.code).not.toContain('t`Hello')
       expect(result?.code).not.toContain('__i18n')
     })
@@ -115,7 +121,8 @@ const label = translate\`Dashboard\`
 `
       const result = callHook(plugin.transform, {}, code, 'Dashboard.tsx') as { code: string } | undefined
 
-      expect(result?.code).toContain("translate('Dashboard')")
+      expect(result?.code).toContain("translate({ id:")
+      expect(result?.code).toContain("message: 'Dashboard' })")
       expect(result?.code).not.toContain('translate`Dashboard`')
     })
 
@@ -149,6 +156,22 @@ export function Nav() {
       expect(result?.code).toContain("message: 'Home'")
       expect(result?.code).toContain("context: 'nav'")
       expect(result?.code).not.toContain("comment: 'main link'")
+    })
+
+    it('detects direct-import t when it is not the first imported specifier', () => {
+      const plugin = getPlugin('fluenti:script-transform', { framework: 'solid' })
+      const code = `
+import { Plural, t } from '@fluenti/solid'
+export default function Demo() {
+  return <Plural value={count()} zero={t\`Zero\`} other={t\`Many\`} />
+}
+`
+      const result = callHook(plugin.transform, {}, code, 'Demo.tsx') as { code: string } | undefined
+
+      expect(result?.code).toContain("import { Plural, useI18n } from '@fluenti/solid'")
+      expect(result?.code).toContain('zero={__fluenti_t({ id:')
+      expect(result?.code).toContain('other={__fluenti_t({ id:')
+      expect(result?.code).not.toContain("import { Plural, t } from '@fluenti/solid'")
     })
 
     it('throws for unsupported top-level direct-import t usage', () => {

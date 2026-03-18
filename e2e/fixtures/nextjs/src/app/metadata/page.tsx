@@ -1,20 +1,20 @@
 import type { Metadata } from 'next'
+import { t } from '@fluenti/react'
 import { getI18n } from '@fluenti/next/__generated'
 
 export async function generateMetadata(): Promise<Metadata> {
-  const i18n = await getI18n()
   return {
-    title: i18n.t('Metadata Page'),
+    title: t`Metadata Page`,
   }
 }
 
 export default async function MetadataPage() {
-  const i18n = await getI18n()
+  await getI18n()
 
   return (
     <div data-testid="metadata-page">
-      <h1 data-testid="metadata-title">{i18n.t('Metadata Page')}</h1>
-      <p data-testid="metadata-desc">{i18n.t('This page has translated metadata.')}</p>
+      <h1 data-testid="metadata-title">{t`Metadata Page`}</h1>
+      <p data-testid="metadata-desc">{t`This page has translated metadata.`}</p>
     </div>
   )
 }

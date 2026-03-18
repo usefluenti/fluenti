@@ -37,7 +37,7 @@ describe('compileCatalog', () => {
     const catalog: CatalogData = {
       greeting: { message: 'Hello' },
     }
-    const output = compileCatalog(catalog, 'en', ['greeting'])
+    const output = compileCatalog(catalog, 'en', ['greeting'], 'en')
 
     expect(output).toContain("= 'Hello'")
   })
@@ -110,11 +110,20 @@ describe('compileCatalog', () => {
     expect(output).toContain('(v) =>')
   })
 
-  it('falls back to message ID when entry is missing for a locale', () => {
+  it('keeps missing non-source locale entries undefined so runtime fallback can resolve', () => {
     const catalog: CatalogData = {}
-    const output = compileCatalog(catalog, 'fr', ['greeting'])
+    const output = compileCatalog(catalog, 'fr', ['greeting'], 'en')
 
-    expect(output).toContain("= 'greeting'")
+    expect(output).toContain('= undefined')
+  })
+
+  it('uses source message for source locale entries with empty msgstr', () => {
+    const catalog: CatalogData = {
+      mcyyyj: { message: 'This key only exists in English' },
+    }
+    const output = compileCatalog(catalog, 'en', ['mcyyyj'], 'en')
+
+    expect(output).toContain("= 'This key only exists in English'")
   })
 
   it('escapes single quotes in string literals', () => {

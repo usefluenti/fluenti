@@ -383,7 +383,7 @@ function transformPluralComponent(node: ASTNode): void {
 
   if (icuParts.length === 0) return
 
-  const icuMessage = `{${valueExpr}, plural, ${icuParts.join(' ')}}`
+  const icuMessage = `{count, plural, ${icuParts.join(' ')}}`
 
   // Change tag from Plural to the wrapper element
   node.tag = wrapperTag
@@ -404,7 +404,7 @@ function transformPluralComponent(node: ASTNode): void {
     name: 'text',
     exp: {
       type: NT_SIMPLE_EXPRESSION,
-      content: `$t('${icuMessage.replace(/'/g, "\\'")}', { ${valueExpr} })`,
+      content: `$t('${icuMessage.replace(/'/g, "\\'")}', { count: ${valueExpr} })`,
       isStatic: false,
       loc,
     } as ASTNode,

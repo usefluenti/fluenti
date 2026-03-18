@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useI18n } from '@fluenti/vue'
 
-const i18n = useI18n()
+const { t, locale } = useI18n()
 </script>
 
 <template>
@@ -10,18 +10,18 @@ const i18n = useI18n()
     <p v-t>A modern i18n library with SSR support</p>
 
     <div class="section">
-      <h2>$t() — Catalog Translations</h2>
+      <h2>t({ message }) — Catalog Translations</h2>
       <div class="demo-item">
-        <div class="demo-label">$t('Hello, {name}!', { name: 'World' })</div>
-        <div>{{ $t('Hello, {name}!', { name: 'World' }) }}</div>
+        <div class="demo-label">t({ message: 'Hello, {name}!' }, { name: 'World' })</div>
+        <div>{{ t({ message: 'Hello, {name}!' }, { name: 'World' }) }}</div>
       </div>
       <div class="demo-item">
-        <div class="demo-label">$t('Current locale: {locale}', { locale })</div>
-        <div>{{ $t('Current locale: {locale}', { locale: i18n.locale.value }) }}</div>
+        <div class="demo-label">t({ message: 'Current locale: {locale}' }, { locale })</div>
+        <div>{{ t({ message: 'Current locale: {locale}' }, { locale }) }}</div>
       </div>
       <div class="demo-item">
-        <div class="demo-label">$t('You have {count} items in your cart.', { count: 5 })</div>
-        <div>{{ $t('You have {count} items in your cart.', { count: 5 }) }}</div>
+        <div class="demo-label">t({ message: 'You have {count} items in your cart.' }, { count: 5 })</div>
+        <div>{{ t({ message: 'You have {count} items in your cart.' }, { count: 5 }) }}</div>
       </div>
     </div>
 

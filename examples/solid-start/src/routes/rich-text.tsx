@@ -1,5 +1,5 @@
 import type { Component, JSX } from 'solid-js'
-import { Trans } from '@fluenti/solid'
+import { Trans, t } from '@fluenti/solid'
 
 const Bold: Component<{ children?: JSX.Element }> = (props) => (
   <strong style={{ color: '#2c3e50' }}>{props.children}</strong>

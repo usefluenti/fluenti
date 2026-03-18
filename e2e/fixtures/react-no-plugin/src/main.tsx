@@ -1,9 +1,9 @@
 import { createRoot } from 'react-dom/client'
 import { I18nProvider } from '@fluenti/react'
 import { useState } from 'react'
-import en from './locales/compiled/en'
-import zhCN from './locales/compiled/zh-CN'
-import ja from './locales/compiled/ja'
+import en from './locales/compiled/en.js'
+import zhCN from './locales/compiled/zh-CN.js'
+import ja from './locales/compiled/ja.js'
 import { App } from './App'
 
 const messages = { en, 'zh-CN': zhCN, ja }

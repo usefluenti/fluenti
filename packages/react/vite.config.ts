@@ -12,7 +12,11 @@ export default defineConfig({
       formats: ['es', 'cjs'],
     },
     rollupOptions: {
-      external: ['react', 'react-dom', '@fluenti/core'],
+      external: [
+        /^react(?:\/.*)?$/,
+        /^react-dom(?:\/.*)?$/,
+        '@fluenti/core',
+      ],
     },
     sourcemap: true,
     emptyOutDir: true,

@@ -168,6 +168,41 @@ msgstr ""
       expect(catalog[key('Long text')]).toBeDefined()
       expect(catalog[key('Long text')]!.translation).toBe('First part second part')
     })
+
+    it('preserves generated ids from msg() extracted comments', () => {
+      const generatedId = key('Administrator')
+      const po = `
+msgid ""
+msgstr "Content-Type: text/plain; charset=UTF-8\\n"
+
+#. msg\`Administrator\`
+msgid "${generatedId}"
+msgstr "管理者"
+`
+      const catalog = readPoCatalog(po)
+
+      expect(catalog[generatedId]).toBeDefined()
+      expect(catalog[generatedId]!.message).toBe('Administrator')
+      expect(catalog[generatedId]!.translation).toBe('管理者')
+    })
+
+    it('restores Trans source messages from extracted comments without double hashing', () => {
+      const sourceMessage = 'Read the <0>documentation</0> for more info.'
+      const generatedId = key(sourceMessage)
+      const po = `
+msgid ""
+msgstr "Content-Type: text/plain; charset=UTF-8\\n"
+
+#. Trans: Read the <a>documentation</a> for more info.
+msgid "${generatedId}"
+msgstr "<0>ドキュメント</0>で詳細をご覧ください。"
+`
+      const catalog = readPoCatalog(po)
+
+      expect(catalog[generatedId]).toBeDefined()
+      expect(catalog[generatedId]!.message).toBe(sourceMessage)
+      expect(catalog[generatedId]!.translation).toBe('<0>ドキュメント</0>で詳細をご覧ください。')
+    })
   })
 
   describe('writePoCatalog edge cases', () => {

@@ -290,6 +290,6 @@ function hasScopeTransformCandidate(code: string): boolean {
     return true
   }
 
-  return /import\s*\{\s*t(?:\s+as\s+[A-Za-z_$][\w$]*)?[\s,}]/.test(code)
+  return /import\s*\{[^}]*\bt(?:\s+as\s+[A-Za-z_$][\w$]*)?\b[^}]*\}/.test(code)
     && /@fluenti\/(react|vue|solid|next\/__generated)/.test(code)
 }
