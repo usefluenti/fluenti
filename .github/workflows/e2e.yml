@@ -76,13 +76,14 @@ jobs:
           for dir in examples/vue examples/solid examples/react examples/nextjs \
                      examples/react-router examples/tanstack-start \
                      examples/nuxt examples/solid-start \
-                     e2e/fixtures/react-router e2e/fixtures/remix e2e/fixtures/nextjs; do
+                     e2e/fixtures/react-router e2e/fixtures/remix e2e/fixtures/nextjs \
+                     e2e/fixtures/react-no-plugin e2e/fixtures/solid-no-plugin e2e/fixtures/vue-no-plugin; do
             if [ -f "$dir/fluenti.config.ts" ]; then
               echo "Compiling $dir"
               (cd "$dir" && node "$CLI" compile)
             fi
           done
-          for dir in e2e/fixtures/vue-splitting e2e/fixtures/react-splitting; do
+          for dir in e2e/fixtures/vue-splitting e2e/fixtures/react-splitting e2e/fixtures/solid-splitting; do
             if [ -f "$dir/fluenti.config.ts" ]; then
               echo "Compiling $dir (split)"
               (cd "$dir" && node "$CLI" compile --split)

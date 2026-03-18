@@ -2,21 +2,33 @@ import { describe, it, expect } from 'vitest'
 import { transformForDynamicSplit, transformForStaticSplit, injectCatalogImport } from '../src/build-transform'
 import { hashMessage } from '@fluenti/core'
 
+function catalogIdForSource(message: string): string {
+  return hashMessage(message)
+}
+
+function dynamicCatalogAccess(catalogId: string): string {
+  return `__catalog[${JSON.stringify(catalogId)}]`
+}
+
+function staticExportAccess(catalogId: string): string {
+  return `_${hashMessage(catalogId)}`
+}
+
 describe('transformForDynamicSplit', () => {
-  it('transforms $t calls to __catalog._hash references', () => {
+  it('transforms $t calls to __catalog[catalogId] references', () => {
     const code = `const text = $t('Hello world')`
     const result = transformForDynamicSplit(code)
 
     expect(result.needsCatalogImport).toBe(true)
-    expect(result.code).toContain('__catalog._')
+    expect(result.code).toContain(dynamicCatalogAccess(catalogIdForSource('Hello world')))
     expect(result.code).not.toContain("$t('Hello world')")
   })
 
-  it('transforms $t with values to __catalog._hash(values)', () => {
+  it('transforms $t with values to __catalog[catalogId](values)', () => {
     const code = `const text = $t('Hello {name}', { name })`
     const result = transformForDynamicSplit(code)
 
-    expect(result.code).toMatch(/__catalog\._\w+\(\{ name \}\)/)
+    expect(result.code).toContain(`${dynamicCatalogAccess(catalogIdForSource('Hello {name}'))}({ name })`)
   })
 
   it('collects used hashes', () => {
@@ -39,24 +51,24 @@ describe('transformForDynamicSplit', () => {
     const result = transformForDynamicSplit(code)
 
     expect(result.needsCatalogImport).toBe(true)
-    expect(result.code).toContain('__catalog._')
+    expect(result.code).toContain(dynamicCatalogAccess(catalogIdForSource('Hello world')))
     // _ctx. prefix should be removed — __catalog is a module-level import
     expect(result.code).not.toContain('_ctx.__catalog')
-    expect(result.code).toMatch(/_toDisplayString\(__catalog\._\w+\)/)
+    expect(result.code).toContain(`_toDisplayString(${dynamicCatalogAccess(catalogIdForSource('Hello world'))})`)
   })
 
   it('handles _ctx.$t() with values', () => {
     const code = `_toDisplayString(_ctx.$t('Hello {name}', { name }))`
     const result = transformForDynamicSplit(code)
 
-    expect(result.code).toMatch(/_toDisplayString\(__catalog\._\w+\(\{ name \}\)\)/)
+    expect(result.code).toContain(`_toDisplayString(${dynamicCatalogAccess(catalogIdForSource('Hello {name}'))}({ name }))`)
   })
 
   it('handles $setup.$t() pattern', () => {
     const code = `_toDisplayString($setup.$t('Hello'))`
     const result = transformForDynamicSplit(code)
 
-    expect(result.code).toContain('__catalog._')
+    expect(result.code).toContain(dynamicCatalogAccess(catalogIdForSource('Hello')))
     expect(result.code).not.toContain('$setup.__catalog')
   })
 
@@ -71,7 +83,7 @@ describe('transformForDynamicSplit', () => {
     const result = transformForDynamicSplit(code)
 
     expect(result.needsCatalogImport).toBe(true)
-    expect(result.code).toContain(`__catalog._${hashMessage('Hello, {name}!')}({ name })`)
+    expect(result.code).toContain(`${dynamicCatalogAccess(catalogIdForSource('Hello, {name}!'))}({ name })`)
     expect(result.code).not.toContain("t('Hello, {name}!', { name })")
   })
 
@@ -86,7 +98,7 @@ describe('transformForDynamicSplit', () => {
     const result = transformForDynamicSplit(code)
 
     expect(result.needsCatalogImport).toBe(true)
-    expect(result.code).toContain(`__catalog._${hashMessage('Welcome')}`)
+    expect(result.code).toContain(dynamicCatalogAccess(catalogIdForSource('Welcome')))
     expect(result.code).not.toContain("translate('Welcome')")
   })
 
@@ -101,8 +113,8 @@ describe('transformForDynamicSplit', () => {
     const result = transformForDynamicSplit(code)
 
     expect(result.needsCatalogImport).toBe(true)
-    expect(result.code).toContain(`__catalog._${hashMessage('hero.greeting')}({ name })`)
-    expect(result.usedHashes.has(hashMessage('hero.greeting'))).toBe(true)
+    expect(result.code).toContain(`${dynamicCatalogAccess('hero.greeting')}({ name })`)
+    expect(result.usedHashes.has('hero.greeting')).toBe(true)
   })
 
   it('handles _ctx.t() pattern from Vue useI18n exposure', () => {
@@ -110,7 +122,7 @@ describe('transformForDynamicSplit', () => {
     const result = transformForDynamicSplit(code)
 
     expect(result.needsCatalogImport).toBe(true)
-    expect(result.code).toContain('__catalog._')
+    expect(result.code).toContain(dynamicCatalogAccess(catalogIdForSource('Hello world')))
     expect(result.code).not.toContain('_ctx.__catalog')
   })
 
@@ -126,7 +138,7 @@ describe('transformForDynamicSplit', () => {
     const result = transformForDynamicSplit(code)
 
     expect(result.needsCatalogImport).toBe(true)
-    expect(result.code).toContain('__catalog._')
+    expect(result.code).toContain(dynamicCatalogAccess(catalogIdForSource('Hello world')))
     expect(result.code).not.toContain("_unref(t)('Hello world')")
   })
 
@@ -135,7 +147,7 @@ describe('transformForDynamicSplit', () => {
     const result = transformForDynamicSplit(code)
 
     expect(result.needsCatalogImport).toBe(true)
-    expect(result.code).toContain('__catalog._')
+    expect(result.code).toContain(dynamicCatalogAccess(catalogIdForSource('Hello world')))
     expect(result.code).not.toContain('$t(')
   })
 
@@ -144,7 +156,7 @@ describe('transformForDynamicSplit', () => {
     const result = transformForDynamicSplit(code)
 
     expect(result.needsCatalogImport).toBe(true)
-    expect(result.code).toContain('__catalog._')
+    expect(result.code).toContain(dynamicCatalogAccess(catalogIdForSource('Hello world')))
   })
 })
 
@@ -161,47 +173,47 @@ describe('transformForDynamicSplit — edge cases', () => {
   it('transforms a single $t call correctly', () => {
     const code = `const msg = $t('Welcome')`
     const result = transformForDynamicSplit(code)
-    const hash = hashMessage('Welcome')
+    const catalogId = catalogIdForSource('Welcome')
 
     expect(result.needsCatalogImport).toBe(true)
     expect(result.usedHashes.size).toBe(1)
-    expect(result.usedHashes.has(hash)).toBe(true)
-    expect(result.code).toBe(`const msg = __catalog._${hash}`)
+    expect(result.usedHashes.has(catalogId)).toBe(true)
+    expect(result.code).toBe(`const msg = ${dynamicCatalogAccess(catalogId)}`)
   })
 
   it('transforms $t with values object', () => {
     const code = `$t('Hi {user}', { user: name })`
     const result = transformForDynamicSplit(code)
-    const hash = hashMessage('Hi {user}')
+    const catalogId = catalogIdForSource('Hi {user}')
 
-    expect(result.code).toBe(`__catalog._${hash}({ user: name })`)
-    expect(result.usedHashes.has(hash)).toBe(true)
+    expect(result.code).toBe(`${dynamicCatalogAccess(catalogId)}({ user: name })`)
+    expect(result.usedHashes.has(catalogId)).toBe(true)
   })
 
   it('transforms _ctx.$t pattern removing prefix', () => {
     const code = `_ctx.$t('Greet')`
     const result = transformForDynamicSplit(code)
-    const hash = hashMessage('Greet')
+    const catalogId = catalogIdForSource('Greet')
 
-    expect(result.code).toBe(`__catalog._${hash}`)
+    expect(result.code).toBe(dynamicCatalogAccess(catalogId))
     expect(result.code).not.toContain('_ctx')
   })
 
   it('transforms $setup.$t pattern removing prefix', () => {
     const code = `$setup.$t('Setup msg')`
     const result = transformForDynamicSplit(code)
-    const hash = hashMessage('Setup msg')
+    const catalogId = catalogIdForSource('Setup msg')
 
-    expect(result.code).toBe(`__catalog._${hash}`)
+    expect(result.code).toBe(dynamicCatalogAccess(catalogId))
     expect(result.code).not.toContain('$setup')
   })
 
   it('transforms backtick-quoted $t call', () => {
     const code = '$t(`template literal`)'
     const result = transformForDynamicSplit(code)
-    const hash = hashMessage('template literal')
+    const catalogId = catalogIdForSource('template literal')
 
-    expect(result.code).toBe(`__catalog._${hash}`)
+    expect(result.code).toBe(dynamicCatalogAccess(catalogId))
   })
 
   it('transforms multiple $t calls in one line', () => {
@@ -210,18 +222,18 @@ describe('transformForDynamicSplit — edge cases', () => {
 
     expect(result.usedHashes.size).toBe(3)
     expect(result.code).not.toContain('$t(')
-    expect(result.code).toContain(`__catalog._${hashMessage('One')}`)
-    expect(result.code).toContain(`__catalog._${hashMessage('Two')}`)
-    expect(result.code).toContain(`__catalog._${hashMessage('Three')}`)
+    expect(result.code).toContain(dynamicCatalogAccess(catalogIdForSource('One')))
+    expect(result.code).toContain(dynamicCatalogAccess(catalogIdForSource('Two')))
+    expect(result.code).toContain(dynamicCatalogAccess(catalogIdForSource('Three')))
   })
 
   it('preserves non-$t code around transformed calls', () => {
     const code = `const prefix = ">>"; const msg = $t('Hello'); const suffix = "<<"`
     const result = transformForDynamicSplit(code)
-    const hash = hashMessage('Hello')
+    const catalogId = catalogIdForSource('Hello')
 
     expect(result.code).toContain('const prefix = ">>"')
-    expect(result.code).toContain(`const msg = __catalog._${hash}`)
+    expect(result.code).toContain(`const msg = ${dynamicCatalogAccess(catalogId)}`)
     expect(result.code).toContain('const suffix = "<<"')
   })
 })
@@ -272,13 +284,13 @@ describe('transformForStaticSplit', () => {
   it('generates named imports for static split', () => {
     const code = `$t('Alpha'); $t('Beta')`
     const result = transformForStaticSplit(code)
-    const hashA = hashMessage('Alpha')
-    const hashB = hashMessage('Beta')
+    const hashA = catalogIdForSource('Alpha')
+    const hashB = catalogIdForSource('Beta')
 
     expect(result.usedHashes.has(hashA)).toBe(true)
     expect(result.usedHashes.has(hashB)).toBe(true)
-    expect(result.code).toContain(`_${hashA}`)
-    expect(result.code).toContain(`_${hashB}`)
+    expect(result.code).toContain(staticExportAccess(hashA))
+    expect(result.code).toContain(staticExportAccess(hashB))
     expect(result.code).not.toContain('__catalog')
   })
 
@@ -293,14 +305,14 @@ describe('transformForStaticSplit', () => {
     const result = transformForStaticSplit(code)
 
     expect(result.needsCatalogImport).toBe(true)
-    expect(result.code).toContain(`_${hashMessage('Home')}`)
+    expect(result.code).toContain(staticExportAccess(catalogIdForSource('Home')))
     expect(result.code).not.toContain("__catalog")
   })
 })
 
 describe('injectCatalogImport — edge cases', () => {
   it('injects dynamic import at the top of the module', () => {
-    const code = 'const x = __catalog._abc\nconst y = __catalog._def'
+    const code = "const x = __catalog['abc']\nconst y = __catalog['def']"
     const result = injectCatalogImport(code, 'dynamic', new Set(['abc', 'def']))
 
     expect(result).toContain("import { __catalog } from 'virtual:fluenti/runtime'")
@@ -311,12 +323,12 @@ describe('injectCatalogImport — edge cases', () => {
     const code = 'const x = _h1; const y = _h2; const z = _h3'
     const result = injectCatalogImport(code, 'static', new Set(['h1', 'h2', 'h3']))
 
-    expect(result).toContain('import { _h1, _h2, _h3 }')
+    expect(result).toContain(`import { ${staticExportAccess('h1')}, ${staticExportAccess('h2')}, ${staticExportAccess('h3')} }`)
     expect(result).toContain("from 'virtual:fluenti/messages'")
   })
 
   it('injects per-route import targeting route-runtime', () => {
-    const code = 'const x = __catalog._xyz'
+    const code = "const x = __catalog['xyz']"
     const result = injectCatalogImport(code, 'per-route', new Set(['xyz']))
 
     expect(result).toContain("import { __catalog } from 'virtual:fluenti/route-runtime'")
@@ -327,7 +339,7 @@ describe('injectCatalogImport — edge cases', () => {
 
 describe('injectCatalogImport', () => {
   it('injects virtual:fluenti/runtime import for dynamic strategy', () => {
-    const code = 'const x = __catalog._abc'
+    const code = "const x = __catalog['abc']"
     const result = injectCatalogImport(code, 'dynamic', new Set(['abc']))
 
     expect(result).toContain("import { __catalog } from 'virtual:fluenti/runtime'")
@@ -337,11 +349,11 @@ describe('injectCatalogImport', () => {
     const code = 'const x = _abc123'
     const result = injectCatalogImport(code, 'static', new Set(['abc123', 'def456']))
 
-    expect(result).toContain("import { _abc123, _def456 } from 'virtual:fluenti/messages'")
+    expect(result).toContain(`import { ${staticExportAccess('abc123')}, ${staticExportAccess('def456')} } from 'virtual:fluenti/messages'`)
   })
 
   it('injects virtual:fluenti/route-runtime import for per-route strategy', () => {
-    const code = 'const x = __catalog._abc'
+    const code = "const x = __catalog['abc']"
     const result = injectCatalogImport(code, 'per-route', new Set(['abc']))
 
     expect(result).toContain("import { __catalog } from 'virtual:fluenti/route-runtime'")
@@ -357,8 +369,8 @@ describe('CLI ↔ vite-plugin hash consistency', () => {
     const code = `const text = $t('${message}')`
     const result = transformForDynamicSplit(code)
 
-    // The vite-plugin should produce __catalog._<hash> using the same hash as CLI
-    expect(result.code).toContain(`__catalog._${cliHash}`)
+    // The vite-plugin should produce __catalog[<catalog id>] using the same id as CLI
+    expect(result.code).toContain(dynamicCatalogAccess(cliHash))
   })
 
   it('vite-plugin static transform produces same hash as CLI', () => {
@@ -368,8 +380,8 @@ describe('CLI ↔ vite-plugin hash consistency', () => {
     const code = `const text = $t('${message}', { name })`
     const result = transformForStaticSplit(code)
 
-    // The vite-plugin should produce _<hash>({ name }) using the same hash as CLI
-    expect(result.code).toContain(`_${cliHash}({ name })`)
+    // The vite-plugin should produce the named export for the CLI catalog id
+    expect(result.code).toContain(`${staticExportAccess(cliHash)}({ name })`)
   })
 
   it('hash consistency for ICU plural message', () => {
@@ -379,7 +391,7 @@ describe('CLI ↔ vite-plugin hash consistency', () => {
     const code = `const text = $t('${message}', { count })`
     const result = transformForDynamicSplit(code)
 
-    expect(result.code).toContain(`__catalog._${cliHash}`)
+    expect(result.code).toContain(dynamicCatalogAccess(cliHash))
   })
 
   it('hash consistency for multiple messages', () => {
@@ -391,7 +403,7 @@ describe('CLI ↔ vite-plugin hash consistency', () => {
 
     for (const hash of cliHashes) {
       expect(result.usedHashes.has(hash)).toBe(true)
-      expect(result.code).toContain(`_${hash}`)
+      expect(result.code).toContain(dynamicCatalogAccess(hash))
     }
   })
 
@@ -404,7 +416,7 @@ describe('CLI ↔ vite-plugin hash consistency', () => {
 
     expect(dynamicResult.usedHashes.has(cliHash)).toBe(true)
     expect(staticResult.usedHashes.has(cliHash)).toBe(true)
-    expect(dynamicResult.code).toContain(`_${cliHash}`)
-    expect(staticResult.code).toContain(`_${cliHash}`)
+    expect(dynamicResult.code).toContain(dynamicCatalogAccess(cliHash))
+    expect(staticResult.code).toContain(staticExportAccess(cliHash))
   })
 })

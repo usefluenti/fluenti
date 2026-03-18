@@ -1,0 +1,22 @@
+{
+  "Welcome to Fluenti": {
+    "message": "Welcome to Fluenti",
+    "translation": "Fluenti へようこそ"
+  },
+  "Welcome to <bold>Fluenti</bold> for <italic>SolidJS</italic>!": {
+    "message": "Welcome to <bold>Fluenti</bold> for <italic>SolidJS</italic>!",
+    "translation": "<bold>Fluenti</bold> の <italic>SolidJS</italic> 版へようこそ！"
+  },
+  "Supports <bold>bold</bold>, <italic>italic</italic>, and <link>links</link>.": {
+    "message": "Supports <bold>bold</bold>, <italic>italic</italic>, and <link>links</link>.",
+    "translation": "<bold>太字</bold>、<italic>斜体</italic>、<link>リンク</link> をサポート。"
+  },
+  "cart-count": {
+    "message": "{count, plural, =0 {No items} one {# item} other {# items}}",
+    "translation": "{count, plural, =0 {アイテムはありません} one {# 件} other {# 件}}"
+  },
+  "role-select": {
+    "message": "{value, select, admin {Administrator} user {User} other {Guest}}",
+    "translation": "{value, select, admin {管理者} user {ユーザー} other {ゲスト}}"
+  }
+}

@@ -41,7 +41,9 @@ describe('loadVirtualSplitModule', () => {
       const code = loadVirtualSplitModule('\0virtual:fluenti/runtime', defaultOptions)
 
       expect(code).toContain('shallowReactive')
-      expect(code).toContain('__defaultMsgs')
+      expect(code).toContain('import __defaultMsgs from')
+      expect(code).toContain('__normalizeMessages')
+      expect(code).toContain('mod.default ?? mod')
       expect(code).toContain('export { __catalog')
     })
 
@@ -149,6 +151,9 @@ describe('loadVirtualSplitModule', () => {
       })
 
       expect(code).toContain('__catalog')
+      expect(code).toContain('import __defaultMsgs from')
+      expect(code).toContain('__normalizeMessages')
+      expect(code).toContain('mod.default ?? mod')
       expect(code).toContain('__switchLocale')
       expect(code).toContain('__preloadLocale')
       expect(code).not.toContain('shallowReactive')
@@ -209,6 +214,8 @@ describe('loadVirtualSplitModule', () => {
 
       expect(code).toContain('custom/path/compiled')
       expect(code).toContain('/en.js')
+      expect(code).toContain('import __defaultMsgs from')
+      expect(code).toContain('mod.default ?? mod')
     })
 
     it('runtime module contains loader entries for non-default configured locales', () => {

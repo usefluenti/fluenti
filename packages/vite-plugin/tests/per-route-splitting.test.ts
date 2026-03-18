@@ -3,21 +3,34 @@ import fluentiPlugin from '../src/index'
 import { hashMessage } from '@fluenti/core'
 
 function makeCatalogSource(locale: string): string {
-  const h1 = hashMessage('Hello')
-  const h2 = hashMessage('About us')
-  const h3 = hashMessage('Welcome')
+  const helloId = hashMessage('Hello')
+  const aboutId = hashMessage('About us')
+  const welcomeId = hashMessage('Welcome')
+  const helloExport = hashMessage(helloId)
+  const aboutExport = hashMessage(aboutId)
+  const welcomeExport = hashMessage(welcomeId)
 
   if (locale === 'ja') {
     return [
-      `/* @__PURE__ */ export const _${h1} = "こんにちは"`,
-      `export const _${h2} = "私たちについて"`,
-      `export const _${h3} = "ようこそ"`,
+      `/* @__PURE__ */ export const _${helloExport} = "こんにちは"`,
+      `export const _${aboutExport} = "私たちについて"`,
+      `export const _${welcomeExport} = "ようこそ"`,
+      'export default {',
+      `  '${helloId}': _${helloExport},`,
+      `  '${aboutId}': _${aboutExport},`,
+      `  '${welcomeId}': _${welcomeExport},`,
+      '}',
     ].join('\n')
   }
   return [
-    `/* @__PURE__ */ export const _${h1} = "Hello"`,
-    `export const _${h2} = "About us"`,
-    `export const _${h3} = "Welcome"`,
+    `/* @__PURE__ */ export const _${helloExport} = "Hello"`,
+    `export const _${aboutExport} = "About us"`,
+    `export const _${welcomeExport} = "Welcome"`,
+    'export default {',
+    `  '${helloId}': _${helloExport},`,
+    `  '${aboutId}': _${aboutExport},`,
+    `  '${welcomeId}': _${welcomeExport},`,
+    '}',
   ].join('\n')
 }
 
@@ -68,7 +81,7 @@ describe('per-route splitting', () => {
 
       expect(result).toBeDefined()
       expect(result.code).toContain("import { __catalog } from 'virtual:fluenti/route-runtime'")
-      expect(result.code).toContain('__catalog._')
+      expect(result.code).toContain(`__catalog[${JSON.stringify(hashMessage('Hello'))}]`)
       expect(result.code).not.toContain("$t('Hello')")
     })
 
@@ -82,7 +95,7 @@ describe('per-route splitting', () => {
       const result = (plugin.transform as any).call(mockContext, code, 'src/pages/index.vue?vue&type=template&lang.js')
 
       expect(result).toBeDefined()
-      expect(result.code).toContain('__catalog._')
+      expect(result.code).toContain(`__catalog[${JSON.stringify(hashMessage('Hello'))}]`)
       expect(result.code).not.toContain('_ctx.__catalog')
     })
   })
@@ -117,9 +130,12 @@ describe('per-route splitting', () => {
         environment: { mode: 'build' },
       }
 
-      const helloHash = hashMessage('Hello')
-      const aboutHash = hashMessage('About us')
-      const welcomeHash = hashMessage('Welcome')
+      const helloId = hashMessage('Hello')
+      const aboutId = hashMessage('About us')
+      const welcomeId = hashMessage('Welcome')
+      const helloExport = hashMessage(helloId)
+      const aboutExport = hashMessage(aboutId)
+      const welcomeExport = hashMessage(welcomeId)
 
       // Simulate transforms to populate moduleMessages
       ;(plugin.transform as any).call(
@@ -159,25 +175,28 @@ describe('per-route splitting', () => {
       // Should emit shared chunk for 'Welcome' (used in both routes)
       const sharedEn = emitted.find((f) => f.fileName === '_fluenti/shared-en.js')
       expect(sharedEn).toBeDefined()
-      expect(sharedEn!.source).toContain(`_${welcomeHash}`)
-      expect(sharedEn!.source).not.toContain(`_${helloHash}`)
-      expect(sharedEn!.source).not.toContain(`_${aboutHash}`)
+      expect(sharedEn!.source).toContain(`_${welcomeExport}`)
+      expect(sharedEn!.source).not.toContain(`_${helloExport}`)
+      expect(sharedEn!.source).not.toContain(`_${aboutExport}`)
+      expect(sharedEn!.source).toContain(`'${welcomeId}': _${welcomeExport}`)
 
       // Should emit route-specific chunk for index (Hello only)
       const indexEn = emitted.find((f) => f.fileName === '_fluenti/index-en.js')
       expect(indexEn).toBeDefined()
-      expect(indexEn!.source).toContain(`_${helloHash}`)
-      expect(indexEn!.source).not.toContain(`_${welcomeHash}`)
+      expect(indexEn!.source).toContain(`_${helloExport}`)
+      expect(indexEn!.source).not.toContain(`_${welcomeExport}`)
+      expect(indexEn!.source).toContain(`'${helloId}': _${helloExport}`)
 
       // Should emit route-specific chunk for about (About us only)
       const aboutEn = emitted.find((f) => f.fileName === '_fluenti/about-en.js')
       expect(aboutEn).toBeDefined()
-      expect(aboutEn!.source).toContain(`_${aboutHash}`)
+      expect(aboutEn!.source).toContain(`_${aboutExport}`)
+      expect(aboutEn!.source).toContain(`'${aboutId}': _${aboutExport}`)
 
       // Should also emit ja locale chunks
       const sharedJa = emitted.find((f) => f.fileName === '_fluenti/shared-ja.js')
       expect(sharedJa).toBeDefined()
-      expect(sharedJa!.source).toContain(`_${welcomeHash}`)
+      expect(sharedJa!.source).toContain(`_${welcomeExport}`)
     })
 
     it('does not emit when splitting is not per-route', () => {
@@ -229,7 +248,7 @@ describe('per-route splitting', () => {
       // Route-specific chunk emitted
       const home = emitted.find((f) => f.fileName === '_fluenti/home-en.js')
       expect(home).toBeDefined()
-      expect(home!.source).toContain(`_${hashMessage('Hello')}`)
+      expect(home!.source).toContain(`_${hashMessage(hashMessage('Hello'))}`)
     })
   })
 })

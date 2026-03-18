@@ -1,0 +1,17 @@
+{
+  "147gn91": {
+    "message": "言語を切り替え"
+  },
+  "1kjapm1": {
+    "message": "Fluentiへようこそ"
+  },
+  "yvn7bx": {
+    "message": "こんにちは、{name}さん！"
+  },
+  "cart-count": {
+    "message": "{count, plural, =0 {アイテムはありません} one {# 件} other {# 件}}"
+  },
+  "role-select": {
+    "message": "{value, select, admin {管理者} user {ユーザー} other {ゲスト}}"
+  }
+}

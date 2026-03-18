@@ -134,7 +134,7 @@ interface SplitReplacement {
 }
 
 interface SplitTarget {
-  messageId: string
+  catalogId: string
   valuesSource?: string
 }
 
@@ -262,12 +262,15 @@ function extractCallReplacement(
     return undefined
   }
 
-  const hash = hashMessage(splitTarget.messageId)
-  usedHashes.add(hash)
-  const exportName = strategy === 'dynamic' ? `__catalog._${hash}` : `_${hash}`
+  const { catalogId } = splitTarget
+  usedHashes.add(catalogId)
+  const exportHash = hashMessage(catalogId)
+  const replacementTarget = strategy === 'dynamic'
+    ? `__catalog[${JSON.stringify(catalogId)}]`
+    : `_${exportHash}`
   const replacement = splitTarget.valuesSource
-    ? `${exportName}(${splitTarget.valuesSource})`
-    : exportName
+    ? `${replacementTarget}(${splitTarget.valuesSource})`
+    : replacementTarget
 
   return {
     start: node.start,
@@ -307,22 +310,22 @@ function resolveSplitTarget(
     return undefined
   }
 
-  const messageId = extractMessageId(call.arguments[0]!)
-  if (!messageId) return undefined
+  const catalogId = extractCatalogId(call.arguments[0]!)
+  if (!catalogId) return undefined
 
   const valuesSource = call.arguments[1] && call.arguments[1]!.start != null && call.arguments[1]!.end != null
     ? code.slice(call.arguments[1]!.start, call.arguments[1]!.end)
     : undefined
 
   return valuesSource === undefined
-    ? { messageId }
-    : { messageId, valuesSource }
+    ? { catalogId }
+    : { catalogId, valuesSource }
 }
 
-function extractMessageId(argument: SourceNode): string | undefined {
+function extractCatalogId(argument: SourceNode): string | undefined {
   const staticString = readStaticString(argument)
   if (staticString !== undefined) {
-    return staticString
+    return hashMessage(staticString)
   }
 
   if (!isObjectExpression(argument)) {
@@ -360,14 +363,14 @@ function collectComponentUsage(node: SourceNode, usedHashes: Set<string>): void 
   if (componentName === 'Trans') {
     const id = readJsxStaticAttribute(node.openingElement, '__id') ?? readJsxStaticAttribute(node.openingElement, 'id')
     if (id) {
-      usedHashes.add(hashMessage(id))
+      usedHashes.add(id)
       return
     }
 
     const message = readJsxStaticAttribute(node.openingElement, '__message')
     const context = readJsxStaticAttribute(node.openingElement, 'context')
     if (message) {
-      usedHashes.add(hashMessage(hashMessage(message, context)))
+      usedHashes.add(hashMessage(message, context))
     }
     return
   }
@@ -375,7 +378,7 @@ function collectComponentUsage(node: SourceNode, usedHashes: Set<string>): void 
   if (componentName === 'Plural') {
     const messageId = buildPluralMessageId(node.openingElement)
     if (messageId) {
-      usedHashes.add(hashMessage(messageId))
+      usedHashes.add(messageId)
     }
     return
   }
@@ -383,7 +386,7 @@ function collectComponentUsage(node: SourceNode, usedHashes: Set<string>): void 
   if (componentName === 'Select') {
     const messageId = buildSelectMessageId(node.openingElement)
     if (messageId) {
-      usedHashes.add(hashMessage(messageId))
+      usedHashes.add(messageId)
     }
   }
 }
@@ -589,6 +592,6 @@ export function injectCatalogImport(code: string, strategy: 'dynamic' | 'static'
   }
 
   // Static: import named exports directly
-  const imports = [...hashes].map((h) => `_${h}`).join(', ')
+  const imports = [...hashes].map((id) => `_${hashMessage(id)}`).join(', ')
   return `import { ${imports} } from 'virtual:fluenti/messages';\n${code}`
 }
