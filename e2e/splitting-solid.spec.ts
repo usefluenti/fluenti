@@ -21,9 +21,9 @@ test.describe('Build output verification', () => {
     const indexChunk = files.find((file) => file.startsWith('index-') && file.endsWith('.js'))!
     const code = readFileSync(resolve(ASSETS_DIR, indexChunk), 'utf-8')
 
-    expect(code).toContain('_1kjapm1')
-    expect(code).toContain('_yvn7bx')
-    expect(code).toContain('_147gn91')
+    expect(code).toContain('1kjapm1')
+    expect(code).toContain('yvn7bx')
+    expect(code).toContain('147gn91')
     expect(code).not.toMatch(/\bt\(\s*['"`]Welcome to Fluenti/)
   })
 })

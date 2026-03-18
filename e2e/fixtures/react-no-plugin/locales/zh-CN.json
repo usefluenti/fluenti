@@ -1,0 +1,26 @@
+{
+  "Welcome to Fluenti": {
+    "message": "Welcome to Fluenti",
+    "translation": "欢迎使用 Fluenti"
+  },
+  "18r06yp": {
+    "message": "Read the <0>documentation</0> for more info.",
+    "translation": "详情请阅读<0>文档</0>。"
+  },
+  "p3nupq": {
+    "message": "This is <0>important</0> information.",
+    "translation": "这是<0>重要</0>的信息。"
+  },
+  "166utyv": {
+    "message": "Please <0>sign in</0> or <1>register</1> to continue.",
+    "translation": "请<0>登录</0>或<1>注册</1>以继续。"
+  },
+  "cart-count": {
+    "message": "{count, plural, =0 {No items} one {# item} other {# items}}",
+    "translation": "{count, plural, =0 {没有商品} one {# 件商品} other {# 件商品}}"
+  },
+  "role-select": {
+    "message": "{value, select, admin {Administrator} user {User} other {Guest}}",
+    "translation": "{value, select, admin {管理员} user {用户} other {访客}}"
+  }
+}

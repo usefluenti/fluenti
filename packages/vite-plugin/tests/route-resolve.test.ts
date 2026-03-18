@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { deriveRouteName, parseCompiledCatalog, buildChunkModule } from '../src/route-resolve'
+import { hashMessage } from '@fluenti/core'
 
 describe('deriveRouteName', () => {
   it('strips directory and hash from chunk filename', () => {
@@ -126,59 +127,74 @@ describe('parseCompiledCatalog', () => {
 
 describe('buildChunkModule', () => {
   it('builds module with selected hashes only', () => {
+    const abcExport = hashMessage('abc')
+    const defExport = hashMessage('def')
+    const ghiExport = hashMessage('ghi')
     const catalog = new Map([
-      ['abc', 'export const _abc = "Hello"'],
-      ['def', 'export const _def = "World"'],
-      ['ghi', 'export const _ghi = "Unused"'],
+      [abcExport, `export const _${abcExport} = "Hello"`],
+      [defExport, `export const _${defExport} = "World"`],
+      [ghiExport, `export const _${ghiExport} = "Unused"`],
     ])
     const hashes = new Set(['abc', 'def'])
 
     const result = buildChunkModule(hashes, catalog)
 
-    expect(result).toContain('export const _abc = "Hello"')
-    expect(result).toContain('export const _def = "World"')
-    expect(result).not.toContain('_ghi')
+    expect(result).toContain(`export const _${abcExport} = "Hello"`)
+    expect(result).toContain(`export const _${defExport} = "World"`)
+    expect(result).not.toContain(`_${ghiExport}`)
+    expect(result).toContain(`'abc': _${abcExport}`)
+    expect(result).toContain(`'def': _${defExport}`)
   })
 
   it('skips hashes not found in catalog', () => {
+    const abcExport = hashMessage('abc')
     const catalog = new Map([
-      ['abc', 'export const _abc = "Hello"'],
+      [abcExport, `export const _${abcExport} = "Hello"`],
     ])
     const hashes = new Set(['abc', 'missing'])
 
     const result = buildChunkModule(hashes, catalog)
 
-    expect(result).toContain('export const _abc = "Hello"')
+    expect(result).toContain(`export const _${abcExport} = "Hello"`)
     expect(result).not.toContain('missing')
   })
 
   it('produces empty module for empty hash set', () => {
-    const catalog = new Map([['abc', 'export const _abc = "Hello"']])
+    const abcExport = hashMessage('abc')
+    const catalog = new Map([[abcExport, `export const _${abcExport} = "Hello"`]])
     const result = buildChunkModule(new Set(), catalog)
 
     expect(result.trim()).toBe('')
   })
 
   it('builds module with subset of catalog hashes', () => {
+    const h1Export = hashMessage('h1')
+    const h2Export = hashMessage('h2')
+    const h3Export = hashMessage('h3')
+    const h4Export = hashMessage('h4')
     const catalog = new Map([
-      ['h1', 'export const _h1 = "One"'],
-      ['h2', 'export const _h2 = "Two"'],
-      ['h3', 'export const _h3 = "Three"'],
-      ['h4', 'export const _h4 = "Four"'],
+      [h1Export, `export const _${h1Export} = "One"`],
+      [h2Export, `export const _${h2Export} = "Two"`],
+      [h3Export, `export const _${h3Export} = "Three"`],
+      [h4Export, `export const _${h4Export} = "Four"`],
     ])
     const hashes = new Set(['h2', 'h4'])
     const result = buildChunkModule(hashes, catalog)
 
-    expect(result).toContain('export const _h2 = "Two"')
-    expect(result).toContain('export const _h4 = "Four"')
-    expect(result).not.toContain('_h1')
-    expect(result).not.toContain('_h3')
+    expect(result).toContain(`export const _${h2Export} = "Two"`)
+    expect(result).toContain(`export const _${h4Export} = "Four"`)
+    expect(result).not.toContain(`_${h1Export}`)
+    expect(result).not.toContain(`_${h3Export}`)
+    expect(result).toContain(`'h2': _${h2Export}`)
+    expect(result).toContain(`'h4': _${h4Export}`)
   })
 
   it('returns only newline for empty hash set with non-empty catalog', () => {
+    const aExport = hashMessage('a')
+    const bExport = hashMessage('b')
     const catalog = new Map([
-      ['a', 'export const _a = "A"'],
-      ['b', 'export const _b = "B"'],
+      [aExport, `export const _${aExport} = "A"`],
+      [bExport, `export const _${bExport} = "B"`],
     ])
     const result = buildChunkModule(new Set(), catalog)
 

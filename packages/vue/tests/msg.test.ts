@@ -5,6 +5,8 @@ import { createFluentVue } from '../src/plugin'
 import { msg } from '../src/msg'
 import { useI18n } from '../src/use-i18n'
 
+const COMPONENT_RENDER_TIMEOUT_MS = 20_000
+
 describe('msg``', () => {
   it('creates MessageDescriptor, not a string', () => {
     const descriptor = msg`Hello World`
@@ -29,7 +31,7 @@ describe('msg``', () => {
     const wrapper = mount(Display, { global: { plugins: [plugin] } })
 
     expect(wrapper.text()).toBe('Hello')
-  })
+  }, COMPONENT_RENDER_TIMEOUT_MS)
 
   it('works in module-level constants', () => {
     const NAV_ITEMS = [

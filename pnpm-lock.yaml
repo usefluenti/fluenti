@@ -231,6 +231,9 @@ importers:
 
   e2e/fixtures/react-no-plugin:
     dependencies:
+      '@fluenti/cli':
+        specifier: workspace:*
+        version: link:../../../packages/cli
       '@fluenti/react':
         specifier: workspace:*
         version: link:../../../packages/react
@@ -382,6 +385,9 @@ importers:
 
   e2e/fixtures/solid-no-plugin:
     dependencies:
+      '@fluenti/cli':
+        specifier: workspace:*
+        version: link:../../../packages/cli
       '@fluenti/core':
         specifier: workspace:*
         version: link:../../../packages/core
@@ -404,6 +410,9 @@ importers:
 
   e2e/fixtures/solid-splitting:
     dependencies:
+      '@fluenti/cli':
+        specifier: workspace:*
+        version: link:../../../packages/cli
       '@fluenti/solid':
         specifier: workspace:*
         version: link:../../../packages/solid
@@ -454,6 +463,9 @@ importers:
 
   e2e/fixtures/vue-no-plugin:
     dependencies:
+      '@fluenti/cli':
+        specifier: workspace:*
+        version: link:../../../packages/cli
       '@fluenti/vue':
         specifier: workspace:*
         version: link:../../../packages/vue

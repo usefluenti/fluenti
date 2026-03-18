@@ -3,10 +3,11 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "vite build",
+    "build": "node ../../../packages/cli/dist/cli.js compile && vite build",
     "preview": "vite preview"
   },
   "dependencies": {
+    "@fluenti/cli": "workspace:*",
     "@fluenti/solid": "workspace:*",
     "@fluenti/core": "workspace:*",
     "solid-js": "^1.8"

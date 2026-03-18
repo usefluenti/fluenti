@@ -1,0 +1,14 @@
+{
+  "Welcome to Fluenti": {
+    "message": "Welcome to Fluenti"
+  },
+  "docs-link": {
+    "message": "Read the <0>documentation</0> for more info."
+  },
+  "cart-count": {
+    "message": "{count, plural, =0 {No items} one {# item} other {# items}}"
+  },
+  "role-select": {
+    "message": "{value, select, admin {Administrator} user {User} other {Guest}}"
+  }
+}

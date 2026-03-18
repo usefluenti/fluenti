@@ -8,6 +8,7 @@
 
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
+import { hashMessage } from '@fluenti/core'
 
 /**
  * Derive a stable route name from a Rollup chunk filename.
@@ -98,16 +99,25 @@ export function parseCompiledCatalog(source: string): Map<string, string> {
  *   export const _def = (v) => `Hi ${v.name}`
  */
 export function buildChunkModule(
-  hashes: ReadonlySet<string>,
+  catalogIds: ReadonlySet<string>,
   catalogExports: Map<string, string>,
 ): string {
   const lines: string[] = []
-  for (const hash of hashes) {
-    const exportLine = catalogExports.get(hash)
+  const defaultEntries: string[] = []
+
+  for (const catalogId of catalogIds) {
+    const exportHash = hashMessage(catalogId)
+    const exportLine = catalogExports.get(exportHash)
     if (exportLine) {
       lines.push(exportLine)
+      defaultEntries.push(`  '${escapeStringLiteral(catalogId)}': _${exportHash},`)
     }
   }
+
+  if (defaultEntries.length > 0) {
+    lines.push('', 'export default {', ...defaultEntries, '}')
+  }
+
   return lines.join('\n') + '\n'
 }
 
@@ -121,4 +131,12 @@ export function readCatalogSource(catalogDir: string, locale: string): string | 
   } catch {
     return undefined
   }
+}
+
+function escapeStringLiteral(value: string): string {
+  return value
+    .replace(/\\/g, '\\\\')
+    .replace(/'/g, "\\'")
+    .replace(/\r/g, '\\r')
+    .replace(/\n/g, '\\n')
 }

@@ -58,13 +58,14 @@ function generateRuntimeModule(options: VirtualModuleOptions): string {
     // React uses I18nProvider for state management, so the virtual runtime
     // module just provides a simple mutable object + async loaders.
     return `
-import * as __defaultMsgs from '${absoluteCatalogDir}/${defaultLocale}.js'
+import __defaultMsgs from '${absoluteCatalogDir}/${defaultLocale}.js'
 
 const __catalog = { ...__defaultMsgs }
 let __currentLocale = '${defaultLocale}'
 const __loadedLocales = new Set(['${defaultLocale}'])
 let __loading = false
 const __cache = new Map()
+const __normalizeMessages = (mod) => mod.default ?? mod
 
 const __loaders = {
 ${lazyLocales.map((l) => `  '${l}': () => import('${absoluteCatalogDir}/${l}.js'),`).join('\n')}
@@ -78,7 +79,7 @@ async function __switchLocale(locale) {
   }
   __loading = true
   try {
-    const mod = await __loaders[locale]()
+    const mod = __normalizeMessages(await __loaders[locale]())
     __cache.set(locale, mod)
     __loadedLocales.add(locale)
     Object.assign(__catalog, mod)
@@ -91,7 +92,7 @@ async function __switchLocale(locale) {
 async function __preloadLocale(locale) {
   if (__loadedLocales.has(locale) || !__loaders[locale]) return
   try {
-    const mod = await __loaders[locale]()
+    const mod = __normalizeMessages(await __loaders[locale]())
     __cache.set(locale, mod)
     __loadedLocales.add(locale)
   } catch {}
@@ -106,13 +107,14 @@ export { __catalog, __switchLocale, __preloadLocale, __currentLocale, __loading,
   if (framework === 'vue') {
     return `
 import { shallowReactive, triggerRef, ref } from 'vue'
-import * as __defaultMsgs from '${absoluteCatalogDir}/${defaultLocale}.js'
+import __defaultMsgs from '${absoluteCatalogDir}/${defaultLocale}.js'
 
 const __catalog = shallowReactive({ ...__defaultMsgs })
 const __currentLocale = ref('${defaultLocale}')
 const __loadedLocales = new Set(['${defaultLocale}'])
 const __loading = ref(false)
 const __cache = new Map()
+const __normalizeMessages = (mod) => mod.default ?? mod
 
 const __loaders = {
 ${lazyLocales.map((l) => `  '${l}': () => import('${absoluteCatalogDir}/${l}.js'),`).join('\n')}
@@ -126,7 +128,7 @@ async function __switchLocale(locale) {
   }
   __loading.value = true
   try {
-    const mod = await __loaders[locale]()
+    const mod = __normalizeMessages(await __loaders[locale]())
     __cache.set(locale, mod)
     __loadedLocales.add(locale)
     Object.assign(__catalog, mod)
@@ -139,7 +141,7 @@ async function __switchLocale(locale) {
 async function __preloadLocale(locale) {
   if (__loadedLocales.has(locale) || !__loaders[locale]) return
   try {
-    const mod = await __loaders[locale]()
+    const mod = __normalizeMessages(await __loaders[locale]())
     __cache.set(locale, mod)
     __loadedLocales.add(locale)
   } catch {}
@@ -155,13 +157,14 @@ export { __catalog, __switchLocale, __preloadLocale, __currentLocale, __loading,
   return `
 import { createSignal } from 'solid-js'
 import { createStore, reconcile } from 'solid-js/store'
-import * as __defaultMsgs from '${absoluteCatalogDir}/${defaultLocale}.js'
+import __defaultMsgs from '${absoluteCatalogDir}/${defaultLocale}.js'
 
 const [__catalog, __setCatalog] = createStore({ ...__defaultMsgs })
 const [__currentLocale, __setCurrentLocale] = createSignal('${defaultLocale}')
 const __loadedLocales = new Set(['${defaultLocale}'])
 const [__loading, __setLoading] = createSignal(false)
 const __cache = new Map()
+const __normalizeMessages = (mod) => mod.default ?? mod
 
 const __loaders = {
 ${lazyLocales.map((l) => `  '${l}': () => import('${absoluteCatalogDir}/${l}.js'),`).join('\n')}
@@ -175,7 +178,7 @@ async function __switchLocale(locale) {
   }
   __setLoading(true)
   try {
-    const mod = await __loaders[locale]()
+    const mod = __normalizeMessages(await __loaders[locale]())
     __cache.set(locale, mod)
     __loadedLocales.add(locale)
     __setCatalog(reconcile(mod))
@@ -188,7 +191,7 @@ async function __switchLocale(locale) {
 async function __preloadLocale(locale) {
   if (__loadedLocales.has(locale) || !__loaders[locale]) return
   try {
-    const mod = await __loaders[locale]()
+    const mod = __normalizeMessages(await __loaders[locale]())
     __cache.set(locale, mod)
     __loadedLocales.add(locale)
   } catch {}
@@ -232,7 +235,7 @@ export function generateRouteRuntimeModule(options: VirtualModuleOptions): strin
   if (framework === 'vue') {
     return `
 import { shallowReactive, ref } from 'vue'
-import * as __defaultMsgs from '${absoluteCatalogDir}/${defaultLocale}.js'
+import __defaultMsgs from '${absoluteCatalogDir}/${defaultLocale}.js'
 
 const __catalog = shallowReactive({ ...__defaultMsgs })
 const __currentLocale = ref('${defaultLocale}')
@@ -240,6 +243,7 @@ const __loadedLocales = new Set(['${defaultLocale}'])
 const __loading = ref(false)
 const __cache = new Map()
 const __loadedRoutes = new Set()
+const __normalizeMessages = (mod) => mod.default ?? mod
 
 const __loaders = {
 ${lazyLocales.map((l) => `  '${l}': () => import('${absoluteCatalogDir}/${l}.js'),`).join('\n')}
@@ -257,7 +261,7 @@ async function __loadRoute(routeId, locale) {
   if (__loadedRoutes.has(key)) return
   const loader = __routeLoaders[key]
   if (!loader) return
-  const mod = await loader()
+  const mod = __normalizeMessages(await loader())
   Object.assign(__catalog, mod)
   __loadedRoutes.add(key)
 }
@@ -269,7 +273,7 @@ async function __switchLocale(locale) {
     if (__cache.has(locale)) {
       Object.assign(__catalog, __cache.get(locale))
     } else {
-      const mod = await __loaders[locale]()
+      const mod = __normalizeMessages(await __loaders[locale]())
       __cache.set(locale, mod)
       Object.assign(__catalog, mod)
     }
@@ -283,7 +287,7 @@ async function __switchLocale(locale) {
 async function __preloadLocale(locale) {
   if (__cache.has(locale) || !__loaders[locale]) return
   try {
-    const mod = await __loaders[locale]()
+    const mod = __normalizeMessages(await __loaders[locale]())
     __cache.set(locale, mod)
     __loadedLocales.add(locale)
   } catch {}
@@ -299,7 +303,7 @@ export { __catalog, __switchLocale, __preloadLocale, __loadRoute, __registerRout
   return `
 import { createSignal } from 'solid-js'
 import { createStore, reconcile } from 'solid-js/store'
-import * as __defaultMsgs from '${absoluteCatalogDir}/${defaultLocale}.js'
+import __defaultMsgs from '${absoluteCatalogDir}/${defaultLocale}.js'
 
 const [__catalog, __setCatalog] = createStore({ ...__defaultMsgs })
 const [__currentLocale, __setCurrentLocale] = createSignal('${defaultLocale}')
@@ -307,6 +311,7 @@ const __loadedLocales = new Set(['${defaultLocale}'])
 const [__loading, __setLoading] = createSignal(false)
 const __cache = new Map()
 const __loadedRoutes = new Set()
+const __normalizeMessages = (mod) => mod.default ?? mod
 
 const __loaders = {
 ${lazyLocales.map((l) => `  '${l}': () => import('${absoluteCatalogDir}/${l}.js'),`).join('\n')}
@@ -324,7 +329,7 @@ async function __loadRoute(routeId, locale) {
   if (__loadedRoutes.has(key)) return
   const loader = __routeLoaders[key]
   if (!loader) return
-  const mod = await loader()
+  const mod = __normalizeMessages(await loader())
   __setCatalog(reconcile({ ...__catalog, ...mod }))
   __loadedRoutes.add(key)
 }
@@ -336,7 +341,7 @@ async function __switchLocale(locale) {
     if (__cache.has(locale)) {
       __setCatalog(reconcile(__cache.get(locale)))
     } else {
-      const mod = await __loaders[locale]()
+      const mod = __normalizeMessages(await __loaders[locale]())
       __cache.set(locale, mod)
       __setCatalog(reconcile(mod))
     }
@@ -350,7 +355,7 @@ async function __switchLocale(locale) {
 async function __preloadLocale(locale) {
   if (__cache.has(locale) || !__loaders[locale]) return
   try {
-    const mod = await __loaders[locale]()
+    const mod = __normalizeMessages(await __loaders[locale]())
     __cache.set(locale, mod)
     __loadedLocales.add(locale)
   } catch {}

@@ -31,15 +31,15 @@ test.describe('Build output verification', () => {
     const aboutCode = readFileSync(resolve(ASSETS_DIR, aboutChunk), 'utf-8')
 
     // Home page should reference catalog hashes (not raw $t calls)
-    expect(homeCode).toContain('_1kjapm1') // "Welcome to Fluenti"
-    expect(homeCode).toContain('_1wavrgs') // "This is the home page."
-    expect(homeCode).toContain('_yvn7bx')  // "Hello, {name}!"
+    expect(homeCode).toContain('1kjapm1') // "Welcome to Fluenti"
+    expect(homeCode).toContain('1wavrgs') // "This is the home page."
+    expect(homeCode).toContain('yvn7bx')  // "Hello, {name}!"
     expect(homeCode).not.toMatch(/\$t\s*\(\s*['"`]Welcome/)
 
     // About page should reference different hashes
-    expect(aboutCode).toContain('_1rfbb9t') // "About our project"
-    expect(aboutCode).toContain('_1r2eyjs') // "Learn more about Fluenti."
-    expect(aboutCode).toContain('_8ihuw0')  // "Contact us at {email}"
+    expect(aboutCode).toContain('1rfbb9t') // "About our project"
+    expect(aboutCode).toContain('1r2eyjs') // "Learn more about Fluenti."
+    expect(aboutCode).toContain('8ihuw0')  // "Contact us at {email}"
     expect(aboutCode).not.toMatch(/\$t\s*\(\s*['"`]About our/)
   })
 
@@ -49,8 +49,8 @@ test.describe('Build output verification', () => {
     const indexCode = readFileSync(resolve(ASSETS_DIR, indexChunk), 'utf-8')
 
     // Nav labels from App.vue are in the main chunk
-    expect(indexCode).toContain('_n0mxf2') // "Home"
-    expect(indexCode).toContain('_onrqou') // "About"
+    expect(indexCode).toContain('n0mxf2') // "Home"
+    expect(indexCode).toContain('onrqou') // "About"
   })
 
   test('home and about chunks reference different messages', () => {
@@ -62,12 +62,12 @@ test.describe('Build output verification', () => {
     const aboutCode = readFileSync(resolve(ASSETS_DIR, aboutChunk), 'utf-8')
 
     // Home-specific messages should NOT be in About chunk
-    expect(aboutCode).not.toContain('_1kjapm1') // "Welcome to Fluenti"
-    expect(aboutCode).not.toContain('_1wavrgs') // "This is the home page."
+    expect(aboutCode).not.toContain('1kjapm1') // "Welcome to Fluenti"
+    expect(aboutCode).not.toContain('1wavrgs') // "This is the home page."
 
     // About-specific messages should NOT be in Home chunk
-    expect(homeCode).not.toContain('_1rfbb9t') // "About our project"
-    expect(homeCode).not.toContain('_1r2eyjs') // "Learn more about Fluenti."
+    expect(homeCode).not.toContain('1rfbb9t') // "About our project"
+    expect(homeCode).not.toContain('1r2eyjs') // "Learn more about Fluenti."
   })
 
   test('compiled locale catalogs are separate chunks', () => {
