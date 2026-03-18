@@ -1,10 +1,12 @@
 'use client'
 
 import { useState } from 'react'
+import { useI18n } from '@fluenti/react'
 import { greetAction } from './actions'
 
 export default function ServerActionPage() {
   const [result, setResult] = useState<string | null>(null)
+  const { t } = useI18n()
 
   return (
     <div data-testid="action-page">

@@ -490,16 +490,14 @@ describe('I18nProvider edge cases', () => {
     expect(screen.getByTestId('hook-has-i18n').textContent).toBe('function')
   })
 
-  // 17. Sets global i18n instance via registry
-  it('sets global i18n instance via registry', () => {
+  // 17. Does not populate the legacy global registry
+  it('does not set the global i18n registry', () => {
     render(
       createElement(I18nProvider, { locale: 'en', messages: { en: {} }, children: null },
         createElement('div', null, 'child'),
       ),
     )
 
-    const global = getGlobalI18n()
-    expect(global).toBeDefined()
-    expect(typeof global!.t).toBe('function')
+    expect(getGlobalI18n()).toBeUndefined()
   })
 })

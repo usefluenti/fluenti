@@ -48,13 +48,14 @@ describe('generateServerModule', () => {
     expect(serverSource).toContain('default:')
   })
 
-  it('contains setLocale, getI18n, and __getServerI18n exports', () => {
+  it('contains setLocale and getI18n exports', () => {
     generateServerModule('/project', baseConfig)
 
     const serverSource = writtenFiles['/project/node_modules/.fluenti/server.js']!
     expect(serverSource).toContain('export const setLocale = serverI18n.setLocale')
     expect(serverSource).toContain('export const getI18n = serverI18n.getI18n')
-    expect(serverSource).toContain('export const __getServerI18n = serverI18n.__getSyncInstance')
+    expect(serverSource).toContain('export const Select = serverI18n.Select')
+    expect(serverSource).not.toContain('__getServerI18n')
     expect(serverSource).toContain('export async function FluentProvider')
   })
 

@@ -1,6 +1,8 @@
 // ─── SFC pre-transform fallback for v-t ──────────────────────────────────────
 // Used when the nodeTransform can't be injected into @vitejs/plugin-vue
 
+import { hashMessage } from '@fluenti/core'
+
 export function transformVtDirectives(sfc: string): string {
   const tmplOpen = sfc.match(/<template(\s[^>]*)?>/)
   if (!tmplOpen) return sfc
@@ -159,12 +161,25 @@ function transformTransSFC(template: string): string {
     // If <Trans> has a `message` prop, don't transform (old API)
     if (/\bmessage\s*=/.test(attrs)) return _match
 
+    const explicitId = readStaticSfcAttr(attrs, 'id')
+    if (explicitId.kind === 'dynamic') return _match
+
+    const context = readStaticSfcAttr(attrs, 'context')
+    if (!explicitId.value && context.kind === 'dynamic') return _match
+
     // Extract tag prop (default: 'span')
     const tagMatch = attrs.match(/\btag\s*=\s*"([^"]*)"/)
     const wrapperTag = tagMatch?.[1] ?? 'span'
 
-    // Remove tag prop from attrs
-    const cleanAttrs = attrs.replace(/\s*\btag\s*=\s*"[^"]*"/, '')
+    // Remove Trans-only props from the generated DOM element.
+    const cleanAttrs = attrs
+      .replace(/\s*\btag\s*=\s*"[^"]*"/, '')
+      .replace(/\s*\bid\s*=\s*"[^"]*"/, '')
+      .replace(/\s*:id\s*=\s*"[^"]*"/, '')
+      .replace(/\s*\bcontext\s*=\s*"[^"]*"/, '')
+      .replace(/\s*:context\s*=\s*"[^"]*"/, '')
+      .replace(/\s*\bcomment\s*=\s*"[^"]*"/, '')
+      .replace(/\s*:comment\s*=\s*"[^"]*"/, '')
 
     const rawContent = content.trim()
 
@@ -186,7 +201,8 @@ function transformTransSFC(template: string): string {
           return `<${idx}>${innerContent}</${idx}>`
         },
       )
-      const escapedMsg = richMessage.replace(/'/g, "\\'")
+      const translationId = explicitId.value ?? hashMessage(richMessage, context.value)
+      const escapedMsg = translationId.replace(/'/g, "\\'")
       const elemEntries = elements.map(el => {
         const attrEntries = Object.entries(el.attrs)
           .map(([k, v]) => `${k}: '${v.replace(/'/g, "\\'")}'`)
@@ -198,7 +214,8 @@ function transformTransSFC(template: string): string {
     }
 
     // Plain text
-    const escapedMsg = rawContent.replace(/'/g, "\\'")
+    const translationId = explicitId.value ?? hashMessage(rawContent, context.value)
+    const escapedMsg = translationId.replace(/'/g, "\\'")
     return `<${wrapperTag}${cleanAttrs}>{{ $t('${escapedMsg}') }}</${wrapperTag}>`
   })
 }
@@ -337,4 +354,25 @@ function transformPluralSFC(template: string): string {
 
     return `<${wrapperTag}${attrsPart} v-text="$t('${escapedMsg}', { ${valueExpr} })"></${wrapperTag}>`
   })
+}
+
+interface StaticSfcAttrValue {
+  kind: 'missing' | 'static' | 'dynamic'
+  value?: string
+}
+
+function readStaticSfcAttr(attrs: string, name: string): StaticSfcAttrValue {
+  if (new RegExp(`(?:^|\\s):${name}\\s*=`).test(attrs)) {
+    return { kind: 'dynamic' }
+  }
+
+  const match = attrs.match(new RegExp(`\\b${name}\\s*=\\s*"([^"]*)"`))
+  if (!match) {
+    return { kind: 'missing' }
+  }
+
+  return {
+    kind: 'static',
+    value: match[1] ?? '',
+  }
 }

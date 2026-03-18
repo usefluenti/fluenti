@@ -1,7 +1,6 @@
-import { getI18n, Trans, Plural, DateTime, NumberFormat } from '@fluenti/next/__generated'
+import { t, Trans, Plural, DateTime, NumberFormat } from '@fluenti/react'
 
 export default async function RSCRichTextPage() {
-  const i18n = await getI18n()
   return (
     <div data-testid="rsc-richtext-page">
       <h1 data-testid="rsc-richtext-title">{t`RSC Rich Text`}</h1>

@@ -1,10 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import { Plural, Select, useI18n } from '@fluenti/react'
+import { t, Plural, Select } from '@fluenti/react'
 
 export default function PluralsPage() {
-  const { t } = useI18n()
   const [count, setCount] = useState(0)
   const [gender, setGender] = useState('other')
 

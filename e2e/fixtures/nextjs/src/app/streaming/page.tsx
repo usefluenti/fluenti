@@ -1,9 +1,8 @@
 import { Suspense } from 'react'
-import { getI18n } from '@fluenti/next/__generated'
+import { t } from '@fluenti/react'
 
 async function SlowContent() {
   await new Promise((resolve) => setTimeout(resolve, 500))
-  const i18n = await getI18n()
   return (
     <p data-testid="streamed-content">{t`Streamed content loaded!`}</p>
   )

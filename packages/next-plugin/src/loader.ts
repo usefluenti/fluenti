@@ -2,9 +2,9 @@
  * Webpack loader for t`` and t() transforms in Next.js.
  *
  * Runs as enforce: 'pre' to transform source before other loaders.
- * Detects server vs client context and injects the appropriate import.
+ * Only statically provable `t` bindings are optimized; runtime `t()` calls
+ * continue to work without injected proxy globals.
  */
-import { transformTaggedTemplate, detectInjectionMode, injectI18nImport } from './transform'
 import { scopeTransform } from './scope-transform'
 import { transformTransComponents } from './trans-transform'
 
@@ -24,6 +24,7 @@ export default function fluentLoader(this: LoaderContext, source: string): strin
   }
 
   let result = source
+  const isClientModule = /^\s*['"]use client['"]/.test(result)
 
   // ── <Trans> compile-time optimization (JSX/TSX only) ──────────────
   if (/\.[jt]sx$/.test(this.resourcePath) && /<Trans[\s>]/.test(result)) {
@@ -33,40 +34,49 @@ export default function fluentLoader(this: LoaderContext, source: string): strin
     }
   }
 
-  // Quick check: does this file contain t` or standalone t( ?
-  if (!hasFluentPatterns(result)) {
+  // Quick check: does this file contain any Fluenti authoring/runtime surface?
+  if (!isServerFluentiFile(result, isClientModule) && !hasFluentPatterns(result)) {
     return result
   }
 
   // Try scope-aware transform first (AST-based, zero false positives)
-  const scoped = scopeTransform(result, { framework: 'react' })
+  const scoped = scopeTransform(result, {
+    framework: 'react',
+    serverModuleImport: '@fluenti/next/__generated',
+    treatFrameworkDirectImportsAsServer: !isClientModule,
+    rerouteServerAuthoringImports: !isClientModule,
+    errorOnServerUseI18n: !isClientModule,
+  })
   if (scoped.transformed) {
-    // Scope transform rewrites t`...` → t('...', { ... }) but doesn't
-    // inject __i18n — the rewritten t() calls are still bound to the
-    // user's local `t` from useI18n(), so no import injection needed.
     return scoped.code
   }
 
-  // Fall back to legacy regex transform for files without useI18n import
-  const { code, needsImport } = transformTaggedTemplate(result)
-
-  if (!needsImport) {
-    return result
-  }
-
-  const mode = detectInjectionMode(result, this.resourcePath)
-
-  // For server files, import __getServerI18n from the generated module.
-  // Use the webpack alias '@fluenti/next/__generated' which resolves
-  // to the generated server module path.
-  return injectI18nImport(code, mode, '@fluenti/next/__generated')
+  return result
 }
 
 /**
  * Quick regex check to avoid full parsing on files without t`` or t().
  */
 function hasFluentPatterns(code: string): boolean {
-  return /\bt`/.test(code) || /(?<![.\w$])t\(\s*['"]/.test(code)
+  if (/(?<![.\w$])t\(\s*['"]/.test(code) || /[A-Za-z_$][\w$]*\(\s*\{/.test(code)) {
+    return true
+  }
+
+  if (/[A-Za-z_$][\w$]*`/.test(code) && (code.includes('useI18n') || code.includes('getI18n'))) {
+    return true
+  }
+
+  return /import\s*\{\s*t(?:\s+as\s+[A-Za-z_$][\w$]*)?[\s,}]/.test(code)
+    && (code.includes('@fluenti/react') || code.includes('@fluenti/next/__generated'))
+}
+
+function isServerFluentiFile(code: string, isClientModule: boolean): boolean {
+  if (isClientModule) return false
+  if (!code.includes('@fluenti/react') && !code.includes('@fluenti/next/__generated')) {
+    return false
+  }
+
+  return /\b(useI18n|Trans|Plural|Select|DateTime|NumberFormat|t)\b/.test(code)
 }
 
 interface LoaderContext {

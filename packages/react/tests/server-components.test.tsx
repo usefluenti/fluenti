@@ -146,8 +146,47 @@ describe('Server Plural', () => {
 
     const element = await Plural({ value: 2, offset: 1, one: '# item left', other: '# items left' })
     const html = renderToStaticMarkup(element)
-    // offset=1 means adjustedValue=1, so "one" form is selected, but # is replaced with original value (2)
-    expect(html).toBe('2 item left')
+    // offset=1 means adjustedValue=1, so "one" form is selected and # uses the adjusted count
+    expect(html).toBe('1 item left')
+  })
+
+  it('uses catalog translation for synthetic ICU plural messages', async () => {
+    const { setLocale, Plural } = createServerI18n({
+      loadMessages: async () => ({
+        '{count, plural, =0 {No apples} one {# apple} other {# apples}}':
+          '{count, plural, =0 {没有苹果} one {# 个苹果} other {# 个苹果}}',
+      }),
+    })
+    setLocale('en')
+
+    const element = await Plural({ value: 5, zero: 'No apples', one: '# apple', other: '# apples' })
+    const html = renderToStaticMarkup(element)
+    expect(html).toBe('5 个苹果')
+  })
+})
+
+describe('Server Select', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('selects the translated string case via synthetic ICU select messages', async () => {
+    const { setLocale, Select } = createServerI18n({
+      loadMessages: async () => ({
+        '{value, select, male {He liked your post} female {She liked your post} other {They liked your post}}':
+          '{value, select, male {彼があなたの投稿を気に入りました} female {彼女があなたの投稿を気に入りました} other {その人があなたの投稿を気に入りました}}',
+      }),
+    })
+    setLocale('en')
+
+    const element = await Select({
+      value: 'male',
+      male: 'He liked your post',
+      female: 'She liked your post',
+      other: 'They liked your post',
+    })
+    const html = renderToStaticMarkup(element)
+    expect(html).toBe('彼があなたの投稿を気に入りました')
   })
 })
 

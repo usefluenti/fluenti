@@ -80,9 +80,9 @@ function LocaleSwitcher() {
 ## Reactivity
 
 When you call `setLocale()`:
-- **Vue:** All `t()` calls in templates re-evaluate (they read `locale.value`). All `t` tagged templates (ComputedRefs) recompute.
+- **Vue:** `v-t` output and `useI18n().t()` expressions update as `locale.value` changes. Direct-import `t` does not create a `ComputedRef` wrapper by itself.
 - **React:** The provider creates a new `createFluent()` instance, triggering re-renders for all children consuming the context.
-- **Solid:** All components reading `locale()` re-render. `createMemo` values recompute.
+- **Solid:** JSX expressions that call `t` or `useI18n().t()` re-run inside Solid's reactive scopes. Direct-import `t` does not create a `createMemo` wrapper.
 
 Every `$d()` and `$n()` call also updates automatically.
 

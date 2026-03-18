@@ -11,10 +11,11 @@ import { Steps, Aside } from '@astrojs/starlight/components'
 
    ```bash
    pnpm add @fluenti/core @fluenti/solid @solidjs/router @solidjs/start solid-js vinxi
+   pnpm add -D @fluenti/cli @fluenti/vite-plugin
    ```
 
    <Aside type="note">
-     SolidStart uses vinxi as its dev server. No separate Vite plugin is needed.
+     SolidStart uses vinxi under the hood, but you still need `@fluenti/vite-plugin` in `app.config.ts` for compile-time `t` transforms.
    </Aside>
 
 2. **Configure SolidStart**
@@ -22,9 +23,13 @@ import { Steps, Aside } from '@astrojs/starlight/components'
    ```typescript
    // app.config.ts
    import { defineConfig } from '@solidjs/start/config'
+   import fluenti from '@fluenti/vite-plugin'
 
    export default defineConfig({
      server: { preset: 'node-server' },
+     vite: {
+       plugins: [fluenti({ framework: 'solid' })],
+     },
    })
    ```
 
@@ -81,7 +86,7 @@ import { Steps, Aside } from '@astrojs/starlight/components'
    }
 
    function Nav() {
-     const { t, locale, setLocale } = useI18n()
+     const { locale, setLocale } = useI18n()
      return (
        <nav>
          <button
@@ -107,7 +112,7 @@ import { Steps, Aside } from '@astrojs/starlight/components'
 
    ```tsx
    // src/routes/index.tsx
-   import { Trans } from '@fluenti/solid'
+   import { t, Trans } from '@fluenti/solid'
 
    export default function Home() {
      const name = 'World'
@@ -122,7 +127,7 @@ import { Steps, Aside } from '@astrojs/starlight/components'
    }
    ```
 
-   The `` t`...` `` tagged template is a compiler macro — no import needed.
+   The `` t`...` `` tagged template is optimized from Fluenti's direct-import `t`.
 
 6. **Extract, translate, and compile**
 

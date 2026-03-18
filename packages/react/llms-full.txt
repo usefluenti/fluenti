@@ -1,257 +1,184 @@
 # @fluenti/react
 
-> React bindings for Fluenti — compile-time i18n with zero runtime overhead.
+> React bindings for Fluenti — compile-time `t`, runtime-capable components, and client/server i18n helpers.
 
-## Overview
+@fluenti/react is the React runtime layer for Fluenti. It supports:
 
-@fluenti/react provides React components, hooks, and a context provider for internationalization. It supports both client-side React and React Server Components (RSC). Built on @fluenti/core, it offers compile-time message extraction with zero runtime overhead for translations.
+- compile-time authoring with `import { t } from '@fluenti/react'`
+- runtime lookup and imperative access with `useI18n()`
+- async locale loading through `I18nProvider`
+- request-scoped server helpers through `@fluenti/react/server`
 
-- Package: @fluenti/react
-- Docs: https://fluenti.dev
-- Repository: https://github.com/usefluenti/fluenti/tree/main/packages/react
-- Peer dependency: react >=18.0.0
-- Dependency: @fluenti/core
-- License: MIT
-
-## Installation
+## Install
 
 ```bash
 pnpm add @fluenti/core @fluenti/react
 pnpm add -D @fluenti/cli @fluenti/vite-plugin
 ```
 
-## Exports — Main Entry (`@fluenti/react`)
+## Main entry: `@fluenti/react`
 
-The main entry is marked `"use client"` and exports:
+### Public exports
 
-### I18nProvider
+- `I18nProvider`
+- `useI18n`
+- `t`
+- `Trans`
+- `Plural`
+- `Select`
+- `DateTime`
+- `NumberFormat`
+- `msg`
+- `I18nContext`
 
-Context provider that wraps the component tree. Creates a Fluent instance via `createFluent()` from @fluenti/core.
+Types:
 
-Props (I18nProviderProps):
-- locale (string, required): Active locale code
-- fallbackLocale (string, optional): Fallback locale when translation is missing
-- messages (AllMessages, optional): Static message catalogs keyed by locale
-- loadMessages ((locale: string) => Promise<Messages | { default: Messages }>, optional): Async loader for lazy loading locales
-- fallbackChain (Record<string, string[]>, optional): Custom fallback chains per locale
-- dateFormats (DateFormatOptions, optional): Named date format styles
-- numberFormats (NumberFormatOptions, optional): Named number format styles
-- missing ((locale: string, id: string) => string | undefined, optional): Missing message handler
-- children (ReactNode, required): App content
+- `I18nContextValue`
+- `I18nProviderProps`
+- `TransProps`
+- `PluralProps`
+- `SelectProps`
+- `DateTimeProps`
+- `NumberProps`
+- `CompileTimeT`
 
-Behavior:
-- Syncs external locale prop changes automatically
-- Supports async locale loading with race condition protection
-- Exposes i18n instance on `globalThis.__fluenti_i18n` for @fluenti/next webpack loader
-- SSR-safe (works with server-side rendering)
+### `I18nProvider`
 
-### useI18n()
+Wraps a client React subtree with one Fluenti runtime instance.
 
-Primary hook for accessing i18n functions. Must be used within `<I18nProvider>`.
+Important props:
 
-Returns (I18nContextValue):
-- i18n (FluentInstanceExtended): The underlying Fluent instance with t(), d(), n() methods
-  - i18n.t(id, values?): Translate a message
-  - i18n.d(value, style?): Format a date
-  - i18n.n(value, style?): Format a number
-- locale (string): Current locale
-- setLocale ((locale: string) => Promise<void>): Change the active locale (async when lazy loading)
-- isLoading (boolean): Whether a locale is currently being loaded
-- loadedLocales (string[]): Locales whose messages have been loaded
-- preloadLocale ((locale: string) => Promise<void>): Preload a locale in the background without switching to it
+- `locale`
+- `messages`
+- `fallbackLocale`
+- `fallbackChain`
+- `loadMessages`
+- `dateFormats`
+- `numberFormats`
+- `missing`
 
-Throws an error if used outside of `<I18nProvider>`.
+`loadMessages(locale)` is the public lazy-loading hook for async locale chunks.
 
-### Components
+### `useI18n()`
 
-**Trans**: Rich text with JSX component interpolation.
+Returns the full client runtime API:
+
+- `t(idOrDescriptor, values?)`
+- tagged-template `t\`\``
+- `d(value, style?)`
+- `n(value, style?)`
+- `format(message, values?)`
+- `loadMessages(locale, messages)`
+- `getLocales()`
+- `locale`
+- `setLocale(locale)`
+- `isLoading`
+- `loadedLocales`
+- `preloadLocale(locale)`
+- `i18n` as the underlying escape hatch
+
+## Compile-time `t`
+
+Imported `t` is compile-time only:
+
 ```tsx
-<Trans>Read the <a href="/docs">documentation</a></Trans>
+import { t } from '@fluenti/react'
+
+const headline = t`Hello ${name}`
+const label = t({ message: 'Hello {name}', context: 'home.hero' }, { name })
 ```
 
-**Plural**: Locale-aware pluralization via Intl.PluralRules. `#` is replaced with the formatted value.
+Use `useI18n().t()` for runtime ID lookup or other imperative code:
+
 ```tsx
-<Plural value={count} one="# item" other="# items" />
+const { t } = useI18n()
+return <p>{t('dashboard.greeting')}</p>
 ```
 
-**Select**: Categorical value selection (gender, role, etc.).
-```tsx
-<Select value={gender} male="He" female="She" other="They" />
-```
+If imported `t` runs at runtime without the build plugin, it throws a clear error.
 
-**DateTime**: Date formatting via Intl.DateTimeFormat.
-```tsx
-<p>{i18n.d(new Date(), 'long')}</p>
-```
+## Runtime-capable components
 
-**NumberFormat**: Number formatting via Intl.NumberFormat.
-```tsx
-<p>{i18n.n(1234.5, 'decimal')}</p>
-```
+These continue to work without the build plugin:
 
-### msg
+- `Trans`
+- `Plural`
+- `Select`
+- `DateTime`
+- `NumberFormat`
 
-Lazy message descriptor for use outside the component tree (re-exported from @fluenti/core). Used when auto-injection cannot work.
+Cross-framework contract highlights:
 
-### I18nContext
+- `Plural` supports `id`, `context`, `comment`, and `offset`
+- `zero` maps to exact `=0`
+- `#` uses the adjusted count
+- `Select` supports `options`, which take precedence over direct case props
 
-Raw React context object for advanced use cases.
-
-### Exported Types
-
-- I18nContextValue
-- I18nProviderProps
-- TransProps
-- PluralProps
-- SelectProps
-- DateTimeProps
-- NumberProps
-
-## Exports — Server Entry (`@fluenti/react/server`)
-
-For React Server Components (Next.js App Router). Uses `React.cache()` for per-request isolation without React Context.
-
-### createServerI18n(config)
-
-Creates request-scoped i18n utilities. Returns a ServerI18n object.
-
-Config (ServerI18nConfig):
-- loadMessages ((locale: string) => Promise<Messages | { default: Messages }>, required): Load messages for a locale, called once per locale per request
-- fallbackLocale (string, optional): Fallback locale when translation is missing
-- resolveLocale ((() => string | Promise<string>), optional): Auto-resolve locale when setLocale() was not called (for Server Actions and other contexts that skip the layout tree)
-- fallbackChain (Record<string, Locale[]>, optional): Custom fallback chains
-- dateFormats (DateFormatOptions, optional): Named date format styles
-- numberFormats (NumberFormatOptions, optional): Named number format styles
-- missing ((locale: string, id: string) => string | undefined, optional): Missing key handler
-
-Returns (ServerI18n):
-- setLocale(locale: string): void — Set locale for the current request. Call once in root layout.
-- getI18n(): Promise<FluentInstanceExtended & { locale: string }> — Get fully configured i18n instance for current request. Messages loaded lazily and cached per-request.
-- Trans(props): Promise<ReactElement> — Async server component for rich text. Props: children, id?, comment?, render?
-- Plural(props): Promise<ReactElement> — Async server component for pluralization. Props: value, zero?, one?, two?, few?, many?, other, offset?
-- DateTime(props): Promise<ReactElement> — Async server component for date formatting. Props: value, style?
-- NumberFormat(props): Promise<ReactElement> — Async server component for number formatting. Props: value, style?
-
-### Re-exported SSR Utilities (from @fluenti/core)
-
-- detectLocale: Detect user's preferred locale
-- getSSRLocaleScript: Generate script tag for hydrating locale on the client
-- getHydratedLocale: Get the hydrated locale value
-- isRTL: Check if a locale is right-to-left
-- getDirection: Get text direction for a locale
-
-## Full Client-Side Example
+## Example
 
 ```tsx
-import { I18nProvider } from '@fluenti/react'
-import en from './locales/compiled/en'
-import zhCN from './locales/compiled/zh-CN'
+import { I18nProvider, t, useI18n, Trans, Plural, Select } from '@fluenti/react'
 
-function App() {
+function Home() {
+  const name = 'Fluenti'
+  const headline = t`Hello ${name}`
+  const { setLocale, preloadLocale } = useI18n()
+
   return (
-    <I18nProvider locale="en" fallbackLocale="en" messages={{ en, 'zh-CN': zhCN }}>
-      <MyApp />
+    <>
+      <h1>{headline}</h1>
+      <Trans>Read the <a href="/docs">documentation</a></Trans>
+      <Plural value={3} one="# item" other="# items" />
+      <Select value="admin" admin="Administrator" other="User" />
+      <button onMouseEnter={() => void preloadLocale('ja')} onClick={() => void setLocale('ja')}>
+        日本語
+      </button>
+    </>
+  )
+}
+
+export default function App() {
+  return (
+    <I18nProvider
+      locale="en"
+      fallbackLocale="en"
+      messages={{ en }}
+      loadMessages={(locale) => import(`./locales/compiled/${locale}.js`)}
+    >
+      <Home />
     </I18nProvider>
   )
 }
 ```
 
-```tsx
-import { useI18n, Trans, Plural, Select } from '@fluenti/react'
+## Server entry: `@fluenti/react/server`
 
-function Home() {
-  const { i18n, locale, setLocale } = useI18n()
+### `createServerI18n(config)`
 
-  return (
-    <div>
-      <h1>{i18n.t('Welcome to my app')}</h1>
-      <p>{i18n.t('Hello, {name}!', { name: 'World' })}</p>
+Creates request-scoped runtime helpers for server rendering.
 
-      <Trans>Read the <a href="/docs">documentation</a></Trans>
+Config:
 
-      <Plural value={count} one="# item" other="# items" />
+- `loadMessages(locale)`
+- `fallbackLocale`
+- `resolveLocale`
+- `fallbackChain`
+- `dateFormats`
+- `numberFormats`
+- `missing`
 
-      <Select value={gender} male="He" female="She" other="They" />
+Returns:
 
-      <p>{i18n.d(new Date(), 'long')}</p>
-      <p>{i18n.n(1234.5, 'decimal')}</p>
+- `setLocale(locale)`
+- `getI18n()`
+- `Trans`
+- `Plural`
+- `Select`
+- `DateTime`
+- `NumberFormat`
 
-      <button onClick={() => setLocale('en')}>English</button>
-      <button onClick={() => setLocale('zh-CN')}>中文</button>
-    </div>
-  )
-}
-```
+Use this for server-side runtime access. It is distinct from imported compile-time `t`.
 
-## Full Server Components (RSC) Example
+## Build plugin relationship
 
-```ts
-// lib/i18n.server.ts
-import { createServerI18n } from '@fluenti/react/server'
-
-export const { setLocale, getI18n, Trans, Plural, DateTime, NumberFormat } = createServerI18n({
-  loadMessages: (locale) => import(`../locales/compiled/${locale}.js`),
-  fallbackLocale: 'en',
-  resolveLocale: async () => {
-    const { cookies } = await import('next/headers')
-    return (await cookies()).get('locale')?.value ?? 'en'
-  },
-})
-```
-
-```tsx
-// app/layout.tsx
-import { setLocale } from '@/lib/i18n.server'
-
-export default async function Layout({ children }) {
-  const locale = /* read from cookie/param */
-  setLocale(locale)
-  return <html lang={locale}><body>{children}</body></html>
-}
-```
-
-```tsx
-// app/page.tsx — use components directly, no i18n prop needed
-import { Trans, Plural, DateTime, NumberFormat } from '@/lib/i18n.server'
-
-export default async function Page() {
-  return (
-    <div>
-      <Trans>Read the <a href="/docs">documentation</a>.</Trans>
-      <Plural value={5} one="# item" other="# items" />
-      <DateTime value={new Date()} style="long" />
-      <NumberFormat value={1234.56} />
-    </div>
-  )
-}
-```
-
-## Vite Plugin Setup
-
-```ts
-// vite.config.ts
-import react from '@vitejs/plugin-react'
-import fluenti from '@fluenti/vite-plugin'
-
-export default {
-  plugins: [
-    fluenti({ framework: 'react' }),
-    react(),
-  ],
-}
-```
-
-## Framework Compatibility
-
-Works with any React-based framework:
-- React SPA (Vite)
-- React Router
-- Remix
-- Next.js (App Router / Pages Router)
-
-## Internal Details
-
-- The `__useI18n` hook is an internal variant exported for framework integration
-- `globalThis.__fluenti_i18n` is set by I18nProvider for the @fluenti/next webpack loader, which injects `globalThis.__fluenti_i18n.t(...)` into client components to avoid React module boundary issues in Next.js RSC
-- The server entry uses `React.cache()` to scope state per-request. It includes a module-level fallback for Server Actions where React.cache() may not share state
-- `__getSyncInstance()` is an internal synchronous accessor used by the @fluenti/next webpack loader for t`` in RSC
+`@fluenti/react` is the runtime layer. `@fluenti/vite-plugin` and `@fluenti/next` provide compile-time transforms for imported `t` and component optimizations.

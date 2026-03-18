@@ -52,9 +52,8 @@ describe('extractMessage', () => {
     const inner = createElement('em', null, 'deep')
     const outer = createElement('b', null, inner)
     const { message, components } = extractMessage(outer)
-    // Each recursive call creates its own components array, so inner index restarts at 0
-    expect(message).toBe('<0><0>deep</0></0>')
-    expect(components).toHaveLength(1)
+    expect(message).toBe('<0><1>deep</1></0>')
+    expect(components).toHaveLength(2)
   })
 
   it('extracts number children', () => {

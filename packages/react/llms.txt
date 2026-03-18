@@ -1,66 +1,48 @@
 # @fluenti/react
 
-> React bindings for Fluenti — compile-time i18n with zero runtime overhead.
+> React bindings for Fluenti — compile-time `t`, runtime-capable components, and client/server i18n helpers.
 
-## Overview
+@fluenti/react provides the React runtime for Fluenti. The recommended public path is:
 
-@fluenti/react provides React components, hooks, and a context provider for internationalization. It supports both client-side React and React Server Components (RSC). Built on @fluenti/core.
+- compile-time authoring: `import { t } from '@fluenti/react'`
+- runtime / imperative access: `useI18n()`
+- server runtime access: `createServerI18n()` from `@fluenti/react/server`
 
-- Package: @fluenti/react
-- Docs: https://fluenti.dev
-- Repository: https://github.com/usefluenti/fluenti/tree/main/packages/react
-- Peer dependency: react >=18.0.0
-- License: MIT
+## Install
 
-## Exports
+```bash
+pnpm add @fluenti/core @fluenti/react
+pnpm add -D @fluenti/cli @fluenti/vite-plugin
+```
+
+## Main Exports
 
 Main entry (`@fluenti/react`):
-- I18nProvider: Context provider wrapping the component tree
-- useI18n(): Hook returning {i18n, locale, setLocale, isLoading, loadedLocales, preloadLocale}
-- Trans: Rich text with component interpolation
-- Plural: Locale-aware pluralization via Intl.PluralRules
-- Select: Categorical value selection (gender, role, etc.)
-- DateTime: Date formatting via Intl.DateTimeFormat
-- NumberFormat: Number formatting via Intl.NumberFormat
-- msg: Lazy message descriptor for use outside the component tree
-- I18nContext: Raw React context (advanced use)
+
+- `I18nProvider`
+- `useI18n()`
+- `t`
+- `Trans`, `Plural`, `Select`, `DateTime`, `NumberFormat`
+- `msg`
+- `I18nContext`
 
 Server entry (`@fluenti/react/server`):
-- createServerI18n(config): Create request-scoped i18n utilities for RSC
-  - Returns: {setLocale, getI18n, Trans, Plural, DateTime, NumberFormat}
-  - Uses React.cache() for per-request isolation
-- SSR utilities re-exported from @fluenti/core: detectLocale, getSSRLocaleScript, getHydratedLocale, isRTL, getDirection
 
-## Quick Start
+- `createServerI18n()`
+- SSR helpers re-exported from `@fluenti/core`
 
-```tsx
-import { I18nProvider, useI18n, Trans, Plural } from '@fluenti/react'
+## Important Boundaries
 
-function App() {
-  return (
-    <I18nProvider locale="en" fallbackLocale="en" messages={{ en, zhCN }}>
-      <MyApp />
-    </I18nProvider>
-  )
-}
+- imported `t` is compile-time only and requires the Fluenti plugin / loader
+- `useI18n().t()` is the full runtime API on the client
+- `createServerI18n()` is the full runtime API on the server
+- `Trans / Plural / Select / DateTime / NumberFormat` remain runtime-capable without the build plugin
 
-function Home() {
-  const { i18n, locale, setLocale } = useI18n()
-  return <h1>{i18n.t('Hello, {name}!', { name: 'World' })}</h1>
-}
-```
+## Lazy locale loading
 
-## Server Components (RSC)
+React uses `loadMessages(locale)` on `I18nProvider` for async locale chunks.
 
-```ts
-import { createServerI18n } from '@fluenti/react/server'
+## Docs
 
-export const { setLocale, getI18n, Trans, Plural, DateTime, NumberFormat } = createServerI18n({
-  loadMessages: (locale) => import(`../locales/compiled/${locale}.js`),
-  fallbackLocale: 'en',
-  resolveLocale: async () => {
-    const { cookies } = await import('next/headers')
-    return (await cookies()).get('locale')?.value ?? 'en'
-  },
-})
-```
+- Full docs: https://fluenti.dev
+- Source: https://github.com/usefluenti/fluenti

@@ -9,15 +9,17 @@ import type {
   NumberFormatOptions,
 } from '@fluenti/core'
 
-/** Chunk loader for code-splitting mode */
-export type ChunkLoader = (locale: string) => Promise<Record<string, CompiledMessage>>
+/** Chunk loader for lazy locale loading */
+export type ChunkLoader = (
+  locale: string,
+) => Promise<Record<string, CompiledMessage> | { default: Record<string, CompiledMessage> }>
 
-/** Extended config with splitting support */
+/** Extended config with lazy locale loading support */
 export interface I18nConfig extends FluentConfig {
-  /** Async chunk loader for code-splitting mode */
+  /** Async chunk loader for lazy locale loading */
   chunkLoader?: ChunkLoader
-  /** Enable code-splitting mode */
-  splitting?: boolean
+  /** Enable lazy locale loading through chunkLoader */
+  lazyLocaleLoading?: boolean
   /** Named date format styles */
   dateFormats?: DateFormatOptions
   /** Named number format styles */
@@ -28,7 +30,7 @@ export interface I18nConfig extends FluentConfig {
 export interface I18nContext {
   /** Reactive accessor for the current locale */
   locale(): Locale
-  /** Set the active locale (async when splitting is enabled) */
+  /** Set the active locale (async when lazy locale loading is enabled) */
   setLocale(locale: Locale): Promise<void>
   /** Translate a message by id with optional interpolation values */
   t(id: string | MessageDescriptor, values?: Record<string, unknown>): string

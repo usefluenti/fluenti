@@ -50,20 +50,20 @@ import { Steps } from '@astrojs/starlight/components'
 
    ```tsx
    // src/Home.tsx
-   import { useI18n } from '@fluenti/react'
+   import { t, useI18n } from '@fluenti/react'
    import { Trans, Plural } from '@fluenti/react'
 
    export function Home() {
-     const { t, setLocale } = useI18n()
+     const { setLocale } = useI18n()
      const name = 'World'
      const count = 3
 
      return (
        <div>
-         {/* t supports both function calls and tagged templates */}
+         {/* imported t is compile-time: use tagged templates by default */}
          <h1>{t`Welcome to my app`}</h1>
          <p>{t`Hello, ${name}!`}</p>
-         <p>{t('You have {count} items', { count })}</p>
+         <p>{t`You have ${count} items`}</p>
 
          {/* Rich text with real HTML — no XSS, no indexed placeholders */}
          <Trans>Read the <a href="/docs">documentation</a> to learn more.</Trans>
@@ -78,7 +78,7 @@ import { Steps } from '@astrojs/starlight/components'
    }
    ```
 
-   No manual keys. No JSON files. `t` from `useI18n()` works as both a function call and a tagged template — the Vite plugin optimizes tagged templates at build time via AST scope analysis.
+   No manual keys. No JSON files. `import { t }` is the primary compile-time path, and `useI18n()` stays available for locale switching plus runtime lookup.
 
 5. **Extract messages**
 

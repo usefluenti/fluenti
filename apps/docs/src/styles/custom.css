@@ -282,16 +282,11 @@ nav.sidebar .group-label span {
   background: var(--ec-codeBg);
 }
 
-.expressive-code .frame .header {
-  border-radius: 0;
-}
-
 .expressive-code .frame.is-terminal .header {
   background: var(--ec-codeBg);
 }
 
 .expressive-code pre {
-  border-radius: 0;
   background: var(--ec-codeBg);
   font-size: 0.8125rem;
   line-height: 1.6;

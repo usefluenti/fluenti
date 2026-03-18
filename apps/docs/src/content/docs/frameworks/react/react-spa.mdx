@@ -38,9 +38,11 @@ createRoot(document.getElementById('root')!).render(<Root />)
 
 ### Tagged Template (preferred)
 
-The `` t`...` `` tagged template is a compiler macro — no import needed:
+The `` t`...` `` tagged template is optimized from Fluenti's direct-import `t`:
 
 ```tsx
+import { t } from '@fluenti/react'
+
 function Hero() {
   const name = 'World'
   return <h1>{t`Hello, ${name}!`}</h1>

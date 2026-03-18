@@ -3,7 +3,20 @@ import { createFluent } from '@fluenti/core'
 import type { Messages } from '@fluenti/core'
 import { I18nContext } from './context'
 import type { I18nProviderProps } from './types'
-import { setGlobalI18n } from './global-registry'
+
+interface SplitRuntimeModule {
+  __switchLocale?: (locale: string) => Promise<void>
+  __preloadLocale?: (locale: string) => Promise<void>
+}
+
+const SPLIT_RUNTIME_KEY = Symbol.for('fluenti.runtime.react')
+
+function getSplitRuntimeModule(): SplitRuntimeModule | null {
+  const runtime = (globalThis as Record<PropertyKey, unknown>)[SPLIT_RUNTIME_KEY]
+  return typeof runtime === 'object' && runtime !== null
+    ? runtime as SplitRuntimeModule
+    : null
+}
 
 export function I18nProvider({
   locale,
@@ -60,7 +73,17 @@ export function I18nProvider({
     async (newLocale: string) => {
       const requestId = ++localeRequestRef.current
 
+      if (loadedMessagesRef.current[newLocale] && !loadMessages) {
+        setCurrentLocale(newLocale)
+        return
+      }
+
+      const splitRuntime = loadMessages ? getSplitRuntimeModule() : null
+
       if (loadedMessagesRef.current[newLocale]) {
+        if (splitRuntime?.__switchLocale) {
+          await splitRuntime.__switchLocale(newLocale)
+        }
         setCurrentLocale(newLocale)
         return
       }
@@ -85,6 +108,9 @@ export function I18nProvider({
             : (msgs as Messages)
         setLoadedMessages((prev) => ({ ...prev, [newLocale]: resolved }))
         setLoadedLocales((prev) => [...new Set([...prev, newLocale])])
+        if (splitRuntime?.__switchLocale) {
+          await splitRuntime.__switchLocale(newLocale)
+        }
         setCurrentLocale(newLocale)
       } catch (err) {
         // Only log if this request is still the latest
@@ -102,6 +128,7 @@ export function I18nProvider({
 
   const preloadLocale = useCallback(
     async (loc: string) => {
+      const splitRuntime = getSplitRuntimeModule()
       if (loadedMessagesRef.current[loc] || !loadMessages) return
       try {
         const msgs = await loadMessages(loc)
@@ -111,6 +138,9 @@ export function I18nProvider({
             : (msgs as Messages)
         setLoadedMessages((prev) => ({ ...prev, [loc]: resolved }))
         setLoadedLocales((prev) => [...new Set([...prev, loc])])
+        if (splitRuntime?.__preloadLocale) {
+          await splitRuntime.__preloadLocale(loc)
+        }
       } catch {
         // Silent fail for preload
       }
@@ -135,13 +165,6 @@ export function I18nProvider({
     }),
     [i18n, currentLocale, handleSetLocale, isLoading, loadedLocales, preloadLocale],
   )
-
-  // Expose i18n instance globally for @fluenti/next webpack loader and
-  // @fluenti/vite-plugin. The loader injects `globalThis.__fluenti_i18n.t(...)`
-  // into client components, avoiding React module boundary issues in Next.js RSC.
-  if (typeof globalThis !== 'undefined') {
-    setGlobalI18n(i18n)
-  }
 
   return <I18nContext.Provider value={ctx}>{children}</I18nContext.Provider>
 }

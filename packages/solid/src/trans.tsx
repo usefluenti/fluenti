@@ -1,12 +1,20 @@
 import { Dynamic } from 'solid-js/web'
-import { createMemo } from 'solid-js'
+import { children as resolveChildren, createMemo } from 'solid-js'
 import type { Component, JSX } from 'solid-js'
+import { useI18n } from './use-i18n'
+import { extractMessage as extractDomMessage, reconstruct as reconstructDomMessage } from './rich-dom'
 
 /** A Solid component that accepts children */
 export type RichComponent = Component<{ children?: JSX.Element }>
 
 /** Props for the `<Trans>` component */
 export interface TransProps {
+  /** Override auto-generated hash ID */
+  id?: string
+  /** Message context used for identity and translator disambiguation */
+  context?: string
+  /** Translator-facing note preserved in extraction catalogs */
+  comment?: string
   /** Wrapper element tag name (default: `'span'`) — used in children-only mode */
   tag?: string
   /** Children — the content to translate (legacy API) */
@@ -185,6 +193,8 @@ function renderTokens(
  * ```
  */
 export const Trans: Component<TransProps> = (props) => {
+  const { t } = useI18n()
+  const resolvedChildren = resolveChildren(() => props.children)
   // message + components API (including build-time __message/__components)
   // Note: the vite-plugin tagged-template transform wraps Solid expressions in
   // createMemo(), so props.message may be a memo accessor (function) instead of
@@ -200,20 +210,34 @@ export const Trans: Component<TransProps> = (props) => {
     const comps = components()
 
     if (msg !== undefined && comps) {
-      const tokens = parseTokens(msg)
+      const translated = t({
+        ...(props.id !== undefined ? { id: props.id } : {}),
+        message: msg,
+        ...(props.context !== undefined ? { context: props.context } : {}),
+        ...(props.comment !== undefined ? { comment: props.comment } : {}),
+      })
+      const tokens = parseTokens(translated)
       return renderTokens(tokens, comps)
     }
 
-    // Fallback: children-only API (backward compatible)
-    const children = props.children
-    if (!children) return null
+    // Fallback: children-only API with runtime extraction/reconstruction
+    const children = resolvedChildren.toArray()
+    if (children.length === 0) return null
+    const extracted = extractDomMessage(children)
+    const translated = t({
+      ...(props.id !== undefined ? { id: props.id } : {}),
+      message: extracted.message,
+      ...(props.context !== undefined ? { context: props.context } : {}),
+      ...(props.comment !== undefined ? { comment: props.comment } : {}),
+    })
+    const result = extracted.components.length > 0
+      ? reconstructDomMessage(translated, extracted.components)
+      : translated
 
-    // If children is an array with a single element, render unwrapped
-    if (Array.isArray(children) && children.length === 1) {
-      return children[0] as JSX.Element
+    if (Array.isArray(result) && result.length > 1) {
+      return (<Dynamic component={props.tag ?? 'span'}>{result}</Dynamic>) as JSX.Element
     }
 
-    // Wrap multiple children (or non-array children) in the tag element
-    return (<Dynamic component={props.tag ?? 'span'}>{children}</Dynamic>) as JSX.Element
+    return result as JSX.Element
   }) as unknown as JSX.Element
 }

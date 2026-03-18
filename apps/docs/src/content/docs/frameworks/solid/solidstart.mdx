@@ -69,11 +69,10 @@ SolidStart uses file-based routing via `<FileRoutes />`:
 
 ```tsx
 // src/routes/index.tsx
-import { useI18n } from '@fluenti/solid'
+import { t } from '@fluenti/solid'
 
 export default function Home() {
-  const { t } = useI18n()
-  return <h1>{t('Welcome')}</h1>
+  return <h1>{t`Welcome`}</h1>
 }
 ```
 

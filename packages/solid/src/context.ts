@@ -1,16 +1,42 @@
 import { createSignal, createRoot, type Accessor } from 'solid-js'
-import { formatDate, formatNumber, interpolate as coreInterpolate, buildICUMessage } from '@fluenti/core'
+import { formatDate, formatNumber, interpolate as coreInterpolate, buildICUMessage, resolveDescriptorId } from '@fluenti/core'
 import type { FluentConfig, Locale, Messages, CompiledMessage, MessageDescriptor, DateFormatOptions, NumberFormatOptions } from '@fluenti/core'
 
-/** Chunk loader for code-splitting mode */
-export type ChunkLoader = (locale: string) => Promise<Record<string, CompiledMessage>>
+/** Chunk loader for lazy locale loading */
+export type ChunkLoader = (
+  locale: string,
+) => Promise<Record<string, CompiledMessage> | { default: Record<string, CompiledMessage> }>
 
-/** Extended config with splitting support */
+interface SplitRuntimeModule {
+  __switchLocale?: (locale: string) => Promise<void>
+  __preloadLocale?: (locale: string) => Promise<void>
+}
+
+const SPLIT_RUNTIME_KEY = Symbol.for('fluenti.runtime.solid')
+
+function getSplitRuntimeModule(): SplitRuntimeModule | null {
+  const runtime = (globalThis as Record<PropertyKey, unknown>)[SPLIT_RUNTIME_KEY]
+  return typeof runtime === 'object' && runtime !== null
+    ? runtime as SplitRuntimeModule
+    : null
+}
+
+function resolveChunkMessages(
+  loaded: Record<string, CompiledMessage> | { default: Record<string, CompiledMessage> },
+): Record<string, CompiledMessage> {
+  return typeof loaded === 'object' && loaded !== null && 'default' in loaded
+    ? (loaded as { default: Record<string, CompiledMessage> }).default
+    : loaded
+}
+
+/** Extended config with lazy locale loading support */
 export interface I18nConfig extends FluentConfig {
-  /** Async chunk loader for code-splitting mode */
+  /** Async chunk loader for lazy locale loading */
   chunkLoader?: ChunkLoader
-  /** Enable code-splitting mode */
-  splitting?: boolean
+  /** Enable lazy locale loading through chunkLoader */
+  lazyLocaleLoading?: boolean
+  /** Locale-specific fallback chains */
+  fallbackChain?: Record<string, Locale[]>
   /** Named date format styles */
   dateFormats?: DateFormatOptions
   /** Named number format styles */
@@ -21,7 +47,7 @@ export interface I18nConfig extends FluentConfig {
 export interface I18nContext {
   /** Reactive accessor for the current locale */
   locale(): Locale
-  /** Set the active locale (async when splitting is enabled) */
+  /** Set the active locale (async when lazy locale loading is enabled) */
   setLocale(locale: Locale): Promise<void>
   /** Translate a message by id with optional interpolation values */
   t(id: string | MessageDescriptor, values?: Record<string, unknown>): string
@@ -56,60 +82,106 @@ export function createI18nContext(config: FluentConfig | I18nConfig): I18nContex
   const [isLoading, setIsLoading] = createSignal(false)
   const loadedLocalesSet = new Set<string>([config.locale])
   const [loadedLocales, setLoadedLocales] = createSignal(new Set(loadedLocalesSet))
-  const messages: Record<string, Record<string, unknown>> = { ...config.messages }
+  const messages: Record<string, Messages> = { ...config.messages }
   const i18nConfig = config as I18nConfig
+  const lazyLocaleLoading = i18nConfig.lazyLocaleLoading
+    ?? (config as I18nConfig & { splitting?: boolean }).splitting
+    ?? false
+
+  function lookupCatalog(
+    id: string,
+    loc: Locale,
+    values?: Record<string, unknown>,
+  ): string | undefined {
+    const catalog = messages[loc]
+    if (!catalog) {
+      return undefined
+    }
+
+    const msg = catalog[id]
+    if (msg === undefined) {
+      return undefined
+    }
+
+    if (typeof msg === 'function') {
+      return msg(values)
+    }
+
+    if (typeof msg === 'string' && values) {
+      return coreInterpolate(msg, values, loc)
+    }
+
+    return String(msg)
+  }
+
+  function lookupWithFallbacks(
+    id: string,
+    loc: Locale,
+    values?: Record<string, unknown>,
+  ): string | undefined {
+    const localesToTry: Locale[] = [loc]
+    const seen = new Set(localesToTry)
+
+    if (config.fallbackLocale && !seen.has(config.fallbackLocale)) {
+      localesToTry.push(config.fallbackLocale)
+      seen.add(config.fallbackLocale)
+    }
+
+    const chainLocales = i18nConfig.fallbackChain?.[loc] ?? i18nConfig.fallbackChain?.['*']
+    if (chainLocales) {
+      for (const chainLocale of chainLocales) {
+        if (!seen.has(chainLocale)) {
+          localesToTry.push(chainLocale)
+          seen.add(chainLocale)
+        }
+      }
+    }
+
+    for (const targetLocale of localesToTry) {
+      const result = lookupCatalog(id, targetLocale, values)
+      if (result !== undefined) {
+        return result
+      }
+    }
+
+    return undefined
+  }
+
+  function resolveMissing(
+    id: string,
+    loc: Locale,
+  ): string | undefined {
+    if (!config.missing) {
+      return undefined
+    }
+
+    const result = config.missing(loc, id)
+    if (result !== undefined) {
+      return result
+    }
+    return undefined
+  }
 
   function resolveMessage(
     id: string,
     loc: Locale,
     values?: Record<string, unknown>,
   ): string {
-    const catalog = messages[loc]
-    if (!catalog) {
-      return fallbackOrMissing(id, loc, values)
+    const catalogResult = lookupWithFallbacks(id, loc, values)
+    if (catalogResult !== undefined) {
+      return catalogResult
     }
 
-    const msg = catalog[id]
-    if (msg === undefined) {
-      return fallbackOrMissing(id, loc, values)
+    const missingResult = resolveMissing(id, loc)
+    if (missingResult !== undefined) {
+      return missingResult
     }
 
-    if (typeof msg === 'function') {
-      return (msg as (v?: Record<string, unknown>) => string)(values)
-    }
-
-    if (typeof msg === 'string' && values) {
-      return interpolate(msg, values)
-    }
-
-    return String(msg)
-  }
-
-  function fallbackOrMissing(
-    id: string,
-    loc: Locale,
-    values?: Record<string, unknown>,
-  ): string {
-    if (config.fallbackLocale && loc !== config.fallbackLocale) {
-      return resolveMessage(id, config.fallbackLocale, values)
-    }
-    if (config.missing) {
-      const result = config.missing(loc, id)
-      if (result !== undefined) return result
-    }
-    // If the id looks like an ICU message, interpolate it directly
-    // (compile-time transforms like <Plural> emit inline ICU as t() arguments)
     if (id.includes('{')) {
       return coreInterpolate(id, values, loc)
     }
-    return id
-  }
 
-  function interpolate(template: string, values: Record<string, unknown>): string {
-    return template.replace(
-      /\{(\w+)\}/g,
-      (_, key: string) => String(values[key] ?? `{${key}}`),
-    )
+    return id
   }
 
   function t(strings: TemplateStringsArray, ...exprs: unknown[]): string
@@ -126,19 +198,28 @@ export function createI18nContext(config: FluentConfig | I18nConfig): I18nContex
     const id = idOrStrings as string | MessageDescriptor
     const values = rest[0] as Record<string, unknown> | undefined
     const currentLocale = locale() // reactive dependency
-    let messageId: string
-    let fallbackMessage: string | undefined
     if (typeof id === 'object' && id !== null) {
-      messageId = id.id
-      fallbackMessage = id.message
-    } else {
-      messageId = id
+      const messageId = resolveDescriptorId(id)
+      if (messageId) {
+        const catalogResult = lookupWithFallbacks(messageId, currentLocale, values)
+        if (catalogResult !== undefined) {
+          return catalogResult
+        }
+
+        const missingResult = resolveMissing(messageId, currentLocale)
+        if (missingResult !== undefined) {
+          return missingResult
+        }
+      }
+
+      if (id.message !== undefined) {
+        return coreInterpolate(id.message, values, currentLocale)
+      }
+
+      return messageId ?? ''
     }
-    const result = resolveMessage(messageId, currentLocale, values)
-    if (result === messageId && fallbackMessage) {
-      return values ? interpolate(fallbackMessage, values) : fallbackMessage
-    }
-    return result
+
+    return resolveMessage(id, currentLocale, values)
   }
 
   const loadMessages = (loc: Locale, msgs: Messages): void => {
@@ -148,22 +229,30 @@ export function createI18nContext(config: FluentConfig | I18nConfig): I18nContex
   }
 
   const setLocale = async (newLocale: Locale): Promise<void> => {
-    if (!i18nConfig.splitting || !i18nConfig.chunkLoader) {
+    if (!lazyLocaleLoading || !i18nConfig.chunkLoader) {
       setLocaleSignal(newLocale)
       return
     }
 
+    const splitRuntime = getSplitRuntimeModule()
+
     if (loadedLocalesSet.has(newLocale)) {
+      if (splitRuntime?.__switchLocale) {
+        await splitRuntime.__switchLocale(newLocale)
+      }
       setLocaleSignal(newLocale)
       return
     }
 
     setIsLoading(true)
     try {
-      const loaded = await i18nConfig.chunkLoader(newLocale)
+      const loaded = resolveChunkMessages(await i18nConfig.chunkLoader(newLocale))
       messages[newLocale] = { ...messages[newLocale], ...loaded }
       loadedLocalesSet.add(newLocale)
       setLoadedLocales(new Set(loadedLocalesSet))
+      if (splitRuntime?.__switchLocale) {
+        await splitRuntime.__switchLocale(newLocale)
+      }
       setLocaleSignal(newLocale)
     } finally {
       setIsLoading(false)
@@ -171,11 +260,16 @@ export function createI18nContext(config: FluentConfig | I18nConfig): I18nContex
   }
 
   const preloadLocale = (loc: string): void => {
-    if (loadedLocalesSet.has(loc) || !i18nConfig.chunkLoader) return
-    i18nConfig.chunkLoader(loc).then((loaded) => {
-      messages[loc] = { ...messages[loc], ...loaded }
+    if (!lazyLocaleLoading || loadedLocalesSet.has(loc) || !i18nConfig.chunkLoader) return
+    const splitRuntime = getSplitRuntimeModule()
+    i18nConfig.chunkLoader(loc).then(async (loaded) => {
+      const resolved = resolveChunkMessages(loaded)
+      messages[loc] = { ...messages[loc], ...resolved }
       loadedLocalesSet.add(loc)
       setLoadedLocales(new Set(loadedLocalesSet))
+      if (splitRuntime?.__preloadLocale) {
+        await splitRuntime.__preloadLocale(loc)
+      }
     }).catch(() => {
       // Silent failure for preload
     })

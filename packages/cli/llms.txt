@@ -42,7 +42,7 @@ Config is loaded via `jiti` with fallback to defaults. Searched paths: `fluenti.
 
 ## Commands
 
-- `fluenti extract [--config path]`: Scan source files for translatable messages and update catalog files. Extracts from Vue SFC (`v-t` directive, `<Trans>`, `<Plural>` components, `t()` calls) and TSX/JSX (`<Trans>`, `<Plural>`, `t()` calls). Reports added, unchanged, and obsolete counts per locale.
+- `fluenti extract [--config path]`: Scan source files for translatable messages and update catalog files. Extracts from Vue SFC (`v-t`, `<Trans>`, `<Plural>`, `<Select>`, direct-import `t`, runtime `t` bindings) and TSX/JSX (`<Trans>`, `<Plural>`, `<Select>`, direct-import `t`, runtime `t` bindings). Reports added, unchanged, and obsolete counts per locale.
 - `fluenti compile [--config path]`: Compile catalogs to optimized ES modules. Output: `.js` files with tree-shakeable named exports and `@__PURE__` annotations, plus a `export default { ... }` re-export with message ID keys. Also generates an `index.js` with locale list and lazy loaders.
 - `fluenti stats [--config path]`: Display a table of translation progress per locale (total messages, translated count, completion percentage). Excludes obsolete entries.
 - `fluenti translate [--config path] [--provider claude|codex] [--locale xx] [--batch-size N]`: AI-powered translation of untranslated messages using local CLI tools. Default provider: `claude` (Claude Code CLI). Default batch size: `50`. Preserves ICU MessageFormat placeholders and HTML tags. Translates all non-source locales by default, or a specific locale with `--locale`.

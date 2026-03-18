@@ -1,0 +1,26 @@
+{
+  "extends": "../../../../../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "exactOptionalPropertyTypes": false,
+    "baseUrl": "../../../../../",
+    "paths": {
+      "@fluenti/core": ["packages/core/src/index.ts"],
+      "@fluenti/core/internal": ["packages/core/src/internal.ts"],
+      "@fluenti/react": ["packages/react/src/index.ts"],
+      "@fluenti/react/server": ["packages/react/src/server.ts"],
+      "@fluenti/vue": ["packages/vue/src/index.ts"],
+      "@fluenti/solid": ["packages/solid/src/index.ts"],
+      "@fluenti/next": ["packages/next-plugin/src/index.ts"],
+      "react": ["packages/react/node_modules/@types/react/index.d.ts"],
+      "react/jsx-runtime": ["packages/react/node_modules/@types/react/jsx-runtime.d.ts"],
+      "react/jsx-dev-runtime": ["packages/react/node_modules/@types/react/jsx-dev-runtime.d.ts"],
+      "solid-js": ["packages/solid/node_modules/solid-js"],
+      "solid-js/*": ["packages/solid/node_modules/solid-js/*"],
+      "vue": ["packages/vue/node_modules/vue"],
+      "vue/*": ["packages/vue/node_modules/vue/*"]
+    }
+  }
+}

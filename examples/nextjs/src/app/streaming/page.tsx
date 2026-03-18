@@ -1,4 +1,5 @@
 import { Suspense } from 'react'
+import { t } from '@fluenti/react'
 
 async function SlowContent() {
   await new Promise((resolve) => setTimeout(resolve, 500))

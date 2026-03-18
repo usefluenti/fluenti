@@ -25,12 +25,10 @@ export default withFluenti()({
 `withFluenti()` performs three things at build time:
 
 1. **Generates a server module** (`node_modules/.fluenti/server.js`) that bundles `createServerI18n`, message imports, and a `FluentProvider` component — aliased as `@fluenti/next/__generated`
-2. **Registers a webpack loader** that transforms `` t`...` `` tagged templates and `t()` calls into `__i18n.t()` lookups, auto-detecting server vs client context
+2. **Registers a webpack loader** that rewrites direct-import authoring APIs in supported client and server scopes
 3. **Adds a resolve alias** so `@fluenti/next/__generated` points to the generated module
 
-The loader detects context automatically:
-- Files with `'use client'` → client mode (reads from `globalThis.__fluenti_i18n`, set by `I18nProvider`)
-- Files with `'use server'` or inside `app/` → server mode (reads from `React.cache()`-scoped store)
+The loader no longer injects globals or proxy accessors. Unbound `t` identifiers are left untouched.
 
 ### Config options
 
@@ -87,14 +85,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
 ## Client Components
 
-Client components use `` t`...` `` for translations. The `withFluenti()` plugin injects the macro automatically:
+Client components use `` t`...` `` via `import { t } from '@fluenti/react'`:
 
 ```tsx
 // src/app/page.tsx
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { useI18n } from '@fluenti/react'
+import { t, useI18n } from '@fluenti/react'
 
 export default function Home() {
   const { setLocale, preloadLocale } = useI18n()
@@ -124,10 +122,12 @@ export default function Home() {
 
 ## React Server Components (RSC)
 
-Server Components use the same `` t`...` `` syntax. The `withFluenti()` plugin detects the component type and applies the correct server-side transform:
+Server Components use the same `` t`...` `` syntax via `import { t } from '@fluenti/react'`:
 
 ```tsx
 // src/app/about/page.tsx
+import { t } from '@fluenti/react'
+
 export default async function AboutPage() {
   return (
     <div>
@@ -227,8 +227,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 }
 ```
 
-- **Server Components** use `` t`...` `` (auto-transformed) or import from `@/lib/i18n.server`
-- **Client Components** use `` t`...` `` (auto-transformed) or import from `@fluenti/react`
+- **Server Components** use `` t`...` `` via `@fluenti/react`, or `await getI18n()` from a custom server module for advanced cases
+- **Client Components** use `` t`...` `` via `@fluenti/react`, or `useI18n().t()` for runtime lookup
 
 ## Server Actions
 
@@ -236,11 +236,13 @@ Server Actions are independent requests that skip the layout's `setLocale()` cal
 
 ### Using `` t`...` `` (recommended)
 
-The `` t`...` `` macro works in `'use server'` files — the plugin detects the directive and injects the server-side i18n accessor automatically:
+Direct-import `t` works in `'use server'` files:
 
 ```ts
 // app/actions.ts
 'use server'
+
+import { t } from '@fluenti/react'
 
 export async function greetAction() {
   return t`Hello from server action`
@@ -251,8 +253,6 @@ export async function searchAction(query: string) {
   // ...
 }
 ```
-
-No imports needed — `withFluenti()` handles everything.
 
 ### Using `getI18n()` manually
 

@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { h } from 'vue'
 import { createFluentVue } from '../src/plugin'
 import { Select } from '../src/components/Select'
 
@@ -155,6 +156,28 @@ describe('Select component', () => {
 
       expect(wrapper.text()).toBe('Fallback')
     })
+
+    it('uses catalog translation for string options', () => {
+      const plugin = createFluentVue({
+        locale: 'ja',
+        messages: {
+          ja: {
+            '{value, select, male {He liked it} female {She liked it} other {They liked it}}':
+              '{value, select, male {彼が気に入りました} female {彼女が気に入りました} other {その人が気に入りました}}',
+          },
+        },
+      })
+      const wrapper = mount(Select, {
+        props: {
+          value: 'male',
+          other: 'They liked it',
+          options: { male: 'He liked it', female: 'She liked it' },
+        },
+        global: { plugins: [plugin] },
+      })
+
+      expect(wrapper.text()).toBe('彼が気に入りました')
+    })
   })
 
   describe('options prop takes precedence over attrs', () => {
@@ -303,6 +326,32 @@ describe('Select component', () => {
 
       await wrapper.setProps({ value: 'unknown' })
       expect(wrapper.html()).toContain('<em>They</em>')
+    })
+
+    it('translates rich slot content without the build plugin', () => {
+      const plugin = createFluentVue({
+        locale: 'ja',
+        messages: {
+          ja: {
+            '{value, select, male {<0>He</0> liked this} other {<1>They</1> liked this}}':
+              '{value, select, male {<0>彼</0>が気に入りました} other {<1>その人</1>が気に入りました}}',
+          },
+        },
+      })
+
+      const wrapper = mount(Select, {
+        props: {
+          value: 'male',
+        },
+        slots: {
+          male: () => [h('strong', 'He'), ' liked this'],
+          other: () => [h('em', 'They'), ' liked this'],
+        },
+        global: { plugins: [plugin] },
+      })
+
+      expect(wrapper.text()).toBe('彼が気に入りました')
+      expect(wrapper.find('strong').text()).toBe('彼')
     })
   })
 

@@ -10,6 +10,8 @@
 //   <tag v-t.alt alt="text" />                → <tag :alt="$t('hash')" />
 //   <tag v-t.placeholder placeholder="t" />   → <tag :placeholder="$t('hash')" />
 
+import { hashMessage } from '@fluenti/core'
+
 // NodeTypes from @vue/compiler-core (inlined to avoid hard dep at runtime)
 export const NT_ELEMENT = 1
 export const NT_TEXT = 2
@@ -209,6 +211,11 @@ function transformTransComponent(node: ASTNode): void {
   // No children means nothing to transform
   if (!node.children || node.children.length === 0) return
 
+  const explicitId = getStaticPropValue(props, 'id')
+  const context = getStaticPropValue(props, 'context')
+  if (!explicitId && hasDynamicBoundProp(props, 'context')) return
+  if (hasDynamicBoundProp(props, 'id')) return
+
   // Determine wrapper tag from `tag` prop (default: 'span')
   const wrapperTag = getStaticPropValue(props, 'tag') ?? 'span'
 
@@ -218,12 +225,21 @@ function transformTransComponent(node: ASTNode): void {
 
   if (!message) return
 
+  const translationId = explicitId ?? hashMessage(message, context)
+
   // Change tag from Trans to the wrapper element
   node.tag = wrapperTag
 
-  // Remove Trans-specific props (tag) but keep others like class, id, etc.
+  // Remove Trans-specific props while preserving regular DOM attributes.
+  const TRANS_PROP_NAMES = new Set(['tag', 'id', 'context', 'comment'])
   node.props = props.filter(
-    (p: ASTNode) => !(p.type === NT_ATTRIBUTE && p.name === 'tag'),
+    (p: ASTNode) => {
+      if (p.type === NT_ATTRIBUTE && TRANS_PROP_NAMES.has(p.name ?? '')) return false
+      if (p.type === NT_DIRECTIVE && p.name === 'bind' &&
+        p.arg?.type === NT_SIMPLE_EXPRESSION &&
+        TRANS_PROP_NAMES.has((p.arg.content as string) ?? '')) return false
+      return true
+    },
   )
 
   if (richText.hasElements) {
@@ -235,7 +251,7 @@ function transformTransComponent(node: ASTNode): void {
       name: 'html',
       exp: {
         type: NT_SIMPLE_EXPRESSION,
-        content: `$vtRich('${message.replace(/'/g, "\\'")}', ${elementsLiteral})`,
+        content: `$vtRich('${translationId.replace(/'/g, "\\'")}', ${elementsLiteral})`,
         isStatic: false,
         loc,
       } as ASTNode,
@@ -249,7 +265,7 @@ function transformTransComponent(node: ASTNode): void {
       loc,
       content: {
         type: NT_SIMPLE_EXPRESSION,
-        content: `$t('${message.replace(/'/g, "\\'")}')`,
+        content: `$t('${translationId.replace(/'/g, "\\'")}')`,
         isStatic: false,
         loc,
       },
@@ -405,6 +421,15 @@ export function getStaticPropValue(props: ASTNode[], name: string): string | und
   )
   if (!prop?.value) return undefined
   return typeof prop.value.content === 'string' ? prop.value.content : undefined
+}
+
+function hasDynamicBoundProp(props: ASTNode[], name: string): boolean {
+  return props.some((prop: ASTNode) => {
+    return prop.type === NT_DIRECTIVE
+      && prop.name === 'bind'
+      && prop.arg?.type === NT_SIMPLE_EXPRESSION
+      && (prop.arg.content as string) === name
+  })
 }
 
 interface RichTextResult {

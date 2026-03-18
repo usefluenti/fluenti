@@ -13,8 +13,8 @@ export default async function MetadataPage() {
 
   return (
     <div data-testid="metadata-page">
-      <h1 data-testid="metadata-title">{t`Metadata Page`}</h1>
-      <p data-testid="metadata-desc">{t`This page has translated metadata.`}</p>
+      <h1 data-testid="metadata-title">{i18n.t('Metadata Page')}</h1>
+      <p data-testid="metadata-desc">{i18n.t('This page has translated metadata.')}</p>
     </div>
   )
 }

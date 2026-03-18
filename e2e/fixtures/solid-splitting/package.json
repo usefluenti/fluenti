@@ -1,0 +1,19 @@
+{
+  "name": "e2e-solid-splitting",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "vite build",
+    "preview": "vite preview --port 5195"
+  },
+  "dependencies": {
+    "@fluenti/solid": "workspace:*",
+    "@fluenti/vite-plugin": "workspace:*",
+    "solid-js": "^1.8"
+  },
+  "devDependencies": {
+    "typescript": "^5.9",
+    "vite": "^8",
+    "vite-plugin-solid": "^2"
+  }
+}

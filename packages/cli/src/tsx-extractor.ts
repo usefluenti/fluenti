@@ -1,12 +1,121 @@
 import type { ExtractedMessage } from '@fluenti/core'
-import { hashMessage } from '@fluenti/core'
+import {
+  createMessageId,
+  isSourceNode,
+  parseSourceModule,
+  walkSourceAst,
+  type SourceNode,
+} from '@fluenti/core/internal'
 
-/**
- * Strategy B variable naming for tagged templates:
- * - Simple identifier: ${name} -> {name}
- * - Property access: ${user.name} -> {name} (last segment)
- * - Complex expression: ${getName()} -> {0} (positional)
- */
+interface IdentifierNode extends SourceNode {
+  type: 'Identifier'
+  name: string
+}
+
+interface StringLiteralNode extends SourceNode {
+  type: 'StringLiteral'
+  value: string
+}
+
+interface NumericLiteralNode extends SourceNode {
+  type: 'NumericLiteral'
+  value: number
+}
+
+interface TemplateElementNode extends SourceNode {
+  type: 'TemplateElement'
+  value: { raw: string; cooked: string | null }
+}
+
+interface TemplateLiteralNode extends SourceNode {
+  type: 'TemplateLiteral'
+  quasis: TemplateElementNode[]
+  expressions: SourceNode[]
+}
+
+interface TaggedTemplateExpressionNode extends SourceNode {
+  type: 'TaggedTemplateExpression'
+  tag: SourceNode
+  quasi: TemplateLiteralNode
+}
+
+interface CallExpressionNode extends SourceNode {
+  type: 'CallExpression'
+  callee: SourceNode
+  arguments: SourceNode[]
+}
+
+interface ImportDeclarationNode extends SourceNode {
+  type: 'ImportDeclaration'
+  source: StringLiteralNode
+  specifiers: SourceNode[]
+}
+
+interface ImportSpecifierNode extends SourceNode {
+  type: 'ImportSpecifier'
+  imported: IdentifierNode | StringLiteralNode
+  local: IdentifierNode
+}
+
+interface ObjectExpressionNode extends SourceNode {
+  type: 'ObjectExpression'
+  properties: SourceNode[]
+}
+
+interface ObjectPropertyNode extends SourceNode {
+  type: 'ObjectProperty'
+  key: SourceNode
+  value: SourceNode
+  computed?: boolean
+}
+
+interface JSXElementNode extends SourceNode {
+  type: 'JSXElement'
+  openingElement: JSXOpeningElementNode
+  children: SourceNode[]
+}
+
+interface JSXFragmentNode extends SourceNode {
+  type: 'JSXFragment'
+  children: SourceNode[]
+}
+
+interface JSXOpeningElementNode extends SourceNode {
+  type: 'JSXOpeningElement'
+  name: SourceNode
+  attributes: SourceNode[]
+}
+
+interface JSXAttributeNode extends SourceNode {
+  type: 'JSXAttribute'
+  name: SourceNode
+  value?: SourceNode | null
+}
+
+interface JSXExpressionContainerNode extends SourceNode {
+  type: 'JSXExpressionContainer'
+  expression: SourceNode
+}
+
+interface JSXTextNode extends SourceNode {
+  type: 'JSXText'
+  value: string
+}
+
+interface ExtractedDescriptor {
+  id: string
+  message?: string
+  context?: string
+  comment?: string
+}
+
+const DIRECT_T_SOURCES = new Set([
+  '@fluenti/react',
+  '@fluenti/vue',
+  '@fluenti/solid',
+  '@fluenti/next/__generated',
+])
+
 function classifyExpression(expr: string): string {
   const trimmed = expr.trim()
   if (/^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(trimmed)) {
@@ -19,280 +128,451 @@ function classifyExpression(expr: string): string {
   return ''
 }
 
-function buildICUFromTaggedTemplate(
+function buildICUFromTemplate(
   strings: readonly string[],
   expressions: readonly string[],
 ): string {
   let result = ''
   let positionalIndex = 0
-  for (let i = 0; i < strings.length; i++) {
-    result += strings[i]!
-    if (i < expressions.length) {
-      const name = classifyExpression(expressions[i]!)
-      if (name === '') {
-        result += `{${positionalIndex}}`
-        positionalIndex++
-      } else {
-        result += `{${name}}`
-      }
+
+  for (let index = 0; index < strings.length; index++) {
+    result += strings[index]!
+    if (index >= expressions.length) continue
+
+    const name = classifyExpression(expressions[index]!)
+    if (name === '') {
+      result += `{${positionalIndex}}`
+      positionalIndex++
+      continue
     }
+
+    result += `{${name}}`
   }
+
   return result
 }
 
-interface TaggedTemplateMatch {
-  message: string
-  line: number
-  column: number
+function createExtractedMessage(
+  descriptor: ExtractedDescriptor,
+  filename: string,
+  node: SourceNode,
+): ExtractedMessage | undefined {
+  if (!descriptor.message) {
+    return undefined
+  }
+
+  const line = node.loc?.start.line ?? 1
+  const column = (node.loc?.start.column ?? 0) + 1
+
+  return {
+    id: descriptor.id,
+    message: descriptor.message,
+    ...(descriptor.context !== undefined ? { context: descriptor.context } : {}),
+    ...(descriptor.comment !== undefined ? { comment: descriptor.comment } : {}),
+    origin: { file: filename, line, column },
+  }
 }
 
-function extractTaggedTemplates(code: string): TaggedTemplateMatch[] {
-  const results: TaggedTemplateMatch[] = []
-  const regex = /\bt`((?:[^`\\]|\\.|(\$\{(?:[^}]|\{[^}]*\})*\}))*)`/g
-  let match: RegExpExecArray | null
+function descriptorFromStaticParts(parts: {
+  id?: string
+  message?: string
+  context?: string
+  comment?: string
+}): ExtractedDescriptor | undefined {
+  if (!parts.message) {
+    return undefined
+  }
 
-  while ((match = regex.exec(code)) !== null) {
-    const fullContent = match[1]!
-    const offset = match.index
-    const line = code.slice(0, offset).split('\n').length
-    const lastNewline = code.lastIndexOf('\n', offset)
-    const column = offset - lastNewline
+  return {
+    id: parts.id ?? createMessageId(parts.message, parts.context),
+    message: parts.message,
+    ...(parts.context !== undefined ? { context: parts.context } : {}),
+    ...(parts.comment !== undefined ? { comment: parts.comment } : {}),
+  }
+}
 
-    const expressions: string[] = []
-    const strings: string[] = []
-    let current = ''
-    let i = 0
+function extractDescriptorFromCallArgument(argument: SourceNode): ExtractedDescriptor | undefined {
+  if (argument.type === 'StringLiteral') {
+    return descriptorFromStaticParts({ message: (argument as StringLiteralNode).value })
+  }
 
-    while (i < fullContent.length) {
-      if (fullContent[i] === '\\' && i + 1 < fullContent.length) {
-        current += fullContent[i + 1]
-        i += 2
-      } else if (fullContent[i] === '$' && fullContent[i + 1] === '{') {
-        strings.push(current)
-        current = ''
-        i += 2
-        let depth = 1
-        let expr = ''
-        while (i < fullContent.length && depth > 0) {
-          if (fullContent[i] === '{') depth++
-          else if (fullContent[i] === '}') {
-            depth--
-            if (depth === 0) break
-          }
-          expr += fullContent[i]
-          i++
+  if (argument.type === 'TemplateLiteral') {
+    const template = argument as TemplateLiteralNode
+    if (template.expressions.length === 0) {
+      const message = template.quasis.map((quasi) => quasi.value.cooked ?? quasi.value.raw).join('')
+      return descriptorFromStaticParts({ message })
+    }
+    return undefined
+  }
+
+  if (argument.type !== 'ObjectExpression') {
+    return undefined
+  }
+
+  const staticParts: { id?: string; message?: string; context?: string; comment?: string } = {}
+  for (const property of (argument as ObjectExpressionNode).properties) {
+    if (property.type !== 'ObjectProperty') continue
+
+    const objectProperty = property as ObjectPropertyNode
+    if (objectProperty.computed || !isIdentifier(objectProperty.key)) continue
+
+    const key = objectProperty.key.name
+    if (!['id', 'message', 'context', 'comment'].includes(key)) continue
+
+    const value = readStaticStringValue(objectProperty.value)
+    if (value === undefined) continue
+    staticParts[key as keyof typeof staticParts] = value
+  }
+
+  if (!staticParts.message) {
+    return undefined
+  }
+
+  return descriptorFromStaticParts(staticParts)
+}
+
+function buildPluralICU(props: Record<string, string>): string {
+  const categories = ['zero', 'one', 'two', 'few', 'many', 'other'] as const
+  const countVar = props['value'] ?? props['count'] ?? 'count'
+  const options: string[] = []
+  const offset = props['offset']
+
+  for (const category of categories) {
+    const value = props[category]
+    if (value === undefined) continue
+    const key = category === 'zero' ? '=0' : category
+    options.push(`${key} {${value}}`)
+  }
+
+  if (options.length === 0) {
+    return ''
+  }
+
+  const offsetPrefix = offset ? `offset:${offset} ` : ''
+  return `{${countVar}, plural, ${offsetPrefix}${options.join(' ')}}`
+}
+
+function extractRichTextMessage(children: readonly SourceNode[]): string | undefined {
+  let nextIndex = 0
+
+  function render(nodes: readonly SourceNode[]): string | undefined {
+    let message = ''
+
+    for (const node of nodes) {
+      if (node.type === 'JSXText') {
+        message += normalizeJsxText((node as JSXTextNode).value)
+        continue
+      }
+
+      if (node.type === 'JSXElement') {
+        const idx = nextIndex++
+        const inner = render((node as JSXElementNode).children)
+        if (inner === undefined) return undefined
+        message += `<${idx}>${inner}</${idx}>`
+        continue
+      }
+
+      if (node.type === 'JSXFragment') {
+        const inner = render((node as JSXFragmentNode).children)
+        if (inner === undefined) return undefined
+        message += inner
+        continue
+      }
+
+      if (node.type === 'JSXExpressionContainer') {
+        const expression = (node as JSXExpressionContainerNode).expression
+        if (expression.type === 'StringLiteral') {
+          message += (expression as StringLiteralNode).value
+          continue
         }
-        expressions.push(expr)
-        i++ // skip closing }
-      } else {
-        current += fullContent[i]
-        i++
+        if (expression.type === 'NumericLiteral') {
+          message += String((expression as NumericLiteralNode).value)
+          continue
+        }
+        return undefined
       }
     }
-    strings.push(current)
 
-    const message = buildICUFromTaggedTemplate(strings, expressions)
-    results.push({ message, line, column })
+    return message
   }
 
-  return results
+  const message = render(children)
+  if (message === undefined) return undefined
+
+  const normalized = message.replace(/\s+/g, ' ').trim()
+  return normalized || undefined
 }
 
-interface FunctionCallMatch {
-  message: string
-  line: number
-  column: number
+function normalizeJsxText(value: string): string {
+  return value.replace(/\s+/g, ' ')
 }
 
-function extractFunctionCalls(code: string): FunctionCallMatch[] {
-  const results: FunctionCallMatch[] = []
-  const regex = /\bt\(\s*(['"])((?:[^\\]|\\.)*?)\1/g
-  let match: RegExpExecArray | null
-
-  while ((match = regex.exec(code)) !== null) {
-    const message = match[2]!.replace(/\\(['"])/g, '$1')
-    const offset = match.index
-    const line = code.slice(0, offset).split('\n').length
-    const lastNewline = code.lastIndexOf('\n', offset)
-    const column = offset - lastNewline
-
-    results.push({ message, line, column })
+function readStaticStringValue(node: SourceNode): string | undefined {
+  if (node.type === 'StringLiteral') {
+    return (node as StringLiteralNode).value
   }
 
-  return results
+  if (node.type === 'NumericLiteral') {
+    return String((node as NumericLiteralNode).value)
+  }
+
+  if (node.type === 'JSXExpressionContainer') {
+    return readStaticStringValue((node as JSXExpressionContainerNode).expression)
+  }
+
+  if (node.type === 'TemplateLiteral') {
+    const template = node as TemplateLiteralNode
+    if (template.expressions.length === 0) {
+      return template.quasis.map((quasi) => quasi.value.cooked ?? quasi.value.raw).join('')
+    }
+  }
+
+  return undefined
 }
 
-interface ComponentMatch {
-  tag: 'Trans' | 'Plural'
-  props: Record<string, string>
-  line: number
-  column: number
+function readExpressionSource(node: SourceNode, code: string): string | undefined {
+  if (node.start == null || node.end == null) {
+    return undefined
+  }
+
+  if (node.type === 'JSXExpressionContainer') {
+    return readExpressionSource((node as JSXExpressionContainerNode).expression, code)
+  }
+
+  return code.slice(node.start, node.end).trim()
 }
 
-interface TransChildrenMatch {
-  tag: 'Trans'
-  childrenText: string
-  line: number
-  column: number
+function getJsxAttribute(
+  openingElement: JSXOpeningElementNode,
+  name: string,
+): JSXAttributeNode | undefined {
+  for (const attribute of openingElement.attributes) {
+    if (attribute.type !== 'JSXAttribute') continue
+
+    const jsxAttribute = attribute as JSXAttributeNode
+    if (jsxAttribute.name.type === 'JSXIdentifier' && jsxAttribute.name['name'] === name) {
+      return jsxAttribute
+    }
+  }
+
+  return undefined
 }
 
-function extractTransWithChildren(code: string): TransChildrenMatch[] {
-  const results: TransChildrenMatch[] = []
+function extractPluralProps(
+  openingElement: JSXOpeningElementNode,
+  code: string,
+): Record<string, string> {
+  const props: Record<string, string> = {}
+  const propNames = ['id', 'value', 'count', 'offset', 'zero', 'one', 'two', 'few', 'many', 'other']
 
-  // Match <Trans>...children...</Trans> (no message prop)
-  const transChildrenRegex = /<Trans(?:\s[^>]*)?>(?!\s*$)([\s\S]*?)<\/Trans>/g
-  let match: RegExpExecArray | null
+  for (const name of propNames) {
+    const attribute = getJsxAttribute(openingElement, name)
+    if (!attribute?.value) continue
 
-  while ((match = transChildrenRegex.exec(code)) !== null) {
-    const fullMatch = match[0]
-    // Skip if it has a message prop (old API) or id prop (handled by extractComponents)
-    if (/\bmessage\s*=/.test(fullMatch)) continue
-    if (/\bid\s*=/.test(fullMatch)) continue
-
-    const childrenContent = match[1]!.trim()
-    if (!childrenContent) continue
-
-    const offset = match.index
-    const line = code.slice(0, offset).split('\n').length
-    const lastNewline = code.lastIndexOf('\n', offset)
-    const column = offset - lastNewline
-
-    // Extract rich text: convert child elements to <0>content</0> pattern
-    const childElementRegex = /<(\w+)((?:\s[^>]*)?)>([\s\S]*?)<\/\1>/g
-    let richMessage = childrenContent
-    if (childElementRegex.test(childrenContent)) {
-      let elemIdx = 0
-      childElementRegex.lastIndex = 0
-      richMessage = childrenContent.replace(/<(\w+)((?:\s[^>]*)?)>([\s\S]*?)<\/\1>/g,
-        (_m, _childTag: string, _childAttrStr: string, innerContent: string) => {
-          const idx = elemIdx++
-          return `<${idx}>${innerContent}</${idx}>`
-        },
-      )
+    const staticValue = readStaticStringValue(attribute.value)
+    if (staticValue !== undefined) {
+      props[name] = staticValue
+      continue
     }
 
-    results.push({ tag: 'Trans', childrenText: richMessage, line, column })
-  }
-
-  return results
-}
-
-function extractComponents(code: string): ComponentMatch[] {
-  const results: ComponentMatch[] = []
-
-  const transRegex = /<Trans\s+([^>]*?)\/?>(?:[\s\S]*?<\/Trans>)?/g
-  let match: RegExpExecArray | null
-
-  while ((match = transRegex.exec(code)) !== null) {
-    const propsStr = match[1]!
-    const props = parseProps(propsStr)
-    const offset = match.index
-    const line = code.slice(0, offset).split('\n').length
-    const lastNewline = code.lastIndexOf('\n', offset)
-    const column = offset - lastNewline
-    results.push({ tag: 'Trans', props, line, column })
-  }
-
-  const pluralRegex = /<Plural\s+([^>]*?)\/?>(?:[\s\S]*?<\/Plural>)?/g
-
-  while ((match = pluralRegex.exec(code)) !== null) {
-    const propsStr = match[1]!
-    const props = parseProps(propsStr)
-    const offset = match.index
-    const line = code.slice(0, offset).split('\n').length
-    const lastNewline = code.lastIndexOf('\n', offset)
-    const column = offset - lastNewline
-    results.push({ tag: 'Plural', props, line, column })
-  }
-
-  return results
-}
-
-function parseProps(propsStr: string): Record<string, string> {
-  const props: Record<string, string> = {}
-  const propRegex = /(\w+)\s*=\s*(?:"([^"]*)"|'([^']*)'|\{([^}]*)\})/g
-  let match: RegExpExecArray | null
-
-  while ((match = propRegex.exec(propsStr)) !== null) {
-    const name = match[1]!
-    const value = match[2] ?? match[3] ?? match[4] ?? ''
-    props[name] = value
+    const exprValue = readExpressionSource(attribute.value, code)
+    if (exprValue !== undefined && (name === 'value' || name === 'count' || name === 'offset')) {
+      props[name] = exprValue
+    }
   }
 
   return props
 }
 
-function buildPluralICU(props: Record<string, string>): string {
-  // Support both count="var" and value={expr} props
-  const countVar = props['value'] ?? props['count'] ?? 'count'
-  const categories = ['zero', 'one', 'two', 'few', 'many', 'other']
-  const options: string[] = []
-
-  for (const cat of categories) {
-    if (props[cat] !== undefined) {
-      options.push(`${cat} {${props[cat]}}`)
+function extractTaggedTemplateMessage(
+  code: string,
+  node: TaggedTemplateExpressionNode,
+): ExtractedDescriptor {
+  const strings = node.quasi.quasis.map((quasi) => quasi.value.cooked ?? quasi.value.raw)
+  const expressions = node.quasi.expressions.map((expression) => {
+    if (expression.start == null || expression.end == null) {
+      return ''
     }
-  }
+    return code.slice(expression.start, expression.end)
+  })
+  const message = buildICUFromTemplate(strings, expressions)
 
-  if (options.length === 0) return ''
-  return `{${countVar}, plural, ${options.join(' ')}}`
+  return {
+    id: createMessageId(message),
+    message,
+  }
 }
 
-/** Extract messages from TSX/JSX files */
-export function extractFromTsx(code: string, filename: string): ExtractedMessage[] {
-  const messages: ExtractedMessage[] = []
+function collectDirectImportTBindings(ast: SourceNode): Set<string> {
+  const bindings = new Set<string>()
+  const body = Array.isArray(ast['body']) ? ast['body'] : []
 
-  for (const tt of extractTaggedTemplates(code)) {
-    const id = hashMessage(tt.message)
-    messages.push({
-      id,
-      message: tt.message,
-      origin: { file: filename, line: tt.line, column: tt.column },
-    })
-  }
+  for (const entry of body) {
+    if (!isImportDeclaration(entry)) continue
+    if (!DIRECT_T_SOURCES.has(entry.source.value)) continue
 
-  for (const fc of extractFunctionCalls(code)) {
-    const id = hashMessage(fc.message)
-    messages.push({
-      id,
-      message: fc.message,
-      origin: { file: filename, line: fc.line, column: fc.column },
-    })
-  }
-
-  for (const comp of extractComponents(code)) {
-    if (comp.tag === 'Trans') {
-      const message = comp.props['message']
-      if (message) {
-        const id = comp.props['id'] ?? hashMessage(message)
-        messages.push({
-          id,
-          message,
-          origin: { file: filename, line: comp.line, column: comp.column },
-        })
-      }
-    } else {
-      const pluralMessage = buildPluralICU(comp.props)
-      if (pluralMessage) {
-        const id = comp.props['id'] ?? hashMessage(pluralMessage)
-        messages.push({
-          id,
-          message: pluralMessage,
-          origin: { file: filename, line: comp.line, column: comp.column },
-        })
-      }
+    for (const specifier of entry.specifiers) {
+      if (!isImportSpecifier(specifier)) continue
+      if (readImportedName(specifier) !== 't') continue
+      bindings.add(specifier.local.name)
     }
   }
 
-  // Extract <Trans>children text</Trans> (without message prop)
-  for (const trans of extractTransWithChildren(code)) {
-    const id = hashMessage(trans.childrenText)
-    messages.push({
-      id,
-      message: trans.childrenText,
-      origin: { file: filename, line: trans.line, column: trans.column },
-    })
+  return bindings
+}
+
+export function extractFromTsx(code: string, filename: string): ExtractedMessage[] {
+  const ast = parseSourceModule(code)
+  if (!ast) {
+    return []
   }
 
+  const messages: ExtractedMessage[] = []
+  const directImportTBindings = collectDirectImportTBindings(ast)
+
+  walkSourceAst(ast, (node: SourceNode) => {
+    if (node.type === 'TaggedTemplateExpression') {
+      const tagged = node as TaggedTemplateExpressionNode
+      if (
+        isIdentifier(tagged.tag)
+        && (tagged.tag.name === 't' || directImportTBindings.has(tagged.tag.name))
+      ) {
+        const extracted = createExtractedMessage(
+          extractTaggedTemplateMessage(code, tagged),
+          filename,
+          tagged,
+        )
+        if (extracted) {
+          messages.push(extracted)
+        }
+      }
+      return
+    }
+
+    if (node.type === 'CallExpression') {
+      const call = node as CallExpressionNode
+      if (isIdentifier(call.callee) && (call.callee.name === 't' || directImportTBindings.has(call.callee.name))) {
+        if (directImportTBindings.has(call.callee.name) && call.arguments[0]?.type !== 'ObjectExpression') {
+          return
+        }
+        const descriptor = call.arguments[0] ? extractDescriptorFromCallArgument(call.arguments[0]) : undefined
+        const extracted = descriptor
+          ? createExtractedMessage(descriptor, filename, call)
+          : undefined
+        if (extracted) {
+          messages.push(extracted)
+        }
+      }
+      return
+    }
+
+    if (node.type !== 'JSXElement') {
+      return
+    }
+
+    const element = node as JSXElementNode
+    const openingElement = element.openingElement
+    const elementName = readJsxElementName(openingElement.name)
+
+    if (elementName === 'Trans') {
+      const messageAttr = getJsxAttribute(openingElement, 'message')
+      const idAttr = getJsxAttribute(openingElement, 'id')
+      const contextAttr = getJsxAttribute(openingElement, 'context')
+      const commentAttr = getJsxAttribute(openingElement, 'comment')
+
+      const descriptor = messageAttr?.value
+        ? buildStaticTransDescriptor({
+            id: idAttr?.value ? readStaticStringValue(idAttr.value) : undefined,
+            message: readStaticStringValue(messageAttr.value),
+            context: contextAttr?.value ? readStaticStringValue(contextAttr.value) : undefined,
+            comment: commentAttr?.value ? readStaticStringValue(commentAttr.value) : undefined,
+          })
+        : buildStaticTransDescriptor({
+            id: idAttr?.value ? readStaticStringValue(idAttr.value) : undefined,
+            message: extractRichTextMessage(element.children),
+            context: contextAttr?.value ? readStaticStringValue(contextAttr.value) : undefined,
+            comment: commentAttr?.value ? readStaticStringValue(commentAttr.value) : undefined,
+          })
+
+      const extracted = descriptor
+        ? createExtractedMessage(descriptor, filename, element)
+        : undefined
+      if (extracted) {
+        messages.push(extracted)
+      }
+      return
+    }
+
+    if (elementName === 'Plural') {
+      const props = extractPluralProps(openingElement, code)
+      const message = buildPluralICU(props)
+      if (!message) {
+        return
+      }
+
+      const extracted = createExtractedMessage(
+        {
+          id: props['id'] ?? createMessageId(message),
+          message,
+        },
+        filename,
+        element,
+      )
+      if (extracted) {
+        messages.push(extracted)
+      }
+    }
+  })
+
   return messages
+}
+
+function isImportDeclaration(node: unknown): node is ImportDeclarationNode {
+  return isSourceNode(node) && node.type === 'ImportDeclaration'
+}
+
+function isImportSpecifier(node: unknown): node is ImportSpecifierNode {
+  return isSourceNode(node) && node.type === 'ImportSpecifier'
+}
+
+function readImportedName(specifier: ImportSpecifierNode): string | undefined {
+  if (specifier.imported.type === 'Identifier') {
+    return (specifier.imported as IdentifierNode).name
+  }
+  if (specifier.imported.type === 'StringLiteral') {
+    return (specifier.imported as StringLiteralNode).value
+  }
+  return undefined
+}
+
+function readJsxElementName(node: SourceNode): string | undefined {
+  if (node.type === 'JSXIdentifier') {
+    return String(node['name'])
+  }
+  return undefined
+}
+
+function buildStaticTransDescriptor(parts: {
+  id: string | undefined
+  message: string | undefined
+  context: string | undefined
+  comment: string | undefined
+}): ExtractedDescriptor | undefined {
+  const payload: {
+    id?: string
+    message?: string
+    context?: string
+    comment?: string
+  } = {}
+
+  if (parts.id !== undefined) payload.id = parts.id
+  if (parts.message !== undefined) payload.message = parts.message
+  if (parts.context !== undefined) payload.context = parts.context
+  if (parts.comment !== undefined) payload.comment = parts.comment
+
+  return descriptorFromStaticParts(payload)
+}
+
+function isIdentifier(node: unknown): node is IdentifierNode {
+  return isSourceNode(node) && node.type === 'Identifier'
 }

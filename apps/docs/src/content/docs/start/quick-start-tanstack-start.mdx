@@ -11,7 +11,7 @@ import { Steps } from '@astrojs/starlight/components'
 
    ```bash
    pnpm add @fluenti/core @fluenti/react @tanstack/react-router @tanstack/react-start
-   pnpm add -D @fluenti/cli @vitejs/plugin-react vite-tsconfig-paths
+   pnpm add -D @fluenti/cli @fluenti/vite-plugin @vitejs/plugin-react vite-tsconfig-paths
    ```
 
 2. **Configure Vite**
@@ -22,10 +22,12 @@ import { Steps } from '@astrojs/starlight/components'
    import { tanstackStart } from '@tanstack/react-start/plugin/vite'
    import react from '@vitejs/plugin-react'
    import tsConfigPaths from 'vite-tsconfig-paths'
+   import fluenti from '@fluenti/vite-plugin'
 
    export default defineConfig({
      plugins: [
        tsConfigPaths(),
+       fluenti({ framework: 'react' }),
        tanstackStart(),
        react(),
      ],
@@ -129,6 +131,7 @@ import { Steps } from '@astrojs/starlight/components'
    ```tsx
    // src/routes/index.tsx
    import { createFileRoute } from '@tanstack/react-router'
+   import { t } from '@fluenti/react'
 
    export const Route = createFileRoute('/')({
      component: Home,
@@ -145,7 +148,7 @@ import { Steps } from '@astrojs/starlight/components'
    }
    ```
 
-   The `` t`...` `` tagged template is a compiler macro — no import needed. The Vite plugin injects it automatically.
+   The `` t`...` `` tagged template is optimized from Fluenti's direct-import `t`.
 
 6. **Extract, translate, and compile**
 

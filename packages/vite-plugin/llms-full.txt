@@ -1,9 +1,9 @@
 # @fluenti/vite-plugin
 
-> Vite plugin for Fluenti — build-time i18n template transforms, virtual modules, and per-route code splitting.
+> Vite plugin for Fluenti — compile-time transforms for Vue, React, and Solid, plus stable locale chunk splitting.
 
-Docs: https://fluenti.dev
-GitHub: https://github.com/usefluenti/fluenti/tree/main/packages/vite-plugin
+Docs: https://fluenti.dev  
+GitHub: https://github.com/usefluenti/fluenti/tree/main/packages/vite-plugin  
 License: MIT
 
 ## Install
@@ -12,7 +12,7 @@ License: MIT
 pnpm add -D @fluenti/vite-plugin
 ```
 
-Peer dependency: `vite ^5 || ^6 || ^8`
+Peer dependency: `vite ^5 || ^6 || ^8`  
 Runtime dependency: `@fluenti/core`
 
 ## Setup
@@ -26,247 +26,149 @@ export default {
   plugins: [
     vue(),
     fluenti({
-      framework: 'vue',      // 'vue' | 'react' | 'solid' | 'auto'
-      splitting: 'dynamic',  // 'dynamic' | 'static' | 'per-route' | false
+      framework: 'vue',
+      splitting: 'dynamic',
     }),
   ],
 }
 ```
 
-## Options
+## Public Options
 
 ```ts
 interface FluentiPluginOptions {
-  /** Framework mode (default: 'auto') */
   framework?: 'vue' | 'react' | 'solid' | 'auto'
-  /** Directory containing compiled message catalogs (default: 'src/locales/compiled') */
   catalogDir?: string
-  /** Source locale (default: 'en') */
   sourceLocale?: string
-  /** Available locales (default: [sourceLocale]) */
   locales?: string[]
-  /** Code splitting strategy (default: 'dynamic') */
-  splitting?: 'dynamic' | 'static' | 'per-route' | false
-  /** Default locale for build-time static strategy (default: sourceLocale) */
+  splitting?: 'dynamic' | 'static' | false
   defaultBuildLocale?: string
 }
 ```
 
-## Plugin Architecture
+Option semantics:
 
-The default export `fluentiPlugin(options?)` returns an array of six Vite plugins that run in sequence:
+- `framework`: lock the transform to one framework, or use per-file auto detection
+- `catalogDir`: directory containing compiled locale modules
+- `sourceLocale`: source language used when generating defaults
+- `locales`: list of supported locales for split runtime generation
+- `splitting`: build-time locale chunk strategy
+- `defaultBuildLocale`: locale inlined for `'static'` builds
 
-1. **`fluenti:virtual`** — resolves and loads virtual modules (`virtual:fluenti/messages/<locale>`, plus split-mode virtual IDs). Handles `resolveId` and `load` hooks.
-2. **`fluenti:vue-template`** (`enforce: 'pre'`) — SFC pre-transform for Vue `.vue` files. Rewrites `v-t` directives, `<Trans>`, and `<Plural>` in `<template>` blocks before the Vue compiler runs.
-3. **`fluenti:solid-jsx`** (`enforce: 'pre'`) — compile-time JSX transform for Solid `.tsx`/`.jsx` files. Rewrites `<Trans>` and `<Plural>` components.
-4. **`fluenti:script-transform`** (`enforce: 'pre'`) — transforms `t` tagged template literals and `t()` function calls in script blocks across all frameworks. Auto-injects `useI18n` imports.
-5. **`fluenti:build-split`** (no enforce, runs after Vue compilation) — build-time transform that replaces `$t()` calls with direct catalog lookups for code splitting. In `per-route` mode, emits per-route and shared message chunk assets during `generateBundle`.
-6. **`fluenti:dev`** — development server integration. Triggers HMR for virtual `fluenti` modules when catalog files change.
+## Stable Public Contract
 
-## Compile-time Transforms
+This package has two public responsibilities:
 
-### v-t Directive (Vue Templates)
+1. compile-time transforms for Fluenti authoring APIs
+2. locale chunk planning for `'dynamic'` and `'static'` builds
 
-A compile-time AST transform (not a runtime directive). Runs during Vue template compilation.
+Stable public support is intentionally limited to:
 
-Supported patterns:
+- `splitting: 'dynamic' | 'static' | false`
+- official authoring paths:
+  - direct-import `t`
+  - `useI18n().t`
+  - Vue `v-t`
+  - `<Trans>`, `<Plural>`, `<Select>`
 
-| Template | Output |
-|----------|--------|
-| `<tag v-t>text</tag>` | `<tag>{{ $t('text') }}</tag>` |
-| `<tag v-t:explicit.id>text</tag>` | `<tag>{{ $t('explicit.id') }}</tag>` |
-| `<tag v-t.plural="countExpr">one \| other</tag>` | `<tag>{{ $t('{countExpr, plural, one {one} other {other}}', { countExpr }) }}</tag>` |
-| `<tag v-t.alt alt="text" />` | `<tag :alt="$t('text')" />` |
-| `<tag v-t.placeholder placeholder="text" />` | `<tag :placeholder="$t('text')" />` |
+`per-route` still exists internally but is not part of the stable public contract.
 
-Attribute modifiers: `alt`, `placeholder`, `title`, `aria-label`, `label`.
+## What The Plugin Transforms
 
-Rich text with child elements uses `$vtRich()`:
-```html
-<p v-t>Click <a href="/help">here</a> for help</p>
-<!-- becomes -->
-<p v-html="$vtRich('Click <0>here</0> for help', [{tag: 'a', attrs: {href: '/help'}}])"></p>
-```
+### direct-import `t`
 
-Template interpolations are extracted as ICU placeholders:
-```html
-<p v-t>Hello {{ user.name }}</p>
-<!-- becomes -->
-<p>{{ $t('Hello {name}', { name: user.name }) }}</p>
-```
-
-### <Trans> Component (Vue Templates)
-
-Compiles away the `<Trans>` component at build time:
-
-```html
-<Trans>Hello world</Trans>
-<!-- becomes -->
-<span>{{ $t('Hello world') }}</span>
-
-<Trans tag="p">Click <a href="/help">here</a></Trans>
-<!-- becomes -->
-<p v-html="$vtRich('Click <0>here</0>', [{tag: 'a', attrs: {href: '/help'}}])"></p>
-```
-
-The `tag` prop controls the wrapper element (default: `'span'`). If a `message` prop is present, the transform is skipped (old API, handled at runtime).
-
-### <Plural> Component (Vue Templates)
-
-Two forms supported:
-
-**String props** (simple plurals):
-```html
-<Plural :value="count" one="one item" other="{count} items" />
-<!-- becomes -->
-<span v-text="$t('{count, plural, one {one item} other {{count} items}}', { count })"></span>
-```
-
-**Named slots** (rich text plurals):
-```html
-<Plural :value="count">
-  <template #one>one <b>item</b></template>
-  <template #other>{{ count }} <b>items</b></template>
-</Plural>
-<!-- becomes -->
-<span v-html="$vtRich('{count, plural, one {one <0>item</0>} other {{count} <1>items</1>}}', [...elements], { count })"></span>
-```
-
-Supported CLDR plural categories: `zero`, `one`, `two`, `few`, `many`, `other`. The `zero` category maps to ICU `=0` (exact match).
-
-### t`` Tagged Template Literals (All Frameworks)
-
-Transforms tagged template literals in `<script>` blocks:
+Recognized forms:
 
 ```ts
-const greeting = t`Hello ${user.name}`
+import { t } from '@fluenti/react'
+import { t as tt } from '@fluenti/vue'
 ```
 
-Framework-specific output:
-- **Vue**: `computed(() => __i18n.t('Hello {name}', { name: unref(user.name) }))`
-- **React**: `__i18n.t('Hello {name}', { name: user.name })`
-- **Solid**: `createMemo(() => __i18n.t('Hello {name}', { name: user.name }))`
-
-### t() Function Calls (All Frameworks)
-
-Standalone `t()` calls (not `.t()` or `$t()`) are rewritten:
+Supported compile-time surface:
 
 ```ts
-t('Hello world')        // → __i18n.t('Hello world')
-t('Hello {name}', obj)  // → __i18n.t('Hello {name}', obj)
+t`Hello ${name}`
+t({ message: 'Hello {name}', context: 'home.hero' }, { name })
 ```
 
-Auto-injected imports per framework:
-- **Vue**: `import { useI18n as __useI18n } from '@fluenti/vue'` + `computed`/`unref` from `'vue'`
-- **React**: `import { __useI18n } from '@fluenti/react'`
-- **Solid**: `import { useI18n as __useI18n } from '@fluenti/solid'` + lazy proxy to defer context resolution
+The plugin rewrites these calls to the framework runtime `t` binding and injects stable IDs where needed.
 
-### Solid JSX Transform
+### `useI18n().t`
 
-For `.tsx`/`.jsx` files when framework is `'solid'` or auto-detected as Solid:
+Recognized patterns include destructuring and aliases:
 
-```tsx
-<Trans>Hello world</Trans>
-// → <span>{__i18n.t('Hello world')}</span>
-
-<Plural value={count()} one="one item" other="{count} items" />
-// → <span textContent={__i18n.t('{count(), plural, one {one item} other {{count} items}}', {count()})} />
+```ts
+const { t } = useI18n()
+const { t: translate } = useI18n()
 ```
 
-Rich text `<Trans>` with child JSX elements is not transformed at compile time — the runtime `<Trans>` component handles it.
+These bindings remain valid runtime APIs and also participate in build-time chunk planning.
 
-## Code Splitting Strategies
+### Vue template features
 
-### `'dynamic'` (default)
+- `v-t`
+- `v-t.plural`
+- translated attributes such as `.alt`, `.placeholder`, `.title`
+- `<Trans>`, `<Plural>`, `<Select>`
 
-Lazy-load locale catalogs on demand. The default locale is loaded statically; other locales are loaded when `switchLocale()` is called. At build time, `$t('hash')` calls are replaced with direct catalog property lookups (`__catalog._hash`), and a catalog import from `virtual:fluenti/runtime` is injected.
+Vue template transforms are compile-time optimizations. They are not the primary runtime contract.
 
-### `false`
+### JSX components
 
-No splitting. All messages bundled together in a single chunk.
+For React and Solid, the plugin recognizes `<Trans>`, `<Plural>`, and `<Select>` when collecting message usage for chunk splitting.
+
+## Chunk Splitting
+
+### `'dynamic'`
+
+Recommended default.
+
+- the default locale stays in the initial bundle
+- non-default locales are loaded on demand
+- transformed lookups read from an internal reactive catalog
+- application code switches locales via framework APIs:
+  - React: `loadMessages`
+  - Vue / Solid: `chunkLoader` + `lazyLocaleLoading`
 
 ### `'static'`
 
-All messages from `defaultBuildLocale` are inlined at build time. Ideal for SSR where only one locale is needed per request. Uses `virtual:fluenti/messages` for static re-exports.
+Use when a build only needs one locale embedded at compile time.
 
-### `'per-route'`
+- all lookups are rewritten to statically imported catalog entries
+- ideal for SSR / SSG builds that emit one locale per deployment target
 
-Messages are automatically split by route during `generateBundle`. Each route chunk gets only the messages it uses. Shared messages (used by 2+ chunks) go into a common chunk.
+### `false`
 
-Output assets:
-- `_fluenti/shared-{locale}.js` — messages shared across routes
-- `_fluenti/{routeName}-{locale}.js` — route-specific messages
+Disables build-time locale chunk splitting.
 
-Uses `virtual:fluenti/route-runtime` with `__loadRoute()` for loading route chunks.
+## Official Runtime APIs
 
-The plugin tracks which message hashes are used in each module via the `buildSplitPlugin` transform phase, then classifies them as shared vs. route-specific during `generateBundle`.
+Chunk splitting is designed to work with framework-level APIs, not direct virtual-module imports.
 
-## Virtual Modules
+- React: `I18nProvider` + `loadMessages`
+- Vue: `createFluentVue({ lazyLocaleLoading: true, chunkLoader })`
+- Solid: `createI18n(...)` or `<I18nProvider ...>` with `lazyLocaleLoading` + `chunkLoader`
 
-### `virtual:fluenti/messages/{locale}`
+The plugin's virtual modules are implementation details used to connect transformed lookups to compiled catalogs.
 
-Re-exports the compiled catalog for a locale:
-```ts
-export { default } from 'src/locales/compiled/{locale}.js'
-```
+## Internal Details That Are Not The Primary Public API
 
-### `virtual:fluenti/runtime`
+The plugin still uses internal `virtual:fluenti/*` modules under the hood for transformed bundle output. These remain supported as implementation details for the plugin itself, but application code should not treat them as the main integration surface.
 
-Reactive catalog for dynamic splitting. Provides `__switchLocale()` and `__preloadLocale()`.
+## Auto Detection
 
-### `virtual:fluenti/messages`
+When `framework` is `'auto'`, detection is per file:
 
-Static re-export for SSR builds (static splitting).
-
-### `virtual:fluenti/route-runtime`
-
-Per-route catalog runtime. Provides `__loadRoute()` for loading route-specific message chunks.
-
-## Framework Auto-detection
-
-When `framework` is `'auto'` (default), the plugin detects the framework per file:
-
-1. `.vue` file extension → `'vue'`
-2. Code contains `solid-js`, `createSignal`, or `createMemo` → `'solid'`
-3. Code contains `react`, `useState`, `useEffect`, or `jsx` → `'react'`
-4. Fallback → `'vue'`
-
-## HMR Support
-
-The `fluenti:dev` plugin watches for changes in the `catalogDir`. When a compiled catalog file changes, it invalidates all `virtual:fluenti` modules in the module graph, triggering hot module replacement.
+1. `.vue` file extension → Vue
+2. Solid imports / Solid-specific syntax → Solid
+3. React imports / React JSX patterns → React
+4. fallback → Vue
 
 ## Exports
 
-### Default Export
-
 ```ts
 export default function fluentiPlugin(options?: FluentiPluginOptions): Plugin[]
+export type { FluentiPluginOptions }
 ```
 
-Main plugin factory. Returns an array of six Vite plugins.
-
-### Named Exports
-
-```ts
-export function createVtNodeTransform(): NodeTransform
-```
-
-Vue compiler AST `nodeTransform` for the `v-t` directive. Can be configured manually via `@vitejs/plugin-vue`'s `compilerOptions.nodeTransforms` if the automatic SFC pre-transform is insufficient.
-
-```ts
-export function transformSolidJsx(code: string): { code: string; changed: boolean }
-```
-
-Compile-time JSX transform for Solid `<Trans>` and `<Plural>` components. Exported for direct use or testing.
-
-```ts
-export type { FluentiPluginOptions } from './types'
-export type NodeTransform = (node: ASTNode, context: TransformContext) => void | (() => void)
-```
-
-### Client Types
-
-The package exports `./client` with type declarations for virtual modules:
-```ts
-import messages from 'virtual:fluenti/messages/en'
-```
+The package no longer documents internal transform helpers as primary public exports.

@@ -33,15 +33,29 @@ export function extractMessage(children: ReactNode): {
     if (typeof child === 'string' || typeof child === 'number') {
       message += String(child)
     } else if (isValidElement(child)) {
+      if (child.type === Fragment) {
+        const inner = extractMessage((child.props as { children?: ReactNode }).children)
+        message += offsetIndices(inner.message, components.length)
+        components.push(...inner.components)
+        return
+      }
+
       const idx = components.length
-      components.push(child)
       const inner = extractMessage((child.props as { children?: ReactNode }).children)
-      // Merge inner components into the flat list (offset their indices)
-      message += `<${idx}>${inner.message}</${idx}>`
+      components.push(child)
+      components.push(...inner.components)
+      message += `<${idx}>${offsetIndices(inner.message, idx + 1)}</${idx}>`
     }
   })
 
   return { message, components }
+}
+
+export function offsetIndices(message: string, offset: number): string {
+  if (offset === 0) return message
+  return message
+    .replace(/<(\d+)(\/?>)/g, (_match, index: string, suffix: string) => `<${Number(index) + offset}${suffix}`)
+    .replace(/<\/(\d+)>/g, (_match, index: string) => `</${Number(index) + offset}>`)
 }
 
 /**

@@ -3,6 +3,7 @@ import { h } from 'vue'
 import { mount } from '@vue/test-utils'
 import { createFluentVue } from '../src/plugin'
 import { Trans } from '../src/components/Trans'
+import { hashMessage } from '@fluenti/core'
 
 function createPlugin(messages: Record<string, string> = {}) {
   return createFluentVue({
@@ -87,5 +88,28 @@ describe('Trans component', () => {
 
     expect(wrapper.find('a').exists()).toBe(true)
     expect(wrapper.find('b').text()).toBe('nested')
+  })
+
+  it('translates default slot content without the build plugin', () => {
+    const message = 'Visit the <0>documentation</0> page'
+    const plugin = createFluentVue({
+      locale: 'ja',
+      messages: {
+        ja: {
+          [hashMessage(message)]: '<0>ドキュメント</0>ページを見る',
+        },
+      },
+    })
+
+    const wrapper = mount(Trans, {
+      global: { plugins: [plugin] },
+      slots: {
+        default: () => ['Visit the ', h('a', { href: '/docs' }, 'documentation'), ' page'],
+      },
+    })
+
+    expect(wrapper.text()).toBe('ドキュメントページを見る')
+    expect(wrapper.find('a').text()).toBe('ドキュメント')
+    expect(wrapper.find('a').attributes('href')).toBe('/docs')
   })
 })

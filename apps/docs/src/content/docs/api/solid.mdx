@@ -32,7 +32,7 @@ import zhCN from './locales/compiled/zh-CN'
 | `dateFormats` | `DateFormatOptions?` | Custom date format presets |
 | `numberFormats` | `NumberFormatOptions?` | Custom number format presets |
 | `fallbackChain` | `Record<string, string[]>?` | Locale fallback chains |
-| `splitting` | `boolean?` | Enable code-splitting mode |
+| `lazyLocaleLoading` | `boolean?` | Enable async locale loading through `chunkLoader` |
 | `chunkLoader` | `(locale) => Promise<Messages>?` | Async locale loader |
 | `transform` | `(result, id, locale) => string?` | Post-translation transform hook applied to every resolved message |
 | `onLocaleChange` | `(newLocale, prevLocale) => void?` | Callback fired when locale changes |
@@ -58,7 +58,7 @@ function MyComponent() {
 | `t` | `(id, values?) => string` | Translate a message. Also usable as a tagged template: `` t`Hello ${name}` `` |
 | `format` | `(message, values?) => string` | Direct ICU interpolation without catalog lookup |
 | `locale` | `Accessor<string>` | Current locale (signal) |
-| `setLocale` | `(locale) => Promise<void>` | Change locale (async with splitting) |
+| `setLocale` | `(locale) => Promise<void>` | Change locale (async with lazy locale loading) |
 | `loadMessages` | `(locale, messages) => void` | Load messages at runtime |
 | `getLocales` | `() => string[]` | Get all loaded locale codes |
 | `d` | `(value, style?) => string` | Format a date |
@@ -66,6 +66,27 @@ function MyComponent() {
 | `isLoading` | `Accessor<boolean>` | Whether a locale chunk is loading |
 | `loadedLocales` | `Accessor<Set<string>>` | Set of loaded locales |
 | `preloadLocale` | `(locale) => void` | Preload a locale without switching |
+
+## `t` (compile-time import)
+
+`import { t } from '@fluenti/solid'` is the primary compile-time translation API.
+
+```tsx
+import { t } from '@fluenti/solid'
+
+function Greeting(props: { name: () => string }) {
+  return <p>{t`Hello ${props.name()}`}</p>
+}
+```
+
+Supported forms:
+
+- `` t`Hello ${name}` ``
+- `t({ message: 'Hello {name}', context: 'hero' }, { name })`
+
+For runtime lookup, imperative access, or ID-based translation, use `useI18n().t()`.
+
+Without the Fluenti build plugin, imported `t` is not available as a runtime fallback. Use `useI18n().t()` for imperative lookup, while the components below continue to work normally.
 
 ## `format()`
 
@@ -80,7 +101,7 @@ function MyComponent() {
 
 ## `<Trans>`
 
-Rich text with component interpolation. Globally registered — no import needed.
+Rich text with component interpolation. Import it from `@fluenti/solid`.
 
 Children are the primary API. The child content is the source-language message, which is auto-extracted and translated via the catalog:
 
@@ -88,9 +109,11 @@ Children are the primary API. The child content is the source-language message, 
 <Trans>Click <a href="/next">here</a> to continue.</Trans>
 ```
 
+`Trans` remains runtime-correct without the build plugin. The plugin only removes runtime extraction work.
+
 ## `<Plural>`
 
-Pluralization component. Globally registered — no import needed.
+Pluralization component. Import it from `@fluenti/solid`.
 
 Plural forms are source-language text, auto-extracted and translated via the catalog:
 
@@ -98,9 +121,11 @@ Plural forms are source-language text, auto-extracted and translated via the cat
 <Plural value={count()} one="# item" other="# items" />
 ```
 
+`Plural` remains runtime-correct without the build plugin. It performs catalog lookup through a synthetic ICU plural message at runtime.
+
 ## `<Select>`
 
-Select component for gender, role, etc. Globally registered — no import needed.
+Select component for gender, role, etc. Import it from `@fluenti/solid`.
 
 Use the `options` prop for type-safe select patterns:
 
@@ -114,15 +139,16 @@ Alternatively, pass options as attributes:
 <Select value={gender()} male="He" female="She" other="They" />
 ```
 
+`Select` also remains runtime-correct without the build plugin. `options` takes precedence over direct case props, and the component performs catalog lookup through a synthetic ICU select message at runtime.
+
 ### Tagged template usage
 
-`t` from `useI18n()` also works as a tagged template. The Vite plugin uses AST scope analysis to detect `t` bindings from `useI18n()` and transforms them at build time:
+Direct-import `t` is optimized at build time:
 
 ```tsx
-import { useI18n } from '@fluenti/solid'
+import { t } from '@fluenti/solid'
 
 function Greeting() {
-  const { t } = useI18n()
   const name = 'World'
   return <p>{t`Hello ${name}`}</p>
 }
@@ -130,4 +156,4 @@ function Greeting() {
 
 ## Reactivity
 
-`t()` reads the `locale()` signal internally. In JSX expressions, Solid automatically tracks this dependency. When locale changes, only the specific text nodes that call `t()` update — the component body does not re-execute.
+When you call `t` inside a JSX expression, the transformed runtime lookup reads `locale()` and Solid tracks that reactive scope for you. Direct-import `t` does not return a memo wrapper by itself.

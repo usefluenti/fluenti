@@ -1,20 +1,43 @@
 ---
 title: Code Splitting
-description: Load locale data on demand with static or dynamic splitting strategies
+description: Choose a build-time locale chunk strategy and wire runtime lazy locale loading
 ---
 
 import { Tabs, TabItem, Aside } from '@astrojs/starlight/components'
 
-`fluenti compile` always generates tree-shakeable named exports — every message is a `/* @__PURE__ */` annotated export so bundlers can eliminate unused translations. For apps with many locales or large catalogs, code splitting loads locale data on demand.
+`fluenti compile` always generates tree-shakeable locale modules — every message is a `/* @__PURE__ */` annotated export so bundlers can eliminate unused translations. Fluenti splits this into two separate concerns:
+
+- **Build-time strategy** via `splitting` in `fluenti.config.ts`
+- **Runtime locale loading** via `loadMessages()` or `chunkLoader`
 
 ## How It Works
 
 1. Run `fluenti compile` to generate per-locale ES modules with named exports and `@__PURE__` annotations
 2. Each message becomes a tree-shakeable named export — unused messages are removed from the production bundle
-3. Configure `chunkLoader` to dynamically import locale chunks
-4. When `setLocale()` is called, the chunk is loaded before switching
+3. Pick a build-time strategy with `splitting: 'dynamic' | 'static' | false`
+4. If you want async locale switches, configure `loadMessages()` or `chunkLoader`
+5. When `setLocale()` is called, the locale chunk is loaded before switching
 
-## Setup
+## 1. Pick a build-time strategy
+
+Configure the Vite build strategy in `fluenti.config.ts`:
+
+```typescript
+import { defineConfig } from '@fluenti/cli'
+
+export default defineConfig({
+  splitting: 'dynamic',
+  defaultBuildLocale: 'en',
+})
+```
+
+| Strategy | What ships | Best for |
+|----------|------------|----------|
+| `false` | All locales bundled together | Small apps or very small catalogs |
+| `'static'` | One build locale inlined directly into the bundle | SSR / SSG when each build only needs one locale |
+| `'dynamic'` | Default build locale in the initial bundle, other locales as separate chunks | SPAs or multi-locale apps |
+
+## 2. Compile catalogs
 
 Compile your catalogs:
 
@@ -27,7 +50,11 @@ This generates:
 - `locales/compiled/zh-CN.js` — same exports, translated
 - `locales/compiled/index.js` — locale list and lazy loaders
 
-Configure the plugin:
+The Vite plugin reads the compiled locale modules automatically; you do not need to import internal virtual modules yourself.
+
+## 3. Enable runtime lazy locale loading
+
+Configure your framework runtime if you want `setLocale()` to fetch locale chunks on demand:
 
 <Tabs>
 <TabItem label="Vue">
@@ -35,7 +62,7 @@ Configure the plugin:
 const i18n = createFluentVue({
   locale: 'en',
   messages: { en },
-  splitting: true,
+  lazyLocaleLoading: true,
   chunkLoader: (locale) => import(`./locales/compiled/${locale}.js`),
 })
 ```
@@ -58,7 +85,7 @@ const i18n = createFluentVue({
 <I18nProvider
   locale="en"
   messages={{ en }}
-  splitting={true}
+  lazyLocaleLoading={true}
   chunkLoader={(locale) => import(`./locales/compiled/${locale}.js`)}
 >
   <App />
@@ -67,32 +94,7 @@ const i18n = createFluentVue({
 </TabItem>
 </Tabs>
 
-## Static vs Dynamic Splitting
-
-| Strategy | `splitting: 'static'` | `splitting: 'dynamic'` |
-|----------|----------------------|----------------------|
-| Bundle | All locales in bundle, tree-shaken | Only default locale bundled |
-| Loading | Sync — no loading states | Async — needs `isLoading` handling |
-| Best for | Few locales, small catalogs | Many locales, large catalogs |
-
-Configure in `fluenti.config.ts`:
-
-```typescript
-import { defineConfig } from '@fluenti/cli'
-
-export default defineConfig({
-  splitting: 'dynamic',
-  defaultBuildLocale: 'en',
-})
-```
-
-## Decision Table
-
-| Splitting | When to use | Trade-off |
-|---|---|---|
-| `false` | ≤ 3 locales, small catalog | Simplest — everything bundled |
-| `'static'` | Known set of locales, moderate catalog | Locale loaded at startup, no lazy requests |
-| `'dynamic'` | Many locales or large catalog | Smallest initial bundle, async locale switch |
+If you do not configure `loadMessages()` / `chunkLoader`, `setLocale()` only switches between already-loaded catalogs. That is still valid with any build-time `splitting` strategy.
 
 ## Build vs Dev Mode
 

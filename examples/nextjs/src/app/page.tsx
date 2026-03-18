@@ -1,6 +1,6 @@
 'use client'
 
-import { useI18n, msg } from '@fluenti/react'
+import { t, useI18n, msg } from '@fluenti/react'
 
 const ROLES = {
   admin: msg`Administrator`,
@@ -8,7 +8,7 @@ const ROLES = {
 }
 
 export default function Home() {
-  const { t, i18n, d, n, locale } = useI18n()
+  const { i18n, d, n, locale } = useI18n()
   const name = 'World'
   const count = 3
 

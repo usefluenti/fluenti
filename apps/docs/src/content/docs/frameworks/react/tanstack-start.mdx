@@ -60,11 +60,12 @@ function getInitialLocale(): string {
 
 ## File-Based Routes
 
-Create page routes using `createFileRoute()`. The `` t`...` `` tagged template is injected by the Vite plugin — no import needed:
+Create page routes using `createFileRoute()`. Use direct-import `t` for compile-time translations:
 
 ```tsx
 // src/routes/index.tsx
 import { createFileRoute } from '@tanstack/react-router'
+import { t } from '@fluenti/react'
 
 export const Route = createFileRoute('/')({
   component: Home,

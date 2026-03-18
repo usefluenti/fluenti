@@ -6,12 +6,12 @@ export default defineConfig({
     lib: {
       entry: {
         index: 'src/index.ts',
-        transforms: 'src/transforms.ts',
+        internal: 'src/internal.ts',
       },
       formats: ['es', 'cjs'],
     },
     rollupOptions: {
-      external: [/^node:/, 'acorn'],
+      external: [/^node:/],
     },
     sourcemap: true,
     emptyOutDir: true,

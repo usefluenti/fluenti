@@ -29,8 +29,8 @@ describe('Plural edge cases', () => {
         }),
       ),
     )
-    // value is 2, formatted as "2", but category is based on offset value (1) -> "one"
-    expect(container.textContent).toBe('2 person remaining')
+    // value is 2, category is based on offset value (1) -> "one", and # uses the adjusted count
+    expect(container.textContent).toBe('1 person remaining')
   })
 
   // 3. ReactNode (JSX) in category props
@@ -63,8 +63,8 @@ describe('Plural edge cases', () => {
     expect(container.textContent).toBe('5 items')
   })
 
-  // 5. # replacement (ReactNode props don't replace)
-  it('does not replace # in ReactNode props', () => {
+  // 5. # replacement (ReactNode props now route through synthetic ICU too)
+  it('replaces # in ReactNode props via the runtime synthetic ICU path', () => {
     const { container } = render(
       withProvider(
         createElement(Plural, {
@@ -74,8 +74,7 @@ describe('Plural edge cases', () => {
         }),
       ),
     )
-    // ReactNode is not a string, so # is NOT replaced
-    expect(container.textContent).toBe('# items')
+    expect(container.textContent).toBe('5 items')
   })
 
   // 6. NaN value

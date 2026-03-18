@@ -327,7 +327,7 @@ describe('createFluent', () => {
       expect(() => i18n.t('broken')).toThrow('runtime error')
     })
 
-    it('t() compiled function returns undefined coerces to string', () => {
+    it('t() compiled function returning undefined falls back to the key', () => {
       const i18n = createFluent({
         locale: 'en',
         messages: {
@@ -337,7 +337,7 @@ describe('createFluent', () => {
         },
       })
       const result = i18n.t('empty')
-      expect(result).toBeUndefined()
+      expect(result).toBe('empty')
     })
 
     it('fallbackChain locale-specific priority over wildcard *', () => {
