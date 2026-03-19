@@ -142,15 +142,15 @@ const { setLocale, preloadLocale, isLoading } = useI18n()
 Supported forms:
 
 ```ts
-t`Hello ${name}`
-t({ message: 'Hello {name}', context: 'home.hero' }, { name })
+t`Hello ${name}`                                              // ✅ Preferred
+t({ message: 'Hello {name}', context: 'home.hero' }, { name }) // ✅ Preferred
 ```
 
 Not supported as the main direct-import surface:
 
 ```ts
-t('message.id')
-t('Hello {name}', { name })
+t('message.id')              // ⚠️ Not supported as direct import — use useI18n().t() for runtime lookup
+t('Hello {name}', { name })  // ⚠️ Not supported as direct import
 ```
 
 If the build plugin is missing and the imported `t` function executes at runtime, it throws a clear error.

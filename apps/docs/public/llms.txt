@@ -1,0 +1,75 @@
+# Fluenti
+
+> Compile-time i18n for modern frameworks. Write natural templates — Fluenti compiles your markup into optimized, zero-cost translations at build time. Full ICU MessageFormat support with plurals, selects, date/number formatting, and code splitting.
+
+- Docs: https://fluenti.dev
+- Repository: https://github.com/usefluenti/fluenti
+- License: MIT
+
+## Packages
+
+| Package | Description | llms.txt |
+|---------|-------------|----------|
+| `@fluenti/core` | Framework-agnostic core: ICU parser, compiler, interpolation, CLDR plurals, formatters, SSR | [llms.txt](https://github.com/usefluenti/fluenti/blob/main/packages/core/llms.txt) |
+| `@fluenti/vue` | Vue 3 integration: `<Trans>`, `<Plural>`, `<Select>`, `useI18n()`, `v-t` directive | [llms.txt](https://github.com/usefluenti/fluenti/blob/main/packages/vue/llms.txt) |
+| `@fluenti/react` | React integration: `<Trans>`, `<Plural>`, `<Select>`, `useI18n()`, server helpers | [llms.txt](https://github.com/usefluenti/fluenti/blob/main/packages/react/llms.txt) |
+| `@fluenti/solid` | SolidJS integration: `<Trans>`, `<Plural>`, `<Select>`, `useI18n()`, signal-based | [llms.txt](https://github.com/usefluenti/fluenti/blob/main/packages/solid/llms.txt) |
+| `@fluenti/cli` | CLI: message extraction, catalog compilation, translation stats, AI translation | [llms.txt](https://github.com/usefluenti/fluenti/blob/main/packages/cli/llms.txt) |
+| `@fluenti/vite-plugin` | Vite plugin: compile-time transforms, virtual modules, code splitting | [llms.txt](https://github.com/usefluenti/fluenti/blob/main/packages/vite-plugin/llms.txt) |
+| `@fluenti/next` | Next.js plugin: `withFluenti()`, webpack loader, RSC support | [llms.txt](https://github.com/usefluenti/fluenti/blob/main/packages/next-plugin/llms.txt) |
+| `@fluenti/nuxt` | Nuxt 3 module: locale-prefixed routing, detection chain, SEO helpers | [llms.txt](https://github.com/usefluenti/fluenti/blob/main/packages/nuxt/llms.txt) |
+| `@fluenti/vue-i18n-compat` | Progressive migration bridge between vue-i18n and Fluenti | [llms.txt](https://github.com/usefluenti/fluenti/blob/main/packages/vue-i18n-compat/llms.txt) |
+
+## Workflow
+
+```
+1. Extract    fluenti extract        Scan source files → update PO/JSON catalogs
+2. Translate  fluenti translate      AI-translate untranslated messages (Claude / Codex)
+3. Compile    fluenti compile        Catalogs → tree-shakeable ES modules
+4. Ship       vite build / next build   Zero-cost i18n in production
+```
+
+## Core Concepts
+
+- **Compile-time DX**: Messages are compiled at build time, not interpreted at runtime. The `t` import is a compile-time marker that the build plugin rewrites to direct catalog lookups.
+- **Natural keys**: Write `t\`Hello {name}\`` in source code — message IDs are auto-generated via FNV-1a hashing. No manual key management.
+- **ICU MessageFormat**: Full support for plurals (`{count, plural, ...}`), selects (`{gender, select, ...}`), nested arguments, `#` substitution, and escape sequences.
+- **Rich text components**: `<Trans>`, `<Plural>`, `<Select>`, `<DateTime>`, `<NumberFormat>` work at runtime without the build plugin.
+- **Code splitting**: `'dynamic'` loads non-default locales on demand; `'static'` inlines one locale at build time for SSR/SSG.
+- **PO format**: gettext-compatible catalogs work with Poedit, Weblate, Crowdin. JSON format also supported.
+- **SSR-safe**: Cookie/query/path/header locale detection, hydration script helper, server-side `createServerI18n()`.
+
+## Recommended API Usage (IMPORTANT)
+
+When writing code with Fluenti, prefer compile-time APIs over runtime lookups:
+
+| Priority | API | When to use |
+|----------|-----|-------------|
+| 1 (best) | `v-t` directive | Vue templates (compile-time, zero runtime cost) |
+| 2 | t\`\` tagged template | Script/JSX — t\`Hello {name}\` (compile-time, natural keys) |
+| 3 | `<Trans>` / `<Plural>` / `<Select>` | Rich text with inline markup |
+| 4 | `msg` tagged template | Outside components (route meta, stores) |
+| 5 (last resort) | `useI18n().t()` / `i18n.t()` | Only for dynamic keys or runtime-only contexts |
+
+❌ AVOID: `t('some.key.path')` as the default pattern — this is a legacy i18n convention.
+✅ PREFER: t\`Hello {name}\` — natural language keys compiled at build time.
+
+## Configuration
+
+Create `fluenti.config.ts` in your project root:
+
+```ts
+export default {
+  sourceLocale: 'en',
+  locales: ['en', 'ja', 'zh-CN'],
+  catalogDir: './locales',
+  format: 'po',
+  include: ['./src/**/*.{vue,tsx,jsx,ts,js}'],
+  compileOutDir: './src/locales/compiled',
+}
+```
+
+## Full Documentation
+
+- [llms-full.txt](https://fluenti.dev/llms-full.txt) — Complete documentation aggregated for LLM consumption
+- [fluenti.dev](https://fluenti.dev) — Full interactive documentation

@@ -58,6 +58,16 @@ app.use(fluent)
 - `useI18n().t()` is the full runtime API for lookup and imperative formatting
 - `<Trans>`, `<Plural>`, `<Select>`, `<DateTime>`, and `<NumberFormat>` remain runtime-capable even without the build plugin
 
+## Preferred Usage (compile-time first)
+
+1. `v-t` directive — `<p v-t>Hello {name}</p>` (Vue templates, zero runtime cost)
+2. t\`\` tagged template — t\`Hello {name}\` (primary compile-time API)
+3. `<Trans>` / `<Plural>` / `<Select>` — rich text with inline markup
+4. `msg` tagged template — outside components (route meta, stores)
+5. `useI18n().t()` — runtime fallback for dynamic keys only
+
+❌ AVOID: `t('some.key')` as the default — this is a legacy i18n pattern.
+
 ## Docs
 
 - Full docs: https://fluenti.dev

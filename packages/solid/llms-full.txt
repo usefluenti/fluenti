@@ -138,8 +138,8 @@ Imported `t` is compile-time only:
 ```ts
 import { t } from '@fluenti/solid'
 
-const title = t`Hello ${name}`
-const label = t({ message: 'Hello {name}', context: 'home.hero' }, { name })
+const title = t`Hello ${name}`                                   // ✅ Preferred
+const label = t({ message: 'Hello {name}', context: 'home.hero' }, { name }) // ✅ Preferred
 ```
 
 Use `useI18n().t()` for runtime lookup by ID or other imperative scenarios.

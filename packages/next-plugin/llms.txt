@@ -30,6 +30,15 @@ Package subpaths:
 - server-side direct-import `t` requires an async server scope
 - `useI18n()` is not the server runtime escape hatch; use `await getI18n()` instead
 
+## Preferred Usage (compile-time first)
+
+1. t\`\` tagged template — t\`Hello {name}\` (primary compile-time API, works in client and server)
+2. `<Trans>` / `<Plural>` / `<Select>` — rich text with inline markup
+3. `msg` tagged template — outside components (route meta, stores)
+4. `getI18n().t()` / `useI18n().t()` — runtime fallback for dynamic keys only
+
+❌ AVOID: `t('some.key')` as the default — this is a legacy i18n pattern.
+
 ## Docs
 
 - Full docs: https://fluenti.dev

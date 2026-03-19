@@ -49,6 +49,7 @@ Public config fields:
 In a `withFluenti()` project, the recommended authoring surface is:
 
 ```tsx
+// ✅ Preferred: compile-time authoring surface
 import { t, Trans, Plural, Select, DateTime, NumberFormat } from '@fluenti/react'
 ```
 
@@ -62,9 +63,9 @@ import { I18nProvider, getI18n, setLocale } from '@fluenti/next'
 
 ### Important boundaries
 
-- imported `t` is compile-time only
+- imported `t` is compile-time only — ✅ this is the preferred API
 - client and server authoring should stay on `@fluenti/react`
-- server runtime access should use `await getI18n()`
+- server runtime access should use `await getI18n()` — ⚠️ runtime fallback for dynamic keys
 - direct-import server `t` requires an async server scope
 
 ## What `withFluenti()` does
