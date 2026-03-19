@@ -71,6 +71,7 @@ jobs:
           echo "Version: $VERSION, Tag: $TAG"
 
       - name: Commit and tag
+        if: ${{ !inputs.dry-run }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -91,7 +92,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: ${{ needs.bump.outputs.tag }}
+          ref: ${{ inputs.dry-run && '' || needs.bump.outputs.tag }}
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
