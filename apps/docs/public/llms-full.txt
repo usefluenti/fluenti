@@ -1,0 +1,710 @@
+# Fluenti — Complete Documentation Reference
+
+> Compile-time i18n for modern frameworks. Write natural templates — Fluenti compiles your markup into optimized, zero-cost translations at build time.
+
+- Docs: https://fluenti.dev
+- Repository: https://github.com/usefluenti/fluenti
+- License: MIT
+
+---
+
+## 1. Overview
+
+Fluenti is a compile-time i18n framework for Vue, React, SolidJS, Next.js, Nuxt, and more. Unlike runtime i18n libraries that parse and resolve messages on every render, Fluenti compiles translations at build time into optimized ES modules with tree-shaking and code splitting.
+
+### Packages
+
+| Package | Description |
+|---------|-------------|
+| `@fluenti/core` | Framework-agnostic core: ICU parser, compiler, interpolation, CLDR plurals, formatters, SSR |
+| `@fluenti/vue` | Vue 3: `<Trans>`, `<Plural>`, `<Select>`, `useI18n()`, `v-t` directive, plugin |
+| `@fluenti/react` | React: `<Trans>`, `<Plural>`, `<Select>`, `useI18n()`, `I18nProvider`, server helpers |
+| `@fluenti/solid` | SolidJS: `<Trans>`, `<Plural>`, `<Select>`, `useI18n()`, signal-based reactivity |
+| `@fluenti/cli` | CLI: extraction, compilation, stats, AI translation, migration |
+| `@fluenti/vite-plugin` | Vite plugin: compile-time transforms, virtual modules, code splitting |
+| `@fluenti/next` | Next.js: `withFluenti()`, webpack loader, RSC support |
+| `@fluenti/nuxt` | Nuxt 3: locale-prefixed routing, detection chain, SEO helpers |
+| `@fluenti/vue-i18n-compat` | Migration bridge between vue-i18n and Fluenti |
+
+### How It Works
+
+```
+Source Code          CLI              Build Plugin         Production
+─────────────    ──────────────    ─────────────────    ──────────────
+t`Hello {name}`  → extract →  PO/JSON catalogs
+                   translate → AI-fill untranslated
+                   compile  → ES modules (.js)
+                                   vite/webpack     →  Zero-cost lookups
+                                   transform t``    →  Direct catalog refs
+```
+
+### Recommended API Usage (IMPORTANT)
+
+When writing code with Fluenti, prefer compile-time APIs over runtime lookups:
+
+| Priority | API | When to use |
+|----------|-----|-------------|
+| 1 (best) | `v-t` directive | Vue templates (compile-time, zero runtime cost) |
+| 2 | t\`\` tagged template | Script/JSX — t\`Hello {name}\` (compile-time, natural keys) |
+| 3 | `<Trans>` / `<Plural>` / `<Select>` | Rich text with inline markup |
+| 4 | `msg` tagged template | Outside components (route meta, stores) |
+| 5 (last resort) | `useI18n().t()` / `i18n.t()` | Only for dynamic keys or runtime-only contexts |
+
+❌ AVOID: `t('some.key.path')` as the default pattern — this is a legacy i18n convention.
+✅ PREFER: t\`Hello {name}\` — natural language keys compiled at build time.
+
+---
+
+## 2. Quick Start
+
+### Vue 3
+
+```bash
+pnpm add @fluenti/core @fluenti/vue @fluenti/vite-plugin @fluenti/cli
+```
+
+```ts
+// vite.config.ts
+import vue from '@vitejs/plugin-vue'
+import fluenti from '@fluenti/vite-plugin'
+
+export default {
+  plugins: [vue(), fluenti({ framework: 'vue' })],
+}
+```
+
+```ts
+// main.ts
+import { createApp } from 'vue'
+import { createFluentVue } from '@fluenti/vue'
+import en from './locales/compiled/en'
+import App from './App.vue'
+
+const fluent = createFluentVue({
+  locale: 'en',
+  fallbackLocale: 'en',
+  messages: { en },
+})
+
+createApp(App).use(fluent).mount('#app')
+```
+
+```vue
+<template>
+  <!-- ✅ Preferred: compile-time directive (zero runtime cost) -->
+  <p v-t>Hello {name}, welcome!</p>
+  <!-- ✅ Preferred: compile-time tagged template -->
+  <p>{{ t`Hello ${name}, welcome!` }}</p>
+  <!-- ⚠️ Runtime fallback — use only for dynamic keys -->
+  <!-- <p>{{ $t(dynamicKey, { name }) }}</p> -->
+</template>
+```
+
+### React
+
+```bash
+pnpm add @fluenti/core @fluenti/react @fluenti/vite-plugin @fluenti/cli
+```
+
+```tsx
+// App.tsx
+import { I18nProvider, useI18n, Trans, t } from '@fluenti/react'
+import en from './locales/compiled/en'
+
+function App() {
+  return (
+    <I18nProvider locale="en" messages={{ en }}>
+      <Greeting name="World" />
+    </I18nProvider>
+  )
+}
+
+function Greeting({ name }: { name: string }) {
+  // ✅ Preferred: compile-time tagged template
+  return <p>{t`Hello ${name}`}</p>
+}
+
+// ⚠️ Runtime fallback — use only for dynamic keys
+// const { t: rt } = useI18n()
+// rt(dynamicKey, { name })
+```
+
+### SolidJS
+
+```bash
+pnpm add @fluenti/core @fluenti/solid @fluenti/vite-plugin @fluenti/cli
+```
+
+```tsx
+// App.tsx
+import { I18nProvider, useI18n } from '@fluenti/solid'
+import en from './locales/compiled/en'
+
+function App() {
+  return (
+    <I18nProvider locale="en" messages={{ en }}>
+      <Greeting />
+    </I18nProvider>
+  )
+}
+
+function Greeting() {
+  // ✅ Preferred: compile-time tagged template
+  return <p>{t`Hello ${'World'}`}</p>
+}
+
+// ⚠️ Runtime fallback — use only for dynamic keys
+// const { t: rt } = useI18n()
+// rt(dynamicKey, { name: 'World' })
+```
+
+### Next.js (App Router)
+
+```bash
+pnpm add @fluenti/core @fluenti/react @fluenti/next @fluenti/cli
+```
+
+```ts
+// next.config.ts
+import { withFluenti } from '@fluenti/next'
+
+export default withFluenti({})
+```
+
+### Nuxt 3
+
+```bash
+pnpm add @fluenti/nuxt @fluenti/core @fluenti/vue
+```
+
+```ts
+// nuxt.config.ts
+export default defineNuxtConfig({
+  modules: ['@fluenti/nuxt'],
+  fluenti: {
+    locales: ['en', 'ja', 'zh'],
+    defaultLocale: 'en',
+    strategy: 'prefix_except_default',
+  },
+})
+```
+
+---
+
+## 3. ICU MessageFormat
+
+Fluenti uses ICU MessageFormat for all message strings.
+
+### Plain Text
+
+```
+Hello World
+```
+
+### Variables
+
+```
+Hello {name}, welcome to {place}!
+```
+
+```ts
+// ✅ Preferred: compile-time tagged template
+t`Hello ${name}, welcome to ${place}!`
+
+// ⚠️ Runtime fallback for dynamic keys
+t('greeting', { name: 'Alice', place: 'Fluenti' })
+// → "Hello Alice, welcome to Fluenti!"
+```
+
+### Plurals
+
+```
+{count, plural, =0 {No items} one {# item} other {# items}}
+```
+
+`#` is replaced with the numeric value. CLDR plural categories: `zero`, `one`, `two`, `few`, `many`, `other`.
+
+### Select
+
+```
+{gender, select, male {He} female {She} other {They}} liked your post.
+```
+
+### Number Formatting
+
+```
+Your balance is {amount, number, currency}
+```
+
+### Date Formatting
+
+```
+Last login: {date, date, short}
+```
+
+### Escaping
+
+```
+'{' renders as a literal {
+'' renders as a literal '
+```
+
+### Nesting
+
+Plurals and selects can be nested:
+
+```
+{count, plural,
+  one {{gender, select, male {He has # item} other {She has # item}}}
+  other {{gender, select, male {He has # items} other {She has # items}}}
+}
+```
+
+---
+
+## 4. Formatting
+
+### Date Formatting
+
+```ts
+const { d } = useI18n()
+
+d(new Date())                    // "March 20, 2026" (default)
+d(new Date(), 'short')           // "3/20/26"
+d(new Date(), 'long')            // "March 20, 2026"
+d(new Date(), 'time')            // "2:30 PM"
+d(new Date(), 'datetime')        // "Mar 20, 2026, 2:30 PM"
+d(new Date(), 'relative')        // "2 days ago"
+```
+
+### Number Formatting
+
+```ts
+const { n } = useI18n()
+
+n(1234.5, 'currency')   // "$1,234.50" (USD auto-detected for en-US)
+n(0.42, 'percent')       // "42%"
+n(1234.5, 'decimal')     // "1,234.5"
+```
+
+Currency is auto-detected from locale: `en` → USD, `ja` → JPY, `zh-CN` → CNY, `en-GB` → GBP, `de` → EUR.
+
+### Custom Format Styles
+
+```ts
+createFluentVue({
+  locale: 'en',
+  messages: { en },
+  dateFormats: {
+    meeting: { weekday: 'long', hour: 'numeric', minute: 'numeric' },
+  },
+  numberFormats: {
+    compact: { notation: 'compact', maximumFractionDigits: 1 },
+  },
+})
+```
+
+---
+
+## 5. Locale Switching
+
+### Changing Locale
+
+```ts
+const { locale, setLocale, getLocales, isLoading } = useI18n()
+
+// Current locale (reactive)
+console.log(locale.value)
+
+// Switch locale (async — may load chunks)
+await setLocale('ja')
+
+// Available locales
+console.log(getLocales()) // ['en', 'ja', 'zh-CN']
+```
+
+### Persistence
+
+```ts
+// Save to cookie + update HTML attributes
+function switchLocale(newLocale: string) {
+  setLocale(newLocale)
+  document.cookie = `locale=${newLocale};path=/;max-age=31536000`
+  document.documentElement.lang = newLocale
+  document.documentElement.dir = isRTL(newLocale) ? 'rtl' : 'ltr'
+}
+```
+
+### Preloading
+
+```ts
+const { preloadLocale } = useI18n()
+
+// Preload on hover/focus for instant switching
+onMouseEnter(() => preloadLocale('ja'))
+```
+
+### Message Descriptors (`msg`)
+
+For translations outside components (route meta, stores, config):
+
+```ts
+import { msg } from '@fluenti/vue' // or @fluenti/react, @fluenti/solid
+
+const routes = [
+  { path: '/', meta: { title: msg`Home` } },
+  { path: '/about', meta: { title: msg`About Us` } },
+]
+
+// Resolve later inside a component
+const { t } = useI18n()
+const title = t(route.meta.title)
+```
+
+---
+
+## 6. CLI Commands
+
+### `fluenti extract`
+
+Scan source files for translatable messages and update catalog files.
+
+```bash
+fluenti extract [--config path] [--clean] [--no-fuzzy]
+```
+
+Extracts from: `v-t` directive, `<Trans>`, `<Plural>`, `<Select>`, `t()`, `t```, `msg`.
+
+### `fluenti compile`
+
+Compile catalogs to optimized ES modules with tree-shaking.
+
+```bash
+fluenti compile [--config path] [--skip-fuzzy]
+```
+
+Output: `.js` files with `@__PURE__` annotations, named exports, and an `index.js` with lazy loaders.
+
+### `fluenti stats`
+
+Display translation progress per locale.
+
+```bash
+fluenti stats [--config path]
+```
+
+### `fluenti translate`
+
+AI-powered translation using local CLI tools.
+
+```bash
+fluenti translate [--provider claude|codex] [--locale xx] [--batch-size N]
+```
+
+Preserves ICU placeholders and HTML tags. Default provider: `claude`. Default batch: `50`.
+
+### `fluenti init`
+
+Interactive setup: detects framework, prompts for locales, generates `fluenti.config.ts`.
+
+```bash
+fluenti init
+```
+
+### `fluenti migrate`
+
+Migrate from other i18n libraries.
+
+```bash
+fluenti migrate [--from vue-i18n|nuxt-i18n|react-i18next|next-intl|next-i18next|lingui]
+```
+
+### Programmatic API
+
+```ts
+import {
+  extractFromVue,
+  extractFromTsx,
+  updateCatalog,
+  compileCatalog,
+  compileTypeDeclaration,
+  translateCatalog,
+  runInit,
+  runMigrate,
+} from '@fluenti/cli'
+```
+
+---
+
+## 7. Configuration Reference
+
+`fluenti.config.ts` — loaded via jiti with fallback to defaults.
+
+```ts
+import { defineConfig } from '@fluenti/cli'
+
+export default defineConfig({
+  sourceLocale: 'en',
+  locales: ['en', 'zh-CN', 'ja'],
+  catalogDir: './locales',
+  format: 'po',
+  include: ['./src/**/*.{vue,tsx,jsx,ts,js}'],
+  exclude: ['./src/**/*.test.*'],
+  compileOutDir: './src/locales/compiled',
+  fallbackChain: { 'zh-TW': ['zh-CN', 'en'], '*': ['en'] },
+  splitting: 'dynamic',
+  defaultBuildLocale: 'en',
+})
+```
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `sourceLocale` | `string` | `'en'` | Source language used in code |
+| `locales` | `string[]` | `['en']` | All target locales |
+| `catalogDir` | `string` | `'./locales'` | Directory for PO/JSON catalogs |
+| `format` | `'po' \| 'json'` | `'po'` | Catalog format (PO recommended for tool compatibility) |
+| `include` | `string[]` | `['./src/**/*.{vue,tsx,jsx}']` | Source file glob patterns |
+| `exclude` | `string[]` | `['./src/**/*.test.*']` | Excluded patterns |
+| `compileOutDir` | `string` | `'./src/locales/compiled'` | Compiled output directory |
+| `fallbackChain` | `Record<string, string[]>` | `{}` | Locale fallback chains (`'*'` for global default) |
+| `splitting` | `'dynamic' \| 'static' \| false` | `false` | Code-splitting strategy |
+| `defaultBuildLocale` | `string?` | — | Locale embedded in the initial bundle |
+| `devWarnings` | `boolean?` | — | Warn on missing translations in dev |
+| `strictBuild` | `boolean?` | — | Fail build on missing translations |
+| `namespaceMapping` | `Record<string, string>?` | — | Map namespace prefixes to catalog subdirectories |
+| `externalCatalogs` | `Array<{ package, catalogDir }>?` | — | Load catalogs from npm packages |
+| `strictThreshold` | `number?` | — | Min translation % for `fluenti stats` |
+
+---
+
+## 8. Vite Plugin Options
+
+```ts
+import fluenti from '@fluenti/vite-plugin'
+
+export default {
+  plugins: [
+    fluenti({
+      framework: 'auto',        // 'vue' | 'react' | 'solid' | 'auto'
+      catalogDir: 'src/locales/compiled',
+      sourceLocale: 'en',
+      locales: ['en', 'ja'],
+      splitting: 'dynamic',     // 'dynamic' | 'static' | false
+      defaultBuildLocale: 'en',
+    }),
+  ],
+}
+```
+
+### What It Transforms
+
+- Direct-import `t` from `@fluenti/vue`, `@fluenti/react`, `@fluenti/solid`
+- Runtime `t` bindings from `useI18n()`
+- Vue `v-t` directive
+- `<Trans>`, `<Plural>`, `<Select>` components
+
+### Splitting Strategies
+
+- `'dynamic'`: Default locale in initial bundle; other locales load on demand
+- `'static'`: Inline one locale at build time (ideal for SSR/SSG single-locale builds)
+- `false`: No splitting — all locales in the bundle
+
+---
+
+## 9. SSR and Hydration
+
+### Server-Side Locale Detection
+
+```ts
+import { detectLocale, getSSRLocaleScript } from '@fluenti/core'
+
+// Detect from request (priority: cookie > query > path > Accept-Language > fallback)
+const locale = detectLocale({
+  cookie: req.headers.cookie,
+  headers: req.headers['accept-language'],
+  available: ['en', 'ja', 'zh-CN'],
+  fallback: 'en',
+})
+
+// Inject hydration script into HTML
+const script = getSSRLocaleScript(locale)
+// → <script>window.__FLUENTI_LOCALE__="ja"</script>
+```
+
+### Client-Side Hydration
+
+```ts
+import { getHydratedLocale } from '@fluenti/core'
+
+const locale = getHydratedLocale('en') // reads window.__FLUENTI_LOCALE__
+```
+
+### RTL Support
+
+```ts
+import { isRTL, getDirection } from '@fluenti/core'
+
+isRTL('ar')          // true
+isRTL('en')          // false
+getDirection('he')   // 'rtl'
+getDirection('ja')   // 'ltr'
+```
+
+### Next.js RSC
+
+```ts
+// next.config.ts
+import { withFluenti } from '@fluenti/next'
+export default withFluenti({})
+
+// Server Component
+import { t } from '@fluenti/react'
+export default function Page() {
+  return <h1>{t`Welcome`}</h1>
+}
+
+// Server-side i18n access
+import { getI18n } from '@fluenti/next/server'
+const i18n = await getI18n()
+```
+
+### Nuxt SSR
+
+```ts
+// nuxt.config.ts
+export default defineNuxtConfig({
+  modules: ['@fluenti/nuxt'],
+  fluenti: {
+    locales: ['en', 'ja'],
+    defaultLocale: 'en',
+    strategy: 'prefix_except_default',
+    detectOrder: ['path', 'cookie', 'header'],
+  },
+})
+```
+
+Nuxt routing strategies: `prefix_except_default`, `prefix`, `prefix_and_default`, `no_prefix`.
+
+---
+
+## 10. Code Splitting
+
+### Dynamic Splitting (Recommended for SPAs)
+
+Default locale stays in the initial bundle; others load on demand.
+
+```ts
+// fluenti.config.ts
+export default { splitting: 'dynamic', locales: ['en', 'ja', 'zh-CN'] }
+```
+
+```ts
+// Vue setup with lazy loading
+createFluentVue({
+  locale: 'en',
+  messages: { en },
+  lazyLocaleLoading: true,
+  chunkLoader: (locale) => import(`./locales/compiled/${locale}.js`),
+})
+```
+
+### Static Splitting (SSR/SSG)
+
+Inline one locale at build time. Build once per locale for SSG.
+
+```ts
+export default { splitting: 'static', defaultBuildLocale: 'en' }
+```
+
+---
+
+## 11. Core API Summary
+
+> **For application code, prefer t\`\` tagged templates over t() function calls.**
+> The APIs below are the low-level core engine. Framework packages (@fluenti/vue, @fluenti/react, @fluenti/solid)
+> provide the recommended compile-time authoring surface.
+
+### msg
+
+Tagged template for lazy message descriptors with auto-generated FNV-1a hash IDs. Use for translations outside components (route meta, stores, config).
+
+### t\`\` (via framework packages)
+
+Compile-time tagged template — the primary authoring API. Write natural language: t\`Hello {name}\` — compiled to direct catalog lookups at build time.
+
+### createFluent(config)
+
+Create a full i18n instance with `t()`, `d()`, `n()`, `format()`, locale switching.
+
+### parse(message)
+
+Parse an ICU MessageFormat string into an AST.
+
+### compile(ast, locale?)
+
+Compile AST into `CompiledMessage` — plain string for static, function for dynamic.
+
+### interpolate(message, values?, locale?)
+
+One-step parse + compile + execute with LRU cache (500 entries).
+
+### formatDate(value, locale, style?)
+
+Format dates: `default`, `short`, `long`, `time`, `datetime`, `relative`.
+
+### formatNumber(value, locale, style?)
+
+Format numbers: `currency`, `percent`, `decimal`, or custom `Intl.NumberFormatOptions`.
+
+### formatRelativeTime(value, locale)
+
+Auto-select best unit: "2 days ago", "in 3 hours".
+
+### negotiateLocale(requested, available, fallback?)
+
+BCP 47 negotiation: exact > language+region > language-only.
+
+### msg (re-exported by framework packages)
+
+Tagged template for lazy message descriptors with auto-generated FNV-1a hash IDs. Use for translations outside components.
+
+---
+
+## 12. Migration from Other Libraries
+
+### From vue-i18n
+
+Use `@fluenti/vue-i18n-compat` for gradual migration:
+
+```ts
+import { createFluentBridge } from '@fluenti/vue-i18n-compat'
+
+const bridge = createFluentBridge({
+  vueI18n: i18n,
+  fluenti: fluent,
+  priority: 'fluenti-first',
+})
+app.use(bridge) // installs both, syncs locale, bridges $t/$te/$tc
+```
+
+Or use the CLI migration tool:
+
+```bash
+fluenti migrate --from vue-i18n
+```
+
+### From react-i18next / next-intl / Lingui
+
+```bash
+fluenti migrate --from react-i18next
+fluenti migrate --from next-intl
+fluenti migrate --from lingui
+```
+
+---
+
+## Full Documentation
+
+- Interactive docs: https://fluenti.dev
+- GitHub: https://github.com/usefluenti/fluenti
+- Per-package llms.txt files available in each package directory

@@ -1,6 +1,10 @@
 # @fluenti/core
 
-> Framework-agnostic compile-time i18n core for JavaScript/TypeScript. Provides ICU MessageFormat parsing, compilation, interpolation, CLDR plural rules, date/number/relative-time formatters via Intl APIs, locale negotiation, RTL detection, and SSR utilities. Used as the foundation for @fluenti/vue and @fluenti/solid.
+> Framework-agnostic compile-time i18n core for JavaScript/TypeScript. Provides ICU MessageFormat parsing, compilation, interpolation, CLDR plural rules, date/number/relative-time formatters via Intl APIs, locale negotiation, RTL detection, and SSR utilities. Used as the foundation for @fluenti/vue, @fluenti/react, and @fluenti/solid.
+
+> **Note:** Application code should use framework packages (@fluenti/vue, @fluenti/react, @fluenti/solid)
+> with their compile-time t`` tagged templates, not core's runtime APIs directly.
+> Core provides the low-level engine — framework packages provide the recommended authoring surface.
 
 Install: `pnpm add @fluenti/core` (usually included automatically via framework packages).
 

@@ -38,6 +38,15 @@ Server entry (`@fluenti/react/server`):
 - `createServerI18n()` is the full runtime API on the server
 - `Trans / Plural / Select / DateTime / NumberFormat` remain runtime-capable without the build plugin
 
+## Preferred Usage (compile-time first)
+
+1. t\`\` tagged template — t\`Hello {name}\` (primary compile-time API)
+2. `<Trans>` / `<Plural>` / `<Select>` — rich text with inline markup
+3. `msg` tagged template — outside components (route meta, stores)
+4. `useI18n().t()` / `createServerI18n().t()` — runtime fallback for dynamic keys only
+
+❌ AVOID: `t('some.key')` as the default — this is a legacy i18n pattern.
+
 ## Lazy locale loading
 
 React uses `loadMessages(locale)` on `I18nProvider` for async locale chunks.
