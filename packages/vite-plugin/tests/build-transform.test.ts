@@ -420,3 +420,167 @@ describe('CLI ↔ vite-plugin hash consistency', () => {
     expect(staticResult.code).toContain(staticExportAccess(cliHash))
   })
 })
+
+describe('JSX component hash collection', () => {
+  it('collects hash from <Trans __id="...">', () => {
+    const code = `
+import { Trans } from '@fluenti/react'
+function App() {
+  return <Trans __id="greeting">Hello</Trans>
+}
+`
+    const result = transformForDynamicSplit(code)
+    expect(result.usedHashes.has('greeting')).toBe(true)
+  })
+
+  it('collects hash from <Trans id="...">', () => {
+    const code = `
+import { Trans } from '@fluenti/react'
+function App() {
+  return <Trans id="hero.title">Hello</Trans>
+}
+`
+    const result = transformForDynamicSplit(code)
+    expect(result.usedHashes.has('hero.title')).toBe(true)
+  })
+
+  it('collects hash from <Trans __message="...">', () => {
+    const code = `
+function App() {
+  return <Trans __message="Hello world">Hello world</Trans>
+}
+`
+    const result = transformForDynamicSplit(code)
+    const expectedHash = hashMessage('Hello world')
+    expect(result.usedHashes.has(expectedHash)).toBe(true)
+  })
+
+  it('collects hash from <Plural one="..." other="..." :value={count} />', () => {
+    const code = `
+import { Plural } from '@fluenti/react'
+function App({ count }) {
+  return <Plural value={count} one="one item" other="{count} items" />
+}
+`
+    const result = transformForDynamicSplit(code)
+    const expectedMessage = '{count, plural, one {one item} other {{count} items}}'
+    const expectedHash = hashMessage(expectedMessage)
+    expect(result.usedHashes.has(expectedHash)).toBe(true)
+  })
+
+  it('collects hash from <Plural id="..."> using explicit id', () => {
+    const code = `
+function App({ count }) {
+  return <Plural id="item.count" value={count} one="item" other="items" />
+}
+`
+    const result = transformForDynamicSplit(code)
+    expect(result.usedHashes.has('item.count')).toBe(true)
+  })
+
+  it('collects hash from <Select value={v} male="He" female="She" other="They" />', () => {
+    const code = `
+import { Select } from '@fluenti/react'
+function App({ gender }) {
+  return <Select value={gender} male="He" female="She" other="They" />
+}
+`
+    const result = transformForDynamicSplit(code)
+    const expectedMessage = '{value, select, female {She} male {He} other {They}}'
+    const expectedHash = hashMessage(expectedMessage)
+    expect(result.usedHashes.has(expectedHash)).toBe(true)
+  })
+
+  it('collects hash from <Select id="..."> using explicit id', () => {
+    const code = `
+function App({ gender }) {
+  return <Select id="pronoun.select" value={gender} male="He" female="She" other="They" />
+}
+`
+    const result = transformForDynamicSplit(code)
+    expect(result.usedHashes.has('pronoun.select')).toBe(true)
+  })
+})
+
+describe('transformForDynamicSplit — additional patterns', () => {
+  it('handles backtick template literal with cooked === null (falls back to raw)', () => {
+    // A template literal where cooked is null falls back to raw
+    const code = '$t(`Hello world`)'
+    const result = transformForDynamicSplit(code)
+    expect(result.needsCatalogImport).toBe(true)
+    expect(result.code).toContain(dynamicCatalogAccess(catalogIdForSource('Hello world')))
+  })
+
+  it('tracks t from getI18n + await pattern', () => {
+    const code = [
+      "import { getI18n } from '@fluenti/next'",
+      'async function Page() {',
+      '  const { t } = await getI18n()',
+      "  return t('Hello server')",
+      '}',
+    ].join('\n')
+    const result = transformForDynamicSplit(code)
+    expect(result.needsCatalogImport).toBe(true)
+    expect(result.code).toContain(dynamicCatalogAccess(catalogIdForSource('Hello server')))
+  })
+
+  it('handles StringLiteral imported name in import specifier', () => {
+    const code = [
+      "import { 'useI18n' as useI18n } from '@fluenti/react'",
+      'function Home() {',
+      '  const { t } = useI18n()',
+      "  return t('Hello')",
+      '}',
+    ].join('\n')
+    const result = transformForDynamicSplit(code)
+    expect(result.needsCatalogImport).toBe(true)
+    expect(result.code).toContain(dynamicCatalogAccess(catalogIdForSource('Hello')))
+  })
+})
+
+describe('extractCatalogId — descriptor object variants', () => {
+  it('uses hash of message when descriptor has only message property', () => {
+    const message = 'Hello from descriptor'
+    const code = `
+import { useI18n } from '@fluenti/react'
+function Home() {
+  const { t: __fluenti_t } = useI18n()
+  return __fluenti_t({ message: '${message}' })
+}
+`
+    const result = transformForDynamicSplit(code)
+    const expectedHash = hashMessage(message)
+    expect(result.usedHashes.has(expectedHash)).toBe(true)
+    expect(result.code).toContain(dynamicCatalogAccess(expectedHash))
+  })
+
+  it('uses id when descriptor has both id and message properties', () => {
+    const code = `
+import { useI18n } from '@fluenti/react'
+function Home() {
+  const { t: __fluenti_t } = useI18n()
+  return __fluenti_t({ id: 'explicit.id', message: 'Hello world' })
+}
+`
+    const result = transformForDynamicSplit(code)
+    expect(result.usedHashes.has('explicit.id')).toBe(true)
+    expect(result.code).toContain(dynamicCatalogAccess('explicit.id'))
+  })
+
+  it('includes context when hashing message with context', () => {
+    const message = 'Close'
+    const context = 'button'
+    const code = `
+import { useI18n } from '@fluenti/react'
+function Home() {
+  const { t: __fluenti_t } = useI18n()
+  return __fluenti_t({ message: '${message}', context: '${context}' })
+}
+`
+    const result = transformForDynamicSplit(code)
+    const expectedHash = hashMessage(message, context)
+    const noContextHash = hashMessage(message)
+    expect(result.usedHashes.has(expectedHash)).toBe(true)
+    expect(result.usedHashes.has(noContextHash)).toBe(false)
+  })
+})

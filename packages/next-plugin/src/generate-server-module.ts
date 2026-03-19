@@ -1,12 +1,13 @@
 import { writeFileSync, mkdirSync, existsSync } from 'node:fs'
 import { resolve, relative } from 'node:path'
+import { validateLocale } from '@fluenti/core'
 import type { ResolvedFluentConfig } from './types'
 
 /**
  * Generate the server module that provides:
  * - setLocale / getI18n
  * - Trans / Plural / Select / DateTime / NumberFormat (server components)
- * - FluentProvider (async server component for layouts)
+ * - I18nProvider (async server component for layouts)
  *
  * @returns Absolute path to the generated server module.
  */
@@ -24,6 +25,10 @@ export function generateServerModule(
 
   if (!existsSync(outDir)) {
     mkdirSync(outDir, { recursive: true })
+  }
+
+  for (const locale of config.locales) {
+    validateLocale(locale, 'next-plugin')
   }
 
   const compiledDirAbs = resolve(projectRoot, config.compiledDir)
@@ -104,7 +109,7 @@ export const setLocale = serverI18n.setLocale
 export const getI18n = serverI18n.getI18n
 export const t = (..._args) => {
   throw new Error(
-    "[fluenti] \`t\` imported from '@fluenti/next/__generated' is a compile-time API. " +
+    "[fluenti] \`t\` imported from '@fluenti/next' is a compile-time API. " +
       'Use it only with the Fluenti loader inside an async server scope.',
   )
 }
@@ -119,7 +124,7 @@ export const NumberFormat = serverI18n.NumberFormat
  *
  * Sets up both server-side (React.cache) and client-side (I18nProvider) i18n.
  */
-export async function FluentProvider({ locale, children }) {
+export async function I18nProvider({ locale, children }) {
   const activeLocale = locale ?? '${config.defaultLocale}'
 
   // 1. Initialize server-side i18n (React.cache scoped)
@@ -188,7 +193,7 @@ export declare function NumberFormat(props: {
   style?: string
 }): Promise<ReactElement>
 
-export declare function FluentProvider(props: {
+export declare function I18nProvider(props: {
   locale?: string
   children: ReactNode
 }): Promise<ReactElement>

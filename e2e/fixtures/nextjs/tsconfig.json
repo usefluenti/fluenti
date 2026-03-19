@@ -25,7 +25,7 @@
       "@/*": [
         "./src/*"
       ],
-      "@fluenti/next/__generated": [
+      "@fluenti/next": [
         "./node_modules/.fluenti/server"
       ]
     },

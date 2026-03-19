@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { existsSync } from 'node:fs'
 import { withFluenti } from '../src/with-fluenti'
 
 // Mock the generate-server-module to avoid filesystem operations
@@ -16,6 +17,15 @@ vi.mock('../src/read-config', () => ({
     serverModuleOutDir: 'node_modules/.fluenti',
   })),
 }))
+
+// Mock fs.existsSync for compiled dir check
+vi.mock('node:fs', async () => {
+  const actual = await vi.importActual<typeof import('node:fs')>('node:fs')
+  return {
+    ...actual,
+    existsSync: vi.fn(() => true),
+  }
+})
 
 describe('withFluenti', () => {
   beforeEach(() => {
@@ -85,7 +95,7 @@ describe('withFluenti', () => {
     }
 
     const result = webpackFn(webpackConfig, { isServer: true, dev: true }) as typeof webpackConfig
-    expect(result.resolve.alias['@fluenti/next/__generated']).toBe(
+    expect(result.resolve.alias['@fluenti/next$']).toBe(
       '/project/node_modules/.fluenti/server.js',
     )
   })
@@ -176,9 +186,85 @@ describe('withFluenti', () => {
     const result = webpackFn(webpackConfig, { isServer: true, dev: true }) as {
       resolve: { alias: Record<string, string> }
     }
-    expect(result.resolve.alias['@fluenti/next/__generated']).toBe(
+    expect(result.resolve.alias['@fluenti/next$']).toBe(
       '/project/node_modules/.fluenti/server.js',
     )
+  })
+
+  it('warns when compiled catalogs directory does not exist', () => {
+    vi.mocked(existsSync).mockReturnValue(false)
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+    withFluenti()({})
+
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('[fluenti] Compiled catalogs not found'),
+    )
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('npx fluenti extract && npx fluenti compile'),
+    )
+
+    warnSpy.mockRestore()
+    vi.mocked(existsSync).mockReturnValue(true)
+  })
+
+  it('does not warn when compiled catalogs directory exists', () => {
+    vi.mocked(existsSync).mockReturnValue(true)
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+    withFluenti()({})
+
+    expect(warnSpy).not.toHaveBeenCalledWith(
+      expect.stringContaining('[fluenti] Compiled catalogs not found'),
+    )
+
+    warnSpy.mockRestore()
+  })
+
+  it('injects fluenti-dev webpack plugin in dev mode', () => {
+    const wrapper = withFluenti()
+    const config = wrapper({})
+    const webpackFn = config['webpack'] as (cfg: unknown, opts: unknown) => unknown
+
+    const webpackConfig = {
+      module: { rules: [] as unknown[] },
+      resolve: { alias: {} as Record<string, string> },
+      plugins: [] as unknown[],
+    }
+
+    const result = webpackFn(webpackConfig, { isServer: true, dev: true }) as typeof webpackConfig
+    // Should have the fluenti-dev plugin injected
+    expect(result.plugins.length).toBe(1)
+    expect(result.plugins[0]).toHaveProperty('apply', expect.any(Function))
+  })
+
+  it('does not inject fluenti-dev plugin in production mode', () => {
+    const wrapper = withFluenti()
+    const config = wrapper({})
+    const webpackFn = config['webpack'] as (cfg: unknown, opts: unknown) => unknown
+
+    const webpackConfig = {
+      module: { rules: [] as unknown[] },
+      resolve: { alias: {} as Record<string, string> },
+    }
+
+    const result = webpackFn(webpackConfig, { isServer: true, dev: false }) as Record<string, unknown>
+    // plugins should not exist or be empty
+    expect(result['plugins']).toBeUndefined()
+  })
+
+  it('does not inject fluenti-dev plugin when devAutoCompile is false', () => {
+    const wrapper = withFluenti({ devAutoCompile: false } as never)
+    const config = wrapper({})
+    const webpackFn = config['webpack'] as (cfg: unknown, opts: unknown) => unknown
+
+    const webpackConfig = {
+      module: { rules: [] as unknown[] },
+      resolve: { alias: {} as Record<string, string> },
+    }
+
+    const result = webpackFn(webpackConfig, { isServer: true, dev: true }) as Record<string, unknown>
+    expect(result['plugins']).toBeUndefined()
   })
 
   it('isNextConfig detects objects with next-specific keys', () => {

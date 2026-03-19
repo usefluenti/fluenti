@@ -113,7 +113,7 @@ const DIRECT_T_SOURCES = new Set([
   '@fluenti/react',
   '@fluenti/vue',
   '@fluenti/solid',
-  '@fluenti/next/__generated',
+  '@fluenti/next',
 ])
 
 function classifyExpression(expr: string): string {
@@ -444,11 +444,6 @@ export function extractFromTsx(code: string, filename: string): ExtractedMessage
         isIdentifier(tagged.tag)
         && (tagged.tag.name === 't' || directImportTBindings.has(tagged.tag.name))
       ) {
-        // Skip tagged templates with interpolation — they are handled
-        // by the vite plugin scope transform at build time, not via PO.
-        if (tagged.quasi.expressions.length > 0) {
-          return
-        }
         const extracted = createExtractedMessage(
           extractTaggedTemplateMessage(code, tagged),
           filename,

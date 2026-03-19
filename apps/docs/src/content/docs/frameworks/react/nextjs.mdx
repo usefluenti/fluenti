@@ -1,6 +1,6 @@
 ---
 title: Next.js
-description: Using Fluenti with Next.js App Router — withFluenti, FluentProvider, RSC, and server actions
+description: Using Fluenti with Next.js App Router — withFluenti, I18nProvider, RSC, and server actions
 ---
 
 import { Aside } from '@astrojs/starlight/components'
@@ -24,9 +24,9 @@ export default withFluenti()({
 
 `withFluenti()` performs three things at build time:
 
-1. **Generates a server module** (`node_modules/.fluenti/server.js`) that bundles `createServerI18n`, message imports, and a `FluentProvider` component — aliased as `@fluenti/next/__generated`
+1. **Generates a server module** (`node_modules/.fluenti/server.js`) that bundles `createServerI18n`, message imports, and a `I18nProvider` component — aliased as `@fluenti/next`
 2. **Registers a webpack loader** that rewrites direct-import authoring APIs in supported client and server scopes
-3. **Adds a resolve alias** so `@fluenti/next/__generated` points to the generated module
+3. **Adds a resolve alias** so `@fluenti/next` points to the generated module
 
 The loader no longer injects globals or proxy accessors. Unbound `t` identifiers are left untouched.
 
@@ -54,25 +54,28 @@ export default withFluenti({
 | `numberFormats` | `NumberFormatOptions?` | — | Custom number format presets |
 | `fallbackChain` | `Record<string, string[]>?` | — | Locale fallback chains |
 
-### FluentProvider
+### I18nProvider
 
-`withFluenti()` generates a `FluentProvider` component that wraps both the client `I18nProvider` and server locale setup:
+`withFluenti()` generates a `I18nProvider` **async server component** that handles both server and client i18n setup. It initializes the server-side locale (via `React.cache`), loads messages, and wraps children in a client-side provider with statically imported catalogs — messages contain functions that can't cross the RSC serialization boundary, so this is handled automatically.
+
+<Aside type="note">
+`@fluenti/next/provider` also exports a `I18nProvider`, but that is a **client-only** wrapper without server-side initialization. Unless you have a custom server setup, always import from `@fluenti/next`.
+</Aside>
 
 ```tsx
 // src/app/layout.tsx
 import { cookies } from 'next/headers'
 import { getDirection } from '@fluenti/core'
-// @ts-expect-error — generated at build time by withFluenti()
-import { FluentProvider } from '@fluenti/next/__generated'
+import { I18nProvider } from '@fluenti/next'
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const locale = (await cookies()).get('locale')?.value ?? 'en'
   return (
     <html lang={locale} dir={getDirection(locale)}>
       <body>
-        <FluentProvider locale={locale}>
+        <I18nProvider locale={locale}>
           {children}
-        </FluentProvider>
+        </I18nProvider>
       </body>
     </html>
   )
@@ -80,7 +83,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 ```
 
 <Aside type="tip">
-  The `@fluenti/next/__generated` module is created at build time. Use `// @ts-expect-error` on the import until the first build generates it.
+  The `@fluenti/next` module is generated at build time by `withFluenti()`. Types are exported directly from the package, so no `@ts-expect-error` is needed.
 </Aside>
 
 ## Client Components
@@ -204,23 +207,22 @@ export const { setLocale, getI18n, Trans, Plural, DateTime, NumberFormat } = cre
 
 ## Hybrid: Client + Server in the same app
 
-You can use both patterns together. The `FluentProvider` in your layout handles both:
+You can use both patterns together. The `I18nProvider` in your layout handles both:
 
 ```tsx
 // app/layout.tsx
 import { cookies } from 'next/headers'
 import { getDirection } from '@fluenti/core'
-// @ts-expect-error — generated at build time
-import { FluentProvider } from '@fluenti/next/__generated'
+import { I18nProvider } from '@fluenti/next'
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const locale = (await cookies()).get('locale')?.value ?? 'en'
   return (
     <html lang={locale} dir={getDirection(locale)}>
       <body>
-        <FluentProvider locale={locale}>
+        <I18nProvider locale={locale}>
           {children}
-        </FluentProvider>
+        </I18nProvider>
       </body>
     </html>
   )

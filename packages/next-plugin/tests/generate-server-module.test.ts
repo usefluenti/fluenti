@@ -56,7 +56,7 @@ describe('generateServerModule', () => {
     expect(serverSource).toContain('export const getI18n = serverI18n.getI18n')
     expect(serverSource).toContain('export const Select = serverI18n.Select')
     expect(serverSource).not.toContain('__getServerI18n')
-    expect(serverSource).toContain('export async function FluentProvider')
+    expect(serverSource).toContain('export async function I18nProvider')
   })
 
   it('uses cookie-based resolveLocale by default', () => {

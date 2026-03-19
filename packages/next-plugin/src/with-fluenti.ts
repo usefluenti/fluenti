@@ -1,7 +1,9 @@
+import { existsSync } from 'node:fs'
 import { resolve, dirname } from 'node:path'
 import type { WithFluentConfig } from './types'
 import { resolveConfig } from './read-config'
 import { generateServerModule } from './generate-server-module'
+import { createDebouncedRunner } from '@fluenti/core'
 
 type NextConfig = Record<string, unknown>
 
@@ -56,6 +58,15 @@ function applyFluenti(
   const projectRoot = process.cwd()
   const resolved = resolveConfig(projectRoot, fluentConfig)
 
+  // Warn if compiled catalogs directory doesn't exist yet
+  const compiledDir = resolve(projectRoot, resolved.compiledDir)
+  if (!existsSync(compiledDir)) {
+    console.warn(
+      `\n[fluenti] Compiled catalogs not found at ${resolved.compiledDir}.\n` +
+      `Run: npx fluenti extract && npx fluenti compile\n`,
+    )
+  }
+
   // Generate server module for RSC
   const serverModulePath = generateServerModule(projectRoot, resolved)
 
@@ -90,7 +101,36 @@ function applyFluenti(
       // Add resolve alias so loader can import from generated server module
       config.resolve = config.resolve ?? {} as WebpackConfig['resolve']
       config.resolve.alias = config.resolve.alias ?? {}
-      config.resolve.alias['@fluenti/next/__generated'] = serverModulePath
+      config.resolve.alias['@fluenti/next$'] = serverModulePath
+
+      // Auto extract+compile in dev mode
+      const devAutoCompile = fluentConfig.devAutoCompile ?? true
+      if (options.dev && devAutoCompile) {
+        const debouncedRun = createDebouncedRunner({ cwd: projectRoot })
+
+        config.plugins = config.plugins ?? []
+        config.plugins.push({
+          apply(compiler: WebpackCompiler) {
+            let isFirstBuild = true
+            compiler.hooks.watchRun.tapAsync('fluenti-dev', (_compiler: WebpackCompiler, callback: () => void) => {
+              if (isFirstBuild) {
+                isFirstBuild = false
+                debouncedRun()
+              }
+              const modifiedFiles = _compiler.modifiedFiles
+              if (modifiedFiles) {
+                const hasSourceChange = [...modifiedFiles].some((f: string) =>
+                  /\.[jt]sx?$/.test(f) && !f.includes('node_modules') && !f.includes('.next'),
+                )
+                if (hasSourceChange) {
+                  debouncedRun()
+                }
+              }
+              callback()
+            })
+          },
+        })
+      }
 
       // Call user's webpack config if provided
       if (existingWebpack) {
@@ -115,9 +155,19 @@ interface WebpackConfig {
   resolve: {
     alias?: Record<string, string>
   }
+  plugins?: Array<{ apply(compiler: WebpackCompiler): void }>
 }
 
 interface WebpackOptions {
   isServer: boolean
   dev: boolean
+}
+
+interface WebpackCompiler {
+  hooks: {
+    watchRun: {
+      tapAsync(name: string, cb: (compiler: WebpackCompiler, callback: () => void) => void): void
+    }
+  }
+  modifiedFiles?: Set<string>
 }

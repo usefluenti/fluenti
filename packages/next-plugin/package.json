@@ -2,7 +2,7 @@
   "name": "@fluenti/next",
   "version": "0.1.2",
   "type": "module",
-  "description": "Next.js plugin for Fluenti — withFluenti, FluentProvider, t`` transforms for App Router and Pages Router",
+  "description": "Next.js plugin for Fluenti — withFluenti, I18nProvider, t`` transforms for App Router and Pages Router",
   "homepage": "https://fluenti.dev",
   "repository": {
     "type": "git",
@@ -60,14 +60,10 @@
         "types": "./dist/provider.d.ts",
         "default": "./dist/provider.cjs"
       }
-    },
-    "./client": {
-      "types": "./client.d.ts"
     }
   },
   "files": [
-    "dist",
-    "client.d.ts"
+    "dist"
   ],
   "scripts": {
     "build": "vite build",

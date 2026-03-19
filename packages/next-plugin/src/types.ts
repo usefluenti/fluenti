@@ -21,7 +21,7 @@ export interface WithFluentConfig {
 
   /**
    * Path to a module that default-exports an async function returning the locale string.
-   * Used in contexts where FluentProvider doesn't run (e.g. Server Actions).
+   * Used in contexts where I18nProvider doesn't run (e.g. Server Actions).
    *
    * The module must `export default` a function `() => string | Promise<string>`.
    *
@@ -57,9 +57,9 @@ export interface ResolvedFluentConfig {
 }
 
 /**
- * Props for the FluentProvider server component.
+ * Props for the I18nProvider server component.
  */
-export interface FluentProviderProps {
+export interface I18nProviderProps {
   /** Active locale. If omitted, uses defaultLocale from config. */
   locale?: string
   children: React.ReactNode

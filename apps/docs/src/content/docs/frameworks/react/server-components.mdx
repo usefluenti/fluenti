@@ -252,8 +252,7 @@ In the layout, the same resolver logic determines the locale for page renders:
 // app/layout.tsx
 import { cookies } from 'next/headers'
 import { getDirection } from '@fluenti/core'
-// @ts-expect-error — generated at build time
-import { FluentProvider } from '@fluenti/next/__generated'
+import { I18nProvider } from '@fluenti/next'
 import resolveLocale from '@/lib/resolve-locale'
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
@@ -261,7 +260,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang={locale} dir={getDirection(locale)}>
       <body>
-        <FluentProvider locale={locale}>{children}</FluentProvider>
+        <I18nProvider locale={locale}>{children}</I18nProvider>
       </body>
     </html>
   )
@@ -332,7 +331,7 @@ export function LocaleSwitcher() {
 ```
 
 <Aside type="caution">
-  **`router.refresh()` is required.** After changing the locale, the server layout must re-render to update `<html lang>` and the server-side `FluentProvider`. Without `refresh()`, only client components update.
+  **`router.refresh()` is required.** After changing the locale, the server layout must re-render to update `<html lang>` and the server-side `I18nProvider`. Without `refresh()`, only client components update.
 </Aside>
 
 ### Why this works across all contexts
@@ -342,7 +341,7 @@ export function LocaleSwitcher() {
 | Page render (layout) | `resolveLocale()` called directly in layout |
 | Server Component (RSC) | Reads from `React.cache()` store set by layout |
 | Server Action | `resolveLocale()` called automatically by `withFluenti()` (layout doesn't run) |
-| Client Component | Reads from `I18nProvider` context (set by `FluentProvider`) |
+| Client Component | Reads from `I18nProvider` context (set by `I18nProvider`) |
 
 ## Streaming & Suspense
 

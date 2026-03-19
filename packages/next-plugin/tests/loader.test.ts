@@ -33,7 +33,7 @@ describe('fluentLoader', () => {
   it('optimizes server tagged templates with await getI18n()', () => {
     const ctx = createLoaderContext('/project/src/app/page.tsx')
     const source = [
-      "import { getI18n } from '@fluenti/next/__generated'",
+      "import { getI18n } from '@fluenti/next'",
       'export default async function Page() {',
       '  const { t } = await getI18n()',
       '  return t`Welcome`',
@@ -66,18 +66,18 @@ describe('fluentLoader', () => {
   it('supports direct-import t from the generated server module in async scopes', () => {
     const ctx = createLoaderContext('/project/src/app/page.tsx')
     const source = [
-      "import { t } from '@fluenti/next/__generated'",
+      "import { t } from '@fluenti/next'",
       'export default async function Page() {',
       '  return <h1>{t`Welcome ${name}`}</h1>',
       '}',
     ].join('\n')
 
     const result = fluentLoader.call(ctx as never, source)
-    expect(result).toContain("import { getI18n } from '@fluenti/next/__generated'")
+    expect(result).toContain("import { getI18n } from '@fluenti/next'")
     expect(result).toMatch(/const __fluenti(?:_server)?_get_i18n = async \(\) =>/)
     expect(result).toContain('await getI18n()')
     expect(result).toMatch(/\(await __fluenti(?:_server)?_get_i18n\(\)\)\.t\(\{ id:/)
-    expect(result).not.toContain("import { t } from '@fluenti/next/__generated'")
+    expect(result).not.toContain("import { t } from '@fluenti/next'")
   })
 
   it('supports direct-import t from @fluenti/react in async server scopes', () => {
@@ -90,7 +90,7 @@ describe('fluentLoader', () => {
     ].join('\n')
 
     const result = fluentLoader.call(ctx as never, source)
-    expect(result).toContain("import { getI18n } from '@fluenti/next/__generated'")
+    expect(result).toContain("import { getI18n } from '@fluenti/next'")
     expect(result).toMatch(/const __fluenti(?:_server)?_get_i18n = async \(\) =>/)
     expect(result).toContain('await getI18n()')
     expect(result).toMatch(/\(await __fluenti(?:_server)?_get_i18n\(\)\)\.t\(\{ id:/)
@@ -115,20 +115,22 @@ describe('fluentLoader', () => {
     ].join('\n')
 
     const result = fluentLoader.call(ctx as never, source)
-    expect(result).toContain("import { Trans, Plural, Select, DateTime, NumberFormat } from '@fluenti/next/__generated'")
+    expect(result).toContain("import { Trans, Plural, Select, DateTime, NumberFormat } from '@fluenti/next'")
     expect(result).not.toContain("from '@fluenti/react'")
   })
 
-  it('throws for direct-import t in sync server scopes', () => {
+  it('auto-promotes sync server component to async when using direct-import t', () => {
     const ctx = createLoaderContext('/project/src/app/page.tsx')
     const source = [
-      "import { t } from '@fluenti/next/__generated'",
+      "import { t } from '@fluenti/next'",
       'export default function Page() {',
       '  return <h1>{t`Welcome`}</h1>',
       '}',
     ].join('\n')
 
-    expect(() => fluentLoader.call(ctx as never, source)).toThrow(/async/i)
+    const result = fluentLoader.call(ctx as never, source)
+    expect(result).toContain('async function Page()')
+    expect(result).toContain('__fluenti_get_i18n')
   })
 
   it('keeps direct t() calls as runtime code', () => {
@@ -162,13 +164,13 @@ describe('fluentLoader', () => {
     const ctx = createLoaderContext('/project/src/app/page.tsx')
     const source = [
       "import { Trans } from '@fluenti/react'",
-      "import { Trans as ServerTrans } from '@fluenti/next/__generated'",
+      "import { Trans as ServerTrans } from '@fluenti/next'",
       'export default async function Page() {',
       '  return <Trans>Hello</Trans>',
       '}',
     ].join('\n')
 
-    expect(() => fluentLoader.call(ctx as never, source)).toThrow(/both '@fluenti\/react' and '@fluenti\/next\/__generated'/)
+    expect(() => fluentLoader.call(ctx as never, source)).toThrow(/both '@fluenti\/react' and '@fluenti\/next'/)
   })
 
   it('does not rewrite unbound tagged templates or method calls', () => {

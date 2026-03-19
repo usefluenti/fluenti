@@ -1,5 +1,5 @@
 import { t } from '@fluenti/react'
-import { setLocale, getI18n } from '@fluenti/next/__generated'
+import { setLocale, getI18n } from '@fluenti/next'
 
 export default async function RSCPage({
   searchParams,

@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { t } from '@fluenti/react'
-import { getI18n } from '@fluenti/next/__generated'
+import { getI18n } from '@fluenti/next'
 
 export async function generateMetadata(): Promise<Metadata> {
   return {

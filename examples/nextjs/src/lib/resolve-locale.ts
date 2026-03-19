@@ -2,7 +2,7 @@ import { cookies } from 'next/headers'
 
 /**
  * Custom locale resolver for Server Actions and other contexts
- * where FluentProvider doesn't run.
+ * where I18nProvider doesn't run.
  *
  * This example reads from a cookie, but you could also:
  * - Query a database for the user's locale preference
