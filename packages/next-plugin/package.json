@@ -1,6 +1,6 @@
 {
   "name": "@fluenti/next",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "description": "Next.js plugin for Fluenti — withFluenti, FluentProvider, t`` transforms for App Router and Pages Router",
   "homepage": "https://fluenti.dev",
