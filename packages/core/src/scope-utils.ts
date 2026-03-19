@@ -21,7 +21,9 @@ export function classifyExpression(expr: string): string {
   return ''
 }
 
-const require = createRequire(import.meta.url)
+const require = createRequire(
+  typeof __filename !== 'undefined' ? __filename : import.meta.url,
+)
 let generateCode:
   | ((ast: unknown, options?: unknown) => { code: string })
   | null = null
