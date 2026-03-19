@@ -14,6 +14,7 @@ export default defineConfig({
       external: [/^node:/],
     },
     sourcemap: true,
+    minify: false,
     emptyOutDir: true,
   },
   plugins: [
