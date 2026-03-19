@@ -13,8 +13,13 @@ export function readJsonCatalog(content: string): CatalogData {
         context: typeof e['context'] === 'string' ? e['context'] : undefined,
         comment: typeof e['comment'] === 'string' ? e['comment'] : undefined,
         translation: typeof e['translation'] === 'string' ? e['translation'] : undefined,
-        origin: typeof e['origin'] === 'string' ? e['origin'] : undefined,
+        origin: typeof e['origin'] === 'string'
+          ? e['origin']
+          : Array.isArray(e['origin']) && (e['origin'] as unknown[]).every((v) => typeof v === 'string')
+            ? (e['origin'] as string[])
+            : undefined,
         obsolete: typeof e['obsolete'] === 'boolean' ? e['obsolete'] : undefined,
+        fuzzy: typeof e['fuzzy'] === 'boolean' ? e['fuzzy'] : undefined,
       }
     }
   }
@@ -34,6 +39,7 @@ export function writeJsonCatalog(catalog: CatalogData): string {
     if (entry.translation !== undefined) obj['translation'] = entry.translation
     if (entry.origin !== undefined) obj['origin'] = entry.origin
     if (entry.obsolete) obj['obsolete'] = true
+    if (entry.fuzzy) obj['fuzzy'] = true
     output[id] = obj
   }
 

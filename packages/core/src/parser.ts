@@ -1,5 +1,9 @@
 import type { ASTNode, FunctionNode, PluralNode, SelectNode, TextNode, VariableNode } from './types'
 
+const WS_REGEX = /\s/
+const IDENT_REGEX = /[a-zA-Z0-9_]/
+const DIGIT_REGEX = /[0-9]/
+
 /**
  * Error thrown when parsing an ICU MessageFormat string fails.
  * Includes offset and source excerpt for Rust-style diagnostics.
@@ -31,7 +35,7 @@ export function parse(message: string): ASTNode[] {
   let pluralDepth = 0
 
   function skipWhitespace(): void {
-    while (pos < len && /\s/.test(message[pos]!)) {
+    while (pos < len && WS_REGEX.test(message[pos]!)) {
       pos++
     }
   }
@@ -42,7 +46,7 @@ export function parse(message: string): ASTNode[] {
 
   function readIdentifier(): string {
     const start = pos
-    while (pos < len && /[a-zA-Z0-9_]/.test(message[pos]!)) {
+    while (pos < len && IDENT_REGEX.test(message[pos]!)) {
       pos++
     }
     if (pos === start) {
@@ -153,7 +157,7 @@ export function parse(message: string): ASTNode[] {
               pos += 7
               skipWhitespace()
               const offStart = pos
-              while (pos < len && /[0-9]/.test(message[pos]!)) {
+              while (pos < len && DIGIT_REGEX.test(message[pos]!)) {
                 pos++
               }
               offset = parseInt(message.slice(offStart, pos), 10)
@@ -266,7 +270,7 @@ export function parse(message: string): ASTNode[] {
       if (message[pos] === '=') {
         pos++ // skip =
         const numStart = pos
-        while (pos < len && /[0-9]/.test(message[pos]!)) {
+        while (pos < len && DIGIT_REGEX.test(message[pos]!)) {
           pos++
         }
         key = '=' + message.slice(numStart, pos)

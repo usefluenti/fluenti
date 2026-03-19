@@ -1,4 +1,4 @@
-import { useContext } from 'react'
+import { memo, useContext } from 'react'
 import { I18nContext } from '../context'
 
 export interface NumberProps {
@@ -16,10 +16,10 @@ export interface NumberProps {
  * <Number value={1234.56} style="currency" />
  * ```
  */
-export function NumberFormat({ value, style }: NumberProps) {
+export const NumberFormat = memo(function NumberFormat({ value, style }: NumberProps) {
   const ctx = useContext(I18nContext)
   if (!ctx) {
     throw new Error('[fluenti] <Number> must be used within an <I18nProvider>')
   }
   return <>{ctx.i18n.n(value, style)}</>
-}
+})

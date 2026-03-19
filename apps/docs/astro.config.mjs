@@ -58,6 +58,7 @@ export default defineConfig({
             { label: 'Introduction', slug: 'start/introduction' },
             { label: 'How It Works', slug: 'start/how-it-works' },
             { label: 'Quick Start', slug: 'start/quick-start' },
+            { label: 'Tutorial', slug: 'start/tutorial' },
             {
               label: 'Framework Quick Starts',
               items: [
@@ -131,6 +132,7 @@ export default defineConfig({
             { label: 'SSR & Hydration', slug: 'advanced/ssr-hydration' },
             { label: 'Fallback Chains', slug: 'advanced/fallback-chains' },
             { label: 'Best Practices', slug: 'advanced/best-practices' },
+            { label: 'Troubleshooting', slug: 'advanced/troubleshooting' },
           ],
         },
         {

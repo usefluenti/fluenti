@@ -107,6 +107,21 @@ Fluenti's pipeline turns your source text into optimized, per-locale bundles at 
 
 </Steps>
 
+## Performance
+
+Fluenti's compile-time architecture provides fundamental performance advantages over runtime i18n libraries:
+
+| Aspect | Runtime libraries | Fluenti |
+|--------|------------------|---------|
+| **Bundle size** | Ship ICU parser + runtime (15-40 KB) | No parser shipped — compiled messages are plain functions |
+| **Parse cost** | Parse every message on render | Zero parse cost — messages are pre-compiled strings/functions |
+| **Rich text** | Runtime DOM manipulation or `v-html` | Compiled at build time into static render instructions |
+| **Code splitting** | Manual per-route setup | Built-in `splitting: 'dynamic'` with automatic chunk loading |
+
+The `v-t` directive in Vue is a `nodeTransform` — it rewrites your template during compilation, so the translated string appears directly in the render function. There is literally nothing left to execute at runtime for static translations.
+
+For dynamic messages (with variables, plurals, or selects), Fluenti compiles ICU patterns into small functions that perform string concatenation — no parsing, no AST traversal, just direct value interpolation.
+
 ## Packages
 
 | Package | Description |

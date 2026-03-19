@@ -93,6 +93,49 @@ function formatError(code: number) {
 }
 ```
 
+## Type-Safe Messages
+
+`fluenti compile` generates a `messages.d.ts` file alongside the compiled catalogs, providing full type safety for your translations.
+
+### What gets generated
+
+```typescript
+// src/locales/compiled/messages.d.ts (auto-generated)
+export type MessageId =
+  | 'abc123'  // "Hello {name}!"
+  | 'def456'  // "{count, plural, one {# item} other {# items}}"
+  | 'ghi789'  // "Welcome back"
+
+export interface MessageValues {
+  abc123: { name: string | number }
+  def456: { count: number }
+  ghi789: Record<string, never>
+}
+```
+
+### Variable type inference
+
+The compiler infers variable types from ICU message syntax:
+
+| ICU pattern | Inferred type |
+|---|---|
+| `{name}` | `string \| number` |
+| `{count, plural, ...}` | `number` |
+| `{count, selectordinal, ...}` | `number` |
+| `{gender, select, male {...} female {...} other {...}}` | `'male' \| 'female' \| 'other'` |
+
+### IDE autocompletion
+
+Add the generated declarations to your `tsconfig.json`:
+
+```json
+{
+  "include": ["src", "src/locales/compiled/messages.d.ts"]
+}
+```
+
+Your editor will autocomplete message IDs and flag incorrect variable types at compile time.
+
 ## Message Authoring
 
 ### Use natural language as keys
@@ -323,9 +366,11 @@ zh-CN     142      97           68%
 - name: Compile translations
   run: |
     pnpm fluenti compile
-    pnpm fluenti stats --strict --threshold 90
+    pnpm fluenti stats
 ```
 </Aside>
+
+Set `strictThreshold: 90` in `fluenti.config.ts` to enforce a minimum translation percentage during `fluenti stats`.
 
 ### Integrate with translation platforms
 

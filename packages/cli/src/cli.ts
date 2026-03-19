@@ -4,16 +4,17 @@ import consola from 'consola'
 import fg from 'fast-glob'
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs'
 import { resolve, dirname, extname } from 'node:path'
-import { extractFromVue } from './vue-extractor'
 import { extractFromTsx } from './tsx-extractor'
 import { updateCatalog } from './catalog'
 import type { CatalogData } from './catalog'
 import { readJsonCatalog, writeJsonCatalog } from './json-format'
 import { readPoCatalog, writePoCatalog } from './po-format'
-import { compileCatalog, compileIndex, collectAllIds } from './compile'
+import { compileCatalog, compileIndex, collectAllIds, compileTypeDeclaration } from './compile'
+import { formatStatsRow } from './stats-format'
 import { translateCatalog } from './translate'
 import type { AIProvider } from './translate'
 import { runMigrate } from './migrate'
+import { runInit } from './init'
 import type { ExtractedMessage, FluentiConfig } from '@fluenti/core'
 
 const defaultConfig: FluentiConfig = {
@@ -22,7 +23,7 @@ const defaultConfig: FluentiConfig = {
   catalogDir: './locales',
   format: 'po',
   include: ['./src/**/*.{vue,tsx,jsx,ts,js}'],
-  compileOutDir: './locales/compiled',
+  compileOutDir: './src/locales/compiled',
 }
 
 async function loadConfig(configPath?: string): Promise<FluentiConfig> {
@@ -63,9 +64,12 @@ function writeCatalog(filePath: string, catalog: CatalogData, format: 'json' | '
   writeFileSync(filePath, content, 'utf-8')
 }
 
-function extractFromFile(filePath: string, code: string): ExtractedMessage[] {
+async function extractFromFile(filePath: string, code: string): Promise<ExtractedMessage[]> {
   const ext = extname(filePath)
-  if (ext === '.vue') return extractFromVue(code, filePath)
+  if (ext === '.vue') {
+    const { extractFromVue } = await import('./vue-extractor')
+    return extractFromVue(code, filePath)
+  }
   return extractFromTsx(code, filePath)
 }
 
@@ -74,6 +78,7 @@ const extract = defineCommand({
   args: {
     config: { type: 'string', description: 'Path to config file' },
     clean: { type: 'boolean', description: 'Remove obsolete entries instead of marking them', default: false },
+    'no-fuzzy': { type: 'boolean', description: 'Strip fuzzy flags from all entries', default: false },
   },
   async run({ args }) {
     const config = await loadConfig(args.config)
@@ -84,7 +89,7 @@ const extract = defineCommand({
 
     for (const file of files) {
       const code = readFileSync(file, 'utf-8')
-      const messages = extractFromFile(file, code)
+      const messages = await extractFromFile(file, code)
       allMessages.push(...messages)
     }
 
@@ -92,11 +97,12 @@ const extract = defineCommand({
 
     const ext = config.format === 'json' ? '.json' : '.po'
     const clean = args.clean ?? false
+    const stripFuzzy = args['no-fuzzy'] ?? false
 
     for (const locale of config.locales) {
       const catalogPath = resolve(config.catalogDir, `${locale}${ext}`)
       const existing = readCatalog(catalogPath, config.format)
-      const { catalog, result } = updateCatalog(existing, allMessages)
+      const { catalog, result } = updateCatalog(existing, allMessages, { stripFuzzy })
 
       const finalCatalog = clean
         ? Object.fromEntries(Object.entries(catalog).filter(([, entry]) => !entry.obsolete))
@@ -118,6 +124,7 @@ const compile = defineCommand({
   meta: { name: 'compile', description: 'Compile message catalogs to JS modules' },
   args: {
     config: { type: 'string', description: 'Path to config file' },
+    'skip-fuzzy': { type: 'boolean', description: 'Exclude fuzzy entries from compilation', default: false },
   },
   async run({ args }) {
     const config = await loadConfig(args.config)
@@ -135,12 +142,15 @@ const compile = defineCommand({
     const allIds = collectAllIds(allCatalogs)
     consola.info(`Compiling ${allIds.length} messages across ${config.locales.length} locales`)
 
+    const skipFuzzy = args['skip-fuzzy'] ?? false
+
     for (const locale of config.locales) {
       const { code, stats } = compileCatalog(
         allCatalogs[locale]!,
         locale,
         allIds,
         config.sourceLocale,
+        { skipFuzzy },
       )
       const outPath = resolve(config.compileOutDir, `${locale}.js`)
       writeFileSync(outPath, code, 'utf-8')
@@ -162,6 +172,12 @@ const compile = defineCommand({
     const indexPath = resolve(config.compileOutDir, 'index.js')
     writeFileSync(indexPath, indexCode, 'utf-8')
     consola.success(`Generated index → ${indexPath}`)
+
+    // Generate type declarations
+    const typesCode = compileTypeDeclaration(allIds, allCatalogs, config.sourceLocale)
+    const typesPath = resolve(config.compileOutDir, 'messages.d.ts')
+    writeFileSync(typesPath, typesCode, 'utf-8')
+    consola.success(`Generated types → ${typesPath}`)
   },
 })
 
@@ -188,11 +204,9 @@ const stats = defineCommand({
 
     consola.log('')
     consola.log('  Locale  │ Total │ Translated │ Progress')
-    consola.log('  ────────┼───────┼────────────┼─────────')
+    consola.log('  ────────┼───────┼────────────┼─────────────────────────────')
     for (const row of rows) {
-      consola.log(
-        `  ${row.locale.padEnd(8)}│ ${String(row.total).padStart(5)} │ ${String(row.translated).padStart(10)} │ ${row.pct}`,
-      )
+      consola.log(formatStatsRow(row.locale, row.total, row.translated))
     }
     consola.log('')
   },
@@ -278,13 +292,21 @@ const migrate = defineCommand({
   },
 })
 
+const init = defineCommand({
+  meta: { name: 'init', description: 'Initialize Fluenti in your project' },
+  args: {},
+  async run() {
+    await runInit({ cwd: process.cwd() })
+  },
+})
+
 const main = defineCommand({
   meta: {
     name: 'fluenti',
     version: '0.0.1',
     description: 'Compile-time i18n for modern frameworks',
   },
-  subCommands: { extract, compile, stats, translate, migrate },
+  subCommands: { init, extract, compile, stats, translate, migrate },
 })
 
 runMain(main)

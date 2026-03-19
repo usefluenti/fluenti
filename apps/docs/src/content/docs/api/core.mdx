@@ -130,25 +130,308 @@ import { parse } from '@fluenti/core'
 const ast = parse('{count, plural, one {# item} other {# items}}')
 ```
 
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `message` | `string` | ICU MessageFormat string |
+
+**Returns:** `ASTNode[]` — an array of AST nodes.
+
+Node types:
+- **`text`** — Static text segment
+- **`argument`** — Simple `{variable}` placeholder
+- **`plural`** — `{var, plural, ...}` with `one`, `other`, etc. branches
+- **`select`** — `{var, select, ...}` with named branches
+- **`selectordinal`** — `{var, selectordinal, ...}` for ordinal plurals
+- **`function`** — `{var, functionName, style}` for number/date/custom formatters
+- **`octothorpe`** — The `#` placeholder inside plural/selectordinal branches
+
 ## `compile(ast, locale?)`
 
 Compile an AST into a `CompiledMessage`.
 
+```typescript
+import { parse, compile } from '@fluenti/core'
+
+const ast = parse('Hello {name}!')
+const fn = compile(ast)
+// fn = (values) => `Hello ${values.name}!`
+```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `ast` | `ASTNode[]` | Parsed AST from `parse()` |
+| `locale` | `string?` | Locale for plural rules (default: `'en'`) |
+
+**Returns:** `CompiledMessage` — either a `string` (for static messages) or `(values?: Record<string, unknown>) => string` (for dynamic messages with placeholders).
+
 ## `interpolate(message, values?, locale?)`
 
-Parse, compile, and execute a message string in one call. Results are cached.
+Parse, compile, and execute a message string in one call. Results are cached internally — repeated calls with the same message string skip parsing and compilation.
+
+```typescript
+import { interpolate } from '@fluenti/core'
+
+interpolate('{count, plural, one {# item} other {# items}}', { count: 5 }, 'en')
+// → "5 items"
+
+// Second call with same message string uses cached compiled function
+interpolate('{count, plural, one {# item} other {# items}}', { count: 1 }, 'en')
+// → "1 item"
+```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `message` | `string` | ICU MessageFormat string |
+| `values` | `Record<string, unknown>?` | Interpolation values |
+| `locale` | `string?` | Locale for plural rules (default: `'en'`) |
+
+**Returns:** `string`
 
 ## `msg`
 
-Tagged template for lazy message descriptors:
+Tagged template for lazy message descriptors. Use `msg` to define translatable messages outside of component render functions — in route metadata, constants, stores, or configuration.
 
 ```typescript
 import { msg } from '@fluenti/core'
-const desc = msg`Hello ${name}` // { id: 'abc123', message: 'Hello {0}' }
+
+// Creates a descriptor — does NOT translate immediately
+const desc = msg`Hello ${name}`
+// { id: 'abc123', message: 'Hello {0}' }
+
+// With context for disambiguation
+const desc2 = msg({ message: 'Save', context: 'button label' })
+// { id: 'def456', message: 'Save', context: 'button label' }
+```
+
+A descriptor is a plain object with `id` and `message` properties. Pass it to `t()` at render time to get the translated string:
+
+```typescript
+const { t } = useI18n()
+t(desc) // → translated string
+```
+
+### `resolveDescriptorId(message, context?)`
+
+Compute the deterministic hash ID for a message string, with optional context for disambiguation:
+
+```typescript
+import { resolveDescriptorId } from '@fluenti/core'
+const id = resolveDescriptorId('Hello {name}', 'greeting')
 ```
 
 ## SSR Utilities
 
-- `detectLocale(options)` — Detect locale from request context
-- `getSSRLocaleScript(locale)` — Generate script tag for hydration
-- `getHydratedLocale(fallback?)` — Read locale on client
+- `detectLocale(options)` — Detect locale from request context (cookie, query, path, Accept-Language header)
+- `getSSRLocaleScript(locale)` — Generate a `<script>` tag that sets `window.__FLUENTI_LOCALE__` for hydration
+- `getHydratedLocale(fallback?)` — Read the locale set by the SSR script on the client side
+- `getDirection(locale)` — Returns `'ltr'` or `'rtl'` for the given locale
+
+## Locale Utilities
+
+### `negotiateLocale(requested, available, fallback?)`
+
+Match user-preferred locale(s) against available locales. Matching strategy: exact match → language + region → language-only.
+
+```typescript
+import { negotiateLocale } from '@fluenti/core'
+
+negotiateLocale('zh-TW', ['en', 'zh-CN', 'ja'])       // 'zh-CN' (language match)
+negotiateLocale(['fr', 'en'], ['en', 'de'])             // 'en' (second preference)
+negotiateLocale('ko', ['en', 'ja'], 'en')               // 'en' (fallback)
+```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `requested` | `string \| string[]` | Single locale or ordered list of preferred locales |
+| `available` | `string[]` | List of supported locales |
+| `fallback` | `string?` | Fallback locale if no match is found |
+
+**Returns:** `string` — best matching locale.
+
+### `parseLocale(locale)`
+
+Parse a BCP 47 locale string into its components.
+
+```typescript
+import { parseLocale } from '@fluenti/core'
+
+parseLocale('en')         // { language: 'en' }
+parseLocale('en-US')      // { language: 'en', region: 'US' }
+parseLocale('zh-Hans-CN') // { language: 'zh', script: 'Hans', region: 'CN' }
+```
+
+**Returns:** `ParsedLocale` — `{ language: string, script?: string, region?: string }`
+
+### `isRTL(locale)`
+
+Check whether a locale uses a right-to-left script. Covers Arabic, Hebrew, Persian, Urdu, Pashto, Sindhi, Uyghur, Kurdish (Sorani), Dhivehi, Yiddish, and N'Ko.
+
+```typescript
+import { isRTL } from '@fluenti/core'
+
+isRTL('ar')    // true
+isRTL('ar-SA') // true
+isRTL('en')    // false
+```
+
+### `validateLocale(locale, context)`
+
+Validate that a locale string is a non-empty string. Throws an error if invalid.
+
+```typescript
+import { validateLocale } from '@fluenti/core'
+
+validateLocale('en', 'myFunction')  // ok
+validateLocale('', 'myFunction')    // Error: [fluenti] myFunction: locale must be a non-empty string, got ""
+```
+
+## Message ID Utilities
+
+### `hashMessage(message, context?)`
+
+Compute the deterministic FNV-1a hash ID for a message string with optional context.
+
+```typescript
+import { hashMessage } from '@fluenti/core'
+
+const id = hashMessage('Hello {name}')
+const idWithCtx = hashMessage('Save', 'button label')
+```
+
+### `buildICUMessage(strings, expressions)`
+
+Build an ICU message string from tagged template parts. Used internally by `` t`...` `` and `` msg`...` ``.
+
+```typescript
+import { buildICUMessage } from '@fluenti/core'
+
+// Equivalent to what t`Hello ${name}, you have ${count} items` produces:
+const icu = buildICUMessage(['Hello ', ', you have ', ' items'], ['Alice', 5])
+// → 'Hello {arg0}, you have {arg1} items'
+```
+
+## Formatting
+
+### `formatDate(value, locale, style?, styles?)`
+
+Format a date according to locale and an optional named style. Built-in styles: `default`, `short`, `long`, `time`, `datetime`, `relative`.
+
+```typescript
+import { formatDate } from '@fluenti/core'
+
+formatDate(new Date(), 'en')                // default format
+formatDate(new Date(), 'en', 'long')        // "Thursday, March 19, 2026"
+formatDate(new Date(), 'en', 'relative')    // "now" (delegates to formatRelativeTime)
+```
+
+### `formatNumber(value, locale, style?, styles?)`
+
+Format a number according to locale and an optional named style. Built-in styles: `default`, `currency`, `percent`, `decimal`.
+
+```typescript
+import { formatNumber } from '@fluenti/core'
+
+formatNumber(1234.5, 'en')                  // "1,234.5"
+formatNumber(0.75, 'en', 'percent')         // "75%"
+formatNumber(99.99, 'en', 'currency')       // "$99.99"
+```
+
+### `formatRelativeTime(value, locale)`
+
+Format a date as a relative time string (e.g. "2 days ago", "in 3 hours"). Automatically selects the best unit. Uses `Intl.RelativeTimeFormat`.
+
+```typescript
+import { formatRelativeTime } from '@fluenti/core'
+
+const yesterday = Date.now() - 86400000
+formatRelativeTime(yesterday, 'en') // "yesterday"
+```
+
+### Formatting Constants
+
+```typescript
+import {
+  DEFAULT_DATE_FORMATS,    // Built-in date format styles
+  DEFAULT_NUMBER_FORMATS,  // Built-in number format styles
+  LOCALE_CURRENCY_MAP,     // Locale → default currency code mapping
+} from '@fluenti/core'
+```
+
+## `Catalog`
+
+In-memory catalog manager for compiled messages. Supports namespace-aware message IDs and locale enumeration.
+
+```typescript
+import { Catalog } from '@fluenti/core'
+
+const catalog = new Catalog()
+catalog.set('en', { greeting: 'Hello!' })
+catalog.get('en', 'greeting') // 'Hello!'
+catalog.has('en', 'greeting') // true
+catalog.getLocales()          // ['en']
+```
+
+| Method | Description |
+|--------|-------------|
+| `get(locale, id)` | Retrieve a compiled message. Returns `undefined` if not found |
+| `set(locale, messages)` | Load messages for a locale (merges with existing) |
+| `has(locale, id)` | Check if a message exists |
+| `getLocales()` | List all locales with loaded messages |
+
+## `FluentParseError`
+
+Error thrown when parsing an ICU MessageFormat string fails. Includes `offset` and `source` properties for diagnostic context.
+
+```typescript
+import { parse, FluentParseError } from '@fluenti/core'
+
+try {
+  parse('{count, plural, }')
+} catch (e) {
+  if (e instanceof FluentParseError) {
+    console.log(e.offset)  // position of the error
+    console.log(e.source)  // original source string
+  }
+}
+```
+
+## Plural Resolution
+
+### `resolvePlural(count, options, locale, ordinal?)`
+
+Resolve a plural branch from a set of options using `Intl.PluralRules`. Checks for exact matches (`=0`, `=1`, etc.) before CLDR categories.
+
+### `resolvePluralCategory(count, options, locale, ordinal?)`
+
+Same as `resolvePlural`, but returns the matched category key (e.g. `'one'`, `'other'`) rather than the branch value.
+
+## Dev Runner
+
+Programmatic API for running the extract + compile pipeline. Useful for dev-mode file watchers.
+
+### `runExtractCompile(options)`
+
+Run `fluenti extract && fluenti compile` as a child process.
+
+```typescript
+import { runExtractCompile } from '@fluenti/core'
+
+await runExtractCompile({
+  cwd: '/path/to/project',
+  onSuccess: () => console.log('Done!'),
+  onError: (err) => console.error(err),
+})
+```
+
+### `createDebouncedRunner(options, delay?)`
+
+Create a debounced runner that collapses rapid calls. Never runs concurrently — if called while running, schedules a rerun after completion.
+
+```typescript
+import { createDebouncedRunner } from '@fluenti/core'
+
+const run = createDebouncedRunner({ cwd: process.cwd() }, 300)
+// Call run() on file changes — rapid calls are debounced
+```
+
+**`DevRunnerOptions`:** `{ cwd: string, onSuccess?: () => void, onError?: (err: Error) => void }`

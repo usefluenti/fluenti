@@ -1,19 +1,8 @@
 import type { MessageDescriptor } from './types'
-import { canonicalizeMessageIdentity, createMessageId } from './identity'
+import { createMessageId } from './identity'
 
-/**
- * FNV-1a hash producing a short alphanumeric ID.
- */
-export function hashMessage(message: string, context?: string): string {
-  const input = canonicalizeMessageIdentity(message, context)
-  let hash = 0x811c9dc5
-  for (let i = 0; i < input.length; i++) {
-    hash ^= input.charCodeAt(i)
-    hash = Math.imul(hash, 0x01000193)
-  }
-  // Convert to unsigned and then to base36
-  return (hash >>> 0).toString(36)
-}
+// Re-export hashMessage so existing imports from './msg' continue to work
+export { hashMessage } from './identity'
 
 /**
  * Build an ICU message string from tagged template parts.

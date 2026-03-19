@@ -8,6 +8,7 @@
  */
 
 import { resolve } from 'node:path'
+import { validateLocale } from '@fluenti/core'
 
 const VIRTUAL_RUNTIME = 'virtual:fluenti/runtime'
 const VIRTUAL_MESSAGES = 'virtual:fluenti/messages'
@@ -49,6 +50,9 @@ export function loadVirtualSplitModule(
 
 function generateRuntimeModule(options: VirtualModuleOptions): string {
   const { catalogDir, locales, sourceLocale, defaultBuildLocale, framework } = options
+  for (const locale of locales) {
+    validateLocale(locale, 'vite-plugin')
+  }
   const defaultLocale = defaultBuildLocale || sourceLocale
   const absoluteCatalogDir = resolve(process.cwd(), catalogDir)
   const runtimeKey = `fluenti.runtime.${framework}`
@@ -95,7 +99,7 @@ async function __preloadLocale(locale) {
     const mod = __normalizeMessages(await __loaders[locale]())
     __cache.set(locale, mod)
     __loadedLocales.add(locale)
-  } catch {}
+  } catch (e) { console.warn('[fluenti] preload failed:', locale, e) }
 }
 
 globalThis[Symbol.for('${runtimeKey}')] = { __switchLocale, __preloadLocale }
@@ -144,7 +148,7 @@ async function __preloadLocale(locale) {
     const mod = __normalizeMessages(await __loaders[locale]())
     __cache.set(locale, mod)
     __loadedLocales.add(locale)
-  } catch {}
+  } catch (e) { console.warn('[fluenti] preload failed:', locale, e) }
 }
 
 globalThis[Symbol.for('${runtimeKey}')] = { __switchLocale, __preloadLocale }
@@ -194,7 +198,7 @@ async function __preloadLocale(locale) {
     const mod = __normalizeMessages(await __loaders[locale]())
     __cache.set(locale, mod)
     __loadedLocales.add(locale)
-  } catch {}
+  } catch (e) { console.warn('[fluenti] preload failed:', locale, e) }
 }
 
 globalThis[Symbol.for('${runtimeKey}')] = { __switchLocale, __preloadLocale }
@@ -227,6 +231,9 @@ function generateStaticMessagesModule(options: VirtualModuleOptions): string {
  */
 export function generateRouteRuntimeModule(options: VirtualModuleOptions): string {
   const { catalogDir, locales, sourceLocale, defaultBuildLocale, framework } = options
+  for (const locale of locales) {
+    validateLocale(locale, 'vite-plugin')
+  }
   const defaultLocale = defaultBuildLocale || sourceLocale
   const absoluteCatalogDir = resolve(process.cwd(), catalogDir)
   const runtimeKey = `fluenti.runtime.${framework}`
@@ -290,7 +297,7 @@ async function __preloadLocale(locale) {
     const mod = __normalizeMessages(await __loaders[locale]())
     __cache.set(locale, mod)
     __loadedLocales.add(locale)
-  } catch {}
+  } catch (e) { console.warn('[fluenti] preload failed:', locale, e) }
 }
 
 globalThis[Symbol.for('${runtimeKey}')] = { __switchLocale, __preloadLocale }
@@ -358,7 +365,7 @@ async function __preloadLocale(locale) {
     const mod = __normalizeMessages(await __loaders[locale]())
     __cache.set(locale, mod)
     __loadedLocales.add(locale)
-  } catch {}
+  } catch (e) { console.warn('[fluenti] preload failed:', locale, e) }
 }
 
 globalThis[Symbol.for('${runtimeKey}')] = { __switchLocale, __preloadLocale }

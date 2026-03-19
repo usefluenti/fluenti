@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { createElement, type ReactElement } from 'react'
-import { hashMessage, extractMessage, reconstruct } from '../components/trans-core'
+import { hashMessage, extractMessage, reconstruct } from '../src/components/trans-core'
 
 // ─── hashMessage ──────────────────────────────────────────────
 

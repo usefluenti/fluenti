@@ -146,6 +146,7 @@ export function createFluentVue(options: FluentVueOptions): FluentVuePlugin {
     ?? (options as FluentVueOptions & { splitting?: boolean }).splitting
     ?? false
   const locale = ref(options.locale)
+  // Intentional mutation: Vue's shallowReactive API requires in-place property assignment for reactivity
   const catalogs = shallowReactive<AllMessages>({ ...options.messages })
   const isLoading = ref(false)
   const loadedLocalesSet = new Set<string>([options.locale])
@@ -257,6 +258,7 @@ export function createFluentVue(options: FluentVueOptions): FluentVuePlugin {
     isLoading.value = true
     try {
       const messages = resolveChunkMessages(await options.chunkLoader(newLocale))
+      // Intentional mutation: Vue's shallowReactive API requires in-place property assignment for reactivity
       catalogs[newLocale] = { ...catalogs[newLocale], ...messages }
       loadedLocalesSet.add(newLocale)
       loadedLocales.value = new Set(loadedLocalesSet)
@@ -270,6 +272,7 @@ export function createFluentVue(options: FluentVueOptions): FluentVuePlugin {
   }
 
   function loadMessages(loc: Locale, messages: Messages): void {
+    // Intentional mutation: Vue's shallowReactive API requires in-place property assignment for reactivity
     catalogs[loc] = { ...catalogs[loc], ...messages }
     loadedLocalesSet.add(loc)
     loadedLocales.value = new Set(loadedLocalesSet)
@@ -280,14 +283,15 @@ export function createFluentVue(options: FluentVueOptions): FluentVuePlugin {
     const splitRuntime = getSplitRuntimeModule()
     options.chunkLoader(loc).then(async (loaded) => {
       const messages = resolveChunkMessages(loaded)
+      // Intentional mutation: Vue's shallowReactive API requires in-place property assignment for reactivity
       catalogs[loc] = { ...catalogs[loc], ...messages }
       loadedLocalesSet.add(loc)
       loadedLocales.value = new Set(loadedLocalesSet)
       if (splitRuntime?.__preloadLocale) {
         await splitRuntime.__preloadLocale(loc)
       }
-    }).catch(() => {
-      // Silent failure for preload
+    }).catch((e: unknown) => {
+      console.warn('[fluenti] preload failed:', loc, e)
     })
   }
 
@@ -377,26 +381,29 @@ export function createFluentVue(options: FluentVueOptions): FluentVuePlugin {
       app.config.globalProperties['$vtRich'] = vtRich
 
       // Runtime v-t directive (fallback when compile-time transform is not used)
+      const vtOriginalIds = new WeakMap<HTMLElement, string>()
       app.directive('t', {
         mounted(el, binding) {
           const attrName = getModifierAttr(binding.modifiers)
           if (attrName) {
             // v-t.alt, v-t.placeholder, etc. — translate the attribute
             const original = el.getAttribute(attrName) ?? ''
+            vtOriginalIds.set(el, original)
             el.setAttribute(attrName, t(original))
           } else {
             // v-t or v-t:id — translate text content
             const id = binding.arg ?? el.textContent ?? ''
+            vtOriginalIds.set(el, id.trim())
             el.textContent = t(id.trim(), binding.value != null ? { ...binding.value } : undefined)
           }
         },
         updated(el, binding) {
           const attrName = getModifierAttr(binding.modifiers)
           if (attrName) {
-            const original = el.getAttribute(attrName) ?? ''
+            const original = vtOriginalIds.get(el) ?? el.getAttribute(attrName) ?? ''
             el.setAttribute(attrName, t(original))
           } else {
-            const id = binding.arg ?? el.textContent ?? ''
+            const id = binding.arg ?? vtOriginalIds.get(el) ?? ''
             el.textContent = t(id.trim(), binding.value != null ? { ...binding.value } : undefined)
           }
         },

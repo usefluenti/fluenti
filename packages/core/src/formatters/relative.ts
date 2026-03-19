@@ -5,6 +5,8 @@ interface TimeUnit {
   ms: number
 }
 
+const rtfCache = new Map<string, Intl.RelativeTimeFormat>()
+
 const UNITS: TimeUnit[] = [
   { unit: 'year', ms: 365.25 * 24 * 60 * 60 * 1000 },
   { unit: 'month', ms: 30.44 * 24 * 60 * 60 * 1000 },
@@ -34,7 +36,11 @@ export function formatRelativeTime(value: Date | number, locale: Locale): string
   const ms = timestamp - Date.now()
   const absMs = Math.abs(ms)
 
-  const rtf = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' })
+  let rtf = rtfCache.get(locale)
+  if (!rtf) {
+    rtf = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' })
+    rtfCache.set(locale, rtf)
+  }
 
   for (const { unit, ms: unitMs } of UNITS) {
     if (absMs >= unitMs || unit === 'second') {

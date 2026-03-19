@@ -5,26 +5,95 @@ description: CLI tool API reference
 
 ## Commands
 
+### `fluenti init`
+
+Interactive project setup. Detects framework, prompts for locales and format, generates config.
+
+```bash
+npx fluenti init
+```
+
+No flags — fully interactive.
+
 ### `fluenti extract`
 
 Extract messages from source files.
+
+```bash
+npx fluenti extract
+```
+
+| Flag | Type | Default | Description |
+|------|------|---------|-------------|
+| `--config` | `string` | — | Path to config file |
+| `--clean` | `boolean` | `false` | Remove obsolete messages from catalogs |
+| `--no-fuzzy` | `boolean` | `false` | Skip fuzzy matching for similar messages |
 
 Supports:
 - `t()` and `` t` ` `` calls
 - `<Trans>` components (children-based extraction)
 - `<Plural>` components
 - `v-t` directive (Vue)
+- `msg` tagged template
 
 ### `fluenti compile`
 
 Compile message catalogs to optimized JavaScript modules.
 
-Input: JSON or PO catalog files
-Output: ES modules with string literals and template functions
+```bash
+npx fluenti compile
+```
+
+| Flag | Type | Default | Description |
+|------|------|---------|-------------|
+| `--config` | `string` | — | Path to config file |
+| `--skip-fuzzy` | `boolean` | `false` | Exclude fuzzy-marked translations from output |
+
+Input: JSON or PO catalog files.
+Output: ES modules with string literals and template functions. Also generates `messages.d.ts` with `MessageId` union type and `MessageValues` interface for type-safe `t()` calls.
 
 ### `fluenti stats`
 
 Show translation progress as a table.
+
+```bash
+npx fluenti stats
+```
+
+| Flag | Type | Default | Description |
+|------|------|---------|-------------|
+| `--config` | `string` | — | Path to config file |
+
+### `fluenti translate`
+
+AI-powered translation using Claude or Codex CLI.
+
+```bash
+npx fluenti translate --locale ja
+```
+
+| Flag | Type | Default | Description |
+|------|------|---------|-------------|
+| `--config` | `string` | — | Path to config file |
+| `--provider` | `'claude' \| 'codex'` | `'claude'` | AI provider |
+| `--locale` | `string` | — | Target locale to translate |
+| `--batch-size` | `number` | `50` | Messages per AI request |
+
+### `fluenti migrate`
+
+AI-assisted migration from another i18n library.
+
+```bash
+npx fluenti migrate --from vue-i18n
+```
+
+| Flag | Type | Default | Description |
+|------|------|---------|-------------|
+| `--from` | `string` | — | Source library (required) |
+| `--provider` | `'claude' \| 'codex'` | `'claude'` | AI provider |
+| `--write` | `boolean` | `false` | Write changes to disk |
+
+Supported: `vue-i18n`, `nuxt-i18n`, `react-i18next`, `next-intl`, `next-i18next`, `lingui`.
 
 ## Programmatic API
 
@@ -33,20 +102,70 @@ import { extractFromVue, extractFromTsx } from '@fluenti/cli'
 import { updateCatalog, compileCatalog } from '@fluenti/cli'
 import { readJsonCatalog, writeJsonCatalog } from '@fluenti/cli'
 import { readPoCatalog, writePoCatalog } from '@fluenti/cli'
+import { translateCatalog } from '@fluenti/cli'
+import { runInit, runMigrate } from '@fluenti/cli'
 ```
 
 ### `extractFromVue(code, filename)`
 
-Extract messages from a Vue SFC string.
+Extract messages from a Vue SFC string. Returns an array of `ExtractedMessage` objects with `id`, `message`, `context`, and source location.
 
 ### `extractFromTsx(code, filename)`
 
-Extract messages from a TSX/JSX string (React and Solid).
+Extract messages from a TSX/JSX string (React and Solid). Returns an array of `ExtractedMessage` objects.
 
-### `updateCatalog(existing, extracted)`
+### `updateCatalog(existing, extracted, options?)`
 
 Update a catalog with newly extracted messages. Returns `{ catalog, result }` where result contains `added`, `unchanged`, and `obsolete` counts.
 
-### `compileCatalog(catalog, locale)`
+Options: `{ clean?: boolean, noFuzzy?: boolean }`
+
+### `compileCatalog(catalog, locale, allIds, sourceLocale?, options?)`
 
 Compile a catalog to an optimized JavaScript module string.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `catalog` | `CatalogData` | The catalog to compile |
+| `locale` | `string` | Target locale |
+| `allIds` | `string[]` | All message IDs across locales |
+| `sourceLocale` | `string?` | Source locale for fallback |
+| `options` | `{ skipFuzzy?: boolean }` | Compile options |
+
+Returns `{ code: string, stats: { compiled: number, missing: string[] } }`.
+
+### `compileTypeDeclaration(allIds, catalogs, sourceLocale)`
+
+Generate TypeScript declarations (`messages.d.ts`) with a `MessageId` union type and `MessageValues` interface mapping each message ID to its expected variables.
+
+### `translateCatalog(options)`
+
+Translate untranslated messages in a catalog using AI.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `options.provider` | `'claude' \| 'codex'` | AI provider |
+| `options.sourceLocale` | `string` | Source locale |
+| `options.targetLocale` | `string` | Target locale |
+| `options.catalog` | `CatalogData` | Catalog to translate |
+| `options.batchSize` | `number` | Messages per batch |
+
+Returns `Promise<{ catalog: CatalogData, translated: number }>`.
+
+### `runInit(options)`
+
+Run interactive project setup programmatically.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `options.cwd` | `string` | Working directory |
+
+### `runMigrate(options)`
+
+Run AI-assisted migration from another i18n library.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `options.from` | `string` | Source library name |
+| `options.provider` | `'claude' \| 'codex'` | AI provider |
+| `options.write` | `boolean` | Write changes to disk |

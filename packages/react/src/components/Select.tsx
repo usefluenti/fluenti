@@ -1,4 +1,4 @@
-import { useContext, type ReactNode } from 'react'
+import { memo, useContext, type ReactNode } from 'react'
 import { hashMessage } from '@fluenti/core'
 import { I18nContext } from '../context'
 import { buildICUSelectMessage, normalizeSelectForms, renderRichTranslation, serializeRichForms } from './icu-rich'
@@ -33,7 +33,7 @@ export interface SelectProps {
  * />
  * ```
  */
-export function Select(props: SelectProps) {
+export const Select = memo(function Select(props: SelectProps) {
   const ctx = useContext(I18nContext)
   if (!ctx) {
     throw new Error('[fluenti] <Select> must be used within an <I18nProvider>')
@@ -74,4 +74,4 @@ export function Select(props: SelectProps) {
     (desc, values) => ctx.i18n.t(desc, values),
     components,
   )}</>
-}
+})

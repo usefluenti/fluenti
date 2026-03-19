@@ -234,6 +234,46 @@ describe('edge cases - exhaustive', () => {
   })
 })
 
+describe('custom formatters', () => {
+  it('uses custom formatter when provided', () => {
+    const formatters = {
+      uppercase: (value: unknown) => String(value).toUpperCase(),
+    }
+    const result = interpolate('{name, uppercase}', { name: 'alice' }, 'en', formatters)
+    expect(result).toBe('ALICE')
+  })
+
+  it('bypasses cache when custom formatters are provided', () => {
+    // First call with cache (no formatters)
+    interpolate('Hello {name}', { name: 'World' }, 'en')
+    // Second call with formatters should NOT use cache
+    const formatters = {
+      uppercase: (value: unknown) => String(value).toUpperCase(),
+    }
+    const result = interpolate('{name, uppercase}', { name: 'test' }, 'en', formatters)
+    expect(result).toBe('TEST')
+  })
+
+  it('returns static string from custom formatter path', () => {
+    const formatters = {
+      noop: () => 'static',
+    }
+    const result = interpolate('{x, noop}', { x: 'anything' }, 'en', formatters)
+    expect(result).toBe('static')
+  })
+})
+
+describe('LRU cache — key re-insertion', () => {
+  it('re-inserting existing key moves it to end (not duplicated)', () => {
+    // Access a cached message twice to trigger the "key already exists" path in set()
+    const msg = 'LRU reinsert test {v}'
+    interpolate(msg, { v: 'first' }, 'en')
+    interpolate(msg, { v: 'second' }, 'en')
+    const result = interpolate(msg, { v: 'third' }, 'en')
+    expect(result).toBe('LRU reinsert test third')
+  })
+})
+
 describe('XSS prevention', () => {
   it('does not interpret HTML tags in interpolated values', () => {
     const result = interpolate('Hello {name}', { name: '<script>alert("xss")</script>' })

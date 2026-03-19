@@ -64,6 +64,13 @@ export interface ServerI18n {
  * For per-request isolation in Nuxt, use `useRequestEvent()` in your
  * `resolveLocale` callback, or call `setLocale()` in a server plugin.
  *
+ * **⚠️ SSR Concurrency Warning**: This function uses module-level state for locale
+ * and cached instance. In concurrent SSR environments (e.g. multiple simultaneous
+ * requests), this can cause cross-request locale leakage. For per-request isolation:
+ * - Use `useRequestEvent()` in Nuxt to scope locale per request
+ * - Or create a separate `createServerI18n()` per request context
+ * - Consider using AsyncLocalStorage for true per-request isolation (future)
+ *
  * @example
  * ```ts
  * // server/i18n.ts
@@ -82,6 +89,7 @@ export function createServerI18n(config: ServerI18nConfig): ServerI18n {
 
   function setLocale(locale: string): void {
     currentLocale = locale
+    cachedInstance = null
   }
 
   async function loadLocaleMessages(locale: string): Promise<Messages> {

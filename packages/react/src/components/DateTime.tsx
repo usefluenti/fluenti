@@ -1,4 +1,4 @@
-import { useContext } from 'react'
+import { memo, useContext } from 'react'
 import { I18nContext } from '../context'
 
 export interface DateTimeProps {
@@ -16,10 +16,10 @@ export interface DateTimeProps {
  * <DateTime value={new Date()} style="long" />
  * ```
  */
-export function DateTime({ value, style }: DateTimeProps) {
+export const DateTime = memo(function DateTime({ value, style }: DateTimeProps) {
   const ctx = useContext(I18nContext)
   if (!ctx) {
     throw new Error('[fluenti] <DateTime> must be used within an <I18nProvider>')
   }
   return <>{ctx.i18n.d(value, style)}</>
-}
+})

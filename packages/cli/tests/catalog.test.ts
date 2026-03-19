@@ -184,15 +184,51 @@ describe('updateCatalog', () => {
     expect(catalog['abc']!.origin).toBe('moved.vue:42')
   })
 
-  it('handles duplicate IDs in extracted messages (last one wins)', () => {
+  it('merges origins when duplicate IDs appear in extracted messages', () => {
     const extracted = [
-      makeMessage('abc', 'First', 'a.vue', 1),
-      makeMessage('abc', 'Second', 'b.vue', 2),
+      makeMessage('abc', 'Hello', 'a.vue', 1),
+      makeMessage('abc', 'Hello', 'b.vue', 2),
     ]
-    const { catalog, result: _result } = updateCatalog({}, extracted)
+    const { catalog } = updateCatalog({}, extracted)
 
-    // Both are "added" from the perspective of the loop, but same key overwrites
     expect(catalog['abc']).toBeDefined()
-    expect(catalog['abc']!.origin).toBe('b.vue:2')
+    expect(Array.isArray(catalog['abc']!.origin)).toBe(true)
+    expect(catalog['abc']!.origin).toContain('a.vue:1')
+    expect(catalog['abc']!.origin).toContain('b.vue:2')
+  })
+
+  it('preserves fuzzy flag from existing entries', () => {
+    const existing: CatalogData = {
+      abc: { message: 'Hello', translation: 'Bonjour', fuzzy: true },
+    }
+    const extracted = [makeMessage('abc', 'Hello')]
+
+    const { catalog } = updateCatalog(existing, extracted)
+
+    expect(catalog['abc']!.fuzzy).toBe(true)
+    expect(catalog['abc']!.translation).toBe('Bonjour')
+  })
+
+  it('strips fuzzy flags when stripFuzzy option is set', () => {
+    const existing: CatalogData = {
+      abc: { message: 'Hello', translation: 'Bonjour', fuzzy: true },
+    }
+    const extracted = [makeMessage('abc', 'Hello')]
+
+    const { catalog } = updateCatalog(existing, extracted, { stripFuzzy: true })
+
+    expect(catalog['abc']!.fuzzy).toBeUndefined()
+    expect(catalog['abc']!.translation).toBe('Bonjour')
+  })
+
+  it('strips fuzzy from obsolete entries when stripFuzzy is set', () => {
+    const existing: CatalogData = {
+      abc: { message: 'Hello', translation: 'Bonjour', fuzzy: true },
+    }
+
+    const { catalog } = updateCatalog(existing, [], { stripFuzzy: true })
+
+    expect(catalog['abc']!.obsolete).toBe(true)
+    expect(catalog['abc']!.fuzzy).toBeUndefined()
   })
 })

@@ -78,12 +78,12 @@ const LIBRARY_INFO: Record<SupportedLibrary, LibraryInfo> = {
 
 const SUPPORTED_NAMES = Object.keys(LIBRARY_INFO) as SupportedLibrary[]
 
-function resolveLibrary(from: string): SupportedLibrary | undefined {
+export function resolveLibrary(from: string): SupportedLibrary | undefined {
   const normalized = from.toLowerCase().replace(/^@nuxtjs\//, 'nuxt-').replace(/^@/, '')
   return SUPPORTED_NAMES.find((name) => name === normalized)
 }
 
-interface DetectedFiles {
+export interface DetectedFiles {
   configFiles: Array<{ path: string; content: string }>
   localeFiles: Array<{ path: string; content: string }>
   sampleSources: Array<{ path: string; content: string }>
@@ -158,7 +158,7 @@ function loadMigrationGuide(guidePath: string): string {
   return ''
 }
 
-function buildMigratePrompt(
+export function buildMigratePrompt(
   library: LibraryInfo,
   detected: DetectedFiles,
   migrationGuide: string,
@@ -273,7 +273,7 @@ interface MigrateResult {
   installCommands: string | undefined
 }
 
-function parseResponse(response: string): MigrateResult {
+export function parseResponse(response: string): MigrateResult {
   const result: MigrateResult = {
     config: undefined,
     localeFiles: [],

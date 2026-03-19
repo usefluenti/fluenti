@@ -25,6 +25,7 @@ export type {
   NamespaceMapping,
   CompileTimeMessageDescriptor,
   CompileTimeT,
+  TypedCompileTimeT,
 } from './types'
 
 export { parse, FluentParseError } from './parser'
@@ -32,14 +33,16 @@ export { compile } from './compile'
 export { interpolate } from './interpolate'
 export { resolvePlural, resolvePluralCategory } from './plural'
 export { Catalog } from './catalog'
-export { negotiateLocale, parseLocale, isRTL, getDirection } from './locale'
+export { negotiateLocale, parseLocale, isRTL, getDirection, validateLocale } from './locale'
 export type { ParsedLocale } from './locale'
-export { msg, buildICUMessage, hashMessage } from './msg'
-export { resolveDescriptorId } from './identity'
+export { msg, buildICUMessage } from './msg'
+export { resolveDescriptorId, hashMessage } from './identity'
 export { detectLocale, getSSRLocaleScript, getHydratedLocale } from './ssr'
 export { formatNumber, DEFAULT_NUMBER_FORMATS, LOCALE_CURRENCY_MAP } from './formatters/number'
 export { formatDate, DEFAULT_DATE_FORMATS } from './formatters/date'
 export { formatRelativeTime } from './formatters/relative'
+export { runExtractCompile, createDebouncedRunner } from './dev-runner'
+export type { DevRunnerOptions } from './dev-runner'
 
 import type {
   FluentConfigExtended,
@@ -54,6 +57,7 @@ import { formatNumber } from './formatters/number'
 import { formatDate } from './formatters/date'
 import { buildICUMessage } from './msg'
 import { createMessageId, resolveDescriptorId } from './identity'
+import { validateLocale } from './locale'
 
 /**
  * Create a Fluenti instance with full i18n support.
@@ -73,12 +77,6 @@ import { createMessageId, resolveDescriptorId } from './identity'
  * i18n.t('greeting', { name: 'World' }) // 'Hello World!'
  * ```
  */
-function validateLocale(locale: Locale, context: string): void {
-  if (typeof locale !== 'string' || locale.trim() === '') {
-    throw new Error(`[fluenti] ${context}: locale must be a non-empty string, got ${JSON.stringify(locale)}`)
-  }
-}
-
 export function createFluent(config: FluentConfigExtended): FluentInstanceExtended {
   validateLocale(config.locale, 'createFluent')
   let currentLocale: Locale = config.locale

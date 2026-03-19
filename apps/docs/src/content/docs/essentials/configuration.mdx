@@ -41,6 +41,11 @@ export default defineConfig({
 | `fallbackChain` | `Record<string, string[]>` | `{}` | Locale fallback chains |
 | `splitting` | `'dynamic' \| 'static' \| false` | `false` | Code-splitting strategy |
 | `defaultBuildLocale` | `string?` | — | Default locale embedded in the bundle |
+| `devWarnings` | `boolean?` | — | Enable development-mode warnings for missing translations and format errors |
+| `strictBuild` | `boolean?` | — | Fail the build if any translations are missing |
+| `namespaceMapping` | `Record<string, string>?` | — | Map namespace prefixes to catalog subdirectories |
+| `externalCatalogs` | `Array<{ package: string; catalogDir: string }>?` | — | Load catalogs from external npm packages |
+| `strictThreshold` | `number?` | — | Minimum translation percentage required (used by `fluenti stats`) |
 
 ## PO vs JSON
 
@@ -61,3 +66,58 @@ locales/compiled/
 ```
 
 For the full API reference, see [@fluenti/cli](/api/cli/) and [@fluenti/vite-plugin](/api/vite-plugin/).
+
+## Common Configurations
+
+### Vue SPA
+
+```typescript
+export default defineConfig({
+  sourceLocale: 'en',
+  locales: ['en', 'ja', 'zh-CN'],
+  catalogDir: './locales',
+  format: 'po',
+  include: ['./src/**/*.vue', './src/**/*.ts'],
+  compileOutDir: './src/locales/compiled',
+})
+```
+
+### React / SolidJS SPA
+
+```typescript
+export default defineConfig({
+  sourceLocale: 'en',
+  locales: ['en', 'es', 'fr'],
+  catalogDir: './locales',
+  format: 'po',
+  include: ['./src/**/*.tsx', './src/**/*.jsx', './src/**/*.ts'],
+  compileOutDir: './src/locales/compiled',
+  splitting: 'dynamic',
+})
+```
+
+### Next.js
+
+```typescript
+export default defineConfig({
+  sourceLocale: 'en',
+  locales: ['en', 'ja'],
+  catalogDir: './locales',
+  format: 'po',
+  include: ['./app/**/*.tsx', './components/**/*.tsx'],
+  compileOutDir: './src/locales/compiled',
+})
+```
+
+### Nuxt
+
+```typescript
+export default defineConfig({
+  sourceLocale: 'en',
+  locales: ['en', 'fr', 'de'],
+  catalogDir: './locales',
+  format: 'po',
+  include: ['./components/**/*.vue', './pages/**/*.vue', './layouts/**/*.vue'],
+  compileOutDir: './locales/compiled',
+})
+```

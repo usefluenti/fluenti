@@ -1,5 +1,4 @@
 import type { MessageDescriptor } from './types'
-import { hashMessage } from './msg'
 
 /**
  * Build the canonical identity input for a message/context pair.
@@ -9,6 +8,20 @@ import { hashMessage } from './msg'
  */
 export function canonicalizeMessageIdentity(message: string, context?: string): string {
   return context === undefined ? message : JSON.stringify([message, context])
+}
+
+/**
+ * FNV-1a hash producing a short alphanumeric ID.
+ */
+export function hashMessage(message: string, context?: string): string {
+  const input = canonicalizeMessageIdentity(message, context)
+  let hash = 0x811c9dc5
+  for (let i = 0; i < input.length; i++) {
+    hash ^= input.charCodeAt(i)
+    hash = Math.imul(hash, 0x01000193)
+  }
+  // Convert to unsigned and then to base36
+  return (hash >>> 0).toString(36)
 }
 
 /** Compute the default message ID for a source message/context pair. */

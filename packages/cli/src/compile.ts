@@ -95,7 +95,7 @@ function pluralToJs(node: PluralNode, locale: string): string {
   // CLDR categories via Intl.PluralRules
   const cldrKeys = Object.keys(node.options).filter((k) => !k.startsWith('='))
   if (cldrKeys.length > 1 || (cldrKeys.length === 1 && cldrKeys[0] !== 'other')) {
-    lines.push(`const __cat = new Intl.PluralRules('${locale}').select(c); `)
+    lines.push(`const __cat = new Intl.PluralRules('${escapeStringLiteral(locale)}').select(c); `)
     for (const key of cldrKeys) {
       if (key === 'other') continue
       const body = astToJsExpression(node.options[key]!, locale)
@@ -162,8 +162,19 @@ export function compileCatalog(
   let compiled = 0
   const missing: string[] = []
 
+  const hashToId = new Map<string, string>()
+
   for (const id of allIds) {
     const hash = hashMessage(id)
+
+    const existingId = hashToId.get(hash)
+    if (existingId !== undefined && existingId !== id) {
+      throw new Error(
+        `Hash collision detected: messages "${existingId}" and "${id}" produce the same hash "${hash}"`,
+      )
+    }
+    hashToId.set(hash, id)
+
     const exportName = `_${hash}`
     const entry = catalog[id]
     const translated = resolveCompiledMessage(entry, id, locale, sourceLocale, options?.skipFuzzy)
@@ -245,7 +256,7 @@ export function compileIndex(locales: string[], _catalogDir: string): string {
   lines.push('')
   lines.push('export const loaders = {')
   for (const locale of locales) {
-    lines.push(`  '${escapeStringLiteral(locale)}': () => import('./${locale}.js'),`)
+    lines.push(`  '${escapeStringLiteral(locale)}': () => import('./${escapeStringLiteral(locale)}.js'),`)
   }
   lines.push('}')
   lines.push('')

@@ -34,9 +34,6 @@ import zhCN from './locales/compiled/zh-CN'
 | `fallbackChain` | `Record<string, string[]>?` | Locale fallback chains |
 | `lazyLocaleLoading` | `boolean?` | Enable async locale loading through `chunkLoader` |
 | `chunkLoader` | `(locale) => Promise<Messages>?` | Async locale loader |
-| `transform` | `(result, id, locale) => string?` | Post-translation transform hook applied to every resolved message |
-| `onLocaleChange` | `(newLocale, prevLocale) => void?` | Callback fired when locale changes |
-| `formatters` | `Record<string, CustomFormatter>?` | Custom ICU function formatters |
 
 ## `useI18n()`
 
@@ -151,6 +148,59 @@ import { t } from '@fluenti/solid'
 function Greeting() {
   const name = 'World'
   return <p>{t`Hello ${name}`}</p>
+}
+```
+
+## `<DateTime>`
+
+Date formatting component.
+
+```tsx
+import { DateTime } from '@fluenti/solid'
+
+<DateTime value={new Date()} style="long" />
+```
+
+### Props
+
+| Prop | Type | Description |
+|------|------|-------------|
+| `value` | `Date \| number` | **(required)** Date value to format |
+| `style` | `string?` | Named format style (e.g. `'short'`, `'long'`, `'relative'`) |
+
+## `<NumberFormat>`
+
+Number formatting component.
+
+```tsx
+import { NumberFormat } from '@fluenti/solid'
+
+<NumberFormat value={1234.56} style="currency" />
+```
+
+### Props
+
+| Prop | Type | Description |
+|------|------|-------------|
+| `value` | `number` | **(required)** Number value to format |
+| `style` | `string?` | Named format style (e.g. `'currency'`, `'percent'`, `'decimal'`) |
+
+## `msg`
+
+Re-exported from `@fluenti/core`. Create lazy message descriptors for module-level constants.
+
+```tsx
+import { msg } from '@fluenti/solid'
+
+const ROLES = {
+  admin: msg`Administrator`,
+  user: msg`Regular User`,
+}
+
+// Resolve at render time:
+function RoleBadge(props: { role: string }) {
+  const { t } = useI18n()
+  return <span>{t(ROLES[props.role])}</span>
 }
 ```
 

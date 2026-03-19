@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { createElement } from 'react'
-import { resolveCategory, replaceHash } from '../components/plural-core'
+import { resolveCategory, replaceHash } from '../src/components/plural-core'
 
 describe('resolveCategory', () => {
   it('returns zero when value=0 and zero is available', () => {

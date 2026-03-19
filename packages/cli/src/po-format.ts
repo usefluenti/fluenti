@@ -40,8 +40,14 @@ export function readPoCatalog(content: string): CatalogData {
 
       const context = contextKey || entry.msgctxt || undefined
       const translation = entry.msgstr?.[0] ?? undefined
-      const origin = entry.comments?.reference ?? undefined
-      const isObsolete = entry.comments?.flag?.includes('fuzzy') ?? false
+      const rawReference = entry.comments?.reference ?? undefined
+      const origin = rawReference?.includes('\n')
+        ? rawReference.split('\n').map((r: string) => r.trim()).filter(Boolean)
+        : rawReference?.includes(' ')
+          ? rawReference.split(/\s+/).filter(Boolean)
+          : rawReference
+      const normalizedOrigin = Array.isArray(origin) && origin.length === 1 ? origin[0] : origin
+      const isFuzzy = entry.comments?.flag?.includes('fuzzy') ?? false
       const { comment, customId, sourceMessage } = parseExtractedComment(entry.comments?.extracted)
       const resolvedSourceMessage = sourceMessage
         && hashMessage(sourceMessage, context) === msgid
@@ -55,8 +61,8 @@ export function readPoCatalog(content: string): CatalogData {
         ...(context !== undefined ? { context } : {}),
         ...(comment !== undefined ? { comment } : {}),
         ...(translation ? { translation } : {}),
-        ...(origin !== undefined ? { origin } : {}),
-        ...(isObsolete ? { obsolete: isObsolete } : {}),
+        ...(normalizedOrigin !== undefined ? { origin: normalizedOrigin } : {}),
+        ...(isFuzzy ? { fuzzy: true } : {}),
       }
     }
   }
@@ -84,13 +90,15 @@ export function writePoCatalog(catalog: CatalogData): string {
 
     const comments: POTranslation['comments'] = {}
     if (entry.origin) {
-      comments.reference = entry.origin
+      comments.reference = Array.isArray(entry.origin)
+        ? entry.origin.join('\n')
+        : entry.origin
     }
     const extractedComment = buildExtractedComment(id, entry.message ?? id, entry.context, entry.comment)
     if (extractedComment) {
       comments.extracted = extractedComment
     }
-    if (entry.obsolete) {
+    if (entry.fuzzy) {
       comments.flag = 'fuzzy'
     }
     if (comments.reference || comments.extracted || comments.flag) {
@@ -149,7 +157,7 @@ function parseExtractedComment(
 }
 
 function normalizeRichTextComment(comment: string): string {
-  const stack: Array<{ tag: string; index: number }> = []
+  let stack: Array<{ tag: string; index: number }> = []
   let nextIndex = 0
 
   return comment.replace(/<\/?([a-zA-Z][\w-]*)>/g, (match, rawTag: string) => {
@@ -158,7 +166,7 @@ function normalizeRichTextComment(comment: string): string {
       for (let index = stack.length - 1; index >= 0; index--) {
         const entry = stack[index]
         if (entry?.tag !== tag) continue
-        stack.splice(index, 1)
+        stack = stack.filter((_, i) => i !== index)
         return `</${entry.index}>`
       }
       return match

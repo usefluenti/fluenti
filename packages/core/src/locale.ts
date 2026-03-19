@@ -155,3 +155,13 @@ export function isRTL(locale: Locale): boolean {
 export function getDirection(locale: Locale): 'rtl' | 'ltr' {
   return isRTL(locale) ? 'rtl' : 'ltr'
 }
+
+/**
+ * Validate that a locale string is well-formed.
+ * Throws if the locale is empty or not a string.
+ */
+export function validateLocale(locale: string, context: string): void {
+  if (typeof locale !== 'string' || locale.trim() === '') {
+    throw new Error(`[fluenti] ${context}: locale must be a non-empty string, got ${JSON.stringify(locale)}`)
+  }
+}
