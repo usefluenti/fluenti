@@ -79,7 +79,7 @@ const extract = defineCommand({
     const config = await loadConfig(args.config)
     consola.info(`Extracting messages from ${config.include.join(', ')}`)
 
-    const files = await fg(config.include, { absolute: true })
+    const files = await fg(config.include)
     const allMessages: ExtractedMessage[] = []
 
     for (const file of files) {
