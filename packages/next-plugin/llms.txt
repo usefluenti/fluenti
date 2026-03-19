@@ -5,7 +5,7 @@
 `@fluenti/next` wires Fluenti into Next.js. In a `withFluenti()` project, the recommended authoring path is:
 
 - client and server authoring: `import { t, Trans, Plural, Select, DateTime, NumberFormat } from '@fluenti/react'`
-- Next runtime/integration: `FluentProvider`, `getI18n()`, and `setLocale()` from `@fluenti/next/__generated`
+- Next runtime/integration: `I18nProvider`, `getI18n()`, and `setLocale()` from `@fluenti/next`
 
 ## Install
 
@@ -25,7 +25,7 @@ Package subpaths:
 
 ## Important Boundaries
 
-- `withFluenti()` installs the loader and generates `@fluenti/next/__generated`
+- `withFluenti()` installs the loader and generates `@fluenti/next`
 - imported `t` remains compile-time only
 - server-side direct-import `t` requires an async server scope
 - `useI18n()` is not the server runtime escape hatch; use `await getI18n()` instead

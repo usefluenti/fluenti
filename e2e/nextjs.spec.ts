@@ -318,17 +318,17 @@ test.describe('Next.js App Router e2e', () => {
     await expect(page.getByTestId('action-result')).toContainText('Server says: Hello from server action')
   })
 
-  // ─── FluentProvider verification ───
+  // ─── I18nProvider verification ───
 
-  test('FluentProvider sets up both server and client i18n', async ({ page }) => {
-    // Client page and RSC page both work via FluentProvider
+  test('I18nProvider sets up both server and client i18n', async ({ page }) => {
+    // Client page and RSC page both work via I18nProvider
     await page.goto('/')
     await expect(page.getByTestId('welcome')).toContainText('Welcome to Fluenti')
     await page.getByTestId('nav-rsc').click()
     await expect(page.getByTestId('rsc-title')).toContainText('Server rendered')
   })
 
-  test('FluentProvider passes locale to client components via cookie', async ({ page }) => {
+  test('I18nProvider passes locale to client components via cookie', async ({ page }) => {
     await page.context().addCookies([
       { name: 'locale', value: 'ja', url: 'http://localhost:5190' },
     ])

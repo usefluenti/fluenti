@@ -39,10 +39,10 @@ All options are optional. Defaults are read from `fluenti.config.ts` in the proj
 
 1. **Generates a server module** at `node_modules/.fluenti/server.js` containing:
    - A `createServerI18n` instance with `setLocale()`, `getI18n()`, and server components
-   - A `FluentProvider` async component for layouts
+   - A `I18nProvider` async component for layouts
    - A `ClientI18nProvider` with statically imported message catalogs
 2. **Registers a webpack loader** that uses AST scope analysis to detect Fluenti's authoring imports and rewrites them to the correct runtime bindings
-3. **Adds a resolve alias** mapping `@fluenti/next/__generated` to the generated module
+3. **Adds a resolve alias** mapping `@fluenti/next` to the generated module
 
 ### Webpack loader
 
@@ -59,20 +59,19 @@ The loader also optimizes `<Trans>` components at build time by pre-computing th
 
 ## Generated Modules
 
-`withFluenti()` generates modules at `node_modules/.fluenti/` and aliases them as `@fluenti/next/__generated`.
+`withFluenti()` generates modules at `node_modules/.fluenti/` and aliases them as `@fluenti/next`.
 
-### `@fluenti/next/__generated`
+### `@fluenti/next`
 
 ```tsx
-// @ts-expect-error — generated at build time
-import { FluentProvider } from '@fluenti/next/__generated'
+import { I18nProvider } from '@fluenti/next'
 ```
 
 This module is primarily the Next runtime/integration surface. For ordinary translation authoring in a `withFluenti()` app, prefer `@fluenti/react`.
 
 | Export | Type | Description |
 |--------|------|-------------|
-| `FluentProvider` | async server component | Sets server locale + wraps children in `ClientI18nProvider` |
+| `I18nProvider` | async server component | Sets server locale + wraps children in `ClientI18nProvider` |
 | `setLocale` | `(locale: string) => void` | Set locale for the current request (`React.cache()` scoped) |
 | `getI18n` | `() => Promise<FluentInstance>` | Get the i18n instance for the current request |
 | `t` | `CompileTimeT` | Compile-time translation API for tagged templates and descriptor calls |
@@ -82,27 +81,47 @@ This module is primarily the Next runtime/integration surface. For ordinary tran
 | `DateTime` | async server component | Date formatting |
 | `NumberFormat` | async server component | Number formatting |
 
-### `FluentProvider`
+### `I18nProvider` (server)
 
-Accepts `locale` and `children`. Internally calls `setLocale()`, initializes the server i18n instance, and renders a `ClientI18nProvider` with pre-imported message catalogs:
+The `I18nProvider` from `@fluenti/next` is an **async server component**. It does three things automatically:
+
+1. Calls `setLocale()` to initialize the request-scoped locale via `React.cache`
+2. Calls `getI18n()` to load messages on the server
+3. Renders a client-side `ClientI18nProvider` with statically imported message catalogs (functions can't cross the RSC serialization boundary, so messages are bundled into the client provider)
+
+This is the **recommended** way to set up i18n in Next.js layouts:
 
 ```tsx
 // app/layout.tsx
 import { cookies } from 'next/headers'
-// @ts-expect-error — generated at build time
-import { FluentProvider } from '@fluenti/next/__generated'
+import { I18nProvider } from '@fluenti/next'
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const locale = (await cookies()).get('locale')?.value ?? 'en'
   return (
     <html lang={locale}>
       <body>
-        <FluentProvider locale={locale}>{children}</FluentProvider>
+        <I18nProvider locale={locale}>{children}</I18nProvider>
       </body>
     </html>
   )
 }
 ```
+
+### `I18nProvider` (client) — `@fluenti/next/provider`
+
+The package also exports a **client-only** `I18nProvider` from `@fluenti/next/provider`. This is the raw `ClientI18nProvider` without server-side initialization:
+
+```tsx
+import { I18nProvider } from '@fluenti/next/provider'
+```
+
+Use this only if you are handling server-side i18n setup yourself (e.g. custom `createServerI18n` wiring). In most cases, use the `@fluenti/next` version instead — it handles both server and client setup automatically.
+
+| Entry | Component type | Server init | Message loading |
+|-------|---------------|-------------|-----------------|
+| `@fluenti/next` | Async server component | Automatic | Automatic (static imports) |
+| `@fluenti/next/provider` | Client component | Manual | Manual (you pass `messages` prop) |
 
 ## `withLocale(locale, fn)`
 

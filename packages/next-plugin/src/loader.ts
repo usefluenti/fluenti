@@ -42,7 +42,7 @@ export default function fluentLoader(this: LoaderContext, source: string): strin
   // Try scope-aware transform first (AST-based, zero false positives)
   const scoped = scopeTransform(result, {
     framework: 'react',
-    serverModuleImport: '@fluenti/next/__generated',
+    serverModuleImport: '@fluenti/next',
     treatFrameworkDirectImportsAsServer: !isClientModule,
     rerouteServerAuthoringImports: !isClientModule,
     errorOnServerUseI18n: !isClientModule,
@@ -67,12 +67,12 @@ function hasFluentPatterns(code: string): boolean {
   }
 
   return /import\s*\{\s*t(?:\s+as\s+[A-Za-z_$][\w$]*)?[\s,}]/.test(code)
-    && (code.includes('@fluenti/react') || code.includes('@fluenti/next/__generated'))
+    && (code.includes('@fluenti/react') || code.includes('@fluenti/next'))
 }
 
 function isServerFluentiFile(code: string, isClientModule: boolean): boolean {
   if (isClientModule) return false
-  if (!code.includes('@fluenti/react') && !code.includes('@fluenti/next/__generated')) {
+  if (!code.includes('@fluenti/react') && !code.includes('@fluenti/next')) {
     return false
   }
 

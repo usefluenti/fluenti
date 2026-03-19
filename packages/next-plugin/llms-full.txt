@@ -6,7 +6,7 @@
 
 - wrap `next.config` with `withFluenti()`
 - install the Fluenti loader
-- generate the internal server runtime module consumed as `@fluenti/next/__generated`
+- generate the internal server runtime module consumed as `@fluenti/next`
 - keep Next authoring aligned with the main React authoring surface
 
 ## Install
@@ -57,7 +57,7 @@ This applies to both client and server authoring.
 For runtime and integration concerns, use the generated module:
 
 ```ts
-import { FluentProvider, getI18n, setLocale } from '@fluenti/next/__generated'
+import { I18nProvider, getI18n, setLocale } from '@fluenti/next'
 ```
 
 ### Important boundaries
@@ -71,16 +71,16 @@ import { FluentProvider, getI18n, setLocale } from '@fluenti/next/__generated'
 
 1. resolves Fluenti config from `fluenti.config.ts` and explicit overrides
 2. generates a server module under the configured output directory
-3. aliases that generated module as `@fluenti/next/__generated`
+3. aliases that generated module as `@fluenti/next`
 4. runs the loader on app code so official authoring APIs are transformed correctly
 
 ## Generated runtime module
 
-`@fluenti/next/__generated` is not a hand-authored package entry. It is a generated module created by `withFluenti()`.
+`@fluenti/next` is not a hand-authored package entry. It is a generated module created by `withFluenti()`.
 
 It provides:
 
-- `FluentProvider`
+- `I18nProvider`
 - `setLocale`
 - `getI18n`
 - compile-time `t` stub
@@ -90,7 +90,7 @@ It provides:
 - server-side `DateTime`
 - server-side `NumberFormat`
 
-### `FluentProvider`
+### `I18nProvider`
 
 Use in root layouts to initialize server and client runtime state.
 
@@ -109,7 +109,7 @@ Sets the request locale for the generated server runtime.
 - `@fluenti/next/provider` — provider-related types/helpers
 - `@fluenti/next/client` — client-side type declarations
 
-`@fluenti/next/__generated` is created per project by `withFluenti()`.
+`@fluenti/next` is created per project by `withFluenti()`.
 
 ## Relationship to `@fluenti/react`
 

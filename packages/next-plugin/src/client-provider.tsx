@@ -16,7 +16,7 @@ export interface ClientI18nProviderProps {
 
 /**
  * Client-side I18nProvider wrapper.
- * Used internally by FluentProvider to hydrate client components.
+ * Used internally by I18nProvider to hydrate client components.
  */
 export function ClientI18nProvider({
   locale,

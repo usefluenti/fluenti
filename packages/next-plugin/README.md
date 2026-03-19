@@ -33,7 +33,7 @@ No runtime parsing. No bundle bloat. Messages are compiled at build time and tre
 - **Next.js 14 & 15** compatible (`next >= 14.0.0`)
 - **`t\`\`` tagged templates** — write messages inline, extract them with the CLI
 - **Binding-aware transforms** — the webpack loader rewrites tagged templates only for proven Fluenti bindings
-- **`FluentProvider`** — async server component that sets up both server and client i18n in one place
+- **`I18nProvider`** — async server component that sets up both server and client i18n in one place
 - **`withLocale()`** — per-component locale isolation in RSC
 - **ICU MessageFormat** — plurals, selects, nested arguments, custom formatters
 - **Code splitting** — messages split per locale, loaded on demand
@@ -72,12 +72,12 @@ export default withFluenti({
 })(nextConfig)
 ```
 
-### 3. Set up `FluentProvider` in your root layout
+### 3. Set up `I18nProvider` in your root layout
 
 ```tsx
 // app/layout.tsx
 import { cookies } from 'next/headers'
-import { FluentProvider } from '@fluenti/next/__generated'
+import { I18nProvider } from '@fluenti/next'
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const cookieStore = await cookies()
@@ -86,16 +86,16 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang={locale}>
       <body>
-        <FluentProvider locale={locale}>
+        <I18nProvider locale={locale}>
           {children}
-        </FluentProvider>
+        </I18nProvider>
       </body>
     </html>
   )
 }
 ```
 
-`FluentProvider` is an async server component. It initializes the server-side i18n instance (via `React.cache`) and wraps children in a client-side `I18nProvider` for hydration.
+`I18nProvider` is an async server component. It initializes the server-side i18n instance (via `React.cache`) and wraps children in a client-side `I18nProvider` for hydration.
 
 ### 4. Use `t\`\`` in your pages
 
@@ -150,7 +150,7 @@ Server components use `t\`\`` with zero client-side JavaScript. The loader detec
 For direct access to the i18n instance in RSC:
 
 ```tsx
-import { setLocale, getI18n } from '@fluenti/next/__generated'
+import { setLocale, getI18n } from '@fluenti/next'
 
 export default async function Page({ searchParams }) {
   const params = await searchParams
@@ -169,7 +169,7 @@ Works with `Suspense` boundaries — streamed content is translated on the serve
 import { Suspense } from 'react'
 
 async function SlowContent() {
-  const { getI18n } = await import('@fluenti/next/__generated')
+  const { getI18n } = await import('@fluenti/next')
   const { t } = await getI18n()
   await fetchData()
   return <p>{t`Streamed content loaded!`}</p>
@@ -203,7 +203,7 @@ export async function greetAction(): Promise<string> {
 Translate Next.js metadata using the server i18n instance:
 
 ```tsx
-import { getI18n } from '@fluenti/next/__generated'
+import { getI18n } from '@fluenti/next'
 
 export async function generateMetadata() {
   const i18n = await getI18n()
@@ -282,9 +282,9 @@ Wraps your Next.js config with Fluenti support. Accepts an optional `WithFluentC
 | `numberFormats` | `NumberFormatOptions` | Custom number format styles |
 | `fallbackChain` | `Record<string, Locale[]>` | Fallback chain per locale |
 
-### `FluentProvider`
+### `I18nProvider`
 
-Async server component (imported from `@fluenti/next/__generated`). Place in your root layout.
+Async server component (imported from `@fluenti/next`). Place in your root layout.
 
 | Prop | Type | Description |
 |------|------|-------------|
@@ -297,11 +297,11 @@ Server utility (imported from `@fluenti/next/server`). Executes `fn` with a temp
 
 ### Generated Server Module
 
-`@fluenti/next/__generated` exports:
+`@fluenti/next` exports:
 
 | Export | Description |
 |--------|-------------|
-| `FluentProvider` | Async server component for layouts |
+| `I18nProvider` | Async server component for layouts |
 | `setLocale(locale)` | Set the request-scoped locale |
 | `getI18n()` | Get the i18n instance (async) |
 | `t` | Compile-time translation API, preserved for advanced/server-specific imports |

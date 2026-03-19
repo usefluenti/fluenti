@@ -1,6 +1,6 @@
 import { t } from '@fluenti/react'
-import * as serverI18n from '@fluenti/next/__generated'
-import { getI18n } from '@fluenti/next/__generated'
+import * as serverI18n from '@fluenti/next'
+import { getI18n } from '@fluenti/next'
 import { withLocale } from '@fluenti/next/server'
 
 async function RSCContent() {

@@ -2,6 +2,7 @@ import type { Plugin } from 'vite'
 import type { FluentiPluginOptions } from './types'
 import { setResolvedMode, isBuildMode } from './mode-detect'
 import { resolve } from 'node:path'
+import { createDebouncedRunner } from '@fluenti/core'
 import { transformForDynamicSplit, transformForStaticSplit, injectCatalogImport } from './build-transform'
 import { resolveVirtualSplitId, loadVirtualSplitModule } from './virtual-modules'
 import { deriveRouteName, parseCompiledCatalog, buildChunkModule, readCatalogSource } from './route-resolve'
@@ -259,10 +260,42 @@ export default function fluentiPlugin(options?: FluentiPluginOptions): Plugin[] 
     },
   }
 
+  const devAutoCompile = options?.devAutoCompile ?? true
+  const includePatterns = options?.include ?? ['src/**/*.{vue,tsx,jsx,ts,js}']
+
+  function matchesInclude(file: string, patterns: string[]): boolean {
+    // Simple extension + path check (avoids adding picomatch dependency)
+    const extMatch = /\.(vue|tsx|jsx|ts|js)$/.test(file)
+    if (!extMatch) return false
+    if (file.includes('node_modules')) return false
+    // Check if file path matches any of the include directory prefixes
+    return patterns.some((p) => {
+      const dirPart = p.split('*')[0] ?? ''
+      return dirPart === '' || file.includes(dirPart.replace('./', ''))
+    })
+  }
+
   const devPlugin: Plugin = {
     name: 'fluenti:dev',
-    configureServer(_server) {
-      // server reference available via hotUpdate's `this`
+    configureServer(server) {
+      if (!devAutoCompile) return
+
+      const debouncedRun = createDebouncedRunner({
+        cwd: server.config.root,
+        onSuccess: () => {
+          // Existing hotUpdate will pick up catalog changes
+        },
+      })
+
+      // Initial run on server start
+      debouncedRun()
+
+      // Watch source files for changes
+      server.watcher.on('change', (file) => {
+        if (matchesInclude(file, includePatterns) && !file.includes(catalogDir)) {
+          debouncedRun()
+        }
+      })
     },
     hotUpdate({ file }) {
       if (file.includes(catalogDir)) {
@@ -291,5 +324,5 @@ function hasScopeTransformCandidate(code: string): boolean {
   }
 
   return /import\s*\{[^}]*\bt(?:\s+as\s+[A-Za-z_$][\w$]*)?\b[^}]*\}/.test(code)
-    && /@fluenti\/(react|vue|solid|next\/__generated)/.test(code)
+    && /@fluenti\/(react|vue|solid|next)/.test(code)
 }

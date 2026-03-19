@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { cookies } from 'next/headers'
 import { getDirection } from '@fluenti/core'
-import { FluentProvider } from '@fluenti/next/__generated'
+import { I18nProvider } from '@fluenti/next'
 import { Nav } from '@/components/Nav'
 
 export const metadata: Metadata = {
@@ -16,10 +16,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang={locale} dir={dir}>
       <body style={{ fontFamily: 'system-ui, sans-serif', margin: 0, padding: '20px' }}>
-        <FluentProvider locale={locale}>
+        <I18nProvider locale={locale}>
           <Nav />
           {children}
-        </FluentProvider>
+        </I18nProvider>
       </body>
     </html>
   )
