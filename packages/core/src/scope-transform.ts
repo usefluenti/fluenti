@@ -1,6 +1,39 @@
 import { createRequire } from 'node:module'
 import { createMessageId } from './identity'
 import { isSourceNode, parseSourceModule, type SourceNode } from './source-analysis'
+import {
+  identifier,
+  stringLiteral,
+  objectProperty,
+  objectExpression,
+  callExpression,
+  memberExpression,
+  awaitExpression,
+  variableDeclarator,
+  variableDeclaration,
+  objectPattern,
+  importSpecifier,
+  importDeclaration,
+  returnStatement,
+  blockStatement,
+  isImportDeclaration,
+  isImportSpecifier,
+  isVariableDeclarator,
+  isCallExpression,
+  isIdentifier,
+  type IdentifierNode,
+  type StringLiteralNode,
+  type ObjectPropertyNode,
+  type ObjectExpressionNode,
+  type CallExpressionNode,
+  type AwaitExpressionNode,
+  type VariableDeclaratorNode,
+  type VariableDeclarationNode,
+  type ObjectPatternNode,
+  type ImportSpecifierNode,
+  type ImportDeclarationNode,
+  type BlockStatementNode,
+} from './scope-ast-helpers'
 
 interface Scope {
   bindings: Set<string>
@@ -40,67 +73,9 @@ export interface ScopeTransformResult {
   transformed: boolean
 }
 
-interface IdentifierNode extends SourceNode {
-  type: 'Identifier'
-  name: string
-}
-
-interface StringLiteralNode extends SourceNode {
-  type: 'StringLiteral'
-  value: string
-}
-
-
 interface ProgramNode extends SourceNode {
   type: 'Program'
   body: SourceNode[]
-}
-
-interface BlockStatementNode extends SourceNode {
-  type: 'BlockStatement'
-  body: SourceNode[]
-}
-
-interface ImportDeclarationNode extends SourceNode {
-  type: 'ImportDeclaration'
-  source: StringLiteralNode
-  specifiers: SourceNode[]
-}
-
-interface ImportSpecifierNode extends SourceNode {
-  type: 'ImportSpecifier'
-  imported: IdentifierNode | StringLiteralNode
-  local: IdentifierNode
-}
-
-interface CallExpressionNode extends SourceNode {
-  type: 'CallExpression'
-  callee: SourceNode
-  arguments: SourceNode[]
-}
-
-interface MemberExpressionNode extends SourceNode {
-  type: 'MemberExpression'
-  object: SourceNode
-  property: SourceNode
-  computed: boolean
-}
-
-interface AwaitExpressionNode extends SourceNode {
-  type: 'AwaitExpression'
-  argument: SourceNode
-}
-
-interface VariableDeclaratorNode extends SourceNode {
-  type: 'VariableDeclarator'
-  id: SourceNode
-  init?: SourceNode | null
-}
-
-interface VariableDeclarationNode extends SourceNode {
-  type: 'VariableDeclaration'
-  kind: 'const' | 'let' | 'var'
-  declarations: VariableDeclaratorNode[]
 }
 
 interface TaggedTemplateExpressionNode extends SourceNode {
@@ -120,24 +95,6 @@ interface TemplateElementNode extends SourceNode {
   value: { raw: string; cooked: string | null }
 }
 
-interface ObjectPatternNode extends SourceNode {
-  type: 'ObjectPattern'
-  properties: SourceNode[]
-}
-
-interface ObjectExpressionNode extends SourceNode {
-  type: 'ObjectExpression'
-  properties: SourceNode[]
-}
-
-interface ObjectPropertyNode extends SourceNode {
-  type: 'ObjectProperty'
-  key: SourceNode
-  value: SourceNode
-  computed?: boolean
-  shorthand?: boolean
-}
-
 interface AssignmentPatternNode extends SourceNode {
   type: 'AssignmentPattern'
   left: SourceNode
@@ -151,11 +108,6 @@ interface ArrayPatternNode extends SourceNode {
 interface RestElementNode extends SourceNode {
   type: 'RestElement'
   argument: SourceNode
-}
-
-interface ReturnStatementNode extends SourceNode {
-  type: 'ReturnStatement'
-  argument: SourceNode | null
 }
 
 interface FunctionLikeNode extends SourceNode {
@@ -189,6 +141,8 @@ interface TargetContext {
   serverEligible: boolean
   helperNames: Partial<Record<'client' | 'server', string>>
   needsHelper: Set<'client' | 'server'>
+  needsEagerResolve: boolean
+  eagerResolveName?: string
 }
 
 interface TemplateTranslationParts {
@@ -288,6 +242,7 @@ export function scopeTransform(
     parent: SourceNode | null,
     scope: Scope,
     activeTargets: TargetContext[],
+    insideNonEligibleFn: boolean = false,
   ): void {
     switch (node.type) {
       case 'Program': {
@@ -301,7 +256,7 @@ export function scopeTransform(
           nextTargets.push(target)
         }
 
-        walkChildren(node, nextScope, nextTargets)
+        walkChildren(node, nextScope, nextTargets, insideNonEligibleFn)
         return
       }
 
@@ -312,7 +267,7 @@ export function scopeTransform(
       case 'SwitchStatement': {
         const nextScope = createScope(scope)
         collectBlockBindings(node, nextScope, importBindings)
-        walkChildren(node, nextScope, activeTargets)
+        walkChildren(node, nextScope, activeTargets, insideNonEligibleFn)
         return
       }
 
@@ -330,7 +285,11 @@ export function scopeTransform(
           targets.set(node, target)
         }
 
-        walkChildren(node, nextScope, nextTargets)
+        // If no new target was created and we're already inside an eligible target,
+        // mark as nested (inside a non-eligible function like .map() callback)
+        const nextNested = target ? false : (insideNonEligibleFn || activeTargets.length > 0)
+
+        walkChildren(node, nextScope, nextTargets, nextNested)
         return
       }
 
@@ -339,14 +298,14 @@ export function scopeTransform(
         if (isSourceNode(node['param'])) {
           collectPatternNames(node['param'], nextScope)
         }
-        walkChildren(node, nextScope, activeTargets)
+        walkChildren(node, nextScope, activeTargets, insideNonEligibleFn)
         return
       }
 
       case 'TaggedTemplateExpression': {
         const tagged = node as TaggedTemplateExpressionNode
         if (!isIdentifier(tagged.tag)) {
-          walkChildren(node, scope, activeTargets)
+          walkChildren(node, scope, activeTargets, insideNonEligibleFn)
           return
         }
 
@@ -357,13 +316,17 @@ export function scopeTransform(
             throwDirectImportScopeError(directBinding, options)
           }
 
-          const replacement = directBinding.kind === 'server'
-            ? buildImportedServerTaggedTemplateCall(
-              code,
-              tagged,
-              ensureTargetHelper(target, directBinding.kind),
-            )
-            : buildImportedTaggedTemplateCall(code, tagged, ensureTargetHelper(target, directBinding.kind))
+          const helperName = ensureTargetHelper(target, directBinding.kind)
+
+          let replacement: SourceNode
+          if (directBinding.kind === 'server' && insideNonEligibleFn) {
+            const eagerName = ensureEagerResolve(target)
+            replacement = buildSyncServerTaggedTemplateCall(code, tagged, eagerName)
+          } else if (directBinding.kind === 'server') {
+            replacement = buildImportedServerTaggedTemplateCall(code, tagged, helperName)
+          } else {
+            replacement = buildImportedTaggedTemplateCall(code, tagged, helperName)
+          }
           overwriteNode(tagged, replacement)
           consumedDirectBindings.add(directBinding.local)
           transformed = true
@@ -382,20 +345,20 @@ export function scopeTransform(
           return
         }
 
-        walkChildren(node, scope, activeTargets)
+        walkChildren(node, scope, activeTargets, insideNonEligibleFn)
         return
       }
 
       case 'CallExpression': {
         const call = node as CallExpressionNode
         if (!isIdentifier(call.callee)) {
-          walkChildren(node, scope, activeTargets)
+          walkChildren(node, scope, activeTargets, insideNonEligibleFn)
           return
         }
 
         const directBinding = resolveDirectBinding(call.callee.name, scope, importBindings)
         if (!directBinding) {
-          walkChildren(node, scope, activeTargets)
+          walkChildren(node, scope, activeTargets, insideNonEligibleFn)
           return
         }
 
@@ -404,9 +367,17 @@ export function scopeTransform(
           throwDirectImportScopeError(directBinding, options)
         }
 
-        const replacement = directBinding.kind === 'server'
-          ? buildImportedServerDescriptorCall(call, ensureTargetHelper(target, directBinding.kind))
-          : buildImportedDescriptorCall(call, ensureTargetHelper(target, directBinding.kind))
+        const helperName = ensureTargetHelper(target, directBinding.kind)
+
+        let replacement: SourceNode
+        if (directBinding.kind === 'server' && insideNonEligibleFn) {
+          const eagerName = ensureEagerResolve(target)
+          replacement = buildSyncServerDescriptorCall(call, eagerName)
+        } else if (directBinding.kind === 'server') {
+          replacement = buildImportedServerDescriptorCall(call, helperName)
+        } else {
+          replacement = buildImportedDescriptorCall(call, helperName)
+        }
         overwriteNode(call, replacement)
         consumedDirectBindings.add(directBinding.local)
         transformed = true
@@ -420,14 +391,24 @@ export function scopeTransform(
       }
 
       default:
-        walkChildren(node, scope, activeTargets)
+        walkChildren(node, scope, activeTargets, insideNonEligibleFn)
     }
+  }
+
+  function ensureEagerResolve(target: TargetContext): string {
+    if (!target.eagerResolveName) {
+      target.eagerResolveName = createUniqueName('__fluenti_i18n', target.scope.bindings)
+      target.scope.bindings.add(target.eagerResolveName)
+    }
+    target.needsEagerResolve = true
+    return target.eagerResolveName
   }
 
   function walkChildren(
     node: SourceNode,
     scope: Scope,
     activeTargets: TargetContext[],
+    insideNonEligibleFn: boolean = false,
   ): void {
     for (const [key, value] of Object.entries(node)) {
       if (key === 'type' || key === 'start' || key === 'end' || key === 'loc') continue
@@ -435,14 +416,14 @@ export function scopeTransform(
       if (Array.isArray(value)) {
         for (const child of value) {
           if (isSourceNode(child)) {
-            walk(child, node, scope, activeTargets)
+            walk(child, node, scope, activeTargets, insideNonEligibleFn)
           }
         }
         continue
       }
 
       if (isSourceNode(value)) {
-        walk(value, node, scope, activeTargets)
+        walk(value, node, scope, activeTargets, insideNonEligibleFn)
       }
     }
   }
@@ -748,6 +729,7 @@ function createTargetContext(
     serverEligible,
     helperNames: {},
     needsHelper: new Set<'client' | 'server'>(),
+    needsEagerResolve: false,
   }
 }
 
@@ -762,6 +744,7 @@ function createFunctionTarget(
     ? name === 'setup' || isHookName(name)
     : isComponentName(name) || isHookName(name)
   const serverEligible = node.async === true
+    || (options.treatFrameworkDirectImportsAsServer === true && isComponentName(name))
 
   if (!clientEligible && !serverEligible) {
     return null
@@ -980,6 +963,68 @@ function buildImportedServerDescriptorCall(
 
   return callExpression(
     memberExpression(awaitExpression(callExpression(identifier(helperName), [])), identifier('t')),
+    args,
+    call,
+  )
+}
+
+function buildSyncServerTaggedTemplateCall(
+  code: string,
+  expression: TaggedTemplateExpressionNode,
+  resolvedName: string,
+): SourceNode {
+  const parts = extractTemplateTranslationParts(code, expression)
+  const descriptorProperties: SourceNode[] = [
+    objectProperty(identifier('id'), stringLiteral(createMessageId(parts.message))),
+    objectProperty(identifier('message'), stringLiteral(parts.message)),
+  ]
+
+  const args: SourceNode[] = [objectExpression(descriptorProperties)]
+  if (parts.values.length > 0) {
+    args.push(objectExpression(parts.values))
+  }
+
+  return callExpression(
+    memberExpression(identifier(resolvedName), identifier('t')),
+    args,
+    expression,
+  )
+}
+
+function buildSyncServerDescriptorCall(
+  call: CallExpressionNode,
+  resolvedName: string,
+): SourceNode {
+  if (call.arguments.length === 0) {
+    throw new Error(
+      '[fluenti] Imported `t` only supports tagged templates and static descriptor calls. ' +
+        'Use useI18n().t(...) or await getI18n() for runtime lookups.',
+    )
+  }
+
+  const descriptor = extractStaticDescriptor(call.arguments[0]!)
+  if (!descriptor) {
+    throw new Error(
+      '[fluenti] Imported `t` only supports tagged templates and static descriptor calls. ' +
+        'Use useI18n().t(...) or await getI18n() for runtime lookups.',
+    )
+  }
+
+  const runtimeDescriptor = [
+    objectProperty(identifier('id'), stringLiteral(descriptor.id ?? createMessageId(descriptor.message, descriptor.context))),
+    objectProperty(identifier('message'), stringLiteral(descriptor.message)),
+  ]
+  if (descriptor.context !== undefined) {
+    runtimeDescriptor.push(objectProperty(identifier('context'), stringLiteral(descriptor.context)))
+  }
+
+  const args: SourceNode[] = [objectExpression(runtimeDescriptor)]
+  if (call.arguments[1]) {
+    args.push(call.arguments[1]!)
+  }
+
+  return callExpression(
+    memberExpression(identifier(resolvedName), identifier('t')),
     args,
     call,
   )
@@ -1209,6 +1254,11 @@ function injectHelpers(
 
     if (target.needsHelper.has('server')) {
       statements.push(...buildServerHelperDeclarations(target, helperLocals.server))
+      // Auto-promote sync RSC components to async
+      const fn = target.node as FunctionLikeNode
+      if (!fn.async) {
+        fn.async = true
+      }
     }
 
     if (statements.length === 0) continue
@@ -1227,6 +1277,15 @@ function injectHelpers(
     const functionNode = target.node as FunctionLikeNode
     if (isSourceNode(functionNode.body) && functionNode.body.type === 'BlockStatement') {
       ;(functionNode.body as BlockStatementNode).body.unshift(...statements)
+
+      // Inject eager resolve statement before the first statement that uses it
+      if (target.needsEagerResolve && target.eagerResolveName && target.helperNames.server) {
+        injectEagerResolve(
+          functionNode.body as BlockStatementNode,
+          target.eagerResolveName,
+          target.helperNames.server,
+        )
+      }
       continue
     }
 
@@ -1235,11 +1294,56 @@ function injectHelpers(
       returnStatement(functionNode.body as SourceNode),
     ])
     functionNode.expression = false
+
+    // Inject eager resolve for expression-body functions converted to block
+    if (target.needsEagerResolve && target.eagerResolveName && target.helperNames.server) {
+      injectEagerResolve(
+        functionNode.body as BlockStatementNode,
+        target.eagerResolveName,
+        target.helperNames.server,
+      )
+    }
   }
 
   if (program.body.length === 0) {
     program.body = []
   }
+}
+
+function injectEagerResolve(
+  block: BlockStatementNode,
+  eagerName: string,
+  helperName: string,
+): void {
+  // Find the first statement in the block that contains a reference to eagerName
+  const insertIndex = block.body.findIndex((stmt) => containsIdentifier(stmt, eagerName))
+  if (insertIndex === -1) return
+
+  const eagerStmt = variableDeclaration('const', [
+    variableDeclarator(
+      identifier(eagerName),
+      awaitExpression(callExpression(identifier(helperName), [])),
+    ),
+  ])
+
+  block.body.splice(insertIndex, 0, eagerStmt)
+}
+
+function containsIdentifier(node: unknown, name: string): boolean {
+  if (!isSourceNode(node)) return false
+  if (node.type === 'Identifier' && (node as IdentifierNode).name === name) return true
+
+  for (const [key, value] of Object.entries(node)) {
+    if (key === 'type' || key === 'start' || key === 'end' || key === 'loc') continue
+    if (Array.isArray(value)) {
+      for (const child of value) {
+        if (containsIdentifier(child, name)) return true
+      }
+    } else if (containsIdentifier(value, name)) {
+      return true
+    }
+  }
+  return false
 }
 
 function buildHelperDeclaration(
@@ -1292,8 +1396,8 @@ function throwDirectImportScopeError(
 ): never {
   if (binding.kind === 'server') {
     throw new Error(
-      `[fluenti] Imported \`t\` from '${binding.source}' requires an async server scope. ` +
-        'Make the current component/action/handler async, or use await getI18n().',
+      `[fluenti] Imported \`t\` from '${binding.source}' must be used inside a React component or async function.\n` +
+        '  Hint: For utility files, pass `t` as a function parameter, or use `const { t } = await getI18n()` inside an async scope.',
     )
   }
 
@@ -1302,8 +1406,9 @@ function throwDirectImportScopeError(
     : 'a component or custom hook'
 
   throw new Error(
-    `[fluenti] Imported \`t\` from '${binding.source}' is a compile-time API. ` +
-      `Use it only inside ${frameworkLabel}.`,
+    `[fluenti] Imported \`t\` from '${binding.source}' is a compile-time API.\n` +
+      `  It must be used inside ${frameworkLabel}.\n` +
+      '  Hint: For utility files, accept `t` as a function parameter instead.',
   )
 }
 
@@ -1370,128 +1475,3 @@ function readStaticStringValue(node: SourceNode): string | undefined {
   return undefined
 }
 
-function identifier(name: string): IdentifierNode {
-  return { type: 'Identifier', name }
-}
-
-function stringLiteral(value: string): StringLiteralNode {
-  return { type: 'StringLiteral', value }
-}
-
-
-function objectProperty(key: SourceNode, value: SourceNode): ObjectPropertyNode {
-  return {
-    type: 'ObjectProperty',
-    key,
-    value,
-    computed: false,
-    shorthand: false,
-  }
-}
-
-function objectExpression(properties: SourceNode[]): ObjectExpressionNode {
-  return {
-    type: 'ObjectExpression',
-    properties,
-  }
-}
-
-function callExpression(callee: SourceNode, args: SourceNode[], original?: SourceNode): CallExpressionNode {
-  return {
-    type: 'CallExpression',
-    callee,
-    arguments: args,
-    ...(original?.start != null ? { start: original.start } : {}),
-    ...(original?.end != null ? { end: original.end } : {}),
-    ...(original?.loc != null ? { loc: original.loc } : {}),
-  }
-}
-
-function memberExpression(object: SourceNode, property: SourceNode): MemberExpressionNode {
-  return {
-    type: 'MemberExpression',
-    object,
-    property,
-    computed: false,
-  }
-}
-
-function awaitExpression(argument: SourceNode): AwaitExpressionNode {
-  return {
-    type: 'AwaitExpression',
-    argument,
-  }
-}
-
-function variableDeclarator(id: SourceNode, init: SourceNode): VariableDeclaratorNode {
-  return {
-    type: 'VariableDeclarator',
-    id,
-    init,
-  }
-}
-
-function variableDeclaration(kind: 'const' | 'let' | 'var', declarations: VariableDeclaratorNode[]): VariableDeclarationNode {
-  return {
-    type: 'VariableDeclaration',
-    kind,
-    declarations,
-  }
-}
-
-function objectPattern(properties: SourceNode[]): ObjectPatternNode {
-  return {
-    type: 'ObjectPattern',
-    properties,
-  }
-}
-
-function importSpecifier(importedName: string, localName: string): ImportSpecifierNode {
-  return {
-    type: 'ImportSpecifier',
-    imported: identifier(importedName),
-    local: identifier(localName),
-  }
-}
-
-function importDeclaration(source: string, specifiers: SourceNode[]): ImportDeclarationNode {
-  return {
-    type: 'ImportDeclaration',
-    source: stringLiteral(source),
-    specifiers,
-  }
-}
-
-function returnStatement(argument: SourceNode): ReturnStatementNode {
-  return {
-    type: 'ReturnStatement',
-    argument,
-  }
-}
-
-function blockStatement(body: SourceNode[]): BlockStatementNode {
-  return {
-    type: 'BlockStatement',
-    body,
-  }
-}
-
-function isImportDeclaration(node: unknown): node is ImportDeclarationNode {
-  return isSourceNode(node) && node.type === 'ImportDeclaration'
-}
-
-function isImportSpecifier(node: unknown): node is ImportSpecifierNode {
-  return isSourceNode(node) && node.type === 'ImportSpecifier'
-}
-
-function isVariableDeclarator(node: unknown): node is VariableDeclaratorNode {
-  return isSourceNode(node) && node.type === 'VariableDeclarator'
-}
-
-function isCallExpression(node: unknown): node is CallExpressionNode {
-  return isSourceNode(node) && node.type === 'CallExpression'
-}
-
-function isIdentifier(node: unknown): node is IdentifierNode {
-  return isSourceNode(node) && node.type === 'Identifier'
-}
