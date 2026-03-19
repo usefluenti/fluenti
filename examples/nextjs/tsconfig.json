@@ -14,8 +14,7 @@
     "incremental": true,
     "plugins": [{ "name": "next" }],
     "paths": {
-      "@/*": ["./src/*"],
-      "@fluenti/next": ["./node_modules/.fluenti/server"]
+      "@/*": ["./src/*"]
     },
     "target": "ES2017"
   },
