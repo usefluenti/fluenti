@@ -79,6 +79,7 @@ function Home() {
 ```tsx
 // src/routes/about.tsx
 import { createFileRoute } from '@tanstack/react-router'
+import { t } from '@fluenti/react'
 
 export const Route = createFileRoute('/about')({
   component: About,
@@ -95,6 +96,7 @@ Use TanStack Router's `Link` component for client-side navigation:
 
 ```tsx
 import { Link } from '@tanstack/react-router'
+import { t } from '@fluenti/react'
 
 function Nav() {
   return (

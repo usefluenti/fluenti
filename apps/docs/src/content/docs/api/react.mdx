@@ -33,9 +33,6 @@ import zhCN from './locales/compiled/zh-CN'
 | `dateFormats` | `DateFormatOptions?` | Custom date format presets |
 | `numberFormats` | `NumberFormatOptions?` | Custom number format presets |
 | `missing` | `(locale, id) => string?` | Missing message handler |
-| `transform` | `(result, id, locale) => string?` | Post-translation transform hook applied to every resolved message |
-| `onLocaleChange` | `(newLocale, prevLocale) => void?` | Callback fired when locale changes |
-| `formatters` | `Record<string, CustomFormatter>?` | Custom ICU function formatters |
 
 ### Lazy loading
 
@@ -300,9 +297,6 @@ export const { setLocale, getI18n, Trans, Plural, Select, DateTime, NumberFormat
 | `dateFormats` | `DateFormatOptions?` | Custom date format presets |
 | `numberFormats` | `NumberFormatOptions?` | Custom number format presets |
 | `missing` | `(locale, id) => string?` | Missing message handler |
-| `transform` | `(result, id, locale) => string?` | Post-translation transform hook |
-| `onLocaleChange` | `(newLocale, prevLocale) => void?` | Callback fired when locale changes |
-| `formatters` | `Record<string, CustomFormatter>?` | Custom ICU function formatters |
 
 #### Returns
 

@@ -7,7 +7,7 @@ const execFileAsync = promisify(execFile)
 
 export type AIProvider = 'claude' | 'codex'
 
-function buildPrompt(
+export function buildPrompt(
   sourceLocale: string,
   targetLocale: string,
   messages: Record<string, string>,
@@ -52,7 +52,7 @@ async function invokeAI(provider: AIProvider, prompt: string): Promise<string> {
   }
 }
 
-function extractJSON(text: string): Record<string, string> {
+export function extractJSON(text: string): Record<string, string> {
   // Try to find a JSON object in the response
   const match = text.match(/\{[\s\S]*\}/)
   if (!match) {
@@ -65,7 +65,7 @@ function extractJSON(text: string): Record<string, string> {
   return parsed as Record<string, string>
 }
 
-function getUntranslatedEntries(catalog: CatalogData): Record<string, string> {
+export function getUntranslatedEntries(catalog: CatalogData): Record<string, string> {
   const entries: Record<string, string> = {}
   for (const [id, entry] of Object.entries(catalog)) {
     if (entry.obsolete) continue
@@ -76,7 +76,7 @@ function getUntranslatedEntries(catalog: CatalogData): Record<string, string> {
   return entries
 }
 
-function chunkEntries(
+export function chunkEntries(
   entries: Record<string, string>,
   batchSize: number,
 ): Array<Record<string, string>> {
@@ -112,11 +112,12 @@ export async function translateCatalog(options: TranslateOptions): Promise<{
   const count = Object.keys(untranslated).length
 
   if (count === 0) {
-    return { catalog, translated: 0 }
+    return { catalog: { ...catalog }, translated: 0 }
   }
 
   consola.info(`  ${count} untranslated messages, translating with ${provider}...`)
 
+  const result = { ...catalog }
   const batches = chunkEntries(untranslated, batchSize)
   let totalTranslated = 0
 
@@ -134,8 +135,8 @@ export async function translateCatalog(options: TranslateOptions): Promise<{
 
     for (const key of batchKeys) {
       if (translations[key] && typeof translations[key] === 'string') {
-        catalog[key] = {
-          ...catalog[key],
+        result[key] = {
+          ...result[key],
           translation: translations[key],
         }
         totalTranslated++
@@ -145,5 +146,5 @@ export async function translateCatalog(options: TranslateOptions): Promise<{
     }
   }
 
-  return { catalog, translated: totalTranslated }
+  return { catalog: result, translated: totalTranslated }
 }

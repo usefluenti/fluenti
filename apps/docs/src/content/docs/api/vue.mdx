@@ -35,9 +35,6 @@ app.use(i18n)
 | `lazyLocaleLoading` | `boolean?` | Enable async locale loading through `chunkLoader` |
 | `chunkLoader` | `(locale: string) => Promise<Messages>?` | Async locale loader used when `lazyLocaleLoading` is enabled |
 | `componentPrefix` | `string?` | Prefix for global components (e.g. `'I18n'` → `I18nTrans`, `I18nPlural`, `I18nSelect`) |
-| `transform` | `(result, id, locale) => string?` | Post-translation transform hook applied to every resolved message |
-| `onLocaleChange` | `(newLocale, prevLocale) => void?` | Callback fired when locale changes |
-| `formatters` | `Record<string, CustomFormatter>?` | Custom ICU function formatters |
 
 ## `useI18n()`
 
@@ -197,3 +194,61 @@ Alternatively, pass options as attributes:
 ```
 
 `Select` also remains runtime-correct without the build plugin. `options` takes precedence over direct case attributes, and the component performs catalog lookup through a synthetic ICU select message at runtime.
+
+## `<DateTime>`
+
+Date formatting component. Globally registered — no import needed.
+
+```vue
+<DateTime :value="new Date()" />
+<DateTime :value="Date.now()" style="short" />
+<DateTime :value="event.date" style="long" tag="time" />
+```
+
+### Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `value` | `Date \| number` | — | **(required)** Date value to format |
+| `style` | `string` | — | Named format style (e.g. `'short'`, `'long'`, `'relative'`) |
+| `tag` | `string` | `'span'` | Wrapper element |
+
+## `<NumberFormat>`
+
+Number formatting component. Globally registered — no import needed.
+
+```vue
+<NumberFormat :value="1234.56" />
+<NumberFormat :value="0.75" style="percent" />
+<NumberFormat :value="99.99" style="currency" tag="strong" />
+```
+
+### Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `value` | `number` | — | **(required)** Number value to format |
+| `style` | `string` | — | Named format style (e.g. `'currency'`, `'percent'`, `'decimal'`) |
+| `tag` | `string` | `'span'` | Wrapper element |
+
+## `msg`
+
+Re-exported from `@fluenti/core`. Create lazy message descriptors for module-level constants.
+
+```vue
+<script setup>
+import { msg } from '@fluenti/vue'
+import { useI18n } from '@fluenti/vue'
+
+const ROLES = {
+  admin: msg`Administrator`,
+  user: msg`Regular User`,
+}
+
+const { t } = useI18n()
+</script>
+
+<template>
+  <span>{{ t(ROLES[role]) }}</span>
+</template>
+```

@@ -17,3 +17,56 @@ hero:
       link: https://github.com/usefluenti/fluenti
       icon: external
 ---
+
+import { Card, CardGrid } from '@astrojs/starlight/components'
+
+## Why Fluenti?
+
+<CardGrid>
+  <Card title="Compile-Time" icon="rocket">
+    ICU messages are compiled at build time. Zero parsing overhead at runtime — just string concatenation.
+  </Card>
+  <Card title="Natural Keys" icon="pencil">
+    Write `<h1 v-t>Welcome</h1>` — the source text is the key. No more maintaining JSON ID maps.
+  </Card>
+  <Card title="Rich Text" icon="document">
+    Use real HTML in translations: `<Trans>Click <a href="/docs">here</a></Trans>`. No XSS, no indexed placeholders.
+  </Card>
+  <Card title="Multi-Framework" icon="puzzle">
+    Vue, React, SolidJS, Next.js, Nuxt, and more. One core, consistent APIs across frameworks.
+  </Card>
+  <Card title="Code Splitting" icon="seti:folder">
+    Built-in locale chunking — lazy-load translations per route with `splitting: 'dynamic'`.
+  </Card>
+  <Card title="Full ICU" icon="translate">
+    Plurals, selects, nested arguments, custom formatters, date/number formatting — all built in.
+  </Card>
+</CardGrid>
+
+## How it looks
+
+```vue
+<template>
+  <!-- Compiled away at build time — zero runtime cost -->
+  <h1 v-t>Hello, {{ name }}!</h1>
+  <p v-t>Read the <a href="/terms">terms</a> and <strong>conditions</strong></p>
+</template>
+```
+
+```bash
+# Extract → Translate → Compile → Ship
+fluenti extract        # scan source files
+fluenti translate      # AI-powered translation (optional)
+fluenti compile        # generate optimized JS modules
+```
+
+## Supported Frameworks
+
+<CardGrid>
+  <Card title="Vue 3" icon="seti:vue">v-t directive, Trans, useI18n()</Card>
+  <Card title="React" icon="seti:react">I18nProvider, Trans, useI18n()</Card>
+  <Card title="SolidJS" icon="seti:javascript">I18nProvider, Trans, useI18n()</Card>
+  <Card title="Next.js" icon="seti:react">App Router, RSC, withFluenti()</Card>
+  <Card title="Nuxt" icon="seti:vue">Locale routing, SSR, auto detection</Card>
+  <Card title="Vite" icon="seti:config">Build transforms, virtual modules, HMR</Card>
+</CardGrid>

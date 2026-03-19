@@ -9,34 +9,39 @@ describe('extractFromTsx', () => {
     expect(messages[0]!.message).toBe('Hello World')
   })
 
-  it('skips t`` with interpolation (handled by vite plugin)', () => {
+  it('extracts t`` with simple identifier interpolation', () => {
     const code = 'const msg = t`Hello ${name}`'
     const messages = extractFromTsx(code, 'App.tsx')
-    expect(messages).toHaveLength(0)
+    expect(messages).toHaveLength(1)
+    expect(messages[0]!.message).toBe('Hello {name}')
   })
 
-  it('skips t`` with property access interpolation', () => {
+  it('extracts t`` with property access interpolation', () => {
     const code = 'const msg = t`Hello ${user.name}`'
     const messages = extractFromTsx(code, 'App.tsx')
-    expect(messages).toHaveLength(0)
+    expect(messages).toHaveLength(1)
+    expect(messages[0]!.message).toBe('Hello {name}')
   })
 
-  it('skips t`` with complex expression interpolation', () => {
+  it('extracts t`` with function call interpolation as named placeholder', () => {
     const code = 'const msg = t`Total: ${getTotal()}`'
     const messages = extractFromTsx(code, 'App.tsx')
-    expect(messages).toHaveLength(0)
+    expect(messages).toHaveLength(1)
+    expect(messages[0]!.message).toBe('Total: {getTotal}')
   })
 
-  it('skips t`` with method call interpolation', () => {
+  it('extracts t`` with method call interpolation', () => {
     const code = 'const msg = t`hello ${obj.fun()}`'
     const messages = extractFromTsx(code, 'App.tsx')
-    expect(messages).toHaveLength(0)
+    expect(messages).toHaveLength(1)
+    expect(messages[0]!.message).toBe('hello {obj_fun}')
   })
 
-  it('skips t`` with mixed interpolation', () => {
+  it('extracts t`` with mixed interpolation', () => {
     const code = 'const msg = t`${user.name} owes ${getTotal()}`'
     const messages = extractFromTsx(code, 'App.tsx')
-    expect(messages).toHaveLength(0)
+    expect(messages).toHaveLength(1)
+    expect(messages[0]!.message).toBe('{name} owes {getTotal}')
   })
 
   it('extracts t() function call', () => {
@@ -46,7 +51,7 @@ describe('extractFromTsx', () => {
     expect(messages[0]!.message).toBe('Hello World')
   })
 
-  it('skips imported t tagged templates with interpolation', () => {
+  it('extracts imported t tagged templates with interpolation', () => {
     const code = `
 import { t as tt } from '@fluenti/react'
 export function Hero() {
@@ -54,7 +59,8 @@ export function Hero() {
 }
 `
     const messages = extractFromTsx(code, 'Hero.tsx')
-    expect(messages).toHaveLength(0)
+    expect(messages).toHaveLength(1)
+    expect(messages[0]!.message).toBe('Hello {name}')
   })
 
   it('extracts imported t tagged template without interpolation', () => {
@@ -230,22 +236,25 @@ export default App
     expect(messages[0]!.message).toBe('Plain static text')
   })
 
-  it('skips t`` with simple expression ${name}', () => {
+  it('extracts t`` with simple expression ${name}', () => {
     const code = 'const msg = t`Welcome ${name}!`'
     const messages = extractFromTsx(code, 'App.tsx')
-    expect(messages).toHaveLength(0)
+    expect(messages).toHaveLength(1)
+    expect(messages[0]!.message).toBe('Welcome {name}!')
   })
 
-  it('skips t`` with property access ${user.name}', () => {
+  it('extracts t`` with property access ${user.name}', () => {
     const code = 'const msg = t`Dear ${user.name}, welcome`'
     const messages = extractFromTsx(code, 'App.tsx')
-    expect(messages).toHaveLength(0)
+    expect(messages).toHaveLength(1)
+    expect(messages[0]!.message).toBe('Dear {name}, welcome')
   })
 
-  it('skips t`` with complex expression ${getName()}', () => {
+  it('extracts t`` with function call expression ${getName()}', () => {
     const code = 'const msg = t`Greetings ${getName()}`'
     const messages = extractFromTsx(code, 'App.tsx')
-    expect(messages).toHaveLength(0)
+    expect(messages).toHaveLength(1)
+    expect(messages[0]!.message).toBe('Greetings {getName}')
   })
 
   it('extracts t() with escaped quotes inside', () => {
@@ -323,10 +332,11 @@ const e = <Plural value={n} one="# item" other="# items"/>
     expect(messages.some(m => m.message!.includes('plural'))).toBe(true)
   })
 
-  it('skips tagged template with multiple interpolations', () => {
+  it('extracts tagged template with multiple interpolations', () => {
     const code = 'const msg = t`You have ${items.length} in ${cartName}`'
     const messages = extractFromTsx(code, 'App.tsx')
-    expect(messages).toHaveLength(0)
+    expect(messages).toHaveLength(1)
+    expect(messages[0]!.message).toBe('You have {length} in {cartName}')
   })
 
   it('does not extract t() from single-line comments', () => {

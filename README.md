@@ -106,14 +106,14 @@ The Vite plugin loads compiled catalogs automatically — no manual wiring neede
 
 Full documentation — guides, API reference, and examples — is available at **[fluenti.dev](https://fluenti.dev)**.
 
-- [Getting Started](https://fluenti.dev/getting-started/introduction/)
-- [Vue Quick Start](https://fluenti.dev/getting-started/quick-start-vue/)
-- [React Quick Start](https://fluenti.dev/getting-started/quick-start-react/)
-- [SolidJS Quick Start](https://fluenti.dev/getting-started/quick-start-solid/)
+- [Getting Started](https://fluenti.dev/start/introduction/)
+- [Vue Quick Start](https://fluenti.dev/start/quick-start-vue/)
+- [React Quick Start](https://fluenti.dev/start/quick-start-react/)
+- [SolidJS Quick Start](https://fluenti.dev/start/quick-start-solid/)
 - [Next.js Quick Start](https://fluenti.dev/start/quick-start-nextjs/)
-- [Nuxt Quick Start](https://fluenti.dev/getting-started/quick-start-nuxt/)
+- [Nuxt Quick Start](https://fluenti.dev/start/quick-start-nuxt/)
 - [Code Splitting](https://fluenti.dev/advanced/code-splitting/)
-- [SSR Guide](https://fluenti.dev/guides/ssr/)
+- [SSR Guide](https://fluenti.dev/advanced/ssr-hydration/)
 - [vue-i18n Migration](https://fluenti.dev/frameworks/vue/migration-from-vue-i18n/)
 
 ## License

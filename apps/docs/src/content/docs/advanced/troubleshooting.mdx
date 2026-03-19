@@ -1,0 +1,123 @@
+---
+title: Troubleshooting
+description: Common issues and solutions when working with Fluenti
+---
+
+import { Aside } from '@astrojs/starlight/components'
+
+## `t` is not a function at runtime
+
+The Vite plugin was not configured. Ensure `@fluenti/vite-plugin` is added to your `vite.config.ts`:
+
+```typescript
+import fluenti from '@fluenti/vite-plugin'
+
+export default defineConfig({
+  plugins: [fluenti()],
+})
+```
+
+For Next.js, use `withFluenti()` in `next.config.js` instead. For Nuxt, add `@fluenti/nuxt` to your `nuxt.config.ts` modules.
+
+## Hydration mismatch after locale switch
+
+The server and client are resolving different locales. This typically happens when the locale is stored in `localStorage` (not visible to the server).
+
+<Aside type="tip">
+Always use **cookies** for locale persistence in SSR apps. Cookies are sent with every request, so the server can render the correct locale on the first pass.
+</Aside>
+
+See [Best Practices — SSR & Hydration](/advanced/best-practices/#ssr--hydration) for the recommended setup.
+
+## PO file encoding issues
+
+PO files must be saved as **UTF-8 without BOM**. Some editors (notably older versions of Poedit on Windows) may add a BOM, which can cause parsing errors.
+
+Check your file encoding:
+
+```bash
+file locales/ja.po
+# Should output: UTF-8 Unicode text
+```
+
+## Vite HMR not picking up catalog changes
+
+If translations are not updating during development, check that `devAutoCompile` is enabled (it is by default):
+
+```typescript
+fluenti({
+  devAutoCompile: true, // default
+})
+```
+
+Also verify that your source files match the `include` patterns in `fluenti.config.ts`.
+
+## Missing translations in production
+
+Compiled catalogs are build artifacts. If translations are missing in production, `fluenti compile` was likely not run during the build process.
+
+Add it to your CI/CD pipeline:
+
+```bash
+pnpm fluenti extract
+pnpm fluenti compile
+pnpm build
+```
+
+## TypeScript errors with message IDs
+
+If your IDE shows type errors for message IDs, regenerate the type declarations:
+
+```bash
+pnpm fluenti compile
+```
+
+This generates `messages.d.ts` in your `compileOutDir`. Ensure your `tsconfig.json` includes it:
+
+```json
+{
+  "include": ["src", "src/locales/compiled/messages.d.ts"]
+}
+```
+
+## `fluenti extract` finds no messages
+
+Check that your `include` patterns in `fluenti.config.ts` match your source file paths:
+
+```typescript
+export default defineConfig({
+  include: [
+    './src/**/*.vue',     // Vue SFCs
+    './src/**/*.tsx',     // React/Solid TSX
+    './src/**/*.jsx',     // JSX
+    './src/**/*.ts',      // TypeScript files with t`` or msg``
+  ],
+})
+```
+
+Also verify you are using supported extraction patterns: `v-t`, `` t`...` ``, `t()`, `<Trans>`, `<Plural>`, or `msg`.
+
+## Plural forms not working correctly
+
+Ensure you are passing a **number** to plural arguments, not a string:
+
+```typescript
+// Correct — number
+t`{count, plural, one {# item} other {# items}}`, { count: 5 })
+
+// Wrong — string "5" won't match plural rules
+t`{count, plural, one {# item} other {# items}}`, { count: "5" })
+```
+
+## Build fails with "Cannot resolve virtual:fluenti/*"
+
+The Vite plugin must be loaded before framework-specific plugins. Ensure `fluenti()` appears early in your plugins array:
+
+```typescript
+export default defineConfig({
+  plugins: [
+    fluenti(), // before vue(), react(), etc.
+    vue(),
+  ],
+})
+```

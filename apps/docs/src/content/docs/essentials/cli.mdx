@@ -24,6 +24,14 @@ Supports:
 
 The command reads `fluenti.config.ts` for `include`, `exclude`, `catalogDir`, and `format` settings.
 
+### Flags
+
+| Flag | Type | Default | Description |
+|------|------|---------|-------------|
+| `--config` | `string` | — | Path to config file |
+| `--clean` | `boolean` | `false` | Remove obsolete messages from catalogs |
+| `--no-fuzzy` | `boolean` | `false` | Skip fuzzy matching for similar messages |
+
 ## `fluenti compile`
 
 Compile message catalogs to optimized JavaScript modules:
@@ -37,6 +45,13 @@ npx fluenti compile
 - Each message becomes a `/* @__PURE__ */` annotated named export for tree-shaking
 - Static messages compile to plain strings (zero overhead)
 - Dynamic messages compile to small functions
+
+### Flags
+
+| Flag | Type | Default | Description |
+|------|------|---------|-------------|
+| `--config` | `string` | — | Path to config file |
+| `--skip-fuzzy` | `boolean` | `false` | Exclude fuzzy-marked translations from output |
 
 ## `fluenti stats`
 
@@ -54,22 +69,88 @@ ja        142     128           90%
 zh-CN     142      97           68%
 ```
 
-Use `--strict --threshold 90` in CI to fail if any locale falls below the threshold:
+To enforce a minimum translation percentage, set `strictThreshold` in your `fluenti.config.ts`:
+
+```typescript
+export default defineConfig({
+  strictThreshold: 90, // fail if any locale is below 90%
+})
+```
+
+## `fluenti init`
+
+Interactive project setup:
 
 ```bash
-npx fluenti stats --strict --threshold 90
+npx fluenti init
 ```
+
+Detects your framework from `package.json` dependencies and prompts for:
+- **Source locale** (default: `en`)
+- **Target locales** (e.g. `ja`, `zh-CN`)
+- **Catalog format** (`po` or `json`)
+
+Generates:
+- `fluenti.config.ts` with your chosen settings
+- Updates `.gitignore` to exclude compiled output
+- Adds `i18n:extract` and `i18n:compile` scripts to `package.json`
+
+Supported frameworks: Vue, React, SolidJS, Next.js, Nuxt, SolidStart.
+
+## `fluenti translate`
+
+AI-powered translation using Claude or Codex CLI:
+
+```bash
+npx fluenti translate --locale ja
+npx fluenti translate --locale zh-CN --provider codex --batch-size 100
+```
+
+| Flag | Type | Default | Description |
+|------|------|---------|-------------|
+| `--provider` | `'claude' \| 'codex'` | `'claude'` | AI provider to use |
+| `--locale` | `string` | — | Target locale to translate |
+| `--batch-size` | `number` | `50` | Messages per AI request |
+| `--config` | `string` | — | Path to config file |
+
+The command batches untranslated messages from your catalogs and sends them to the AI provider. Existing translations are preserved.
+
+<Aside type="caution">
+Requires the `claude` or `codex` CLI to be installed and authenticated.
+</Aside>
+
+## `fluenti migrate`
+
+AI-assisted migration from another i18n library:
+
+```bash
+npx fluenti migrate --from vue-i18n
+npx fluenti migrate --from react-i18next --provider codex --write
+```
+
+| Flag | Type | Default | Description |
+|------|------|---------|-------------|
+| `--from` | `string` | — | Source library (required) |
+| `--provider` | `'claude' \| 'codex'` | `'claude'` | AI provider |
+| `--write` | `boolean` | `false` | Write changes to disk (default: dry-run preview) |
+
+Supported source libraries: `vue-i18n`, `nuxt-i18n`, `react-i18next`, `next-intl`, `next-i18next`, `lingui`.
+
+The command scans your project for the existing library's config files, locale files, and source patterns, then generates a migration plan including `fluenti.config.ts`, converted PO catalogs, and step-by-step migration instructions.
 
 ## Workflow
 
 ```
 ┌─────────────────────────────────────────┐
+│  0. fluenti init                        │
+│     Set up config and scripts           │
+│                                         │
 │  1. fluenti extract                     │
 │     Scan source → update PO/JSON files  │
 │                                         │
 │  2. Translate                           │
 │     Translators edit PO files           │
-│     (or sync via Crowdin / Weblate)     │
+│     (or use fluenti translate for AI)   │
 │                                         │
 │  3. fluenti compile                     │
 │     PO → optimised JS modules           │
@@ -88,6 +169,8 @@ For custom tooling, the CLI exports its internals:
 import { extractFromVue, extractFromTsx } from '@fluenti/cli'
 import { updateCatalog, compileCatalog } from '@fluenti/cli'
 import { readPoCatalog, writePoCatalog } from '@fluenti/cli'
+import { translateCatalog } from '@fluenti/cli'
+import { runInit, runMigrate } from '@fluenti/cli'
 ```
 
 For the full programmatic API reference, see [@fluenti/cli API](/api/cli/).

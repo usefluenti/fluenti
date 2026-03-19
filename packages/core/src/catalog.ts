@@ -7,7 +7,7 @@ import type { CompiledMessage, Locale, Messages } from './types'
  * locale enumeration, and message lookup with get/set/has operations.
  */
 export class Catalog {
-  private readonly _catalogs: Record<Locale, Messages> = {}
+  private readonly _catalogs: Record<Locale, Messages> = Object.create(null) as Record<Locale, Messages>
 
   /**
    * Retrieve a compiled message by locale and ID.

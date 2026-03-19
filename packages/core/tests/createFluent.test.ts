@@ -647,6 +647,61 @@ describe('createFluent', () => {
     })
   })
 
+  // ─── compiled function messages in fallback paths ──────────────────
+
+  describe('compiled function messages in fallback paths', () => {
+    it('fallback locale uses compiled function message', () => {
+      const compiled = (values?: Record<string, unknown>) =>
+        `Hola ${values?.['name'] ?? 'mundo'}`
+      const i18n = createFluent({
+        locale: 'fr',
+        fallbackLocale: 'es',
+        messages: {
+          fr: {},
+          es: { greeting: compiled as any },
+        },
+      })
+      expect(i18n.t('greeting', { name: 'Alice' })).toBe('Hola Alice')
+    })
+
+    it('fallbackChain uses compiled function message', () => {
+      const compiled = (values?: Record<string, unknown>) =>
+        `Hallo ${values?.['name'] ?? 'Welt'}`
+      const i18n = createFluent({
+        locale: 'fr',
+        messages: {
+          fr: {},
+          de: { greeting: compiled as any },
+        },
+        fallbackChain: {
+          fr: ['de'],
+        },
+      })
+      expect(i18n.t('greeting', { name: 'Bob' })).toBe('Hallo Bob')
+    })
+
+    it('descriptor without catalog hit but with missing handler', () => {
+      const missing = vi.fn().mockReturnValue('MISSING RESULT')
+      const i18n = createFluent({
+        locale: 'en',
+        messages: { en: {} },
+        missing,
+      })
+      const desc = { id: 'nav.home', message: 'Home' }
+      expect(i18n.t(desc)).toBe('MISSING RESULT')
+      expect(missing).toHaveBeenCalledWith('en', 'nav.home')
+    })
+
+    it('descriptor with only id (no message, no catalog) returns messageId', () => {
+      const i18n = createFluent({
+        locale: 'en',
+        messages: { en: {} },
+      })
+      const desc = { id: 'orphan.key' } as any
+      expect(i18n.t(desc)).toBe('orphan.key')
+    })
+  })
+
   // ─── input validation ──────────────────────────────────────────────
 
   describe('input validation', () => {

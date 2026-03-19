@@ -30,13 +30,22 @@ describe('PO format', () => {
       expect(po).toContain('msgstr "Bonjour"')
     })
 
-    it('marks obsolete entries with fuzzy flag', () => {
+    it('writes fuzzy flag for fuzzy entries', () => {
+      const catalog: CatalogData = {
+        abc: { message: 'Hello', fuzzy: true, translation: 'Bonjour' },
+      }
+      const po = writePoCatalog(catalog)
+
+      expect(po).toContain('#, fuzzy')
+    })
+
+    it('does not write fuzzy flag for obsolete-only entries', () => {
       const catalog: CatalogData = {
         abc: { message: 'Hello', obsolete: true },
       }
       const po = writePoCatalog(catalog)
 
-      expect(po).toContain('#, fuzzy')
+      expect(po).not.toContain('#, fuzzy')
     })
   })
 
@@ -114,7 +123,7 @@ msgstr "Content-Type: text/plain; charset=UTF-8\\n"
       expect(Object.keys(catalog)).toHaveLength(0)
     })
 
-    it('reads fuzzy entries and marks as obsolete', () => {
+    it('reads fuzzy entries and marks as fuzzy (not obsolete)', () => {
       const po = `
 msgid ""
 msgstr "Content-Type: text/plain; charset=UTF-8\\n"
@@ -125,7 +134,8 @@ msgstr "Ancien message"
 `
       const catalog = readPoCatalog(po)
       expect(catalog[key('Old message')]).toBeDefined()
-      expect(catalog[key('Old message')]!.obsolete).toBe(true)
+      expect(catalog[key('Old message')]!.fuzzy).toBe(true)
+      expect(catalog[key('Old message')]!.obsolete).toBeUndefined()
       expect(catalog[key('Old message')]!.translation).toBe('Ancien message')
     })
 
@@ -225,12 +235,75 @@ msgstr "<0>ドキュメント</0>で詳細をご覧ください。"
       expect(po).toContain('#: src/App.vue:5')
     })
 
-    it('writes fuzzy flag for obsolete entries', () => {
+    it('writes fuzzy flag for fuzzy entries', () => {
+      const catalog: CatalogData = {
+        abc: { message: 'Old', fuzzy: true, translation: 'Ancien' },
+      }
+      const po = writePoCatalog(catalog)
+      expect(po).toContain('#, fuzzy')
+    })
+
+    it('does not write fuzzy flag for obsolete entries', () => {
       const catalog: CatalogData = {
         abc: { message: 'Old', obsolete: true, translation: 'Ancien' },
       }
       const po = writePoCatalog(catalog)
-      expect(po).toContain('#, fuzzy')
+      expect(po).not.toContain('#, fuzzy')
+    })
+  })
+
+  describe('multi-origin references', () => {
+    it('writes multiple origins as separate reference lines', () => {
+      const catalog: CatalogData = {
+        abc: { message: 'Hello', origin: ['src/A.vue:1', 'src/B.vue:5'] },
+      }
+      const po = writePoCatalog(catalog)
+      expect(po).toContain('src/A.vue:1')
+      expect(po).toContain('src/B.vue:5')
+    })
+
+    it('reads multiple reference comments as array origin', () => {
+      const po = `
+msgid ""
+msgstr "Content-Type: text/plain; charset=UTF-8\\n"
+
+#: src/A.vue:1
+#: src/B.vue:5
+msgid "Hello"
+msgstr ""
+`
+      const catalog = readPoCatalog(po)
+      const entry = catalog[key('Hello')]
+      expect(entry).toBeDefined()
+      expect(Array.isArray(entry!.origin)).toBe(true)
+      expect(entry!.origin).toContain('src/A.vue:1')
+      expect(entry!.origin).toContain('src/B.vue:5')
+    })
+
+    it('roundtrips multiple origins', () => {
+      const original: CatalogData = {
+        abc: { message: 'Hello', origin: ['src/A.vue:1', 'src/B.vue:5'] },
+      }
+      const po = writePoCatalog(original)
+      const restored = readPoCatalog(po)
+      const entry = restored['abc']
+      expect(entry).toBeDefined()
+      expect(Array.isArray(entry!.origin)).toBe(true)
+      expect(entry!.origin).toContain('src/A.vue:1')
+      expect(entry!.origin).toContain('src/B.vue:5')
+    })
+  })
+
+  describe('fuzzy roundtrip', () => {
+    it('preserves fuzzy flag through write/read cycle', () => {
+      const original: CatalogData = {
+        abc: { message: 'Hello', translation: 'Bonjour', fuzzy: true },
+      }
+      const po = writePoCatalog(original)
+      const restored = readPoCatalog(po)
+      expect(restored['abc']!.fuzzy).toBe(true)
+      expect(restored['abc']!.obsolete).toBeUndefined()
+      expect(restored['abc']!.translation).toBe('Bonjour')
     })
   })
 

@@ -1,0 +1,138 @@
+---
+title: Tutorial
+description: Build a fully translated React app from scratch with Fluenti
+---
+
+import { Steps, Aside } from '@astrojs/starlight/components'
+
+This tutorial walks you through building a React app with full i18n support using Fluenti and Vite. By the end, you will have a working app with English and Japanese translations.
+
+## What you will build
+
+A small task manager app with:
+- A greeting message with the user's name
+- A task counter with plural forms
+- A locale switcher
+
+<Steps>
+
+1. **Create a new project**
+
+   ```bash
+   npm create vite@latest my-i18n-app -- --template react-ts
+   cd my-i18n-app
+   ```
+
+2. **Install Fluenti**
+
+   ```bash
+   npm install @fluenti/core @fluenti/react
+   npm install -D @fluenti/cli @fluenti/vite-plugin
+   ```
+
+3. **Initialize Fluenti**
+
+   ```bash
+   npx fluenti init
+   ```
+
+   When prompted, set source locale to `en`, target locales to `ja`, and format to `po`. This generates `fluenti.config.ts` and adds scripts to `package.json`.
+
+4. **Configure Vite**
+
+   Update `vite.config.ts`:
+
+   ```typescript
+   import { defineConfig } from 'vite'
+   import react from '@vitejs/plugin-react'
+   import fluenti from '@fluenti/vite-plugin'
+
+   export default defineConfig({
+     plugins: [fluenti(), react()],
+   })
+   ```
+
+5. **Write your component**
+
+   Replace `src/App.tsx`:
+
+   ```tsx
+   import { I18nProvider, useI18n } from '@fluenti/react'
+
+   function TaskApp() {
+     const { setLocale, locale } = useI18n()
+     const name = 'Alice'
+     const taskCount = 3
+
+     return (
+       <div>
+         <h1>{t`Hello, ${name}!`}</h1>
+         <p>{t`You have ${taskCount} tasks today`}</p>
+
+         <button onClick={() => setLocale(locale === 'en' ? 'ja' : 'en')}>
+           {t`Switch language`}
+         </button>
+       </div>
+     )
+   }
+
+   export default function App() {
+     return (
+       <I18nProvider
+         locale="en"
+         messages={{}}
+       >
+         <TaskApp />
+       </I18nProvider>
+     )
+   }
+   ```
+
+6. **Extract messages**
+
+   ```bash
+   npm run i18n:extract
+   ```
+
+   This scans your source files and creates PO catalog files in `locales/en.po` and `locales/ja.po`.
+
+7. **Translate**
+
+   Open `locales/ja.po` and add translations:
+
+   ```po
+   msgid "Hello, {name}!"
+   msgstr "こんにちは、{name}さん！"
+
+   msgid "You have {taskCount} tasks today"
+   msgstr "今日のタスクは{taskCount}件です"
+
+   msgid "Switch language"
+   msgstr "言語を切り替え"
+   ```
+
+   You can also use `npx fluenti translate --locale ja` to auto-translate with AI.
+
+8. **Compile**
+
+   ```bash
+   npm run i18n:compile
+   ```
+
+   This generates optimized JavaScript modules in `src/locales/compiled/`.
+
+9. **Run**
+
+   ```bash
+   npm run dev
+   ```
+
+   Open your browser and click "Switch language" to see the translations in action.
+
+</Steps>
+
+## Next steps
+
+- [Message Format](/essentials/message-format/) — plurals, selects, and ICU syntax
+- [Code Splitting](/advanced/code-splitting/) — lazy-load translations per route
+- [Best Practices](/advanced/best-practices/) — production patterns

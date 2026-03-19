@@ -223,6 +223,7 @@ export function createI18nContext(config: FluentConfig | I18nConfig): I18nContex
   }
 
   const loadMessages = (loc: Locale, msgs: Messages): void => {
+    // Intentional mutation: messages record is locally scoped to this context closure
     messages[loc] = { ...messages[loc], ...msgs }
     loadedLocalesSet.add(loc)
     setLoadedLocales(new Set(loadedLocalesSet))
@@ -247,6 +248,7 @@ export function createI18nContext(config: FluentConfig | I18nConfig): I18nContex
     setIsLoading(true)
     try {
       const loaded = resolveChunkMessages(await i18nConfig.chunkLoader(newLocale))
+      // Intentional mutation: messages record is locally scoped to this context closure
       messages[newLocale] = { ...messages[newLocale], ...loaded }
       loadedLocalesSet.add(newLocale)
       setLoadedLocales(new Set(loadedLocalesSet))
@@ -264,14 +266,15 @@ export function createI18nContext(config: FluentConfig | I18nConfig): I18nContex
     const splitRuntime = getSplitRuntimeModule()
     i18nConfig.chunkLoader(loc).then(async (loaded) => {
       const resolved = resolveChunkMessages(loaded)
+      // Intentional mutation: messages record is locally scoped to this context closure
       messages[loc] = { ...messages[loc], ...resolved }
       loadedLocalesSet.add(loc)
       setLoadedLocales(new Set(loadedLocalesSet))
       if (splitRuntime?.__preloadLocale) {
         await splitRuntime.__preloadLocale(loc)
       }
-    }).catch(() => {
-      // Silent failure for preload
+    }).catch((e: unknown) => {
+      console.warn('[fluenti] preload failed:', loc, e)
     })
   }
 
@@ -314,8 +317,6 @@ export function createI18n(config: FluentConfig | I18nConfig): I18nContext {
       '[fluenti] createI18n() detected SSR environment. ' +
       'Use <I18nProvider> for per-request isolation in SSR.',
     )
-    // Still set globalCtx as fallback, but document the risk
-    globalCtx = ctx
   }
 
   return ctx

@@ -72,6 +72,13 @@ export interface ServerI18n {
  * your `resolveLocale` callback, or call `setLocale()` in your
  * entry-server middleware.
  *
+ * **⚠️ SSR Concurrency Warning**: This function uses module-level state for locale
+ * and cached instance. In concurrent SSR environments (e.g. multiple simultaneous
+ * requests), this can cause cross-request locale leakage. For per-request isolation:
+ * - Use `getRequestEvent()` in SolidStart to scope locale per request
+ * - Or create a separate `createServerI18n()` per request context
+ * - Consider using AsyncLocalStorage for true per-request isolation (future)
+ *
  * @example
  * ```ts
  * // lib/i18n.server.ts
@@ -90,6 +97,7 @@ export function createServerI18n(config: ServerI18nConfig): ServerI18n {
 
   function setLocale(locale: string): void {
     currentLocale = locale
+    cachedInstance = null
   }
 
   async function loadLocaleMessages(locale: string): Promise<Messages> {

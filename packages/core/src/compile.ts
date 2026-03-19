@@ -1,5 +1,29 @@
 import type { ASTNode, CompiledMessage, CustomFormatter, FunctionNode, Locale, PluralNode, SelectNode } from './types'
 import { resolvePluralCategory } from './plural'
+import { LOCALE_CURRENCY_MAP } from './formatters/number'
+
+const nfCache = new Map<string, Intl.NumberFormat>()
+const dtfCache = new Map<string, Intl.DateTimeFormat>()
+
+function getCachedNumberFormat(locale: string, options?: Intl.NumberFormatOptions): Intl.NumberFormat {
+  const key = `${locale}:${JSON.stringify(options ?? {})}`
+  let fmt = nfCache.get(key)
+  if (!fmt) {
+    fmt = new Intl.NumberFormat(locale, options)
+    nfCache.set(key, fmt)
+  }
+  return fmt
+}
+
+function getCachedDateTimeFormat(locale: string, options?: Intl.DateTimeFormatOptions): Intl.DateTimeFormat {
+  const key = `${locale}:${JSON.stringify(options ?? {})}`
+  let fmt = dtfCache.get(key)
+  if (!fmt) {
+    fmt = new Intl.DateTimeFormat(locale, options)
+    dtfCache.set(key, fmt)
+  }
+  return fmt
+}
 
 /**
  * Compile an AST into a CompiledMessage.
@@ -82,7 +106,7 @@ function renderPlural(
   formatters?: Record<string, CustomFormatter>,
 ): string {
   const raw = values[node.variable]
-  const count = typeof raw === 'number' ? raw : Number(raw)
+  const count = typeof raw === 'number' ? raw : (Number(raw) || 0)
   const offset = node.offset ?? 0
   const adjustedCount = count - offset
 
@@ -139,40 +163,41 @@ function renderFunction(
       case 'number': {
         const num = typeof val === 'number' ? val : Number(val)
         if (node.style === 'currency') {
-          return new Intl.NumberFormat(locale, { style: 'currency', currency: 'USD' }).format(num)
+          const currency = LOCALE_CURRENCY_MAP[locale] ?? LOCALE_CURRENCY_MAP[locale.split('-')[0]!] ?? 'USD'
+          return getCachedNumberFormat(locale, { style: 'currency', currency }).format(num)
         }
         if (node.style === 'percent') {
-          return new Intl.NumberFormat(locale, { style: 'percent' }).format(num)
+          return getCachedNumberFormat(locale, { style: 'percent' }).format(num)
         }
         if (node.style) {
-          return new Intl.NumberFormat(locale, {}).format(num)
+          return getCachedNumberFormat(locale, {}).format(num)
         }
-        return new Intl.NumberFormat(locale).format(num)
+        return getCachedNumberFormat(locale).format(num)
       }
 
       case 'date': {
         const date = val instanceof Date ? val : new Date(val as number)
         if (node.style === 'short') {
-          return new Intl.DateTimeFormat(locale, { dateStyle: 'short' }).format(date)
+          return getCachedDateTimeFormat(locale, { dateStyle: 'short' }).format(date)
         }
         if (node.style === 'long') {
-          return new Intl.DateTimeFormat(locale, { dateStyle: 'long' }).format(date)
+          return getCachedDateTimeFormat(locale, { dateStyle: 'long' }).format(date)
         }
         if (node.style === 'full') {
-          return new Intl.DateTimeFormat(locale, { dateStyle: 'full' }).format(date)
+          return getCachedDateTimeFormat(locale, { dateStyle: 'full' }).format(date)
         }
-        return new Intl.DateTimeFormat(locale).format(date)
+        return getCachedDateTimeFormat(locale).format(date)
       }
 
       case 'time': {
         const date = val instanceof Date ? val : new Date(val as number)
         if (node.style === 'short') {
-          return new Intl.DateTimeFormat(locale, { timeStyle: 'short' }).format(date)
+          return getCachedDateTimeFormat(locale, { timeStyle: 'short' }).format(date)
         }
         if (node.style === 'long') {
-          return new Intl.DateTimeFormat(locale, { timeStyle: 'long' }).format(date)
+          return getCachedDateTimeFormat(locale, { timeStyle: 'long' }).format(date)
         }
-        return new Intl.DateTimeFormat(locale, { timeStyle: 'medium' }).format(date)
+        return getCachedDateTimeFormat(locale, { timeStyle: 'medium' }).format(date)
       }
 
       default:

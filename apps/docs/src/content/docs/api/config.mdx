@@ -41,3 +41,8 @@ export default defineConfig({
 | `fallbackChain` | `Record<string, string[]>` | `{}` | Locale fallback chains |
 | `splitting` | `'dynamic' \| 'static' \| false` | `false` | Code-splitting strategy |
 | `defaultBuildLocale` | `string?` | — | Default locale embedded in the bundle |
+| `devWarnings` | `boolean?` | — | Enable development-mode warnings for missing translations and format errors |
+| `strictBuild` | `boolean?` | — | Fail the build if any translations are missing |
+| `namespaceMapping` | `Record<string, string>?` | — | Map namespace prefixes to catalog subdirectories |
+| `externalCatalogs` | `Array<{ package: string; catalogDir: string }>?` | — | Load catalogs from external npm packages |
+| `strictThreshold` | `number?` | — | Minimum translation percentage required (used by `fluenti stats`) |

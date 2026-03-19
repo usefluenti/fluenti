@@ -33,6 +33,8 @@ fluenti({
 | `locales` | `string[]` | `[sourceLocale]` | Locale codes available to the build |
 | `splitting` | `'dynamic' \| 'static' \| false` | `false` | Build-time locale chunking strategy |
 | `defaultBuildLocale` | `string` | `sourceLocale` | Locale inlined for `'static'` builds |
+| `include` | `string[]` | `['src/**/*.{vue,tsx,jsx,ts,js}']` | Source file patterns for dev watcher |
+| `devAutoCompile` | `boolean` | `true` | Auto extract+compile on file change during dev |
 
 ## What it does
 

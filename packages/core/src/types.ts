@@ -159,6 +159,17 @@ export interface CompileTimeT {
   (strings: TemplateStringsArray, ...exprs: unknown[]): string
 }
 
+export interface TypedCompileTimeT<
+  IDs extends string = string,
+  Values extends Record<string, Record<string, unknown>> = Record<string, Record<string, unknown>>,
+> {
+  <K extends IDs>(
+    descriptor: { id?: K; message: K } & Omit<CompileTimeMessageDescriptor, 'id' | 'message'>,
+    values?: Values[K],
+  ): string
+  (strings: TemplateStringsArray, ...exprs: unknown[]): string
+}
+
 // ---- Namespace ----
 
 export interface NamespaceMapping {

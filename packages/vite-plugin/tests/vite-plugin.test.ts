@@ -267,5 +267,38 @@ const label = t('nav.home')
 
       expect(result).toBeUndefined()
     })
+
+    it('configureServer triggers initial debounced run when devAutoCompile is enabled', () => {
+      const plugin = getPlugin('fluenti:dev')
+      const watcherEvents = new Map<string, (...args: unknown[]) => void>()
+      const server = {
+        config: { root: '/project' },
+        watcher: {
+          on(event: string, handler: (...args: unknown[]) => void) {
+            watcherEvents.set(event, handler)
+          },
+        },
+      }
+
+      // Should not throw — just registers watcher
+      callHook(plugin.configureServer, {}, server)
+      expect(watcherEvents.has('change')).toBe(true)
+    })
+
+    it('does not set up auto-compile when devAutoCompile is false', () => {
+      const plugin = getPlugin('fluenti:dev', { devAutoCompile: false })
+      const watcherEvents = new Map<string, (...args: unknown[]) => void>()
+      const server = {
+        config: { root: '/project' },
+        watcher: {
+          on(event: string, handler: (...args: unknown[]) => void) {
+            watcherEvents.set(event, handler)
+          },
+        },
+      }
+
+      callHook(plugin.configureServer, {}, server)
+      expect(watcherEvents.has('change')).toBe(false)
+    })
   })
 })
