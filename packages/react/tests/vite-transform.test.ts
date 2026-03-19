@@ -34,8 +34,8 @@ describe('Vite Plugin React Transform (expected output)', () => {
     // ${name}         → {name}        // simple identifier
     // ${user.name}    → {name}        // member expression → last property
     // ${items.length} → {length}
-    // ${getCount()}   → {0}           // function call → positional
-    // ${a + b}        → {0}           // expression → positional
+    // ${getCount()}   → {getCount}     // function call → function name
+    // ${a + b}        → {arg0}        // binary expression → named positional
 
     // These patterns are verified via the vite plugin's classifyExpression
     // which is tested in the vite-plugin package's own tests

@@ -8,7 +8,7 @@ describe('compileCatalog', () => {
     const catalog: CatalogData = {
       greeting: { message: 'Hello', translation: 'Bonjour' },
     }
-    const output = compileCatalog(catalog, 'fr', ['greeting'])
+    const { code: output } = compileCatalog(catalog, 'fr', ['greeting'])
 
     expect(output.startsWith(`// @fluenti/compiled v${CATALOG_VERSION}`)).toBe(true)
   })
@@ -17,7 +17,7 @@ describe('compileCatalog', () => {
     const catalog: CatalogData = {
       greeting: { message: 'Hello', translation: 'Bonjour' },
     }
-    const output = compileCatalog(catalog, 'fr', ['greeting'])
+    const { code: output } = compileCatalog(catalog, 'fr', ['greeting'])
     const hash = hashMessage('greeting')
 
     expect(output).toContain(`/* @__PURE__ */ export const _${hash} = 'Bonjour'`)
@@ -27,7 +27,7 @@ describe('compileCatalog', () => {
     const catalog: CatalogData = {
       greeting: { message: 'Hello {name}', translation: 'Bonjour {name}' },
     }
-    const output = compileCatalog(catalog, 'fr', ['greeting'])
+    const { code: output } = compileCatalog(catalog, 'fr', ['greeting'])
 
     expect(output).toContain('/* @__PURE__ */ export const _')
     expect(output).toContain('(v) => `Bonjour ${v.name}`')
@@ -37,7 +37,7 @@ describe('compileCatalog', () => {
     const catalog: CatalogData = {
       greeting: { message: 'Hello' },
     }
-    const output = compileCatalog(catalog, 'en', ['greeting'], 'en')
+    const { code: output } = compileCatalog(catalog, 'en', ['greeting'], 'en')
 
     expect(output).toContain("= 'Hello'")
   })
@@ -47,7 +47,7 @@ describe('compileCatalog', () => {
       a: { message: 'Hello' },
       b: { message: 'World {name}' },
     }
-    const output = compileCatalog(catalog, 'en', ['a', 'b'])
+    const { code: output } = compileCatalog(catalog, 'en', ['a', 'b'])
     const exportLines = output.split('\n').filter((l) => l.includes('export const'))
 
     expect(exportLines.length).toBe(2)
@@ -61,7 +61,7 @@ describe('compileCatalog', () => {
       a: { message: 'Hello' },
       b: { message: 'Hello {name}' },
     }
-    const output = compileCatalog(catalog, 'en', ['a', 'b'])
+    const { code: output } = compileCatalog(catalog, 'en', ['a', 'b'])
     const hashA = hashMessage('a')
     const hashB = hashMessage('b')
 
@@ -71,7 +71,7 @@ describe('compileCatalog', () => {
   })
 
   it('handles empty catalog with empty default export', () => {
-    const output = compileCatalog({}, 'en', [])
+    const { code: output } = compileCatalog({}, 'en', [])
 
     expect(output).toContain('// empty catalog')
     expect(output).toContain('export default {}')
@@ -87,8 +87,8 @@ describe('compileCatalog', () => {
       // farewell missing in FR
     }
     const allIds = collectAllIds({ en: catalogEn, fr: catalogFr })
-    const outputEn = compileCatalog(catalogEn, 'en', allIds)
-    const outputFr = compileCatalog(catalogFr, 'fr', allIds)
+    const { code: outputEn } = compileCatalog(catalogEn, 'en', allIds)
+    const { code: outputFr } = compileCatalog(catalogFr, 'fr', allIds)
 
     const extractNames = (code: string) =>
       [...code.matchAll(/export const (\w+)/g)].map((m) => m[1]).sort()
@@ -103,7 +103,7 @@ describe('compileCatalog', () => {
         translation: '{count, plural, one {# article} other {# articles}}',
       },
     }
-    const output = compileCatalog(catalog, 'fr', ['items'])
+    const { code: output } = compileCatalog(catalog, 'fr', ['items'])
 
     expect(output).toContain('/* @__PURE__ */ export const _')
     expect(output).toContain('Intl.PluralRules')
@@ -112,7 +112,7 @@ describe('compileCatalog', () => {
 
   it('keeps missing non-source locale entries undefined so runtime fallback can resolve', () => {
     const catalog: CatalogData = {}
-    const output = compileCatalog(catalog, 'fr', ['greeting'], 'en')
+    const { code: output } = compileCatalog(catalog, 'fr', ['greeting'], 'en')
 
     expect(output).toContain('= undefined')
   })
@@ -121,7 +121,7 @@ describe('compileCatalog', () => {
     const catalog: CatalogData = {
       mcyyyj: { message: 'This key only exists in English' },
     }
-    const output = compileCatalog(catalog, 'en', ['mcyyyj'], 'en')
+    const { code: output } = compileCatalog(catalog, 'en', ['mcyyyj'], 'en')
 
     expect(output).toContain("= 'This key only exists in English'")
   })
@@ -130,7 +130,7 @@ describe('compileCatalog', () => {
     const catalog: CatalogData = {
       msg: { message: "It's done" },
     }
-    const output = compileCatalog(catalog, 'en', ['msg'])
+    const { code: output } = compileCatalog(catalog, 'en', ['msg'])
     expect(output).toContain("It\\'s done")
   })
 
@@ -138,7 +138,7 @@ describe('compileCatalog', () => {
     const catalog: CatalogData = {
       msg: { message: 'path\\to\\file' },
     }
-    const output = compileCatalog(catalog, 'en', ['msg'])
+    const { code: output } = compileCatalog(catalog, 'en', ['msg'])
     expect(output).toContain('path\\\\to\\\\file')
   })
 
@@ -146,7 +146,7 @@ describe('compileCatalog', () => {
     const catalog: CatalogData = {
       msg: { message: 'line1\nline2' },
     }
-    const output = compileCatalog(catalog, 'en', ['msg'])
+    const { code: output } = compileCatalog(catalog, 'en', ['msg'])
     expect(output).toContain('line1\\nline2')
   })
 
@@ -157,7 +157,7 @@ describe('compileCatalog', () => {
         translation: '{n, plural, one {# chose} other {# choses}}',
       },
     }
-    const output = compileCatalog(catalog, 'fr', ['items'])
+    const { code: output } = compileCatalog(catalog, 'fr', ['items'])
     expect(output).toContain('Intl.PluralRules')
     expect(output).toContain('(v) =>')
   })
@@ -168,7 +168,7 @@ describe('compileCatalog', () => {
         message: '{gender, select, male {He} female {She} other {They}}',
       },
     }
-    const output = compileCatalog(catalog, 'en', ['gender'])
+    const { code: output } = compileCatalog(catalog, 'en', ['gender'])
     expect(output).toContain('(v) =>')
     expect(output).toContain("'He'")
     expect(output).toContain("'She'")
@@ -179,7 +179,7 @@ describe('compileCatalog', () => {
     const catalog: CatalogData = {
       greet: { message: 'Hello {name}' },
     }
-    const output = compileCatalog(catalog, 'en', ['greet'])
+    const { code: output } = compileCatalog(catalog, 'en', ['greet'])
     expect(output).toContain('${v.name}')
   })
 
@@ -187,7 +187,7 @@ describe('compileCatalog', () => {
     const catalog: CatalogData = {
       msg: { message: 'Static text' },
     }
-    const output = compileCatalog(catalog, 'en', ['msg'])
+    const { code: output } = compileCatalog(catalog, 'en', ['msg'])
     expect(output).toContain("= 'Static text'")
   })
 
@@ -197,7 +197,7 @@ describe('compileCatalog', () => {
       b: { message: 'B {x}' },
       c: { message: '{n, plural, one {#} other {#s}}' },
     }
-    const output = compileCatalog(catalog, 'en', ['a', 'b', 'c'])
+    const { code: output } = compileCatalog(catalog, 'en', ['a', 'b', 'c'])
     const exportLines = output.split('\n').filter((l) => l.includes('export const'))
     expect(exportLines.length).toBe(3)
     for (const line of exportLines) {
@@ -209,7 +209,7 @@ describe('compileCatalog', () => {
     const catalog: CatalogData = {
       empty: { message: '' },
     }
-    const output = compileCatalog(catalog, 'en', ['empty'])
+    const { code: output } = compileCatalog(catalog, 'en', ['empty'])
     expect(output).toContain("= ''")
   })
 
@@ -217,7 +217,7 @@ describe('compileCatalog', () => {
     const catalog: CatalogData = {
       items: { message: '{n, plural, one {# item} other {# items}}' },
     }
-    const output = compileCatalog(catalog, 'en', ['items'])
+    const { code: output } = compileCatalog(catalog, 'en', ['items'])
     expect(output).toContain('String(__c)')
   })
 
@@ -225,20 +225,55 @@ describe('compileCatalog', () => {
     const catalog: CatalogData = {
       msg: { message: '{n, plural, offset:1 one {# other} other {# others}}' },
     }
-    const output = compileCatalog(catalog, 'en', ['msg'])
+    const { code: output } = compileCatalog(catalog, 'en', ['msg'])
     expect(output).toContain('(v) =>')
+  })
+
+  it('compiles arg-prefixed placeholders with dot notation', () => {
+    const catalog: CatalogData = {
+      msg: { message: '~{arg0}s' },
+    }
+    const { code: output } = compileCatalog(catalog, 'en', ['msg'])
+    expect(output).toContain('${v.arg0}')
+  })
+
+  it('handles mixed arg-prefixed and named placeholders', () => {
+    const catalog: CatalogData = {
+      msg: { message: '{arg0} said {greeting}' },
+    }
+    const { code: output } = compileCatalog(catalog, 'en', ['msg'])
+    expect(output).toContain('${v.arg0}')
+    expect(output).toContain('${v.greeting}')
   })
 
   it('handles select with multiple keys', () => {
     const catalog: CatalogData = {
       msg: { message: '{role, select, admin {Admin} editor {Editor} other {User}}' },
     }
-    const output = compileCatalog(catalog, 'en', ['msg'])
+    const { code: output } = compileCatalog(catalog, 'en', ['msg'])
     expect(output).toContain("'admin'")
     expect(output).toContain("'editor'")
     expect(output).toContain("'Admin'")
     expect(output).toContain("'Editor'")
     expect(output).toContain("'User'")
+  })
+
+  it('returns stats with compiled count and missing IDs', () => {
+    const catalog: CatalogData = {
+      a: { message: 'Hello', translation: 'Bonjour' },
+    }
+    const { stats } = compileCatalog(catalog, 'fr', ['a', 'b'], 'en')
+    expect(stats.compiled).toBe(1)
+    expect(stats.missing).toEqual(['b'])
+  })
+
+  it('returns empty missing array when all messages are compiled', () => {
+    const catalog: CatalogData = {
+      a: { message: 'Hello', translation: 'Bonjour' },
+    }
+    const { stats } = compileCatalog(catalog, 'fr', ['a'])
+    expect(stats.compiled).toBe(1)
+    expect(stats.missing).toEqual([])
   })
 })
 
@@ -249,7 +284,7 @@ describe('compileCatalog end-to-end consistency', () => {
       'Hello {name}': { message: 'Hello {name}', translation: 'Bonjour {name}' },
     }
     const allIds = ['Hello world', 'Hello {name}']
-    const output = compileCatalog(catalog, 'fr', allIds)
+    const { code: output } = compileCatalog(catalog, 'fr', allIds)
 
     for (const id of allIds) {
       const hash = hashMessage(id)
@@ -268,8 +303,8 @@ describe('compileCatalog end-to-end consistency', () => {
     }
 
     const allIds = collectAllIds({ en: catalogEn, ja: catalogJa })
-    const outputEn = compileCatalog(catalogEn, 'en', allIds)
-    const outputJa = compileCatalog(catalogJa, 'ja', allIds)
+    const { code: outputEn } = compileCatalog(catalogEn, 'en', allIds)
+    const { code: outputJa } = compileCatalog(catalogJa, 'ja', allIds)
 
     const extractExportNames = (code: string) =>
       [...code.matchAll(/export const (_\w+)/g)].map((m) => m[1]).sort()

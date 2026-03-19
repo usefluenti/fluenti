@@ -118,12 +118,19 @@ const DIRECT_T_SOURCES = new Set([
 
 function classifyExpression(expr: string): string {
   const trimmed = expr.trim()
+  // Simple identifier: name, count
   if (/^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(trimmed)) {
     return trimmed
   }
+  // Dotted path: user.name → name
   if (/^[a-zA-Z_$][a-zA-Z0-9_$.]*$/.test(trimmed) && !trimmed.endsWith('.')) {
     const parts = trimmed.split('.')
     return parts[parts.length - 1]!
+  }
+  // Function call: fun() → fun, obj.method() → obj_method
+  const callMatch = trimmed.match(/^([a-zA-Z_$][a-zA-Z0-9_$.]*)\s*\(/)
+  if (callMatch) {
+    return callMatch[1]!.replace(/\./g, '_')
   }
   return ''
 }
@@ -141,7 +148,7 @@ function buildICUFromTemplate(
 
     const name = classifyExpression(expressions[index]!)
     if (name === '') {
-      result += `{${positionalIndex}}`
+      result += `{arg${positionalIndex}}`
       positionalIndex++
       continue
     }
@@ -437,6 +444,11 @@ export function extractFromTsx(code: string, filename: string): ExtractedMessage
         isIdentifier(tagged.tag)
         && (tagged.tag.name === 't' || directImportTBindings.has(tagged.tag.name))
       ) {
+        // Skip tagged templates with interpolation — they are handled
+        // by the vite plugin scope transform at build time, not via PO.
+        if (tagged.quasi.expressions.length > 0) {
+          return
+        }
         const extracted = createExtractedMessage(
           extractTaggedTemplateMessage(code, tagged),
           filename,

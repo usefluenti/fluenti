@@ -208,12 +208,19 @@ interface StaticDescriptor {
 
 function classifyExpression(expr: string): string {
   const trimmed = expr.trim()
+  // Simple identifier: name, count
   if (/^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(trimmed)) {
     return trimmed
   }
+  // Dotted path: user.name → name
   if (/^[a-zA-Z_$][a-zA-Z0-9_$.]*$/.test(trimmed) && !trimmed.endsWith('.')) {
     const parts = trimmed.split('.')
     return parts[parts.length - 1]!
+  }
+  // Function call: fun() → fun, obj.method() → obj_method
+  const callMatch = trimmed.match(/^([a-zA-Z_$][a-zA-Z0-9_$.]*)\s*\(/)
+  if (callMatch) {
+    return callMatch[1]!.replace(/\./g, '_')
   }
   return ''
 }
@@ -1003,8 +1010,9 @@ function extractTemplateTranslationParts(
     const varName = classifyExpression(exprSource)
 
     if (varName === '') {
-      message += `{${positionalIndex}}`
-      values.push(objectProperty(numericLiteral(positionalIndex), exprNode))
+      const argName = `arg${positionalIndex}`
+      message += `{${argName}}`
+      values.push(objectProperty(identifier(argName), exprNode))
       positionalIndex++
       continue
     }

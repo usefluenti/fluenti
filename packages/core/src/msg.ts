@@ -17,12 +17,12 @@ export function hashMessage(message: string, context?: string): string {
 
 /**
  * Build an ICU message string from tagged template parts.
- * Uses positional placeholders: `{0}`, `{1}`, etc.
+ * Uses named placeholders: `{arg0}`, `{arg1}`, etc.
  */
 export function buildICUMessage(strings: TemplateStringsArray, exprs: unknown[]): string {
   let result = strings[0]!
   for (let i = 0; i < exprs.length; i++) {
-    result += `{${i}}` + strings[i + 1]!
+    result += `{arg${i}}` + strings[i + 1]!
   }
   return result
 }
@@ -33,7 +33,7 @@ export function buildICUMessage(strings: TemplateStringsArray, exprs: unknown[])
  * @example
  * ```ts
  * const greeting = msg`Hello ${name}`
- * // -> { id: 'abc123', message: 'Hello {0}' }
+ * // -> { id: 'abc123', message: 'Hello {arg0}' }
  * ```
  */
 export function msg(

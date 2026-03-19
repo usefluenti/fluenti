@@ -53,7 +53,7 @@ import { interpolate } from './interpolate'
 import { formatNumber } from './formatters/number'
 import { formatDate } from './formatters/date'
 import { buildICUMessage } from './msg'
-import { resolveDescriptorId } from './identity'
+import { createMessageId, resolveDescriptorId } from './identity'
 
 /**
  * Create a Fluenti instance with full i18n support.
@@ -191,7 +191,16 @@ export function createFluent(config: FluentConfigExtended): FluentInstanceExtend
       if (Array.isArray(idOrStrings) && 'raw' in idOrStrings) {
         const strings = idOrStrings as TemplateStringsArray
         const icu = buildICUMessage(strings, rest)
-        const values = Object.fromEntries(rest.map((v, i) => [String(i), v]))
+        const values = Object.fromEntries(rest.map((v, i) => [`arg${i}`, v]))
+
+        // Look up by hash-based ID first (matches compiled catalogs)
+        const hashId = createMessageId(icu)
+        const catalogResult = lookupCatalog(hashId, values)
+        if (catalogResult !== undefined) {
+          return catalogResult
+        }
+
+        // Fallback: resolve as raw ICU message
         return resolveMessage(icu, values)
       }
 
