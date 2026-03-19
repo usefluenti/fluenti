@@ -3,7 +3,7 @@ import { resolve, dirname } from 'node:path'
 import type { WithFluentConfig } from './types'
 import { resolveConfig } from './read-config'
 import { generateServerModule } from './generate-server-module'
-import { createDebouncedRunner } from '@fluenti/core'
+import { createDebouncedRunner } from '@fluenti/core/internal'
 
 type NextConfig = Record<string, unknown>
 
