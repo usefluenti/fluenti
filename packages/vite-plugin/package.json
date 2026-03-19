@@ -1,6 +1,6 @@
 {
   "name": "@fluenti/vite-plugin",
-  "version": "0.1.0",
+  "version": "0.0.0",
   "type": "module",
   "description": "Vite plugin for Fluenti — build-time transforms, virtual modules, code splitting",
   "homepage": "https://fluenti.dev",
@@ -13,6 +13,9 @@
     "url": "https://github.com/usefluenti/fluenti/issues"
   },
   "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
   "keywords": [
     "i18n",
     "internationalization",

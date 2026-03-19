@@ -1,6 +1,6 @@
 {
   "name": "@fluenti/vue",
-  "version": "0.1.0",
+  "version": "0.0.0",
   "type": "module",
   "description": "Vue 3 compile-time i18n — v-t directive, Trans/Plural/Select components, useI18n composable",
   "homepage": "https://fluenti.dev",
@@ -13,6 +13,9 @@
     "url": "https://github.com/usefluenti/fluenti/issues"
   },
   "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
   "keywords": ["i18n", "internationalization", "compile-time", "icu", "messageformat", "vue", "vue3", "directive", "composable"],
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",

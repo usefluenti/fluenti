@@ -1,6 +1,6 @@
 {
   "name": "@fluenti/nuxt",
-  "version": "0.1.0",
+  "version": "0.0.0",
   "type": "module",
   "description": "Nuxt module for Fluenti — locale-prefixed routes, SEO helpers, auto locale detection",
   "homepage": "https://fluenti.dev",
@@ -13,6 +13,9 @@
     "url": "https://github.com/usefluenti/fluenti/issues"
   },
   "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
   "keywords": ["i18n", "nuxt", "nuxt-module", "fluenti", "ssr", "locale", "routing"],
   "main": "./dist/module.cjs",
   "module": "./dist/module.js",

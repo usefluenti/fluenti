@@ -1,6 +1,6 @@
 {
   "name": "@fluenti/vue-i18n-compat",
-  "version": "0.1.0",
+  "version": "0.0.0",
   "type": "module",
   "description": "Progressive migration bridge between vue-i18n and Fluenti — share locale, translate across both libraries",
   "homepage": "https://fluenti.dev",
@@ -13,6 +13,9 @@
     "url": "https://github.com/usefluenti/fluenti/issues"
   },
   "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
   "keywords": ["i18n", "vue-i18n", "compat", "migration", "bridge", "fluenti", "vue"],
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",

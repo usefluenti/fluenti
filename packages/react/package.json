@@ -1,6 +1,6 @@
 {
   "name": "@fluenti/react",
-  "version": "0.1.0",
+  "version": "0.0.0",
   "type": "module",
   "description": "React bindings for Fluenti — I18nProvider, useI18n, Trans/Plural/Select components",
   "homepage": "https://fluenti.dev",
@@ -13,6 +13,9 @@
     "url": "https://github.com/usefluenti/fluenti/issues"
   },
   "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
   "keywords": ["i18n", "internationalization", "compile-time", "icu", "messageformat", "react", "hooks", "provider"],
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
