@@ -1,6 +1,6 @@
 {
   "name": "@fluenti/vue-i18n-compat",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "type": "module",
   "description": "Progressive migration bridge between vue-i18n and Fluenti — share locale, translate across both libraries",
   "homepage": "https://fluenti.dev",
