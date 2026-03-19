@@ -50,10 +50,6 @@ interface StringLiteralNode extends SourceNode {
   value: string
 }
 
-interface NumericLiteralNode extends SourceNode {
-  type: 'NumericLiteral'
-  value: number
-}
 
 interface ProgramNode extends SourceNode {
   type: 'Program'
@@ -1382,9 +1378,6 @@ function stringLiteral(value: string): StringLiteralNode {
   return { type: 'StringLiteral', value }
 }
 
-function numericLiteral(value: number): NumericLiteralNode {
-  return { type: 'NumericLiteral', value }
-}
 
 function objectProperty(key: SourceNode, value: SourceNode): ObjectPropertyNode {
   return {
