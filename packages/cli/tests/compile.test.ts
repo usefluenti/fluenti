@@ -13,14 +13,14 @@ describe('compileCatalog', () => {
     expect(output.startsWith(`// @fluenti/compiled v${CATALOG_VERSION}`)).toBe(true)
   })
 
-  it('compiles plain text messages as @__PURE__ named exports', () => {
+  it('compiles plain text messages as named exports', () => {
     const catalog: CatalogData = {
       greeting: { message: 'Hello', translation: 'Bonjour' },
     }
     const { code: output } = compileCatalog(catalog, 'fr', ['greeting'])
     const hash = hashMessage('greeting')
 
-    expect(output).toContain(`/* @__PURE__ */ export const _${hash} = 'Bonjour'`)
+    expect(output).toContain(`export const _${hash} = 'Bonjour'`)
   })
 
   it('compiles messages with variables as arrow function exports', () => {
@@ -29,7 +29,7 @@ describe('compileCatalog', () => {
     }
     const { code: output } = compileCatalog(catalog, 'fr', ['greeting'])
 
-    expect(output).toContain('/* @__PURE__ */ export const _')
+    expect(output).toContain('export const _')
     expect(output).toContain('(v) => `Bonjour ${v.name}`')
   })
 
@@ -42,7 +42,7 @@ describe('compileCatalog', () => {
     expect(output).toContain("= 'Hello'")
   })
 
-  it('every export has @__PURE__ annotation', () => {
+  it('every message has an export const declaration', () => {
     const catalog: CatalogData = {
       a: { message: 'Hello' },
       b: { message: 'World {name}' },
@@ -52,7 +52,7 @@ describe('compileCatalog', () => {
 
     expect(exportLines.length).toBe(2)
     for (const line of exportLines) {
-      expect(line).toContain('/* @__PURE__ */')
+      expect(line).toMatch(/^export const _/)
     }
   })
 
@@ -105,7 +105,7 @@ describe('compileCatalog', () => {
     }
     const { code: output } = compileCatalog(catalog, 'fr', ['items'])
 
-    expect(output).toContain('/* @__PURE__ */ export const _')
+    expect(output).toContain('export const _')
     expect(output).toContain('Intl.PluralRules')
     expect(output).toContain('(v) =>')
   })
@@ -191,7 +191,7 @@ describe('compileCatalog', () => {
     expect(output).toContain("= 'Static text'")
   })
 
-  it('annotates every export with @__PURE__', () => {
+  it('generates export const for every message type', () => {
     const catalog: CatalogData = {
       a: { message: 'A' },
       b: { message: 'B {x}' },
@@ -201,7 +201,7 @@ describe('compileCatalog', () => {
     const exportLines = output.split('\n').filter((l) => l.includes('export const'))
     expect(exportLines.length).toBe(3)
     for (const line of exportLines) {
-      expect(line).toContain('/* @__PURE__ */')
+      expect(line).toMatch(/^export const _/)
     }
   })
 

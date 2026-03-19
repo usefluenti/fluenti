@@ -180,20 +180,20 @@ export function compileCatalog(
     const translated = resolveCompiledMessage(entry, id, locale, sourceLocale, options?.skipFuzzy)
 
     if (translated === undefined) {
-      lines.push(`/* @__PURE__ */ export const ${exportName} = undefined`)
+      lines.push(`export const ${exportName} = undefined`)
       missing.push(id)
     } else if (hasIcuPluralOrSelect(translated)) {
       // Parse ICU and compile to JS
       const ast = parse(translated)
       const jsExpr = astToJsExpression(ast, locale)
-      lines.push(`/* @__PURE__ */ export const ${exportName} = (v) => ${jsExpr}`)
+      lines.push(`export const ${exportName} = (v) => ${jsExpr}`)
       compiled++
     } else if (hasVariables(translated)) {
       const templateStr = messageToTemplateString(escapeTemplateLiteral(translated))
-      lines.push(`/* @__PURE__ */ export const ${exportName} = (v) => \`${templateStr}\``)
+      lines.push(`export const ${exportName} = (v) => \`${templateStr}\``)
       compiled++
     } else {
-      lines.push(`/* @__PURE__ */ export const ${exportName} = '${escapeStringLiteral(translated)}'`)
+      lines.push(`export const ${exportName} = '${escapeStringLiteral(translated)}'`)
       compiled++
     }
 
