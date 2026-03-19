@@ -122,30 +122,15 @@ msgstr ""
 msgid "source text"
 msgstr ""
 
-#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/CompileTime.tsx:34
-#, fuzzy
-msgid "Hello, {"
-msgstr ""
-
 #: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/Home.tsx:13
 #, fuzzy
 msgid "Hello, {name}!"
 msgstr "你好，{name}！"
 
-#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/CompileTime.tsx:41
-#, fuzzy
-msgid "You have {"
-msgstr ""
-
 #: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/CompileTime.tsx:43
 #, fuzzy
 msgid "You have {count} items."
 msgstr "你有 {count} 个项目。"
-
-#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/CompileTime.tsx:48
-#, fuzzy
-msgid "Current locale: {"
-msgstr ""
 
 #: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/Home.tsx:16
 #, fuzzy
