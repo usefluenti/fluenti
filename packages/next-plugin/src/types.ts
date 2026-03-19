@@ -37,6 +37,8 @@ export interface WithFluentConfig {
   numberFormats?: NumberFormatOptions
   /** Fallback chain per locale */
   fallbackChain?: Record<string, Locale[]>
+  /** Auto extract+compile in dev mode (default: true) */
+  devAutoCompile?: boolean
 }
 
 /**

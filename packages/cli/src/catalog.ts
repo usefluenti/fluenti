@@ -5,8 +5,9 @@ export interface CatalogEntry {
   context?: string | undefined
   comment?: string | undefined
   translation?: string | undefined
-  origin?: string | undefined
+  origin?: string | string[] | undefined
   obsolete?: boolean | undefined
+  fuzzy?: boolean | undefined
 }
 
 export type CatalogData = Record<string, CatalogEntry>
@@ -17,10 +18,15 @@ export interface UpdateResult {
   obsolete: number
 }
 
+export interface UpdateCatalogOptions {
+  stripFuzzy?: boolean
+}
+
 /** Update catalog with newly extracted messages */
 export function updateCatalog(
   existing: CatalogData,
   extracted: ExtractedMessage[],
+  options?: UpdateCatalogOptions,
 ): { catalog: CatalogData; result: UpdateResult } {
   const extractedIds = new Set(extracted.map((m) => m.id))
   const consumedCarryForwardIds = new Set<string>()
@@ -51,6 +57,13 @@ export function updateCatalog(
         obsolete: false,
       }
       unchanged++
+    } else if (catalog[msg.id]) {
+      // Same ID already seen in this extraction batch — merge origin
+      const existing = catalog[msg.id]!
+      catalog[msg.id] = {
+        ...existing,
+        origin: mergeOrigins(existing.origin, origin),
+      }
     } else {
       catalog[msg.id] = {
         message: msg.message,
@@ -60,19 +73,35 @@ export function updateCatalog(
       }
       added++
     }
+
+    if (options?.stripFuzzy) {
+      const { fuzzy: _fuzzy, ...rest } = catalog[msg.id]!
+      catalog[msg.id] = rest
+    }
   }
 
   for (const [id, entry] of Object.entries(existing)) {
     if (!extractedIds.has(id)) {
-      catalog[id] = {
-        ...entry,
-        obsolete: true,
-      }
+      const { fuzzy: _fuzzy, ...rest } = entry
+      const obsoleteEntry = options?.stripFuzzy
+        ? { ...rest, obsolete: true }
+        : { ...entry, obsolete: true }
+      catalog[id] = obsoleteEntry
       obsolete++
     }
   }
 
   return { catalog, result: { added, unchanged, obsolete } }
+}
+
+function mergeOrigins(
+  existing: string | string[] | undefined,
+  newOrigin: string,
+): string | string[] {
+  if (!existing) return newOrigin
+  const existingArray = Array.isArray(existing) ? existing : [existing]
+  const merged = [...new Set([...existingArray, newOrigin])]
+  return merged.length === 1 ? merged[0]! : merged
 }
 
 function findCarryForwardEntry(
@@ -96,10 +125,10 @@ function findCarryForwardEntry(
   return undefined
 }
 
-function sameOrigin(previous: string | undefined, next: string): boolean {
+function sameOrigin(previous: string | string[] | undefined, next: string): boolean {
   if (!previous) return false
-  if (previous === next) return true
-  return originFile(previous) === originFile(next)
+  const origins = Array.isArray(previous) ? previous : [previous]
+  return origins.some((o) => o === next || originFile(o) === originFile(next))
 }
 
 function originFile(origin: string): string {

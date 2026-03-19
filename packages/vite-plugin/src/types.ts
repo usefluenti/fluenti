@@ -11,4 +11,8 @@ export interface FluentiPluginOptions {
   splitting?: 'dynamic' | 'static' | false
   /** Default locale for build-time static strategy */
   defaultBuildLocale?: string
+  /** Source file patterns for auto extract in dev */
+  include?: string[]
+  /** Auto extract+compile in dev mode (default: true) */
+  devAutoCompile?: boolean
 }
