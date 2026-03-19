@@ -115,7 +115,7 @@ const msg = t\`Result: \${1 + 2}\`
     const result = scopeTransform(code, opts)
     expect(result.transformed).toBe(true)
     expect(result.code).toContain("t({ id:")
-    expect(result.code).toContain("message: 'Result: {0}' }, { 0: 1 + 2 })")
+    expect(result.code).toContain("message: 'Result: {arg0}' }, { arg0: 1 + 2 })")
   })
 
   it('works with @fluenti/vue import', () => {

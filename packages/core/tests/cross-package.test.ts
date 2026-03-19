@@ -16,7 +16,7 @@ describe('cross-package: hash consistency', () => {
   })
 
   it('vite-plugin hash matches cli hash matches core msg hash', () => {
-    const message = 'Hello {0}'
+    const message = 'Hello {arg0}'
     const descriptor = msg`Hello ${'name'}`
 
     expect(descriptor.message).toBe(message)

@@ -73,6 +73,7 @@ const extract = defineCommand({
   meta: { name: 'extract', description: 'Extract messages from source files' },
   args: {
     config: { type: 'string', description: 'Path to config file' },
+    clean: { type: 'boolean', description: 'Remove obsolete entries instead of marking them', default: false },
   },
   async run({ args }) {
     const config = await loadConfig(args.config)
@@ -90,14 +91,24 @@ const extract = defineCommand({
     consola.info(`Found ${allMessages.length} messages in ${files.length} files`)
 
     const ext = config.format === 'json' ? '.json' : '.po'
+    const clean = args.clean ?? false
 
     for (const locale of config.locales) {
       const catalogPath = resolve(config.catalogDir, `${locale}${ext}`)
       const existing = readCatalog(catalogPath, config.format)
       const { catalog, result } = updateCatalog(existing, allMessages)
-      writeCatalog(catalogPath, catalog, config.format)
+
+      const finalCatalog = clean
+        ? Object.fromEntries(Object.entries(catalog).filter(([, entry]) => !entry.obsolete))
+        : catalog
+
+      writeCatalog(catalogPath, finalCatalog, config.format)
+
+      const obsoleteLabel = clean
+        ? `${result.obsolete} removed`
+        : `${result.obsolete} obsolete`
       consola.success(
-        `${locale}: ${result.added} added, ${result.unchanged} unchanged, ${result.obsolete} obsolete`,
+        `${locale}: ${result.added} added, ${result.unchanged} unchanged, ${obsoleteLabel}`,
       )
     }
   },
@@ -125,15 +136,25 @@ const compile = defineCommand({
     consola.info(`Compiling ${allIds.length} messages across ${config.locales.length} locales`)
 
     for (const locale of config.locales) {
-      const compiled = compileCatalog(
+      const { code, stats } = compileCatalog(
         allCatalogs[locale]!,
         locale,
         allIds,
         config.sourceLocale,
       )
       const outPath = resolve(config.compileOutDir, `${locale}.js`)
-      writeFileSync(outPath, compiled, 'utf-8')
-      consola.success(`Compiled ${locale} → ${outPath}`)
+      writeFileSync(outPath, code, 'utf-8')
+
+      if (stats.missing.length > 0) {
+        consola.warn(
+          `${locale}: ${stats.compiled} compiled, ${stats.missing.length} missing translations`,
+        )
+        for (const id of stats.missing) {
+          consola.warn(`  ⤷ ${id}`)
+        }
+      } else {
+        consola.success(`Compiled ${locale}: ${stats.compiled} messages → ${outPath}`)
+      }
     }
 
     // Generate index.js with locale list and lazy loaders

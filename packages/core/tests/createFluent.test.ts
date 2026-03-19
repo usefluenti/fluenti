@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import { createFluent } from '../src/index'
-import { msg } from '../src/msg'
+import { msg, hashMessage } from '../src/msg'
 
 describe('createFluent', () => {
   it('creates an instance with locale', () => {
@@ -203,14 +203,14 @@ describe('createFluent', () => {
       expect(i18n.t`${a} and ${b}`).toBe('foo and bar')
     })
 
-    it('equivalent to t("Hello {0}", { 0: name })', () => {
+    it('equivalent to t("Hello {arg0}", { arg0: name })', () => {
       const i18n = createFluent({
         locale: 'en',
         messages: { en: {} },
       })
       const name = 'Bob'
       const tagged = i18n.t`Hello ${name}`
-      const functional = i18n.t('Hello {0}', { 0: name })
+      const functional = i18n.t('Hello {arg0}', { arg0: name })
       expect(tagged).toBe(functional)
     })
 
@@ -219,11 +219,24 @@ describe('createFluent', () => {
         locale: 'en',
         fallbackLocale: 'en',
         messages: {
-          en: { 'Hello {0}': 'Hi {0}!' },
+          en: { 'Hello {arg0}': 'Hi {arg0}!' },
         },
       })
       const name = 'Carol'
       expect(i18n.t`Hello ${name}`).toBe('Hi Carol!')
+    })
+
+    it('looks up translation by hash ID (compiled catalog format)', () => {
+      const hash = hashMessage('Select token')
+      const i18n = createFluent({
+        locale: 'zh-CN',
+        fallbackLocale: 'en',
+        messages: {
+          en: { [hash]: 'Select token' },
+          'zh-CN': { [hash]: '选择代币' },
+        },
+      })
+      expect(i18n.t`Select token`).toBe('选择代币')
     })
 
     it('falls back to ICU interpolation when no catalog match', () => {

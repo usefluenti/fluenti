@@ -32,9 +32,28 @@ export interface FluentConfig {
 
 export interface FluentInstance {
   locale: Locale
-  /** Translate by id or descriptor */
+  /**
+   * Translate by id or descriptor.
+   *
+   * This is the **runtime API** — works everywhere (Node, Vitest, browser).
+   * Use this form when you need runtime interpolation or explicit message IDs.
+   *
+   * @example
+   * t({ message: "Hello {name}" }, { name: "World" })
+   * t("greeting", { name: "World" })
+   */
   t(id: string | MessageDescriptor, values?: Record<string, unknown>): string
-  /** Tagged template form: t`Hello ${name}` */
+  /**
+   * Tagged template form — **compile-time sugar**.
+   *
+   * Plain tagged templates (no interpolation) work at runtime via hash-based
+   * catalog lookup: `t\`Select token\`` → looks up the hash of "Select token".
+   *
+   * Tagged templates **with interpolation** (`t\`Hello \${name}\``) rely on
+   * the Vite plugin scope transform to rewrite them into descriptor calls at
+   * build time. They still work at runtime for fallback interpolation, but
+   * won't match compiled catalog entries without the Vite transform.
+   */
   t(strings: TemplateStringsArray, ...exprs: unknown[]): string
   setLocale(locale: Locale): void
   loadMessages(locale: Locale, messages: Messages): void

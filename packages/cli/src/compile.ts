@@ -139,15 +139,22 @@ function selectToJs(node: SelectNode, locale: string): string {
 /** Catalog format version. Bump when the compiled output format changes. */
 export const CATALOG_VERSION = 1
 
+export interface CompileStats {
+  compiled: number
+  missing: string[]
+}
+
 export function compileCatalog(
   catalog: CatalogData,
   locale: string,
   allIds: string[],
   sourceLocale?: string,
-): string {
+): { code: string; stats: CompileStats } {
   const lines: string[] = []
   lines.push(`// @fluenti/compiled v${CATALOG_VERSION}`)
   const exportNames: Array<{ id: string; exportName: string }> = []
+  let compiled = 0
+  const missing: string[] = []
 
   for (const id of allIds) {
     const hash = hashMessage(id)
@@ -157,23 +164,30 @@ export function compileCatalog(
 
     if (translated === undefined) {
       lines.push(`/* @__PURE__ */ export const ${exportName} = undefined`)
+      missing.push(id)
     } else if (hasIcuPluralOrSelect(translated)) {
       // Parse ICU and compile to JS
       const ast = parse(translated)
       const jsExpr = astToJsExpression(ast, locale)
       lines.push(`/* @__PURE__ */ export const ${exportName} = (v) => ${jsExpr}`)
+      compiled++
     } else if (hasVariables(translated)) {
       const templateStr = messageToTemplateString(escapeTemplateLiteral(translated))
       lines.push(`/* @__PURE__ */ export const ${exportName} = (v) => \`${templateStr}\``)
+      compiled++
     } else {
       lines.push(`/* @__PURE__ */ export const ${exportName} = '${escapeStringLiteral(translated)}'`)
+      compiled++
     }
 
     exportNames.push({ id, exportName })
   }
 
   if (exportNames.length === 0) {
-    return `// @fluenti/compiled v${CATALOG_VERSION}\n// empty catalog\nexport default {}\n`
+    return {
+      code: `// @fluenti/compiled v${CATALOG_VERSION}\n// empty catalog\nexport default {}\n`,
+      stats: { compiled: 0, missing: [] },
+    }
   }
 
   // Default export maps message IDs → compiled values for runtime lookup
@@ -185,7 +199,7 @@ export function compileCatalog(
   lines.push('}')
   lines.push('')
 
-  return lines.join('\n')
+  return { code: lines.join('\n'), stats: { compiled, missing } }
 }
 
 function resolveCompiledMessage(

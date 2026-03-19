@@ -11,17 +11,17 @@ describe('msg', () => {
     expect(result.id.length).toBeGreaterThan(0)
   })
 
-  it('uses positional placeholders for expressions', () => {
+  it('uses named placeholders for expressions', () => {
     const name = 'World'
     const result = msg`Hello ${name}`
-    expect(result.message).toBe('Hello {0}')
+    expect(result.message).toBe('Hello {arg0}')
   })
 
   it('handles multiple expressions', () => {
     const a = 1
     const b = 2
     const result = msg`${a} + ${b} = ${a + b}`
-    expect(result.message).toBe('{0} + {1} = {2}')
+    expect(result.message).toBe('{arg0} + {arg1} = {arg2}')
   })
 
   it('generates consistent IDs for same message', () => {
@@ -85,7 +85,7 @@ describe('msg', () => {
   it('very long message still produces valid ID', () => {
     const longText = 'a'.repeat(10000)
     const result = msg`${longText}`
-    expect(result.message).toBe('{0}')
+    expect(result.message).toBe('{arg0}')
     expect(typeof result.id).toBe('string')
     expect(result.id.length).toBeGreaterThan(0)
   })
@@ -96,25 +96,25 @@ describe('msg', () => {
 describe('edge cases - exhaustive', () => {
   it('expression is undefined', () => {
     const result = msg`value is ${undefined}`
-    expect(result.message).toBe('value is {0}')
+    expect(result.message).toBe('value is {arg0}')
     expect(typeof result.id).toBe('string')
   })
 
   it('expression is null', () => {
     const result = msg`value is ${null}`
-    expect(result.message).toBe('value is {0}')
+    expect(result.message).toBe('value is {arg0}')
     expect(typeof result.id).toBe('string')
   })
 
   it('expression is 0', () => {
     const result = msg`count is ${0}`
-    expect(result.message).toBe('count is {0}')
+    expect(result.message).toBe('count is {arg0}')
     expect(typeof result.id).toBe('string')
   })
 
   it('expression is false', () => {
     const result = msg`flag is ${false}`
-    expect(result.message).toBe('flag is {0}')
+    expect(result.message).toBe('flag is {arg0}')
     expect(typeof result.id).toBe('string')
   })
 
@@ -134,11 +134,11 @@ describe('edge cases - exhaustive', () => {
   it('contains backticks', () => {
     const tick = '`'
     const result = msg`code ${tick}example${tick}`
-    expect(result.message).toBe('code {0}example{1}')
+    expect(result.message).toBe('code {arg0}example{arg1}')
   })
 
   it('contains regex special characters', () => {
     const result = msg`price is ${'$'}10.00 (USD)`
-    expect(result.message).toBe('price is {0}10.00 (USD)')
+    expect(result.message).toBe('price is {arg0}10.00 (USD)')
   })
 })
