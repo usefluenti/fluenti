@@ -115,3 +115,75 @@ test.describe('Nuxt SSR — Concurrent Request Isolation', () => {
     await Promise.all([ctx1.close(), ctx2.close()])
   })
 })
+
+test.describe('Nuxt SSR — High-Concurrency Request Isolation (10+ requests)', () => {
+  test('10 concurrent requests with mixed locales return correct content', async ({ browser }) => {
+    // Simulate 10 concurrent users: 4 en, 3 ja, 3 zh
+    const localeHeaders = [
+      undefined, undefined, undefined, undefined, // 4x en (no header)
+      'ja', 'ja', 'ja',                           // 3x ja
+      'zh', 'zh', 'zh',                           // 3x zh
+    ]
+
+    const contexts = await Promise.all(
+      localeHeaders.map((locale) =>
+        locale
+          ? browser.newContext({ extraHTTPHeaders: { 'X-User-Locale': locale } })
+          : browser.newContext(),
+      ),
+    )
+
+    const pages = await Promise.all(contexts.map((ctx) => ctx.newPage()))
+
+    // Fire all 10 requests concurrently
+    await Promise.all(pages.map((page) => page.goto('/')))
+
+    // Verify each page shows the correct locale
+    for (let i = 0; i < localeHeaders.length; i++) {
+      const expected = localeHeaders[i] ?? 'en'
+      await expect(pages[i]!.getByTestId('current-locale')).toContainText(expected)
+    }
+
+    await Promise.all(contexts.map((ctx) => ctx.close()))
+  })
+
+  test('rapid locale alternation does not leak state across requests', async ({ browser }) => {
+    // Rapidly alternate between locales to stress-test isolation
+    for (const locale of ['ja', 'en', 'zh', 'ja', 'en', 'zh', 'ja', 'en']) {
+      const ctx = locale === 'en'
+        ? await browser.newContext()
+        : await browser.newContext({ extraHTTPHeaders: { 'X-User-Locale': locale } })
+      const page = await ctx.newPage()
+      await page.goto('/')
+      await expect(page.getByTestId('current-locale')).toContainText(locale)
+      await ctx.close()
+    }
+  })
+
+  test('concurrent requests to different paths isolate locale correctly', async ({ browser }) => {
+    const [ctxEn, ctxJa, ctxZh] = await Promise.all([
+      browser.newContext(),
+      browser.newContext({ extraHTTPHeaders: { 'X-User-Locale': 'ja' } }),
+      browser.newContext({ extraHTTPHeaders: { 'X-User-Locale': 'zh' } }),
+    ])
+
+    const [pageEn, pageJa, pageZh] = await Promise.all([
+      ctxEn.newPage(),
+      ctxJa.newPage(),
+      ctxZh.newPage(),
+    ])
+
+    // Navigate to root, then /ja path, then root with zh header — all at once
+    await Promise.all([
+      pageEn.goto('/'),
+      pageJa.goto('/ja'),  // path detection should win
+      pageZh.goto('/'),    // header detection should apply
+    ])
+
+    await expect(pageEn.getByTestId('current-locale')).toContainText('en')
+    await expect(pageJa.getByTestId('current-locale')).toContainText('ja')
+    await expect(pageZh.getByTestId('current-locale')).toContainText('zh')
+
+    await Promise.all([ctxEn.close(), ctxJa.close(), ctxZh.close()])
+  })
+})

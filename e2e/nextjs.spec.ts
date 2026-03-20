@@ -336,3 +336,122 @@ test.describe('Next.js App Router e2e', () => {
     await expect(page.getByTestId('welcome')).toContainText('Fluenti へようこそ')
   })
 })
+
+test.describe('Next.js — Concurrent Server Actions', () => {
+  test('concurrent server action calls with different locales return correct translations', async ({ browser }) => {
+    // User A has English locale
+    const ctxEn = await browser.newContext()
+    const pageEn = await ctxEn.newPage()
+
+    // User B has Japanese locale
+    const ctxJa = await browser.newContext()
+    await ctxJa.addCookies([
+      { name: 'locale', value: 'ja', url: 'http://localhost:5190' },
+    ])
+    const pageJa = await ctxJa.newPage()
+
+    // Both navigate to server-action page
+    await Promise.all([
+      pageEn.goto('/server-action'),
+      pageJa.goto('/server-action'),
+    ])
+
+    // Fire both server actions concurrently
+    await Promise.all([
+      pageEn.getByTestId('action-submit').click(),
+      pageJa.getByTestId('action-submit').click(),
+    ])
+
+    // Each should get the response in their own locale
+    await expect(pageEn.getByTestId('action-result')).toContainText('Server says: Hello from server action')
+    await expect(pageJa.getByTestId('action-result')).toContainText('サーバーの応答：サーバーアクションからこんにちは')
+
+    await Promise.all([ctxEn.close(), ctxJa.close()])
+  })
+})
+
+test.describe('Next.js — Streaming & Suspense Edge Cases', () => {
+  test('streaming page with Japanese locale renders translated content', async ({ page }) => {
+    await page.context().addCookies([
+      { name: 'locale', value: 'ja', url: 'http://localhost:5190' },
+    ])
+    await page.goto('/streaming')
+    await expect(page.getByTestId('streaming-title')).toContainText('ストリーミング')
+    await expect(page.getByTestId('streamed-content')).toContainText('ストリーミングコンテンツが読み込まれました！')
+  })
+
+  test('navigating from streaming page preserves locale', async ({ page }) => {
+    await page.context().addCookies([
+      { name: 'locale', value: 'ja', url: 'http://localhost:5190' },
+    ])
+    await page.goto('/streaming')
+    await expect(page.getByTestId('streamed-content')).toBeVisible()
+
+    // Navigate away and verify locale persists
+    await page.getByTestId('nav-home').click()
+    await expect(page.getByTestId('welcome')).toContainText('Fluenti へようこそ')
+  })
+
+  test('concurrent SSR requests to streaming page with different locales', async ({ browser }) => {
+    const ctxEn = await browser.newContext()
+    const ctxJa = await browser.newContext()
+    await ctxJa.addCookies([
+      { name: 'locale', value: 'ja', url: 'http://localhost:5190' },
+    ])
+
+    const pageEn = await ctxEn.newPage()
+    const pageJa = await ctxJa.newPage()
+
+    // Hit the streaming page concurrently
+    await Promise.all([
+      pageEn.goto('/streaming'),
+      pageJa.goto('/streaming'),
+    ])
+
+    // Both should render correctly in their locale
+    await expect(pageEn.getByTestId('streaming-title')).toContainText('Streaming')
+    await expect(pageEn.getByTestId('streamed-content')).toContainText('Streamed content loaded!')
+
+    await expect(pageJa.getByTestId('streaming-title')).toContainText('ストリーミング')
+    await expect(pageJa.getByTestId('streamed-content')).toContainText('ストリーミングコンテンツが読み込まれました！')
+
+    await Promise.all([ctxEn.close(), ctxJa.close()])
+  })
+})
+
+test.describe('Next.js — Cookie Edge Cases', () => {
+  test('switching locale sets cookie and survives page reload', async ({ page }) => {
+    await page.goto('/')
+    await page.getByTestId('lang-ja').click()
+    await expect(page.getByTestId('welcome')).toContainText('Fluenti へようこそ')
+
+    // Verify cookie was set
+    const cookies = await page.context().cookies()
+    expect(cookies.find((c) => c.name === 'locale')?.value).toBe('ja')
+
+    // Full page reload — cookie should persist locale
+    await page.reload()
+    await expect(page.getByTestId('welcome')).toContainText('Fluenti へようこそ')
+
+    // Navigate to RSC page — server should also read cookie
+    await page.getByTestId('nav-rsc').click()
+    await expect(page.getByTestId('rsc-locale')).toContainText('現在のサーバーロケール：ja')
+  })
+
+  test('invalid cookie locale falls back gracefully', async ({ page }) => {
+    await page.context().addCookies([
+      { name: 'locale', value: 'xx-INVALID', url: 'http://localhost:5190' },
+    ])
+    await page.goto('/')
+    // Should fall back to default English locale
+    await expect(page.getByTestId('welcome')).toContainText('Welcome to Fluenti')
+  })
+
+  test('empty cookie locale falls back to default', async ({ page }) => {
+    await page.context().addCookies([
+      { name: 'locale', value: '', url: 'http://localhost:5190' },
+    ])
+    await page.goto('/')
+    await expect(page.getByTestId('welcome')).toContainText('Welcome to Fluenti')
+  })
+})

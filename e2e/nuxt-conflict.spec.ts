@@ -69,6 +69,54 @@ test.describe('Nuxt Conflict — Custom Query Param (queryParamKey: "lang")', ()
   })
 })
 
+test.describe('Nuxt Conflict — Cookie Edge Cases', () => {
+  test('expired cookie falls back to default locale', async ({ browser }) => {
+    const context = await browser.newContext()
+    // Set a cookie with max-age=0 (effectively expired)
+    await context.addCookies([
+      { name: 'fluenti_locale', value: 'ja', domain: 'localhost', path: '/', expires: 0 },
+    ])
+    const page = await context.newPage()
+    await page.goto('/en')
+    // Expired cookie should not be sent — falls back to path detection
+    await expect(page.getByTestId('current-locale')).toContainText('en')
+    await context.close()
+  })
+
+  test('cookie set via query param persists across page reload', async ({ page }) => {
+    await page.goto('/en?lang=ja')
+    await expect(page.getByTestId('current-locale')).toContainText('ja')
+
+    // Reload without query param — locale should persist from detection
+    await page.goto('/ja')
+    await expect(page.getByTestId('current-locale')).toContainText('ja')
+  })
+
+  test('cookie with invalid locale value is ignored', async ({ browser }) => {
+    const context = await browser.newContext()
+    await context.addCookies([
+      { name: 'fluenti_locale', value: 'xx-INVALID', domain: 'localhost', path: '/' },
+    ])
+    const page = await context.newPage()
+    await page.goto('/en')
+    // Invalid cookie should be ignored, path /en should win
+    await expect(page.getByTestId('current-locale')).toContainText('en')
+    await context.close()
+  })
+
+  test('query param takes priority over cookie', async ({ browser }) => {
+    const context = await browser.newContext()
+    await context.addCookies([
+      { name: 'fluenti_locale', value: 'ja', domain: 'localhost', path: '/' },
+    ])
+    const page = await context.newPage()
+    // detectOrder is ['query', 'path', 'cookie', 'header'] — query should win
+    await page.goto('/en?lang=zh')
+    await expect(page.getByTestId('current-locale')).toContainText('zh')
+    await context.close()
+  })
+})
+
 test.describe('Nuxt Conflict — Named Middleware (globalMiddleware: false)', () => {
   test('unprefixed / does NOT redirect (no global middleware)', async ({ page }) => {
     // With prefix strategy + globalMiddleware: false, visiting /

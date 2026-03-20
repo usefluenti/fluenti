@@ -27,6 +27,9 @@ const serverMap: Record<string, { command: string; port: number; timeout?: numbe
   'nextjs-routes':   { command: 'cd e2e/fixtures/nextjs-routes && pnpm build && pnpm start -p 5196', port: 5196, timeout: 120_000 },
   'nuxt-conflict':   { command: 'cd e2e/fixtures/nuxt-conflict && pnpm build && pnpm preview --port 5197', port: 5197, timeout: 120_000 },
   'nextjs-conflict': { command: 'cd e2e/fixtures/nextjs-conflict && pnpm build && pnpm start -p 5198', port: 5198, timeout: 120_000 },
+  'nuxt-isr':        { command: 'cd e2e/fixtures/nuxt-isr && pnpm build && pnpm preview --port 5199', port: 5199, timeout: 120_000 },
+  'nuxt-multi-layout': { command: 'cd e2e/fixtures/nuxt-multi-layout && pnpm build && pnpm preview --port 5200', port: 5200, timeout: 120_000 },
+  'nextjs-multi-layout': { command: 'cd e2e/fixtures/nextjs-multi-layout && pnpm build && pnpm start -p 5201', port: 5201, timeout: 120_000 },
 }
 
 // Filter webServers to only those needed by the selected projects.
@@ -76,6 +79,9 @@ export default defineConfig({
     { name: 'nextjs-routes', use: { baseURL: 'http://localhost:5196' }, testMatch: '**/nextjs-routes.spec.ts' },
     { name: 'nuxt-conflict', use: { baseURL: 'http://localhost:5197' }, testMatch: '**/nuxt-conflict.spec.ts' },
     { name: 'nextjs-conflict', use: { baseURL: 'http://localhost:5198' }, testMatch: '**/nextjs-conflict.spec.ts' },
+    { name: 'nuxt-isr', use: { baseURL: 'http://localhost:5199' }, testMatch: '**/nuxt-isr.spec.ts' },
+    { name: 'nuxt-multi-layout', use: { baseURL: 'http://localhost:5200' }, testMatch: '**/nuxt-multi-layout.spec.ts' },
+    { name: 'nextjs-multi-layout', use: { baseURL: 'http://localhost:5201' }, testMatch: '**/nextjs-multi-layout.spec.ts' },
   ],
   webServer,
 })
