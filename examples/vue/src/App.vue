@@ -46,6 +46,26 @@ const fileCount = ref(5)
 const now = Date.now()
 const pastDate = new Date(Date.now() - 86400000 * 3)
 const gender = ref('female')
+
+// Ordinal Plurals
+const ordinalPattern = '{n, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}'
+const ordinal1 = computed(() => format(ordinalPattern, { n: 1 }))
+const ordinal2 = computed(() => format(ordinalPattern, { n: 2 }))
+const ordinal3 = computed(() => format(ordinalPattern, { n: 3 }))
+const ordinal4 = computed(() => format(ordinalPattern, { n: 4 }))
+
+// Plural with Offset
+const offsetPattern = '{n, plural, offset:1 =0 {Nobody liked this} =1 {You liked this} one {You and # other person liked this} other {You and # other people liked this}}'
+const offset0 = computed(() => format(offsetPattern, { n: 0 }))
+const offset1 = computed(() => format(offsetPattern, { n: 1 }))
+const offset2 = computed(() => format(offsetPattern, { n: 2 }))
+const offset5 = computed(() => format(offsetPattern, { n: 5 }))
+
+// Nested ICU Messages
+const nestedPattern = '{count, plural, =0 {{gender, select, male {He has no items} female {She has no items} other {They have no items}}} one {{gender, select, male {He has # item} female {She has # item} other {They have # item}}} other {{gender, select, male {He has # items} female {She has # items} other {They have # items}}}}'
+const nested3 = computed(() => format(nestedPattern, { count: 3, gender: gender.value }))
+const nested0 = computed(() => format(nestedPattern, { count: 0, gender: gender.value }))
+const nested1 = computed(() => format(nestedPattern, { count: 1, gender: gender.value }))
 </script>
 
 <template>
@@ -431,6 +451,65 @@ const gender = ref('female')
             :options="{ male: t('He liked this'), female: t('She liked this') }"
             :other="t('They liked this')"
           />
+        </div>
+      </div>
+
+      <div class="section">
+        <h2>Feature: Ordinal Plurals</h2>
+        <p class="section-desc">ICU <code>selectordinal</code> picks the suffix based on ordinal plural rules.</p>
+        <div class="demo-item">
+          <div class="demo-label">format('{n, selectordinal, ...}', { n })</div>
+          <div>{{ ordinal1 }} place</div>
+        </div>
+        <div class="demo-item">
+          <div class="demo-label">2nd place</div>
+          <div>{{ ordinal2 }} place</div>
+        </div>
+        <div class="demo-item">
+          <div class="demo-label">3rd place</div>
+          <div>{{ ordinal3 }} place</div>
+        </div>
+        <div class="demo-item">
+          <div class="demo-label">4th place</div>
+          <div>{{ ordinal4 }} place</div>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2>Feature: Plural with Offset</h2>
+        <p class="section-desc">Plural <code>offset</code> subtracts before selecting a form — useful for "you and N others" patterns.</p>
+        <div class="demo-item">
+          <div class="demo-label">offset:1 with 0 people</div>
+          <div>{{ offset0 }}</div>
+        </div>
+        <div class="demo-item">
+          <div class="demo-label">offset:1 with 1 person</div>
+          <div>{{ offset1 }}</div>
+        </div>
+        <div class="demo-item">
+          <div class="demo-label">offset:1 with 2 people</div>
+          <div>{{ offset2 }}</div>
+        </div>
+        <div class="demo-item">
+          <div class="demo-label">offset:1 with 5 people</div>
+          <div>{{ offset5 }}</div>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2>Feature: Nested ICU Messages</h2>
+        <p class="section-desc">ICU allows nesting — e.g. a <code>select</code> inside a <code>plural</code>, or vice versa.</p>
+        <div class="demo-item">
+          <div class="demo-label">select inside plural (gender-aware item count)</div>
+          <div>{{ nested3 }}</div>
+        </div>
+        <div class="demo-item">
+          <div class="demo-label">Same pattern with count=0</div>
+          <div>{{ nested0 }}</div>
+        </div>
+        <div class="demo-item">
+          <div class="demo-label">Same pattern with count=1</div>
+          <div>{{ nested1 }}</div>
         </div>
       </div>
 

@@ -25,6 +25,18 @@ describe('buildPrompt', () => {
     expect(result).toContain('HTML tags')
     expect(result).toContain('valid JSON')
   })
+
+  it('includes project context when provided', () => {
+    const result = buildPrompt('en', 'ja', { greeting: 'Hello' }, 'E-commerce application')
+
+    expect(result).toContain('Project context: E-commerce application')
+  })
+
+  it('omits project context when not provided', () => {
+    const result = buildPrompt('en', 'ja', { greeting: 'Hello' })
+
+    expect(result).not.toContain('Project context')
+  })
 })
 
 describe('extractJSON', () => {
