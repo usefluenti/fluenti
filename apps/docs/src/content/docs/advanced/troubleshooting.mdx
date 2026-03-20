@@ -7,13 +7,16 @@ import { Aside } from '@astrojs/starlight/components'
 
 ## `t` is not a function at runtime
 
-The Vite plugin was not configured. Ensure `@fluenti/vite-plugin` is added to your `vite.config.ts`:
+The Vite plugin was not configured. Ensure the framework-specific plugin is added to your `vite.config.ts`:
 
 ```typescript
-import fluenti from '@fluenti/vite-plugin'
+// Use the import matching your framework:
+import fluentiVue from '@fluenti/vue/vite-plugin'
+// import fluentiReact from '@fluenti/react/vite-plugin'
+// import fluentiSolid from '@fluenti/solid/vite-plugin'
 
 export default defineConfig({
-  plugins: [fluenti()],
+  plugins: [fluentiVue()],
 })
 ```
 
@@ -45,18 +48,21 @@ file locales/ja.po
 If translations are not updating during development, check that `devAutoCompile` is enabled (it is by default):
 
 ```typescript
-fluenti({
-  devAutoCompile: true, // default
-})
+// Pass devAutoCompile to your framework plugin:
+fluentiVue({ devAutoCompile: true })
+// or fluentiReact({ ... }) / fluentiSolid({ ... })
 ```
 
 Also verify that your source files match the `include` patterns in `fluenti.config.ts`.
 
 ## Missing translations in production
 
-Compiled catalogs are build artifacts. If translations are missing in production, `fluenti compile` was likely not run during the build process.
+Compiled catalogs are build artifacts. Since v0.1.4, both the Vite plugin and `withFluenti()` automatically run `extract + compile` before production builds (`buildAutoCompile` is enabled by default). If you still see missing translations:
 
-Add it to your CI/CD pipeline:
+1. Ensure you're using the latest plugin version
+2. Check that `buildAutoCompile` isn't explicitly set to `false`
+
+If you need to run the steps manually (e.g. custom CI pipeline with `buildAutoCompile: false`):
 
 ```bash
 pnpm fluenti extract
@@ -116,7 +122,7 @@ The Vite plugin must be loaded before framework-specific plugins. Ensure `fluent
 ```typescript
 export default defineConfig({
   plugins: [
-    fluenti(), // before vue(), react(), etc.
+    fluentiVue(), // before vue()
     vue(),
   ],
 })

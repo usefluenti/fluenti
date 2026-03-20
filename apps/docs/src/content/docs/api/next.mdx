@@ -31,9 +31,9 @@ All options are optional. Defaults are read from `fluenti.config.ts` in the proj
 | `dateFormats` | `DateFormatOptions?` | — | Custom date format presets (passed to `createServerI18n`) |
 | `numberFormats` | `NumberFormatOptions?` | — | Custom number format presets (passed to `createServerI18n`) |
 | `fallbackChain` | `Record<string, string[]>?` | — | Locale fallback chains (e.g. `{ 'zh-TW': ['zh-CN', 'en'] }`) |
-| `transform` | `(result, id, locale) => string?` | — | Post-translation transform hook |
-| `onLocaleChange` | `(newLocale, prevLocale) => void?` | — | Callback fired when locale changes |
-| `formatters` | `Record<string, CustomFormatter>?` | — | Custom ICU function formatters |
+| `devAutoCompile` | `boolean?` | `true` | Auto extract+compile when source files change in dev mode |
+| `devAutoCompileDelay` | `number?` | `1000` | Debounce delay in ms for dev auto-compile. Increase if recompilation is too frequent |
+| `buildAutoCompile` | `boolean?` | `true` | Auto extract+compile before production build |
 
 ### What it does
 
@@ -57,6 +57,32 @@ On the server, the loader also reroutes `Trans`, `Plural`, `Select`, `DateTime`,
 
 The loader also optimizes `<Trans>` components at build time by pre-computing the context-aware message ID and extraction from JSX children, injecting `__id`, `__message`, and `__components` props. This eliminates the runtime `extractMessage()` and `hashMessage()` fast-path cost.
 
+### Scope decision table
+
+| Scenario | Directive | Import | Needs `async`? | Needs `setLocale`? |
+|----------|-----------|--------|----------------|-------------------|
+| Server Component | — | `import { t } from '@fluenti/react'` | Auto-promoted | Via `I18nProvider` |
+| Client Component | `'use client'` | `import { useI18n } from '@fluenti/react'` | No | Via `I18nProvider` |
+| `generateMetadata` | — | `import { t } from '@fluenti/react'` | Auto-promoted | Via layout's `I18nProvider` |
+| Server Action | `'use server'` | `import { t } from '@fluenti/react'` | Yes | `resolveLocale` fallback |
+| `.map()` callback | — | Same as parent | Auto (eager resolve) | Via parent scope |
+
+### `generateMetadata` support
+
+Next.js conventional exports like `generateMetadata`, `generateStaticParams`, and `generateViewport` are automatically recognized as server-eligible, even though they start with a lowercase letter. The compiler auto-promotes them to `async` when they use `t`:
+
+```tsx
+import { t } from '@fluenti/react'
+
+// No need for `async` — auto-promoted by the compiler
+export function generateMetadata() {
+  return {
+    title: t`My Page Title`,
+    description: t`My page description`,
+  }
+}
+```
+
 ## Generated Modules
 
 `withFluenti()` generates modules at `node_modules/.fluenti/` and aliases them as `@fluenti/next`.
@@ -73,7 +99,7 @@ This module is primarily the Next runtime/integration surface. For ordinary tran
 |--------|------|-------------|
 | `I18nProvider` | async server component | Sets server locale + wraps children in `ClientI18nProvider` |
 | `setLocale` | `(locale: string) => void` | Set locale for the current request (`React.cache()` scoped) |
-| `getI18n` | `() => Promise<FluentInstance>` | Get the i18n instance for the current request |
+| `getI18n` | `() => Promise<FluentInstanceExtended>` | Get the i18n instance for the current request |
 | `t` | `CompileTimeT` | Compile-time translation API for tagged templates and descriptor calls |
 | `Trans` | async server component | Rich text translation |
 | `Plural` | async server component | Locale-aware pluralization |
@@ -89,21 +115,25 @@ The `I18nProvider` from `@fluenti/next` is an **async server component**. It doe
 2. Calls `getI18n()` to load messages on the server
 3. Renders a client-side `ClientI18nProvider` with statically imported message catalogs (functions can't cross the RSC serialization boundary, so messages are bundled into the client provider)
 
-This is the **recommended** way to set up i18n in Next.js layouts:
+This is the **recommended** way to set up i18n in Next.js layouts. Use path-based routing (`/[locale]/`) so the server always knows the correct locale:
 
 ```tsx
-// app/layout.tsx
-import { cookies } from 'next/headers'
+// app/[locale]/layout.tsx
+import { getDirection } from '@fluenti/core'
 import { I18nProvider } from '@fluenti/next'
 
-export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const locale = (await cookies()).get('locale')?.value ?? 'en'
+export default async function LocaleLayout({
+  children,
+  params,
+}: {
+  children: React.ReactNode
+  params: Promise<{ locale: string }>
+}) {
+  const { locale } = await params
   return (
-    <html lang={locale}>
-      <body>
-        <I18nProvider locale={locale}>{children}</I18nProvider>
-      </body>
-    </html>
+    <div dir={getDirection(locale)}>
+      <I18nProvider locale={locale}>{children}</I18nProvider>
+    </div>
   )
 }
 ```

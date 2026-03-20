@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { existsSync } from 'node:fs'
+import { execSync } from 'node:child_process'
 import { withFluenti } from '../src/with-fluenti'
 
 // Mock the generate-server-module to avoid filesystem operations
@@ -24,6 +25,15 @@ vi.mock('node:fs', async () => {
   return {
     ...actual,
     existsSync: vi.fn(() => true),
+  }
+})
+
+// Mock child_process.execSync for build auto-compile
+vi.mock('node:child_process', async () => {
+  const actual = await vi.importActual<typeof import('node:child_process')>('node:child_process')
+  return {
+    ...actual,
+    execSync: vi.fn(),
   }
 })
 
@@ -265,6 +275,76 @@ describe('withFluenti', () => {
 
     const result = webpackFn(webpackConfig, { isServer: true, dev: true }) as Record<string, unknown>
     expect(result['plugins']).toBeUndefined()
+  })
+
+  it('runs extract+compile in production build mode', () => {
+    const wrapper = withFluenti()
+    const config = wrapper({})
+    const webpackFn = config['webpack'] as (cfg: unknown, opts: unknown) => unknown
+
+    const webpackConfig = {
+      module: { rules: [] as unknown[] },
+      resolve: { alias: {} as Record<string, string> },
+    }
+
+    webpackFn(webpackConfig, { isServer: true, dev: false })
+
+    expect(vi.mocked(execSync)).toHaveBeenCalledWith(
+      'npx fluenti extract && npx fluenti compile',
+      expect.objectContaining({ stdio: 'inherit' }),
+    )
+  })
+
+  it('runs extract+compile only once across server+client passes', () => {
+    vi.mocked(execSync).mockClear()
+    const wrapper = withFluenti()
+    const config = wrapper({})
+    const webpackFn = config['webpack'] as (cfg: unknown, opts: unknown) => unknown
+
+    const makeWebpackConfig = () => ({
+      module: { rules: [] as unknown[] },
+      resolve: { alias: {} as Record<string, string> },
+    })
+
+    // First call (server)
+    webpackFn(makeWebpackConfig(), { isServer: true, dev: false })
+    // Second call (client)
+    webpackFn(makeWebpackConfig(), { isServer: false, dev: false })
+
+    expect(vi.mocked(execSync)).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not run extract+compile in production when buildAutoCompile is false', () => {
+    vi.mocked(execSync).mockClear()
+    const wrapper = withFluenti({ buildAutoCompile: false } as never)
+    const config = wrapper({})
+    const webpackFn = config['webpack'] as (cfg: unknown, opts: unknown) => unknown
+
+    const webpackConfig = {
+      module: { rules: [] as unknown[] },
+      resolve: { alias: {} as Record<string, string> },
+    }
+
+    webpackFn(webpackConfig, { isServer: true, dev: false })
+
+    expect(vi.mocked(execSync)).not.toHaveBeenCalled()
+  })
+
+  it('does not run extract+compile in dev mode', () => {
+    vi.mocked(execSync).mockClear()
+    const wrapper = withFluenti()
+    const config = wrapper({})
+    const webpackFn = config['webpack'] as (cfg: unknown, opts: unknown) => unknown
+
+    const webpackConfig = {
+      module: { rules: [] as unknown[] },
+      resolve: { alias: {} as Record<string, string> },
+      plugins: [] as unknown[],
+    }
+
+    webpackFn(webpackConfig, { isServer: true, dev: true })
+
+    expect(vi.mocked(execSync)).not.toHaveBeenCalled()
   })
 
   it('isNextConfig detects objects with next-specific keys', () => {

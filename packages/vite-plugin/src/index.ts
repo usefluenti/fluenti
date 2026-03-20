@@ -1,34 +1,38 @@
 import type { Plugin } from 'vite'
-import type { FluentiPluginOptions } from './types'
+import type { FluentiCoreOptions, RuntimeGenerator } from './types'
 import { setResolvedMode, isBuildMode } from './mode-detect'
 import { resolve } from 'node:path'
-import { createDebouncedRunner } from '@fluenti/core/internal'
+import { createDebouncedRunner, runExtractCompile } from '@fluenti/core/internal'
 import { transformForDynamicSplit, transformForStaticSplit, injectCatalogImport } from './build-transform'
 import { resolveVirtualSplitId, loadVirtualSplitModule } from './virtual-modules'
 import { deriveRouteName, parseCompiledCatalog, buildChunkModule, readCatalogSource } from './route-resolve'
 import { scopeTransform } from './scope-transform'
 import { transformTransComponents } from './trans-transform'
-import { detectFramework } from './framework-detect'
-import { transformVtDirectives } from './sfc-transform'
-import { transformSolidJsx } from './solid-jsx-transform'
-
-export type { FluentiPluginOptions } from './types'
+export type { FluentiPluginOptions, FluentiCoreOptions, RuntimeGenerator, RuntimeGeneratorOptions } from './types'
+export { resolveVirtualSplitId, loadVirtualSplitModule } from './virtual-modules'
+export { setResolvedMode, isBuildMode } from './mode-detect'
 
 const VIRTUAL_PREFIX = 'virtual:fluenti/messages/'
 const RESOLVED_PREFIX = '\0virtual:fluenti/messages/'
-type InternalSplitStrategy = FluentiPluginOptions['splitting'] | 'per-route'
+type InternalSplitStrategy = FluentiCoreOptions['splitting'] | 'per-route'
 
-// ─── Plugin entry ────────────────────────────────────────────────────────────
+// ─── Public factory for framework packages ─────────────────────────────────
 
-/** Fluenti Vite plugin */
-export default function fluentiPlugin(options?: FluentiPluginOptions): Plugin[] {
-  const catalogDir = options?.catalogDir ?? 'src/locales/compiled'
-  const frameworkOption = options?.framework ?? 'auto'
-  const splitting = (options?.splitting as InternalSplitStrategy | undefined) ?? false
-  const sourceLocale = options?.sourceLocale ?? 'en'
-  const locales = options?.locales ?? [sourceLocale]
-  const defaultBuildLocale = options?.defaultBuildLocale ?? sourceLocale
-  let detectedFramework: 'vue' | 'solid' | 'react' = 'vue'
+/**
+ * Create the Fluenti plugin pipeline.
+ * Framework packages call this with their framework-specific plugins and runtime generator.
+ */
+export function createFluentiPlugins(
+  options: FluentiCoreOptions,
+  frameworkPlugins: Plugin[],
+  runtimeGenerator?: RuntimeGenerator,
+): Plugin[] {
+  const catalogDir = options.catalogDir ?? 'src/locales/compiled'
+  const framework = options.framework
+  const splitting = (options.splitting as InternalSplitStrategy | undefined) ?? false
+  const sourceLocale = options.sourceLocale ?? 'en'
+  const locales = options.locales ?? [sourceLocale]
+  const defaultBuildLocale = options.defaultBuildLocale ?? sourceLocale
 
   const virtualPlugin: Plugin = {
     name: 'fluenti:virtual',
@@ -39,7 +43,6 @@ export default function fluentiPlugin(options?: FluentiPluginOptions): Plugin[] 
       if (id.startsWith(VIRTUAL_PREFIX)) {
         return '\0' + id
       }
-      // Handle split-mode virtual modules
       if (splitting) {
         const resolved = resolveVirtualSplitId(id)
         if (resolved) return resolved
@@ -52,36 +55,18 @@ export default function fluentiPlugin(options?: FluentiPluginOptions): Plugin[] 
         const catalogPath = `${catalogDir}/${locale}.js`
         return `export { default } from '${catalogPath}'`
       }
-      // Handle split-mode virtual modules
       if (splitting) {
         const result = loadVirtualSplitModule(id, {
           catalogDir,
           locales,
           sourceLocale,
           defaultBuildLocale,
-          framework: detectedFramework,
+          framework,
+          runtimeGenerator,
         })
         if (result) return result
       }
       return undefined
-    },
-  }
-
-  const vueTemplatePlugin: Plugin = {
-    name: 'fluenti:vue-template',
-    enforce: 'pre',
-
-    // SFC pre-transform: rewrites v-t directives, <Trans>, and <Plural> in <template>
-    // before Vue compiler runs. Manual compiler-level transforms are treated as
-    // internal implementation details; the supported public path is this plugin.
-    transform(code, id) {
-      if (!id.endsWith('.vue')) return undefined
-      if (!/\bv-t\b/.test(code) && !/<Trans[\s>]/.test(code) && !/<Plural[\s/>]/.test(code)) return undefined
-
-      const transformed = transformVtDirectives(code)
-      if (transformed === code) return undefined
-
-      return { code: transformed, map: null }
     },
   }
 
@@ -107,10 +92,6 @@ export default function fluentiPlugin(options?: FluentiPluginOptions): Plugin[] 
 
       // ── t`` / t() scope-aware transform ────────────────────────────────
       if (hasScopeTransformCandidate(result)) {
-        const framework = frameworkOption === 'auto'
-          ? detectFramework(id, result)
-          : frameworkOption
-
         const scoped = scopeTransform(result, {
           framework,
           allowTopLevelImportedT: framework === 'vue' && id.includes('.vue'),
@@ -129,29 +110,17 @@ export default function fluentiPlugin(options?: FluentiPluginOptions): Plugin[] 
 
   const buildSplitPlugin: Plugin = {
     name: 'fluenti:build-split',
-    // No enforce — runs AFTER @vitejs/plugin-vue compiles templates to JavaScript.
-    // With enforce: 'pre', this would see raw SFC <template> blocks before Vue
-    // compilation, which breaks import injection (imports land outside <script>).
     transform(code, id) {
       if (!splitting) return undefined
       if (!isBuildMode((this as any).environment)) return undefined
       if (id.includes('node_modules')) return undefined
       if (!id.match(/\.(vue|tsx|jsx|ts|js)(\?|$)/)) return undefined
 
-      // Detect framework for this file
-      if (frameworkOption === 'auto') {
-        detectedFramework = detectFramework(id, code)
-      } else {
-        detectedFramework = frameworkOption
-      }
-
-      // per-route uses the same transform as dynamic ($t → __catalog._hash)
       const strategy = splitting === 'static' ? 'static' : 'dynamic'
       const transformed = strategy === 'static'
         ? transformForStaticSplit(code)
         : transformForDynamicSplit(code)
 
-      // Track hashes per module for per-route generateBundle
       if (splitting === 'per-route' && transformed.usedHashes.size > 0) {
         moduleMessages.set(id, transformed.usedHashes)
       }
@@ -167,7 +136,6 @@ export default function fluentiPlugin(options?: FluentiPluginOptions): Plugin[] 
       if (splitting !== 'per-route') return
       if (moduleMessages.size === 0) return
 
-      // 1. Map chunks → hashes via moduleMessages
       const chunkHashes = new Map<string, Set<string>>()
       for (const [fileName, chunk] of Object.entries(bundle)) {
         if (chunk.type !== 'chunk') continue
@@ -185,7 +153,6 @@ export default function fluentiPlugin(options?: FluentiPluginOptions): Plugin[] 
 
       if (chunkHashes.size === 0) return
 
-      // 2. Classify: shared (≥2 chunks) vs route-specific (1 chunk)
       const hashToChunks = new Map<string, string[]>()
       for (const [chunkName, hashes] of chunkHashes) {
         for (const h of hashes) {
@@ -209,14 +176,12 @@ export default function fluentiPlugin(options?: FluentiPluginOptions): Plugin[] 
         }
       }
 
-      // 3. Read compiled catalogs and emit chunk files
       const absoluteCatalogDir = resolve(process.cwd(), catalogDir)
       for (const locale of locales) {
         const catalogSource = readCatalogSource(absoluteCatalogDir, locale)
         if (!catalogSource) continue
         const catalogExports = parseCompiledCatalog(catalogSource)
 
-        // Emit shared chunk
         if (sharedHashes.size > 0) {
           const sharedCode = buildChunkModule(sharedHashes, catalogExports)
           this.emitFile({
@@ -226,7 +191,6 @@ export default function fluentiPlugin(options?: FluentiPluginOptions): Plugin[] 
           })
         }
 
-        // Emit per-route chunks
         for (const [routeName, hashes] of routeHashes) {
           const routeCode = buildChunkModule(hashes, catalogExports)
           this.emitFile({
@@ -239,41 +203,18 @@ export default function fluentiPlugin(options?: FluentiPluginOptions): Plugin[] 
     },
   }
 
-  const solidJsxPlugin: Plugin = {
-    name: 'fluenti:solid-jsx',
-    enforce: 'pre',
-    transform(code, id) {
-      if (!id.match(/\.[tj]sx(\?|$)/)) return undefined
-      if (id.includes('node_modules')) return undefined
-      if (!/<Trans[\s>]/.test(code) && !/<Plural[\s/>]/.test(code)) return undefined
+  const buildAutoCompile = options.buildAutoCompile ?? true
 
-      // Only run when framework is solid or auto-detected as solid
-      const framework = frameworkOption === 'auto'
-        ? detectFramework(id, code)
-        : frameworkOption
-      if (framework !== 'solid') return undefined
-
-      const transformed = transformSolidJsx(code)
-      if (!transformed.changed) return undefined
-
-      return { code: transformed.code, map: null }
+  const buildCompilePlugin: Plugin = {
+    name: 'fluenti:build-compile',
+    async buildStart() {
+      if (!isBuildMode((this as any).environment) || !buildAutoCompile) return
+      await runExtractCompile({ cwd: process.cwd(), throwOnError: true })
     },
   }
 
-  const devAutoCompile = options?.devAutoCompile ?? true
-  const includePatterns = options?.include ?? ['src/**/*.{vue,tsx,jsx,ts,js}']
-
-  function matchesInclude(file: string, patterns: string[]): boolean {
-    // Simple extension + path check (avoids adding picomatch dependency)
-    const extMatch = /\.(vue|tsx|jsx|ts|js)$/.test(file)
-    if (!extMatch) return false
-    if (file.includes('node_modules')) return false
-    // Check if file path matches any of the include directory prefixes
-    return patterns.some((p) => {
-      const dirPart = p.split('*')[0] ?? ''
-      return dirPart === '' || file.includes(dirPart.replace('./', ''))
-    })
-  }
+  const devAutoCompile = options.devAutoCompile ?? true
+  const includePatterns = options.include ?? ['src/**/*.{vue,tsx,jsx,ts,js}']
 
   const devPlugin: Plugin = {
     name: 'fluenti:dev',
@@ -287,10 +228,8 @@ export default function fluentiPlugin(options?: FluentiPluginOptions): Plugin[] 
         },
       })
 
-      // Initial run on server start
       debouncedRun()
 
-      // Watch source files for changes
       server.watcher.on('change', (file) => {
         if (matchesInclude(file, includePatterns) && !file.includes(catalogDir)) {
           debouncedRun()
@@ -311,7 +250,19 @@ export default function fluentiPlugin(options?: FluentiPluginOptions): Plugin[] 
     },
   }
 
-  return [virtualPlugin, vueTemplatePlugin, solidJsxPlugin, scriptTransformPlugin, buildSplitPlugin, devPlugin]
+  return [virtualPlugin, ...frameworkPlugins, scriptTransformPlugin, buildCompilePlugin, buildSplitPlugin, devPlugin]
+}
+
+// ─── Utilities ──────────────────────────────────────────────────────────────
+
+function matchesInclude(file: string, patterns: string[]): boolean {
+  const extMatch = /\.(vue|tsx|jsx|ts|js)$/.test(file)
+  if (!extMatch) return false
+  if (file.includes('node_modules')) return false
+  return patterns.some((p) => {
+    const dirPart = p.split('*')[0] ?? ''
+    return dirPart === '' || file.includes(dirPart.replace('./', ''))
+  })
 }
 
 function hasScopeTransformCandidate(code: string): boolean {

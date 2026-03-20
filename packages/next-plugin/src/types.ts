@@ -39,6 +39,10 @@ export interface WithFluentConfig {
   fallbackChain?: Record<string, Locale[]>
   /** Auto extract+compile in dev mode (default: true) */
   devAutoCompile?: boolean
+  /** Debounce delay in ms for dev auto-compile (default: 1000). Increase if you see excessive recompilation. */
+  devAutoCompileDelay?: number
+  /** Auto extract+compile before production build (default: true) */
+  buildAutoCompile?: boolean
 }
 
 /**

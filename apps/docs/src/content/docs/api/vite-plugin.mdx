@@ -5,21 +5,26 @@ description: Vite plugin API reference
 
 ## Usage
 
-```typescript
-// vite.config.ts
-import { defineConfig } from 'vite'
-import fluenti from '@fluenti/vite-plugin'
+Import the plugin from your framework's package:
 
-export default defineConfig({
-  plugins: [fluenti()],
-})
+```typescript
+// Vue — vite.config.ts
+import fluentiVue from '@fluenti/vue/vite-plugin'
+export default defineConfig({ plugins: [vue(), fluentiVue()] })
+
+// React — vite.config.ts
+import fluentiReact from '@fluenti/react/vite-plugin'
+export default defineConfig({ plugins: [fluentiReact(), react()] })
+
+// Solid — vite.config.ts
+import fluentiSolid from '@fluenti/solid/vite-plugin'
+export default defineConfig({ plugins: [solidPlugin(), fluentiSolid()] })
 ```
 
 ## Options
 
 ```typescript
-fluenti({
-  framework: 'auto',     // 'vue' | 'react' | 'solid' | 'auto'
+fluentiVue({
   catalogDir: 'src/locales/compiled',
   splitting: 'dynamic',  // 'dynamic' | 'static' | false
 })
@@ -27,7 +32,6 @@ fluenti({
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `framework` | `'vue' \| 'react' \| 'solid' \| 'auto'` | `'auto'` | Framework detection mode |
 | `catalogDir` | `string` | `'src/locales/compiled'` | Compiled catalogs directory |
 | `sourceLocale` | `string` | `'en'` | Source locale used for descriptor fallback and build transforms |
 | `locales` | `string[]` | `[sourceLocale]` | Locale codes available to the build |
@@ -35,19 +39,24 @@ fluenti({
 | `defaultBuildLocale` | `string` | `sourceLocale` | Locale inlined for `'static'` builds |
 | `include` | `string[]` | `['src/**/*.{vue,tsx,jsx,ts,js}']` | Source file patterns for dev watcher |
 | `devAutoCompile` | `boolean` | `true` | Auto extract+compile on file change during dev |
+| `buildAutoCompile` | `boolean` | `true` | Auto extract+compile before production build |
 
 ## What it does
 
 The plugin provides several sub-plugins, each implemented as a dedicated module:
 
-1. **fluenti:virtual** — Internal virtual-module layer used by the build output (`virtual-modules.ts`)
-2. **fluenti:vue-template** — Pre-transforms Vue `v-t`, `<Trans>`, and `<Plural>` template usage (`sfc-transform.ts`)
-3. **fluenti:solid-jsx** — Reserved compatibility slot for Solid JSX handling (`solid-jsx-transform.ts`)
-4. **fluenti:script-transform** — Strict AST-only tagged-template optimization (`scope-transform.ts`, `trans-transform.ts`)
-5. **fluenti:build-split** — Code-splitting transforms for production builds (`build-transform.ts`)
-6. **fluenti:dev** — HMR support for catalog changes
+The core `@fluenti/vite-plugin` provides these sub-plugins:
 
-Framework detection (`framework-detect.ts`) auto-detects the framework from project dependencies when `framework: 'auto'`.
+1. **fluenti:virtual** — Internal virtual-module layer used by the build output (`virtual-modules.ts`)
+2. **fluenti:script-transform** — Strict AST-only tagged-template optimization (`scope-transform.ts`, `trans-transform.ts`)
+3. **fluenti:build-compile** — Auto extract+compile before production builds
+4. **fluenti:build-split** — Code-splitting transforms for production builds (`build-transform.ts`)
+5. **fluenti:dev** — HMR support for catalog changes
+
+Each framework package adds its own plugins:
+
+- `@fluenti/vue/vite-plugin` adds **fluenti:vue-template** — pre-transforms Vue `v-t`, `<Trans>`, and `<Plural>` template usage
+- `@fluenti/react/vite-plugin` and `@fluenti/solid/vite-plugin` pass the core plugins through with the correct framework-specific runtime generator
 
 ## Splitting strategies
 
