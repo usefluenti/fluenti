@@ -55,9 +55,6 @@ importers:
         specifier: ^3.5
         version: 3.5.30(typescript@5.9.3)
     devDependencies:
-      '@babel/generator':
-        specifier: ^7.29.1
-        version: 7.29.1
       '@codemirror/commands':
         specifier: ^6
         version: 6.10.3
