@@ -2,11 +2,50 @@
 
 All notable changes to this project will be documented in this file.
 
-## [0.1.1] - 2026-03-19
+## [0.2.0] - 2026-03-20
+
+### Added
+
+- Auto extract+compile before production builds (`buildAutoCompile` option in vite-plugin and next-plugin)
+- Framework-specific vite-plugin subpaths (`@fluenti/vue/vite-plugin`, `@fluenti/solid/vite-plugin`, `@fluenti/react/vite-plugin`)
+- Next.js locale-prefixed routing support
+- Export `runCompile` and `loadConfig` from `@fluenti/cli` for programmatic usage
+
+### Fixed
+
+- Use bracket notation for numeric ICU argument names in compiled output
+- Resolve CLI binary by walking up directory tree for monorepo support
+- Handle CJS interop when dynamically importing `@fluenti/cli` in dev-runner
+- Use `require()` instead of `import()` for `@fluenti/cli` in dev-runner for Node.js compatibility
+- Use `node_modules/.bin/fluenti` instead of `npx` for CI compatibility
+- Resolve E2E failures in `buildAutoCompile` and solid-splitting fixture
+
+### Changed
+
+- Rename `FluentProvider` to `I18nProvider` in `@fluenti/next` for API consistency
+- Move dev-runner from `@fluenti/core` to `@fluenti/vite-plugin` and `@fluenti/next`
+- Extract shared `config-loader` module in CLI
+
+## [0.1.3] - 2026-03-19
+
+### Fixed
+
+- Rename `FluentProvider` to `I18nProvider` in `@fluenti/next`
+- Move dev-runner to internal entry to avoid `node:child_process` in browser bundles
+- Resolve E2E failures — CJS compat and `@__PURE__` annotation
+- Remove broken msgid entries from solid example PO files
+- Address code review findings (HIGH + MEDIUM issues)
+
+## [0.1.2] - 2026-03-19
 
 ### Fixed
 
 - Use relative paths in PO file source references
+
+## [0.1.1] - 2026-03-19
+
+### Fixed
+
 - Skip commit/tag/push in release dry-run mode
 - Remove unused `numericLiteral` function to fix typecheck
 - Fix Fluent placeholder syntax and improve tagged template DX
