@@ -9,6 +9,16 @@ interface SplitRuntimeModule {
   __preloadLocale?: (locale: string) => Promise<void>
 }
 
+function unwrapMessages(allMessages: Record<string, unknown>): Record<string, Messages> {
+  const result: Record<string, Messages> = {}
+  for (const [locale, msgs] of Object.entries(allMessages)) {
+    result[locale] = typeof msgs === 'object' && msgs !== null && 'default' in msgs
+      ? (msgs as { default: Messages }).default
+      : msgs as Messages
+  }
+  return result
+}
+
 const SPLIT_RUNTIME_KEY = Symbol.for('fluenti.runtime.react')
 
 function getSplitRuntimeModule(): SplitRuntimeModule | null {
@@ -32,7 +42,7 @@ export function I18nProvider({
   const [currentLocale, setCurrentLocale] = useState(locale)
   const [isLoading, setIsLoading] = useState(false)
   const [loadedMessages, setLoadedMessages] = useState<Record<string, Messages>>(
-    messages ?? {},
+    messages ? unwrapMessages(messages) : {},
   )
   const [loadedLocales, setLoadedLocales] = useState<string[]>(
     messages ? Object.keys(messages) : [],

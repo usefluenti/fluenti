@@ -13,7 +13,6 @@
     "@fluenti/cli": "workspace:*",
     "@fluenti/core": "workspace:*",
     "@fluenti/react": "workspace:*",
-    "@fluenti/vite-plugin": "workspace:*",
     "@tanstack/react-router": "^1",
     "@tanstack/react-start": "^1",
     "react": "^19.0.0",

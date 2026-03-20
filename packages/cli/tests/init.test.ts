@@ -19,28 +19,28 @@ describe('detectFramework', () => {
   it('detects Vue', () => {
     expect(detectFramework({ vue: '^3' })).toEqual({
       name: 'vue',
-      pluginPackage: '@fluenti/vite-plugin',
+      pluginPackage: '@fluenti/vue',
     })
   })
 
   it('detects SolidJS', () => {
     expect(detectFramework({ 'solid-js': '^1' })).toEqual({
       name: 'solid',
-      pluginPackage: '@fluenti/vite-plugin',
+      pluginPackage: '@fluenti/solid',
     })
   })
 
   it('detects SolidStart', () => {
     expect(detectFramework({ '@solidjs/start': '^1' })).toEqual({
       name: 'solidstart',
-      pluginPackage: '@fluenti/vite-plugin',
+      pluginPackage: '@fluenti/solid',
     })
   })
 
   it('detects React', () => {
     expect(detectFramework({ react: '^19' })).toEqual({
       name: 'react',
-      pluginPackage: '@fluenti/vite-plugin',
+      pluginPackage: '@fluenti/react',
     })
   })
 

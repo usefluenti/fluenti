@@ -16,7 +16,7 @@ This guide covers a complete migration from vue-i18n to Fluenti. If you need to 
 ## Step 1: Install Fluenti
 
 ```bash
-pnpm add @fluenti/vue @fluenti/vite-plugin @fluenti/cli
+pnpm add @fluenti/vue @fluenti/cli
 ```
 
 ## Step 2: Replace Plugin Setup
@@ -64,10 +64,10 @@ const msg = t('greeting')
 
 ```typescript
 // vite.config.ts
-import fluentiPlugin from '@fluenti/vite-plugin'
+import fluentiVue from '@fluenti/vue/vite-plugin'
 
 export default defineConfig({
-  plugins: [vue(), fluentiPlugin()],
+  plugins: [vue(), fluentiVue()],
 })
 ```
 

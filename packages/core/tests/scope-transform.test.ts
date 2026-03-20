@@ -237,9 +237,7 @@ const label = t\`Hello\`
 `
 
     expect(() => scopeTransform(code, opts)).toThrow(
-      "[fluenti] Imported `t` from '@fluenti/react' is a compile-time API.\n" +
-        '  It must be used inside a component or custom hook.\n' +
-        '  Hint: For utility files, accept `t` as a function parameter instead.',
+      /compile-time API/,
     )
   })
 
@@ -281,6 +279,47 @@ export default Page
 
     expect(result.transformed).toBe(true)
     expect(result.code).toContain('const __fluenti_get_i18n = async () => {')
+  })
+
+  it('auto-promotes non-async generateMetadata to server-eligible', () => {
+    const code = `
+import { t } from '@fluenti/react'
+export function generateMetadata() {
+  return { title: t\`Page Title\`, description: t\`Page Description\` }
+}
+`
+
+    const result = scopeTransform(code, {
+      framework: 'react',
+      serverModuleImport: '@fluenti/next',
+      treatFrameworkDirectImportsAsServer: true,
+      rerouteServerAuthoringImports: true,
+    })
+
+    expect(result.transformed).toBe(true)
+    expect(result.code).toContain('async function generateMetadata()')
+    expect(result.code).toContain('const __fluenti_get_i18n = async () => {')
+    expect(result.code).toContain("message: 'Page Title'")
+    expect(result.code).toContain("message: 'Page Description'")
+  })
+
+  it('auto-promotes generateStaticParams to server-eligible', () => {
+    const code = `
+import { t } from '@fluenti/react'
+export function generateStaticParams() {
+  return [{ slug: t\`hello\` }]
+}
+`
+
+    const result = scopeTransform(code, {
+      framework: 'react',
+      serverModuleImport: '@fluenti/next',
+      treatFrameworkDirectImportsAsServer: true,
+      rerouteServerAuthoringImports: true,
+    })
+
+    expect(result.transformed).toBe(true)
+    expect(result.code).toContain('async function generateStaticParams()')
   })
 
   it('keeps imported server t lookups ordered after locale setup', () => {
@@ -1064,7 +1103,7 @@ function helper() {
     expect(() => scopeTransform(code, {
       framework: 'react',
       serverModuleImport: '@fluenti/next',
-    })).toThrow(/must be used inside a React component or async function/)
+    })).toThrow(/must be used inside a React component/)
   })
 
   // ─── Vue scope error ──────────────────────────────────

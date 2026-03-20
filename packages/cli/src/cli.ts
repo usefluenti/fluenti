@@ -43,8 +43,10 @@ async function loadConfig(configPath?: string): Promise<FluentiConfig> {
         const mod = await jiti.import(p) as { default?: Partial<FluentiConfig> }
         const userConfig = mod.default ?? mod as unknown as Partial<FluentiConfig>
         return { ...defaultConfig, ...userConfig }
-      } catch {
-        consola.warn(`Failed to load config from ${p}, using defaults`)
+      } catch (e) {
+        consola.error(`Failed to load config from ${p}`)
+        consola.error(e instanceof Error ? e.message : String(e))
+        process.exit(1)
       }
     }
   }
@@ -67,8 +69,15 @@ function writeCatalog(filePath: string, catalog: CatalogData, format: 'json' | '
 async function extractFromFile(filePath: string, code: string): Promise<ExtractedMessage[]> {
   const ext = extname(filePath)
   if (ext === '.vue') {
-    const { extractFromVue } = await import('./vue-extractor')
-    return extractFromVue(code, filePath)
+    try {
+      const { extractFromVue } = await import('./vue-extractor')
+      return extractFromVue(code, filePath)
+    } catch {
+      consola.warn(
+        `Skipping ${filePath}: install @vue/compiler-sfc to extract from .vue files`,
+      )
+      return []
+    }
   }
   return extractFromTsx(code, filePath)
 }

@@ -1,10 +1,10 @@
 import { defineConfig } from 'vite'
 import { vitePlugin as remix } from '@remix-run/dev'
-import fluenti from '@fluenti/vite-plugin'
+import fluentiReact from '@fluenti/react/vite-plugin'
 
 export default defineConfig({
   plugins: [
-    fluenti({ framework: 'react' }),
+    fluentiReact(),
     remix({
       ssr: false,
     }),

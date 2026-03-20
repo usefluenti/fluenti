@@ -27,7 +27,7 @@ A small task manager app with:
 
    ```bash
    npm install @fluenti/core @fluenti/react
-   npm install -D @fluenti/cli @fluenti/vite-plugin
+   npm install -D @fluenti/cli
    ```
 
 3. **Initialize Fluenti**
@@ -45,10 +45,10 @@ A small task manager app with:
    ```typescript
    import { defineConfig } from 'vite'
    import react from '@vitejs/plugin-react'
-   import fluenti from '@fluenti/vite-plugin'
+   import fluentiReact from '@fluenti/react/vite-plugin'
 
    export default defineConfig({
-     plugins: [fluenti(), react()],
+     plugins: [fluentiReact(), react()],
    })
    ```
 
@@ -57,7 +57,7 @@ A small task manager app with:
    Replace `src/App.tsx`:
 
    ```tsx
-   import { I18nProvider, useI18n } from '@fluenti/react'
+   import { I18nProvider, useI18n, t } from '@fluenti/react'
 
    function TaskApp() {
      const { setLocale, locale } = useI18n()

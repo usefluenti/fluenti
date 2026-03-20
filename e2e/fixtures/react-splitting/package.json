@@ -9,7 +9,6 @@
   "dependencies": {
     "@fluenti/cli": "workspace:*",
     "@fluenti/react": "workspace:*",
-    "@fluenti/vite-plugin": "workspace:*",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-router-dom": "^7"

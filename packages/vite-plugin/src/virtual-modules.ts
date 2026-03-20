@@ -4,11 +4,12 @@
  * Provides:
  * - virtual:fluenti/runtime    → reactive catalog + switchLocale + preloadLocale
  * - virtual:fluenti/messages   → re-export from static locale (for static strategy)
- * - virtual:fluenti/catalog    → dev-mode single-object catalog (existing behavior)
+ * - virtual:fluenti/route-runtime → per-route splitting runtime
  */
 
 import { resolve } from 'node:path'
 import { validateLocale } from '@fluenti/core'
+import type { RuntimeGenerator, RuntimeGeneratorOptions } from './types'
 
 const VIRTUAL_RUNTIME = 'virtual:fluenti/runtime'
 const VIRTUAL_MESSAGES = 'virtual:fluenti/messages'
@@ -23,6 +24,7 @@ export interface VirtualModuleOptions {
   sourceLocale: string
   defaultBuildLocale: string
   framework: 'vue' | 'solid' | 'react'
+  runtimeGenerator?: RuntimeGenerator | undefined
 }
 
 export function resolveVirtualSplitId(id: string): string | undefined {
@@ -49,18 +51,59 @@ export function loadVirtualSplitModule(
 }
 
 function generateRuntimeModule(options: VirtualModuleOptions): string {
-  const { catalogDir, locales, sourceLocale, defaultBuildLocale, framework } = options
+  const { locales, runtimeGenerator } = options
   for (const locale of locales) {
     validateLocale(locale, 'vite-plugin')
   }
+
+  if (runtimeGenerator) {
+    return runtimeGenerator.generateRuntime(toRuntimeGeneratorOptions(options))
+  }
+
+  // Legacy fallback: inline generation for backward compat
+  return generateLegacyRuntimeModule(options)
+}
+
+function generateStaticMessagesModule(options: VirtualModuleOptions): string {
+  const { catalogDir, defaultBuildLocale, sourceLocale } = options
+  const defaultLocale = defaultBuildLocale || sourceLocale
+  const absoluteCatalogDir = resolve(process.cwd(), catalogDir)
+
+  return `export * from '${absoluteCatalogDir}/${defaultLocale}.js'\n`
+}
+
+/**
+ * Generate the route runtime module for per-route splitting.
+ */
+export function generateRouteRuntimeModule(options: VirtualModuleOptions): string {
+  const { locales, runtimeGenerator } = options
+  for (const locale of locales) {
+    validateLocale(locale, 'vite-plugin')
+  }
+
+  if (runtimeGenerator) {
+    return runtimeGenerator.generateRouteRuntime(toRuntimeGeneratorOptions(options))
+  }
+
+  // Legacy fallback
+  return generateLegacyRouteRuntimeModule(options)
+}
+
+function toRuntimeGeneratorOptions(options: VirtualModuleOptions): RuntimeGeneratorOptions {
+  const { catalogDir, locales, sourceLocale, defaultBuildLocale } = options
+  return { catalogDir, locales, sourceLocale, defaultBuildLocale }
+}
+
+// ─── Legacy inline runtime generators (used when no RuntimeGenerator is provided) ──
+
+function generateLegacyRuntimeModule(options: VirtualModuleOptions): string {
+  const { catalogDir, locales, sourceLocale, defaultBuildLocale, framework } = options
   const defaultLocale = defaultBuildLocale || sourceLocale
   const absoluteCatalogDir = resolve(process.cwd(), catalogDir)
   const runtimeKey = `fluenti.runtime.${framework}`
   const lazyLocales = locales.filter((locale) => locale !== defaultLocale)
 
   if (framework === 'react') {
-    // React uses I18nProvider for state management, so the virtual runtime
-    // module just provides a simple mutable object + async loaders.
     return `
 import __defaultMsgs from '${absoluteCatalogDir}/${defaultLocale}.js'
 
@@ -207,33 +250,8 @@ export { __catalog, __switchLocale, __preloadLocale, __currentLocale, __loading,
 `
 }
 
-function generateStaticMessagesModule(options: VirtualModuleOptions): string {
-  const { catalogDir, defaultBuildLocale, sourceLocale } = options
-  const defaultLocale = defaultBuildLocale || sourceLocale
-  const absoluteCatalogDir = resolve(process.cwd(), catalogDir)
-
-  return `export * from '${absoluteCatalogDir}/${defaultLocale}.js'\n`
-}
-
-/**
- * Generate the route runtime module for per-route splitting.
- *
- * At transform time, this module serves as the import target for `__catalog`.
- * It imports ALL messages from the default locale (same as 'dynamic') so the
- * build completes. The actual per-route chunk partitioning happens in
- * `generateBundle` which emits smaller chunk files and rewrites imports.
- *
- * At runtime, the module provides:
- * - `__catalog`: reactive object holding current locale messages
- * - `__switchLocale(locale)`: loads all route chunks for the new locale
- * - `__loadRoute(routeId, locale)`: loads a single route chunk
- * - `__currentLocale`, `__loading`, `__loadedLocales`: state refs
- */
-export function generateRouteRuntimeModule(options: VirtualModuleOptions): string {
+function generateLegacyRouteRuntimeModule(options: VirtualModuleOptions): string {
   const { catalogDir, locales, sourceLocale, defaultBuildLocale, framework } = options
-  for (const locale of locales) {
-    validateLocale(locale, 'vite-plugin')
-  }
   const defaultLocale = defaultBuildLocale || sourceLocale
   const absoluteCatalogDir = resolve(process.cwd(), catalogDir)
   const runtimeKey = `fluenti.runtime.${framework}`
@@ -372,4 +390,4 @@ globalThis[Symbol.for('${runtimeKey}')] = { __switchLocale, __preloadLocale }
 
 export { __catalog, __switchLocale, __preloadLocale, __loadRoute, __registerRouteLoader, __currentLocale, __loading, __loadedLocales }
 `
-  }
+}

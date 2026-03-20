@@ -180,6 +180,34 @@ describe('I18nProvider', () => {
     expect(screen.getByTestId('text').textContent).toBe('Bonjour')
   })
 
+  it('unwraps ES module default exports in static messages prop', () => {
+    const esModuleMessages = {
+      en: { default: { hello: 'Hello' } },
+      fr: { default: { hello: 'Bonjour' } },
+    }
+
+    render(
+      <I18nProvider locale="en" messages={esModuleMessages as never}>
+        <Child />
+      </I18nProvider>,
+    )
+    expect(screen.getByText('Hello')).toBeDefined()
+  })
+
+  it('handles mixed plain and ES module messages', () => {
+    const mixedMessages = {
+      en: { hello: 'Hello' },
+      fr: { default: { hello: 'Bonjour' } },
+    }
+
+    render(
+      <I18nProvider locale="en" messages={mixedMessages as never}>
+        <Child />
+      </I18nProvider>,
+    )
+    expect(screen.getByText('Hello')).toBeDefined()
+  })
+
   it('setLocale for already-loaded locale switches instantly', async () => {
     function Switcher() {
       const { setLocale, i18n } = useI18n()

@@ -11,7 +11,7 @@ import { Steps } from '@astrojs/starlight/components'
 
    ```bash
    pnpm add @fluenti/core @fluenti/react @tanstack/react-router @tanstack/react-start
-   pnpm add -D @fluenti/cli @fluenti/vite-plugin @vitejs/plugin-react vite-tsconfig-paths
+   pnpm add -D @fluenti/cli @vitejs/plugin-react vite-tsconfig-paths
    ```
 
 2. **Configure Vite**
@@ -22,12 +22,12 @@ import { Steps } from '@astrojs/starlight/components'
    import { tanstackStart } from '@tanstack/react-start/plugin/vite'
    import react from '@vitejs/plugin-react'
    import tsConfigPaths from 'vite-tsconfig-paths'
-   import fluenti from '@fluenti/vite-plugin'
+   import fluentiReact from '@fluenti/react/vite-plugin'
 
    export default defineConfig({
      plugins: [
        tsConfigPaths(),
-       fluenti({ framework: 'react' }),
+       fluentiReact(),
        tanstackStart(),
        react(),
      ],

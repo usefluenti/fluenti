@@ -75,7 +75,11 @@ export function ClientI18nProvider({ locale, fallbackLocale, fallbackChain, chil
   writeFileSync(clientProviderPath, clientProviderSource, 'utf-8')
 
   const resolveLocaleImport = config.resolveLocale
-    ? `import __resolveLocale from '${config.resolveLocale}'`
+    ? (() => {
+        const absPath = resolve(projectRoot, config.resolveLocale)
+        const relPath = toForwardSlash(relative(outDir, absPath))
+        return `import __resolveLocale from '${relPath}'`
+      })()
     : null
 
   const resolveLocaleFn = config.resolveLocale

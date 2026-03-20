@@ -131,7 +131,9 @@ For dynamic messages (with variables, plurals, or selects), Fluenti compiles ICU
 | `@fluenti/react` | React integration: `I18nProvider`, `<Trans>`, `<Plural>`, `<Select>`, `useI18n()` hook |
 | `@fluenti/solid` | SolidJS integration: `I18nProvider`, `<Trans>`, `<Plural>`, `<Select>`, `useI18n()` hook |
 | `@fluenti/cli` | Message extraction (Vue SFC + TSX), PO/JSON catalog format, compilation |
-| `@fluenti/vite-plugin` | Vite plugin: build-time `v-t` transforms, compile-time `t`` optimization, and locale chunk loading |
+| `@fluenti/vue/vite-plugin` | Vite plugin for Vue: build-time `v-t` transforms, compile-time `t`` optimization, and locale chunk loading |
+| `@fluenti/react/vite-plugin` | Vite plugin for React: compile-time `t`` optimization and locale chunk loading |
+| `@fluenti/solid/vite-plugin` | Vite plugin for SolidJS: compile-time `t`` optimization and locale chunk loading |
 | `@fluenti/nuxt` | Nuxt module: locale-prefixed routing (4 strategies), SEO helpers, composables |
 | `@fluenti/vue-i18n-compat` | Progressive migration bridge — run vue-i18n and Fluenti side by side |
 
@@ -143,13 +145,13 @@ For dynamic messages (with variables, plurals, or selects), Fluenti compiles ICU
   <TabItem label="pnpm">
     ```bash
     pnpm add @fluenti/core @fluenti/vue
-    pnpm add -D @fluenti/cli @fluenti/vite-plugin
+    pnpm add -D @fluenti/cli
     ```
   </TabItem>
   <TabItem label="npm">
     ```bash
     npm install @fluenti/core @fluenti/vue
-    npm install -D @fluenti/cli @fluenti/vite-plugin
+    npm install -D @fluenti/cli
     ```
   </TabItem>
 </Tabs>
@@ -160,13 +162,13 @@ For dynamic messages (with variables, plurals, or selects), Fluenti compiles ICU
   <TabItem label="pnpm">
     ```bash
     pnpm add @fluenti/core @fluenti/react
-    pnpm add -D @fluenti/cli @fluenti/vite-plugin
+    pnpm add -D @fluenti/cli
     ```
   </TabItem>
   <TabItem label="npm">
     ```bash
     npm install @fluenti/core @fluenti/react
-    npm install -D @fluenti/cli @fluenti/vite-plugin
+    npm install -D @fluenti/cli
     ```
   </TabItem>
 </Tabs>
@@ -177,13 +179,13 @@ For dynamic messages (with variables, plurals, or selects), Fluenti compiles ICU
   <TabItem label="pnpm">
     ```bash
     pnpm add @fluenti/core @fluenti/solid
-    pnpm add -D @fluenti/cli @fluenti/vite-plugin
+    pnpm add -D @fluenti/cli
     ```
   </TabItem>
   <TabItem label="npm">
     ```bash
     npm install @fluenti/core @fluenti/solid
-    npm install -D @fluenti/cli @fluenti/vite-plugin
+    npm install -D @fluenti/cli
     ```
   </TabItem>
 </Tabs>
@@ -194,13 +196,13 @@ For dynamic messages (with variables, plurals, or selects), Fluenti compiles ICU
   <TabItem label="pnpm">
     ```bash
     pnpm add @fluenti/nuxt @fluenti/core @fluenti/vue
-    pnpm add -D @fluenti/cli @fluenti/vite-plugin
+    pnpm add -D @fluenti/cli
     ```
   </TabItem>
   <TabItem label="npm">
     ```bash
     npm install @fluenti/nuxt @fluenti/core @fluenti/vue
-    npm install -D @fluenti/cli @fluenti/vite-plugin
+    npm install -D @fluenti/cli
     ```
   </TabItem>
 </Tabs>

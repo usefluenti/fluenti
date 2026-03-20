@@ -77,6 +77,79 @@ function LocaleSwitcher() {
 }
 ```
 
+## Persisting the Locale
+
+`setLocale()` updates the in-memory state, but the browser needs a few extra steps to stay in sync:
+
+1. **Cookie** — so the server (SSR) and client agree on the locale
+2. **`<html lang>`** — for accessibility and SEO
+3. **`<html dir>`** — for RTL languages (Arabic, Hebrew, etc.)
+
+These are standard DOM operations that vary by app, so Fluenti provides the building blocks (`getDirection`, `isRTL`) and lets you wire them up:
+
+### Vue
+
+```vue
+<script setup>
+import { watch } from 'vue'
+import { useI18n } from '@fluenti/vue'
+import { getDirection } from '@fluenti/core'
+
+const { locale, setLocale } = useI18n()
+
+watch(locale, (loc) => {
+  document.cookie = `locale=${loc};path=/;max-age=31536000`
+  document.documentElement.lang = loc
+  document.documentElement.dir = getDirection(loc)
+})
+</script>
+```
+
+### React
+
+```tsx
+import { useEffect, useCallback } from 'react'
+import { useI18n } from '@fluenti/react'
+import { getDirection } from '@fluenti/core'
+
+function useLocaleSync() {
+  const { locale } = useI18n()
+
+  useEffect(() => {
+    document.cookie = `locale=${locale};path=/;max-age=31536000`
+    document.documentElement.lang = locale
+    document.documentElement.dir = getDirection(locale)
+  }, [locale])
+}
+```
+
+### Solid
+
+```tsx
+import { createEffect } from 'solid-js'
+import { useI18n } from '@fluenti/solid'
+import { getDirection } from '@fluenti/core'
+
+function useLocaleSync() {
+  const { locale } = useI18n()
+
+  createEffect(() => {
+    const loc = locale()
+    document.cookie = `locale=${loc};path=/;max-age=31536000`
+    document.documentElement.lang = loc
+    document.documentElement.dir = getDirection(loc)
+  })
+}
+```
+
+:::tip[Cookie name is up to you]
+The examples use `locale` as the cookie name. Nuxt apps often use `fluenti_locale`. Pick whatever fits your server-side detection logic — just keep it consistent between client and server to avoid hydration mismatches.
+:::
+
+:::caution[Use cookies, not localStorage]
+Cookies are visible to both server and client on the first request. `localStorage` is client-only, so the server can't know the preferred locale — leading to a flash of wrong content or a hydration mismatch. See [Best Practices](/advanced/best-practices/) for details.
+:::
+
 ## Reactivity
 
 When you call `setLocale()`:

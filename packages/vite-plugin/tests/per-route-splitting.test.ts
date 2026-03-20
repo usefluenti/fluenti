@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import fluentiPlugin from '../src/index'
+import type { Plugin } from 'vite'
 import { hashMessage } from '@fluenti/core'
+import { createFluentiPlugins } from '../src/index'
 
 function makeCatalogSource(locale: string): string {
   const helloId = hashMessage('Hello')
@@ -49,16 +50,16 @@ vi.mock('../src/route-resolve', async (importOriginal) => {
 })
 
 describe('per-route splitting', () => {
-  let plugins: ReturnType<typeof fluentiPlugin>
+  let plugins: Plugin[]
 
   beforeEach(() => {
-    plugins = fluentiPlugin({
-      splitting: 'per-route',
+    plugins = createFluentiPlugins({
+      splitting: 'per-route' as any,
       catalogDir: 'src/locales/compiled',
       sourceLocale: 'en',
       locales: ['en', 'ja'],
       framework: 'vue',
-    } as Parameters<typeof fluentiPlugin>[0] & { splitting: 'per-route' })
+    }, [])
   })
 
   function getBuildSplitPlugin() {
@@ -200,13 +201,13 @@ describe('per-route splitting', () => {
     })
 
     it('does not emit when splitting is not per-route', () => {
-      const dynamicPlugins = fluentiPlugin({
+      const dynamicPlugins = createFluentiPlugins({
         splitting: 'dynamic',
         catalogDir: 'src/locales/compiled',
         sourceLocale: 'en',
         locales: ['en'],
         framework: 'vue',
-      })
+      }, [])
       const plugin = dynamicPlugins.find((p) => p.name === 'fluenti:build-split')!
 
       const emitted: any[] = []

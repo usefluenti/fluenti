@@ -11,7 +11,7 @@ import { Steps } from '@astrojs/starlight/components'
 
    ```bash
    pnpm add @fluenti/core @fluenti/vue
-   pnpm add -D @fluenti/cli @fluenti/vite-plugin
+   pnpm add -D @fluenti/cli
    ```
 
 2. **Configure Vite**
@@ -20,12 +20,12 @@ import { Steps } from '@astrojs/starlight/components'
    // vite.config.ts
    import { defineConfig } from 'vite'
    import vue from '@vitejs/plugin-vue'
-   import fluenti from '@fluenti/vite-plugin'
+   import fluentiVue from '@fluenti/vue/vite-plugin'
 
    export default defineConfig({
      plugins: [
        vue(),
-       fluenti({ framework: 'vue' }),
+       fluentiVue(),
      ],
    })
    ```

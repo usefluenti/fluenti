@@ -104,6 +104,48 @@ const { format } = useI18n()
 </template>
 ```
 
+## `te()` — Check Translation Existence
+
+Check whether a translation key exists in the catalog without resolving it.
+
+```vue
+<script setup>
+import { useI18n } from '@fluenti/vue'
+const { te } = useI18n()
+</script>
+
+<template>
+  <span v-if="te('premium.badge')">{{ t('premium.badge') }}</span>
+</template>
+```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `key` | `string` | Message ID to check |
+| `locale` | `string?` | Override locale (defaults to current) |
+
+**Returns:** `boolean`
+
+## `tm()` — Get Raw Message
+
+Retrieve the raw compiled message without interpolation. Useful for inspecting what is in the catalog.
+
+```vue
+<script setup>
+import { useI18n } from '@fluenti/vue'
+const { tm } = useI18n()
+
+const raw = tm('greeting') // string or compiled function, or undefined
+</script>
+```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `key` | `string` | Message ID to retrieve |
+| `locale` | `string?` | Override locale (defaults to current) |
+
+**Returns:** `CompiledMessage | undefined` — a `string` for static messages, a `(values?) => string` function for dynamic messages, or `undefined` if not found.
+
 ## Component Naming Conflicts
 
 If `Trans`, `Plural`, or `Select` conflicts with another library (e.g. a UI framework), use `componentPrefix`:

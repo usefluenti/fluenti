@@ -1,5 +1,5 @@
 import { defineConfig } from '@solidjs/start/config'
-import fluenti from '@fluenti/vite-plugin'
+import fluentiSolid from '@fluenti/solid/vite-plugin'
 
 export default defineConfig({
   server: {
@@ -7,8 +7,7 @@ export default defineConfig({
   },
   vite: {
     plugins: [
-      fluenti({
-        framework: 'solid',
+      fluentiSolid({
         sourceLocale: 'en',
         locales: ['en', 'ja', 'zh-CN'],
         catalogDir: 'src/locales/compiled',

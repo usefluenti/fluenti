@@ -55,8 +55,9 @@ export function throwDirectImportScopeError(
 ): never {
   if (binding.kind === 'server') {
     throw new Error(
-      `[fluenti] Imported \`t\` from '${binding.source}' must be used inside a React component or async function.\n` +
-        '  Hint: For utility files, pass `t` as a function parameter, or use `const { t } = await getI18n()` inside an async scope.',
+      `[fluenti] Imported \`t\` from '${binding.source}' must be used inside a React component, async function, or Next.js conventional export (e.g. generateMetadata).\n` +
+        '  Hint: For utility files, pass `t` as a function parameter, or use `const { t } = await getI18n()` inside an async scope.\n' +
+        '  Docs: https://fluenti.dev/frameworks/react/nextjs/',
     )
   }
 
@@ -67,6 +68,7 @@ export function throwDirectImportScopeError(
   throw new Error(
     `[fluenti] Imported \`t\` from '${binding.source}' is a compile-time API.\n` +
       `  It must be used inside ${frameworkLabel}.\n` +
-      '  Hint: For utility files, accept `t` as a function parameter instead.',
+      '  Hint: For utility files, accept `t` as a function parameter instead.\n' +
+      '  Docs: https://fluenti.dev/api/' + (options.framework === 'vue' ? 'vue' : 'react') + '/',
   )
 }

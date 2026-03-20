@@ -41,6 +41,16 @@
         "default": "./dist/index.cjs"
       }
     },
+    "./sfc-transform": {
+      "import": {
+        "types": "./dist/sfc-transform.d.ts",
+        "default": "./dist/sfc-transform.js"
+      },
+      "require": {
+        "types": "./dist/sfc-transform.d.ts",
+        "default": "./dist/sfc-transform.cjs"
+      }
+    },
     "./client": {
       "types": "./client.d.ts"
     }

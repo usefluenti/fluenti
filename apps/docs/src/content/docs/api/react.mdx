@@ -436,7 +436,7 @@ Since `t()` is an O(1) hash lookup, calling it directly in JSX is efficient — 
 
 ## Vite Plugin Integration
 
-When using `@fluenti/vite-plugin` with `framework: 'react'`, the plugin uses AST scope analysis to detect direct-import `t` and transforms it at build time:
+When using `@fluenti/react/vite-plugin`, the plugin uses AST scope analysis to detect direct-import `t` and transforms it at build time:
 
 ```tsx
 import { t } from '@fluenti/react'

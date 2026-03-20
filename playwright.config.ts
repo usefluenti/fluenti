@@ -24,6 +24,7 @@ const serverMap: Record<string, { command: string; port: number; timeout?: numbe
   'solid-no-plugin': { command: 'cd e2e/fixtures/solid-no-plugin && pnpm build && pnpm preview --port 5193', port: 5193, timeout: 120_000 },
   'vue-no-plugin':   { command: 'cd e2e/fixtures/vue-no-plugin && pnpm build && pnpm preview --port 5194', port: 5194 },
   'splitting-solid': { command: 'cd e2e/fixtures/solid-splitting && pnpm build && pnpm preview --port 5195', port: 5195, timeout: 120_000 },
+  'nextjs-routes':   { command: 'cd e2e/fixtures/nextjs-routes && pnpm build && pnpm start -p 5196', port: 5196, timeout: 120_000 },
 }
 
 // Filter webServers to only those needed by the selected projects.
@@ -70,6 +71,7 @@ export default defineConfig({
     { name: 'solid-no-plugin', use: { baseURL: 'http://localhost:5193' }, testMatch: '**/solid-no-plugin.spec.ts' },
     { name: 'vue-no-plugin', use: { baseURL: 'http://localhost:5194' }, testMatch: '**/vue-no-plugin.spec.ts' },
     { name: 'splitting-solid', use: { baseURL: 'http://localhost:5195' }, testMatch: '**/splitting-solid.spec.ts' },
+    { name: 'nextjs-routes', use: { baseURL: 'http://localhost:5196' }, testMatch: '**/nextjs-routes.spec.ts' },
   ],
   webServer,
 })

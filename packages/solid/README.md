@@ -23,7 +23,7 @@ Fluenti compiles your messages at build time and pairs them with Solid's fine-gr
 
 ```bash
 pnpm add @fluenti/core @fluenti/solid
-pnpm add -D @fluenti/cli @fluenti/vite-plugin
+pnpm add -D @fluenti/cli
 ```
 
 ### 2. Configure Vite
@@ -31,10 +31,10 @@ pnpm add -D @fluenti/cli @fluenti/vite-plugin
 ```ts
 // vite.config.ts
 import solidPlugin from 'vite-plugin-solid'
-import fluenti from '@fluenti/vite-plugin'
+import fluentiSolid from '@fluenti/solid/vite-plugin'
 
 export default {
-  plugins: [solidPlugin(), fluenti({ framework: 'solid' })],
+  plugins: [solidPlugin(), fluentiSolid()],
 }
 ```
 
