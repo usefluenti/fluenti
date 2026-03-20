@@ -166,7 +166,8 @@ Run `fluenti extract` locally during development. Run `fluenti compile` in CI to
 For custom tooling, the CLI exports its internals:
 
 ```typescript
-import { extractFromVue, extractFromTsx } from '@fluenti/cli'
+import { extractFromVue } from '@fluenti/cli/vue-extractor'
+import { extractFromTsx } from '@fluenti/cli'
 import { updateCatalog, compileCatalog } from '@fluenti/cli'
 import { readPoCatalog, writePoCatalog } from '@fluenti/cli'
 import { translateCatalog } from '@fluenti/cli'

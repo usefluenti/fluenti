@@ -7,6 +7,7 @@ export default defineConfig({
       entry: {
         index: 'src/index.ts',
         cli: 'src/cli.ts',
+        'vue-extractor': 'src/vue-extractor.ts',
       },
       formats: ['es', 'cjs'],
     },

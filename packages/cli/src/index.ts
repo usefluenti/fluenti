@@ -1,4 +1,3 @@
-export { extractFromVue } from './vue-extractor'
 export { extractFromTsx } from './tsx-extractor'
 export { updateCatalog } from './catalog'
 export type { CatalogData, CatalogEntry, UpdateResult } from './catalog'
