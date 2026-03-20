@@ -35,6 +35,7 @@ app.use(i18n)
 | `lazyLocaleLoading` | `boolean?` | Enable async locale loading through `chunkLoader` |
 | `chunkLoader` | `(locale: string) => Promise<Messages>?` | Async locale loader used when `lazyLocaleLoading` is enabled |
 | `componentPrefix` | `string?` | Prefix for global components (e.g. `'I18n'` → `I18nTrans`, `I18nPlural`, `I18nSelect`) |
+| `injectGlobalProperties` | `boolean?` | When `false`, skips injecting `$t`, `$d`, `$n`, `$vtRich` onto `app.config.globalProperties`. Useful when another i18n library (e.g. `vue-i18n`) already provides `$t`. Default: `true` |
 
 ## `useI18n()`
 

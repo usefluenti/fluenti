@@ -33,6 +33,10 @@ export default defineNuxtConfig({
 | `autoVitePlugin` | `boolean?` | `true` | Auto-register `@fluenti/vite-plugin` in Vite config |
 | `isr` | `ISROptions?` | — | ISR route rules configuration |
 | `compat` | `boolean?` | — | Enable `@fluenti/vue-i18n-compat` bridge mode |
+| `autoImports` | `boolean?` | `true` | Auto-import composables (`useLocalePath`, `useSwitchLocalePath`, `useLocaleHead`, `useI18n`). Set to `false` to avoid naming collisions with other i18n libraries |
+| `queryParamKey` | `string?` | `'locale'` | Query parameter name for locale detection (e.g. set to `'lang'` for `?lang=ja`) |
+| `injectGlobalProperties` | `boolean?` | `true` | Inject `$localePath` onto `app.config.globalProperties`. Set to `false` if another plugin already provides it |
+| `globalMiddleware` | `boolean?` | `true` | Register the locale redirect middleware globally. Set to `false` to use it as a named middleware (`fluenti-locale-redirect`) on specific pages. Only relevant when `strategy` is `'prefix'` |
 
 ### `Strategy`
 
@@ -49,7 +53,7 @@ type Strategy = 'prefix' | 'prefix_except_default' | 'prefix_and_default' | 'no_
 
 ## Composables
 
-All composables are auto-imported — no `import` needed. This includes `useI18n` from `@fluenti/vue`:
+All composables are auto-imported by default — no `import` needed. This includes `useI18n` from `@fluenti/vue`. Set `autoImports: false` in module options to disable auto-imports (useful when migrating from `@nuxtjs/i18n` or to avoid naming collisions):
 
 ```vue
 <script setup>
@@ -259,7 +263,7 @@ export default defineNuxtConfig({
 | `path` | URL path prefix | Extracts locale from `/ja/about` → `'ja'`. Skipped when strategy is `'no_prefix'`. |
 | `cookie` | Cookie value | Reads the locale cookie. Requires `detectBrowserLanguage.useCookie: true`. |
 | `header` | `Accept-Language` header | Negotiates against available locales. SSR only. |
-| `query` | `?locale=` query param | Reads `locale` from the URL query string. |
+| `query` | Query param | Reads locale from the URL query string. The parameter name defaults to `locale` (e.g. `?locale=ja`) and can be changed via `queryParamKey`. |
 
 ### `DetectBrowserLanguageOptions`
 
