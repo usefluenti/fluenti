@@ -4,6 +4,8 @@ export interface DevRunnerOptions {
   cwd: string
   onSuccess?: () => void
   onError?: (err: Error) => void
+  /** If true, reject the promise on failure instead of swallowing the error */
+  throwOnError?: boolean
 }
 
 /**
@@ -11,13 +13,17 @@ export interface DevRunnerOptions {
  * Non-blocking — errors are reported but never throw.
  */
 export function runExtractCompile(options: DevRunnerOptions): Promise<void> {
-  return new Promise<void>((resolve) => {
+  return new Promise<void>((resolve, reject) => {
     exec(
       'npx fluenti extract && npx fluenti compile',
       { cwd: options.cwd },
       (err, _stdout, stderr) => {
         if (err) {
           const error = new Error(stderr || err.message)
+          if (options.throwOnError) {
+            reject(error)
+            return
+          }
           console.warn('[fluenti] Extract/compile failed:', error.message)
           options.onError?.(error)
         } else {

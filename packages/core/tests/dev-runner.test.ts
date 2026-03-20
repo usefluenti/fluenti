@@ -65,6 +65,28 @@ describe('runExtractCompile', () => {
     expect(onError).toHaveBeenCalledOnce()
     expect(onError.mock.calls[0]![0]).toBeInstanceOf(Error)
   })
+
+  it('rejects the promise when throwOnError is true', async () => {
+    simulateExecFailure('compile error')
+
+    await expect(
+      runExtractCompile({ cwd: '/project', throwOnError: true }),
+    ).rejects.toThrow('compile error')
+  })
+
+  it('does not call onError or warn when throwOnError is true', async () => {
+    simulateExecFailure('compile error')
+    const onError = vi.fn()
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+    await expect(
+      runExtractCompile({ cwd: '/project', onError, throwOnError: true }),
+    ).rejects.toThrow()
+
+    expect(onError).not.toHaveBeenCalled()
+    expect(warnSpy).not.toHaveBeenCalled()
+    warnSpy.mockRestore()
+  })
 })
 
 describe('createDebouncedRunner', () => {

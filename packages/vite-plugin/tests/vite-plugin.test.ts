@@ -1,13 +1,26 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import type { Plugin } from 'vite'
 import { hashMessage } from '@fluenti/core'
-import fluentiPlugin from '../src/index'
+import { createFluentiPlugins } from '../src/index'
+import type { FluentiCoreOptions } from '../src/types'
+
+vi.mock('@fluenti/core/internal', async () => {
+  const actual = await vi.importActual<typeof import('@fluenti/core/internal')>('@fluenti/core/internal')
+  return {
+    ...actual,
+    runExtractCompile: vi.fn(() => Promise.resolve()),
+  }
+})
+
+function createPlugins(options?: Partial<FluentiCoreOptions>): Plugin[] {
+  return createFluentiPlugins({ framework: 'vue', ...options }, [])
+}
 
 function getPlugin(
   name: string,
-  options?: Parameters<typeof fluentiPlugin>[0],
+  options?: Partial<FluentiCoreOptions>,
 ): Plugin {
-  const plugin = fluentiPlugin(options).find((entry) => entry.name === name)
+  const plugin = createPlugins(options).find((entry) => entry.name === name)
   if (!plugin) {
     throw new Error(`Missing plugin ${name}`)
   }
@@ -22,17 +35,24 @@ function callHook(hook: unknown, thisArg: unknown, ...args: unknown[]): unknown 
   return fn?.call(thisArg, ...args)
 }
 
-describe('fluentiPlugin', () => {
-  it('returns the expected default plugin pipeline', () => {
-    const plugins = fluentiPlugin()
+describe('createFluentiPlugins', () => {
+  it('returns the expected core plugin pipeline', () => {
+    const plugins = createPlugins()
     expect(plugins.map((plugin) => plugin.name)).toEqual([
       'fluenti:virtual',
-      'fluenti:vue-template',
-      'fluenti:solid-jsx',
       'fluenti:script-transform',
+      'fluenti:build-compile',
       'fluenti:build-split',
       'fluenti:dev',
     ])
+  })
+
+  it('includes framework plugins when provided', () => {
+    const customPlugin: Plugin = { name: 'fluenti:vue-template' }
+    const plugins = createFluentiPlugins({ framework: 'vue' }, [customPlugin])
+    const names = plugins.map((p) => p.name)
+    expect(names).toContain('fluenti:vue-template')
+    expect(names.indexOf('fluenti:vue-template')).toBeLessThan(names.indexOf('fluenti:script-transform'))
   })
 
   describe('virtual modules', () => {
@@ -49,50 +69,6 @@ describe('fluentiPlugin', () => {
       const plugin = getPlugin('fluenti:virtual')
       expect(callHook(plugin.resolveId, {}, 'virtual:other/messages/en')).toBeUndefined()
       expect(callHook(plugin.load, {}, 'virtual:other/messages/en')).toBeUndefined()
-    })
-  })
-
-  describe('vue template transform', () => {
-    it('transforms plain v-t content', () => {
-      const plugin = getPlugin('fluenti:vue-template')
-      const input = '<template><h1 v-t>Hello World</h1></template><script setup></script>'
-      const result = callHook(plugin.transform, {}, input, 'App.vue') as { code: string } | undefined
-
-      expect(result?.code).toContain(`id: '${hashMessage('Hello World')}'`)
-      expect(result?.code).toContain("message: 'Hello World'")
-      expect(result?.code).not.toContain('v-t')
-    })
-
-    it('uses message + context identity for <Trans> and strips translation-only props from DOM output', () => {
-      const plugin = getPlugin('fluenti:vue-template')
-      const input = '<template><Trans context="nav" comment="main header">Home</Trans></template><script setup></script>'
-      const result = callHook(plugin.transform, {}, input, 'App.vue') as { code: string } | undefined
-
-      expect(result?.code).toContain(`id: '${hashMessage('Home', 'nav')}'`)
-      expect(result?.code).toContain("message: 'Home'")
-      expect(result?.code).not.toContain('context="nav"')
-      expect(result?.code).not.toContain('comment="main header"')
-    })
-
-    it('respects explicit <Trans id> without leaking it onto the wrapper element', () => {
-      const plugin = getPlugin('fluenti:vue-template')
-      const input = '<template><Trans id="nav.home">Home</Trans></template><script setup></script>'
-      const result = callHook(plugin.transform, {}, input, 'App.vue') as { code: string } | undefined
-
-      expect(result?.code).toContain("id: 'nav.home'")
-      expect(result?.code).toContain("message: 'Home'")
-      expect(result?.code).not.toContain('id="nav.home"')
-    })
-
-    it('maps plural zero to ICU exact =0 form', () => {
-      const plugin = getPlugin('fluenti:vue-template')
-      const input = '<template><Plural :value="count" zero="No items" other="# items" /></template><script setup></script>'
-      const result = callHook(plugin.transform, {}, input, 'App.vue') as { code: string } | undefined
-
-      expect(result?.code).toContain('=0 {No items}')
-      expect(result?.code).not.toContain('zero {No items}')
-      expect(result?.code).toContain(`id: '${hashMessage('{count, plural, =0 {No items} other {# items}}')}'`)
-      expect(result?.code).toContain("message: '{count, plural, =0 {No items} other {# items}}'")
     })
   })
 
@@ -219,12 +195,44 @@ const label = t('nav.home')
     })
   })
 
-  describe('solid jsx plugin', () => {
-    it('does not rewrite Solid components in strict mode', () => {
-      const plugin = getPlugin('fluenti:solid-jsx', { framework: 'solid' })
-      const code = "import { Trans } from '@fluenti/solid'\nconst view = <Trans>Hello</Trans>"
+  describe('build-compile plugin', () => {
+    it('calls runExtractCompile in build mode', async () => {
+      const { runExtractCompile } = await import('@fluenti/core/internal')
+      const mockRun = vi.mocked(runExtractCompile)
+      mockRun.mockClear()
 
-      expect(callHook(plugin.transform, {}, code, 'App.tsx')).toBeUndefined()
+      const plugin = getPlugin('fluenti:build-compile')
+      const buildContext = { environment: { mode: 'build' } }
+
+      await callHook(plugin.buildStart, buildContext)
+
+      expect(mockRun).toHaveBeenCalledWith({ cwd: expect.any(String), throwOnError: true })
+    })
+
+    it('does not call runExtractCompile in dev mode', async () => {
+      const { runExtractCompile } = await import('@fluenti/core/internal')
+      const mockRun = vi.mocked(runExtractCompile)
+      mockRun.mockClear()
+
+      const plugin = getPlugin('fluenti:build-compile')
+      const devContext = { environment: { mode: 'development' } }
+
+      await callHook(plugin.buildStart, devContext)
+
+      expect(mockRun).not.toHaveBeenCalled()
+    })
+
+    it('does not call runExtractCompile when buildAutoCompile is false', async () => {
+      const { runExtractCompile } = await import('@fluenti/core/internal')
+      const mockRun = vi.mocked(runExtractCompile)
+      mockRun.mockClear()
+
+      const plugin = getPlugin('fluenti:build-compile', { buildAutoCompile: false })
+      const buildContext = { environment: { mode: 'build' } }
+
+      await callHook(plugin.buildStart, buildContext)
+
+      expect(mockRun).not.toHaveBeenCalled()
     })
   })
 

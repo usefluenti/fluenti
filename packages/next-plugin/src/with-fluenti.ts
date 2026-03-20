@@ -1,4 +1,5 @@
 import { existsSync } from 'node:fs'
+import { execSync } from 'node:child_process'
 import { resolve, dirname } from 'node:path'
 import type { WithFluentConfig } from './types'
 import { resolveConfig } from './read-config'
@@ -80,6 +81,8 @@ function applyFluenti(
     | ((config: WebpackConfig, options: WebpackOptions) => WebpackConfig)
     | undefined
 
+  let buildCompileRan = false
+
   return {
     ...nextConfig,
     webpack(config: WebpackConfig, options: WebpackOptions) {
@@ -103,10 +106,22 @@ function applyFluenti(
       config.resolve.alias = config.resolve.alias ?? {}
       config.resolve.alias['@fluenti/next$'] = serverModulePath
 
+      // Auto extract+compile before production build (run once across server+client passes)
+      const buildAutoCompile = fluentConfig.buildAutoCompile ?? true
+      if (!options.dev && buildAutoCompile && !buildCompileRan) {
+        buildCompileRan = true
+        execSync('npx fluenti extract && npx fluenti compile', {
+          cwd: projectRoot,
+          stdio: 'inherit',
+        })
+      }
+
       // Auto extract+compile in dev mode
       const devAutoCompile = fluentConfig.devAutoCompile ?? true
       if (options.dev && devAutoCompile) {
-        const debouncedRun = createDebouncedRunner({ cwd: projectRoot })
+        const devDelay = fluentConfig.devAutoCompileDelay ?? 1000
+        const debouncedRun = createDebouncedRunner({ cwd: projectRoot }, devDelay)
+        const compiledDirResolved = resolve(projectRoot, resolved.compiledDir)
 
         config.plugins = config.plugins ?? []
         config.plugins.push({
@@ -120,7 +135,10 @@ function applyFluenti(
               const modifiedFiles = _compiler.modifiedFiles
               if (modifiedFiles) {
                 const hasSourceChange = [...modifiedFiles].some((f: string) =>
-                  /\.[jt]sx?$/.test(f) && !f.includes('node_modules') && !f.includes('.next'),
+                  /\.[jt]sx?$/.test(f)
+                  && !f.includes('node_modules')
+                  && !f.includes('.next')
+                  && !f.startsWith(compiledDirResolved),
                 )
                 if (hasSourceChange) {
                   debouncedRun()
