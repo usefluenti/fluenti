@@ -64,7 +64,7 @@ function applyFluenti(
   if (!existsSync(compiledDir)) {
     console.warn(
       `\n[fluenti] Compiled catalogs not found at ${resolved.compiledDir}.\n` +
-      `Run: npx fluenti extract && npx fluenti compile\n`,
+      `Run: npx @fluenti/cli extract && npx @fluenti/cli compile\n`,
     )
   }
 
@@ -110,7 +110,7 @@ function applyFluenti(
       const buildAutoCompile = fluentConfig.buildAutoCompile ?? true
       if (!options.dev && buildAutoCompile && !buildCompileRan) {
         buildCompileRan = true
-        execSync('npx fluenti extract && npx fluenti compile', {
+        execSync('npx @fluenti/cli compile', {
           cwd: projectRoot,
           stdio: 'inherit',
         })

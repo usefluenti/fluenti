@@ -209,7 +209,7 @@ export function createFluentiPlugins(
     name: 'fluenti:build-compile',
     async buildStart() {
       if (!isBuildMode((this as any).environment) || !buildAutoCompile) return
-      await runExtractCompile({ cwd: process.cwd(), throwOnError: true })
+      await runExtractCompile({ cwd: process.cwd(), throwOnError: true, compileOnly: true })
     },
   }
 

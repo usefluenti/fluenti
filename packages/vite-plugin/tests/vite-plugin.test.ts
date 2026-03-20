@@ -206,7 +206,7 @@ const label = t('nav.home')
 
       await callHook(plugin.buildStart, buildContext)
 
-      expect(mockRun).toHaveBeenCalledWith({ cwd: expect.any(String), throwOnError: true })
+      expect(mockRun).toHaveBeenCalledWith({ cwd: expect.any(String), throwOnError: true, compileOnly: true })
     })
 
     it('does not call runExtractCompile in dev mode', async () => {

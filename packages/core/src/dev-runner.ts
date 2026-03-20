@@ -6,6 +6,8 @@ export interface DevRunnerOptions {
   onError?: (err: Error) => void
   /** If true, reject the promise on failure instead of swallowing the error */
   throwOnError?: boolean
+  /** Run only compile (skip extract). Useful for production builds where source is unchanged. */
+  compileOnly?: boolean
 }
 
 /**
@@ -13,9 +15,12 @@ export interface DevRunnerOptions {
  * Non-blocking — errors are reported but never throw.
  */
 export function runExtractCompile(options: DevRunnerOptions): Promise<void> {
+  const command = options.compileOnly
+    ? 'npx @fluenti/cli compile'
+    : 'npx @fluenti/cli extract && npx @fluenti/cli compile'
   return new Promise<void>((resolve, reject) => {
     exec(
-      'npx fluenti extract && npx fluenti compile',
+      command,
       { cwd: options.cwd },
       (err, _stdout, stderr) => {
         if (err) {

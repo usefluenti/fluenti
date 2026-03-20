@@ -211,7 +211,7 @@ describe('withFluenti', () => {
       expect.stringContaining('[fluenti] Compiled catalogs not found'),
     )
     expect(warnSpy).toHaveBeenCalledWith(
-      expect.stringContaining('npx fluenti extract && npx fluenti compile'),
+      expect.stringContaining('npx @fluenti/cli compile'),
     )
 
     warnSpy.mockRestore()
@@ -290,7 +290,7 @@ describe('withFluenti', () => {
     webpackFn(webpackConfig, { isServer: true, dev: false })
 
     expect(vi.mocked(execSync)).toHaveBeenCalledWith(
-      'npx fluenti extract && npx fluenti compile',
+      'npx @fluenti/cli compile',
       expect.objectContaining({ stdio: 'inherit' }),
     )
   })
