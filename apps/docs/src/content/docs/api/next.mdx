@@ -34,6 +34,7 @@ All options are optional. Defaults are read from `fluenti.config.ts` in the proj
 | `devAutoCompile` | `boolean?` | `true` | Auto extract+compile when source files change in dev mode |
 | `devAutoCompileDelay` | `number?` | `1000` | Debounce delay in ms for dev auto-compile. Increase if recompilation is too frequent |
 | `buildAutoCompile` | `boolean?` | `true` | Auto extract+compile before production build |
+| `loaderEnforce` | `'pre' \| 'post' \| undefined` | `'pre'` | Webpack loader execution order. Set to `undefined` to use webpack's default ordering, or `'post'` to run after other loaders |
 
 ### What it does
 

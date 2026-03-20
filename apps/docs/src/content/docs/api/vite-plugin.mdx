@@ -40,6 +40,10 @@ fluentiVue({
 | `include` | `string[]` | `['src/**/*.{vue,tsx,jsx,ts,js}']` | Source file patterns for dev watcher |
 | `devAutoCompile` | `boolean` | `true` | Auto extract+compile on file change during dev |
 | `buildAutoCompile` | `boolean` | `true` | Auto extract+compile before production build |
+| `catalogExtension` | `string` | `'.js'` | File extension for compiled catalog files (e.g. `'.mjs'`, `'.json'`) |
+| `idGenerator` | `(message: string, context?: string) => string` | built-in SHA256 | Custom message ID generator. Replaces the default hash-based ID strategy |
+| `onBeforeCompile` | `() => boolean \| void \| Promise<…>` | — | Hook called before auto-compile. Return `false` to skip compilation |
+| `onAfterCompile` | `() => void \| Promise<void>` | — | Hook called after auto-compile completes |
 
 ## What it does
 
