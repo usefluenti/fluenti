@@ -28,21 +28,12 @@ vi.mock('node:fs', async () => {
   }
 })
 
-// Mock child_process.execSync for build auto-compile
+// Mock child_process.execSync for build auto-compile (node -e invocation)
 vi.mock('node:child_process', async () => {
   const actual = await vi.importActual<typeof import('node:child_process')>('node:child_process')
   return {
     ...actual,
     execSync: vi.fn(),
-  }
-})
-
-// Mock resolveCliBin to return a fake path (CLI "installed")
-vi.mock('@fluenti/core/internal', async () => {
-  const actual = await vi.importActual<typeof import('@fluenti/core/internal')>('@fluenti/core/internal')
-  return {
-    ...actual,
-    resolveCliBin: vi.fn(() => '/project/node_modules/.bin/fluenti'),
   }
 })
 
@@ -286,7 +277,7 @@ describe('withFluenti', () => {
     expect(result['plugins']).toBeUndefined()
   })
 
-  it('runs extract+compile in production build mode', () => {
+  it('runs compile in production build mode via node -e', () => {
     const wrapper = withFluenti()
     const config = wrapper({})
     const webpackFn = config['webpack'] as (cfg: unknown, opts: unknown) => unknown
@@ -299,7 +290,7 @@ describe('withFluenti', () => {
     webpackFn(webpackConfig, { isServer: true, dev: false })
 
     expect(vi.mocked(execSync)).toHaveBeenCalledWith(
-      '/project/node_modules/.bin/fluenti compile',
+      expect.stringContaining("import('@fluenti/cli')"),
       expect.objectContaining({ stdio: 'inherit' }),
     )
   })

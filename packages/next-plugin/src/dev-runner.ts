@@ -1,6 +1,7 @@
 import { exec } from 'node:child_process'
 import { existsSync } from 'node:fs'
-import { resolve, dirname } from 'node:path'
+import { resolve, dirname, join } from 'node:path'
+import { createRequire } from 'node:module'
 
 export interface DevRunnerOptions {
   cwd: string
@@ -29,10 +30,31 @@ export function resolveCliBin(cwd: string): string | null {
 }
 
 /**
- * Run extract + compile via the CLI binary.
- * Non-blocking — errors are reported but never throw.
+ * Run compile in-process via `@fluenti/cli` (for compileOnly mode),
+ * or fall back to shell-out for extract + compile (dev mode).
  */
-export function runExtractCompile(options: DevRunnerOptions): Promise<void> {
+export async function runExtractCompile(options: DevRunnerOptions): Promise<void> {
+  if (options.compileOnly) {
+    try {
+      // Resolve @fluenti/cli from the project's cwd (not from this package's location)
+      // using createRequire so pnpm's strict node_modules layout works correctly.
+      const projectRequire = createRequire(join(options.cwd, 'package.json'))
+      const cliPath = projectRequire.resolve('@fluenti/cli')
+      const { runCompile } = await import(cliPath)
+      await runCompile(options.cwd)
+      console.log('[fluenti] Compiling... done')
+      options.onSuccess?.()
+      return
+    } catch (e) {
+      const error = e instanceof Error ? e : new Error(String(e))
+      if (options.throwOnError) throw error
+      console.warn('[fluenti] Compile failed:', error.message)
+      options.onError?.(error)
+      return
+    }
+  }
+
+  // Dev mode: shell out for extract + compile
   const bin = resolveCliBin(options.cwd)
   if (!bin) {
     const msg = '[fluenti] CLI not found — skipping auto-compile. Install @fluenti/cli as a devDependency.'
@@ -43,9 +65,7 @@ export function runExtractCompile(options: DevRunnerOptions): Promise<void> {
     return Promise.resolve()
   }
 
-  const command = options.compileOnly
-    ? `${bin} compile`
-    : `${bin} extract && ${bin} compile`
+  const command = `${bin} extract && ${bin} compile`
   return new Promise<void>((resolve, reject) => {
     exec(
       command,

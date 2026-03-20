@@ -13,8 +13,6 @@ export {
   walkSourceAst,
   isSourceNode,
 } from './source-analysis'
-export { runExtractCompile, createDebouncedRunner, resolveCliBin } from './dev-runner'
-export type { DevRunnerOptions } from './dev-runner'
 export type {
   SourceNode,
   SourceLocation,
