@@ -17,22 +17,18 @@ vi.mock('node:fs', async () => {
   }
 })
 
-// Mock node:module for compileOnly mode (createRequire → resolve → dynamic import)
+// Mock node:module for compileOnly mode (createRequire → require('@fluenti/cli'))
 const mockRunCompile = vi.fn(() => Promise.resolve())
 vi.mock('node:module', async () => {
   const actual = await vi.importActual<typeof import('node:module')>('node:module')
   return {
     ...actual,
-    createRequire: vi.fn(() => ({
-      resolve: vi.fn(() => '@fluenti/cli-mock-path'),
-    })),
+    createRequire: vi.fn(() => {
+      const req = vi.fn(() => ({ runCompile: mockRunCompile }))
+      return req
+    }),
   }
 })
-
-// The dynamic import of the resolved path needs to be intercepted
-vi.mock('@fluenti/cli-mock-path', () => ({
-  runCompile: mockRunCompile,
-}))
 
 import { exec } from 'node:child_process'
 import { existsSync } from 'node:fs'
