@@ -932,6 +932,9 @@ importers:
       '@nuxt/kit':
         specifier: ^3.0.0
         version: 3.21.2(magicast@0.5.2)
+      '@nuxt/schema':
+        specifier: ^3.0.0
+        version: 3.21.2
     devDependencies:
       '@vitest/coverage-v8':
         specifier: ^4
