@@ -1,0 +1,17 @@
+msgid ""
+msgstr "Content-Type: text/plain; charset=utf-8\n"
+
+msgid "Welcome"
+msgstr ""
+
+msgid "Marketing"
+msgstr ""
+
+msgid "Dashboard"
+msgstr ""
+
+msgid "Dashboard Overview"
+msgstr ""
+
+msgid "Settings"
+msgstr ""

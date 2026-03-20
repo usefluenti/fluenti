@@ -1,0 +1,17 @@
+msgid ""
+msgstr "Content-Type: text/plain; charset=utf-8\n"
+
+msgid "Welcome"
+msgstr "ようこそ"
+
+msgid "Marketing"
+msgstr "マーケティング"
+
+msgid "Dashboard"
+msgstr "ダッシュボード"
+
+msgid "Dashboard Overview"
+msgstr "ダッシュボード概要"
+
+msgid "Settings"
+msgstr "設定"

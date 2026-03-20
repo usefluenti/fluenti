@@ -1,0 +1,16 @@
+{
+  "name": "e2e-nuxt-multi-layout",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "nuxt build",
+    "preview": "nuxt preview --port 5200"
+  },
+  "dependencies": {
+    "@fluenti/core": "workspace:*",
+    "@fluenti/vue": "workspace:*",
+    "@fluenti/nuxt": "workspace:*",
+    "nuxt": "^3.16",
+    "vue": "^3.5"
+  }
+}
