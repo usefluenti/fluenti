@@ -192,6 +192,8 @@ const translate = defineCommand({
     provider: { type: 'string', description: 'AI provider: claude or codex', default: 'claude' },
     locale: { type: 'string', description: 'Translate a specific locale only' },
     'batch-size': { type: 'string', description: 'Messages per batch', default: '50' },
+    'dry-run': { type: 'boolean', description: 'Preview translation results without writing files', default: false },
+    context: { type: 'string', description: 'Project context description to improve translation quality' },
   },
   async run({ args }) {
     const config = await loadConfig(args.config)
@@ -225,12 +227,28 @@ const translate = defineCommand({
       const catalogPath = resolve(config.catalogDir, `${locale}${ext}`)
       const catalog = readCatalog(catalogPath, config.format)
 
+      if (args['dry-run']) {
+        const untranslated = Object.entries(catalog).filter(
+          ([, entry]) => !entry.obsolete && (!entry.translation || entry.translation.length === 0),
+        )
+        if (untranslated.length > 0) {
+          for (const [id, entry] of untranslated) {
+            consola.log(`  ${id}: ${entry.message ?? id}`)
+          }
+          consola.success(`  ${locale}: ${untranslated.length} messages would be translated (dry-run)`)
+        } else {
+          consola.success(`  ${locale}: already fully translated`)
+        }
+        continue
+      }
+
       const { catalog: updated, translated } = await translateCatalog({
         provider,
         sourceLocale: config.sourceLocale,
         targetLocale: locale,
         catalog,
         batchSize,
+        ...(args.context ? { context: args.context } : {}),
       })
 
       if (translated > 0) {

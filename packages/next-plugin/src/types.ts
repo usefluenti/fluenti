@@ -31,6 +31,9 @@ export interface WithFluentConfig {
    */
   resolveLocale?: string
 
+  /** Cookie name used for locale detection (default: 'locale') */
+  cookieName?: string
+
   /** Custom date format styles */
   dateFormats?: DateFormatOptions
   /** Custom number format styles */
@@ -55,6 +58,7 @@ export interface ResolvedFluentConfig {
   serverModule: string | null
   serverModuleOutDir: string
   resolveLocale?: string
+  cookieName: string
   dateFormats?: DateFormatOptions
   numberFormats?: NumberFormatOptions
   fallbackChain?: Record<string, Locale[]>

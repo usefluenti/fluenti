@@ -40,15 +40,20 @@ export default function fluentLoader(this: LoaderContext, source: string): strin
   }
 
   // Try scope-aware transform first (AST-based, zero false positives)
-  const scoped = scopeTransform(result, {
-    framework: 'react',
-    serverModuleImport: '@fluenti/next',
-    treatFrameworkDirectImportsAsServer: !isClientModule,
-    rerouteServerAuthoringImports: !isClientModule,
-    errorOnServerUseI18n: !isClientModule,
-  })
-  if (scoped.transformed) {
-    return scoped.code
+  try {
+    const scoped = scopeTransform(result, {
+      framework: 'react',
+      serverModuleImport: '@fluenti/next',
+      treatFrameworkDirectImportsAsServer: !isClientModule,
+      rerouteServerAuthoringImports: !isClientModule,
+      errorOnServerUseI18n: !isClientModule,
+    })
+    if (scoped.transformed) {
+      return scoped.code
+    }
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : String(error)
+    throw new Error(`[fluenti] Transform failed in ${this.resourcePath}: ${msg}`)
   }
 
   return result

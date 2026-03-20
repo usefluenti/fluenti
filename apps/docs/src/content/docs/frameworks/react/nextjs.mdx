@@ -7,6 +7,17 @@ import { Aside } from '@astrojs/starlight/components'
 
 Fluenti integrates with Next.js App Router via `@fluenti/next`, supporting both Client Components and React Server Components (RSC). For general SSR concepts, see the [SSR & Hydration guide](/advanced/ssr-hydration/).
 
+<Aside type="caution" title="Import Rules">
+
+| Import from | Use for |
+|-------------|---------|
+| `@fluenti/react` | `t`, `useI18n`, `Trans`, `Plural`, `Select` — all translation code |
+| `@fluenti/next` | `I18nProvider`, `withFluenti` — framework config only |
+
+**Rule: Application code always imports from `@fluenti/react`. `@fluenti/next` is only used in `next.config.ts` and the root layout.**
+
+</Aside>
+
 ## Recommended Setup with `withFluenti`
 
 The `withFluenti()` wrapper in `next.config.ts` is the recommended way to set up Fluenti in Next.js:
@@ -47,7 +58,8 @@ export default withFluenti({
 | `locales` | `string[]?` | from config file | Override locale list |
 | `defaultLocale` | `string?` | from config file | Override default/fallback locale |
 | `compiledDir` | `string?` | from config file | Path to compiled message catalogs |
-| `resolveLocale` | `string?` | reads `locale` cookie | Module path that default-exports `() => string \| Promise<string>` |
+| `resolveLocale` | `string?` | multi-layer fallback | Module path that default-exports `() => string \| Promise<string>` |
+| `cookieName` | `string?` | `'locale'` | Cookie name used for locale detection |
 | `serverModule` | `string?` | auto-generated | Custom server module path (skips generation) |
 | `serverModuleOutDir` | `string?` | `node_modules/.fluenti` | Where to write generated files |
 | `dateFormats` | `DateFormatOptions?` | — | Custom date format presets |
@@ -232,7 +244,7 @@ export default async function DashboardPage() {
 
 ### Custom Locale Resolution
 
-By default, `withFluenti()` reads the locale from a `locale` cookie. To resolve the locale from a database, JWT, or external API, pass a module path:
+By default, `withFluenti()` resolves the locale using a multi-layer fallback: Referer URL path segment → cookie → Accept-Language header → default locale. This means Server Actions automatically detect the correct locale from the page URL without middleware. To resolve the locale from a database, JWT, or external API, pass a module path:
 
 ```typescript
 // next.config.ts
@@ -256,6 +268,13 @@ export default async function resolveLocale(): Promise<string> {
 }
 ```
 
+<Aside type="tip">
+  You can customize the cookie name with `cookieName` in `withFluenti()`:
+  ```ts
+  export default withFluenti({ cookieName: 'NEXT_LOCALE' })({ ... })
+  ```
+</Aside>
+
 This is critical for **Server Actions**, which skip the layout and rely on `resolveLocale`. See [Custom Locale Resolution](/frameworks/react/server-components/#custom-locale-resolution) for a full example.
 
 ### Generated Server Module
@@ -275,6 +294,15 @@ export const { setLocale, getI18n, Trans, Plural, DateTime, NumberFormat } = cre
   },
 })
 ```
+
+## Compiled Output
+
+The `fluenti compile` command (or `withFluenti()`'s auto-compile in dev mode) writes compiled message modules to the `compileOutDir` path from `fluenti.config.ts` (default: `./src/locales/compiled/`).
+
+- These files are auto-generated and should not be edited manually
+- `fluenti init` adds `compileOutDir` to `.gitignore` automatically
+- In dev mode, `withFluenti()` watches source files and re-compiles on changes
+- For production, run `fluenti compile` before `next build` (or rely on `buildAutoCompile: true`, the default)
 
 ## Hybrid: Client + Server in the same app
 

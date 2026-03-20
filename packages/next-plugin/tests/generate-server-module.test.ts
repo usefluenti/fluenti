@@ -26,6 +26,7 @@ describe('generateServerModule', () => {
     compiledDir: './src/locales/compiled',
     serverModule: null,
     serverModuleOutDir: 'node_modules/.fluenti',
+    cookieName: 'locale',
   }
 
   it('generates a valid JS module file', () => {
@@ -59,12 +60,45 @@ describe('generateServerModule', () => {
     expect(serverSource).toContain('export async function I18nProvider')
   })
 
-  it('uses cookie-based resolveLocale by default', () => {
+  it('generates __locales array from config', () => {
     generateServerModule('/project', baseConfig)
 
     const serverSource = writtenFiles['/project/node_modules/.fluenti/server.js']!
-    expect(serverSource).toContain("(await cookies()).get('locale')")
+    expect(serverSource).toContain('const __locales = ["en","ja"]')
+  })
+
+  it('uses multi-layer resolveLocale fallback by default', () => {
+    generateServerModule('/project', baseConfig)
+
+    const serverSource = writtenFiles['/project/node_modules/.fluenti/server.js']!
+    // Should contain referer check
+    expect(serverSource).toContain("headerStore.get('referer')")
+    // Should contain cookie check with default name
+    expect(serverSource).toContain("cookieStore.get('locale')")
+    // Should contain accept-language check
+    expect(serverSource).toContain("headerStore.get('accept-language')")
+    // Should not use custom resolveLocale
     expect(serverSource).not.toContain('__resolveLocale')
+  })
+
+  it('respects custom cookieName', () => {
+    generateServerModule('/project', {
+      ...baseConfig,
+      cookieName: 'NEXT_LOCALE',
+    })
+
+    const serverSource = writtenFiles['/project/node_modules/.fluenti/server.js']!
+    expect(serverSource).toContain("cookieStore.get('NEXT_LOCALE')")
+    expect(serverSource).not.toContain("cookieStore.get('locale')")
+  })
+
+  it('generates accept-language parsing in default resolveLocale', () => {
+    generateServerModule('/project', baseConfig)
+
+    const serverSource = writtenFiles['/project/node_modules/.fluenti/server.js']!
+    expect(serverSource).toContain("acceptLang.split(',')")
+    expect(serverSource).toContain("part.split(';')[0].trim()")
+    expect(serverSource).toContain("lang.split('-')[0]")
   })
 
   it('imports custom resolveLocale module when path is provided', () => {
@@ -76,6 +110,8 @@ describe('generateServerModule', () => {
     const serverSource = writtenFiles['/project/node_modules/.fluenti/server.js']!
     expect(serverSource).toContain("import __resolveLocale from '../../lib/resolve-locale'")
     expect(serverSource).toContain('resolveLocale: __resolveLocale,')
-    expect(serverSource).not.toContain("cookies().get('locale')")
+    // Should skip the default multi-layer fallback
+    expect(serverSource).not.toContain("headerStore.get('referer')")
+    expect(serverSource).not.toContain("cookieStore.get('locale')")
   })
 })

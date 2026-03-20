@@ -11,11 +11,13 @@ export function buildPrompt(
   sourceLocale: string,
   targetLocale: string,
   messages: Record<string, string>,
+  context?: string,
 ): string {
   const json = JSON.stringify(messages, null, 2)
   return [
     `You are a professional translator. Translate the following messages from "${sourceLocale}" to "${targetLocale}".`,
     '',
+    ...(context ? [`Project context: ${context}`, ''] : []),
     `Input (JSON):`,
     json,
     '',
@@ -100,13 +102,14 @@ export interface TranslateOptions {
   targetLocale: string
   catalog: CatalogData
   batchSize: number
+  context?: string
 }
 
 export async function translateCatalog(options: TranslateOptions): Promise<{
   catalog: CatalogData
   translated: number
 }> {
-  const { provider, sourceLocale, targetLocale, catalog, batchSize } = options
+  const { provider, sourceLocale, targetLocale, catalog, batchSize, context } = options
 
   const untranslated = getUntranslatedEntries(catalog)
   const count = Object.keys(untranslated).length
@@ -129,7 +132,7 @@ export async function translateCatalog(options: TranslateOptions): Promise<{
       consola.info(`  Batch ${i + 1}/${batches.length} (${batchKeys.length} messages)`)
     }
 
-    const prompt = buildPrompt(sourceLocale, targetLocale, batch)
+    const prompt = buildPrompt(sourceLocale, targetLocale, batch, context)
     const response = await invokeAI(provider, prompt)
     const translations = extractJSON(response)
 

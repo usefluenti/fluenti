@@ -39,12 +39,15 @@ export function resolveConfig(
   const serverModuleOutDir = overrides?.serverModuleOutDir
     ?? join('node_modules', '.fluenti')
 
+  const cookieName = overrides?.cookieName ?? 'locale'
+
   const resolved: ResolvedFluentConfig = {
     locales,
     defaultLocale,
     compiledDir,
     serverModule: overrides?.serverModule ?? null,
     serverModuleOutDir,
+    cookieName,
   }
   if (overrides?.resolveLocale) resolved.resolveLocale = overrides.resolveLocale
   if (overrides?.dateFormats) resolved.dateFormats = overrides.dateFormats
