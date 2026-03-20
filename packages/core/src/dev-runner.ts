@@ -15,9 +15,10 @@ export interface DevRunnerOptions {
  * Non-blocking — errors are reported but never throw.
  */
 export function runExtractCompile(options: DevRunnerOptions): Promise<void> {
+  const bin = 'node_modules/.bin/fluenti'
   const command = options.compileOnly
-    ? 'npx @fluenti/cli compile'
-    : 'npx @fluenti/cli extract && npx @fluenti/cli compile'
+    ? `${bin} compile`
+    : `${bin} extract && ${bin} compile`
   return new Promise<void>((resolve, reject) => {
     exec(
       command,
