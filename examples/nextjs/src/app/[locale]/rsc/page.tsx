@@ -1,8 +1,7 @@
 import type { Metadata } from 'next'
 import { t } from '@fluenti/react'
-import { setLocale, getI18n } from '@fluenti/next'
 
-// generateMetadata is auto-promoted to async and uses the locale from I18nProvider
+// generateMetadata uses the locale already set by I18nProvider in the layout
 export function generateMetadata(): Metadata {
   return {
     title: t`Server rendered`,
@@ -10,25 +9,13 @@ export function generateMetadata(): Metadata {
   }
 }
 
-export default async function RSCPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ lang?: string }>
-}) {
-  const params = await searchParams
-
-  if (params.lang) {
-    setLocale(params.lang)
-  }
-
-  const i18n = await getI18n()
-  const locale = i18n.locale
-
+// No need to call setLocale() or getI18n() here — the layout's I18nProvider
+// already initializes the React.cache-scoped i18n instance. Just use t``.
+export default async function RSCPage() {
   return (
     <div data-testid="rsc-page">
       <h2 data-testid="rsc-title">{t`Server rendered`}</h2>
       <p data-testid="rsc-desc">{t`This page is a React Server Component.`}</p>
-      <p data-testid="rsc-locale">{t`Current server locale: ${locale}`}</p>
     </div>
   )
 }

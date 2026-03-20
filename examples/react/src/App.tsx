@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useI18n, Trans, Plural, Select, msg } from '@fluenti/react'
+import { useI18n, Trans, Plural, Select, DateTime, NumberFormat, msg } from '@fluenti/react'
 
 // Lazy message descriptors — equivalent to Lingui's defineMessage/msg
 const ROLES = {
@@ -73,6 +73,32 @@ export function App({ onLocaleChange }: { onLocaleChange: (locale: string) => vo
           <p data-testid="current-locale">{t`Current locale: ${locale}`}</p>
           <p data-testid="date">{d(new Date(2025, 0, 15))}</p>
           <p data-testid="number">{n(1234.5)}</p>
+
+          {/* DateTime & Number Components */}
+          <h3>{t`Formatting Components`}</h3>
+          <p data-testid="datetime-default">
+            <DateTime value={new Date(2025, 0, 15)} />
+          </p>
+          <p data-testid="datetime-long">
+            <DateTime value={new Date(2025, 0, 15)} style="long" />
+          </p>
+          <p data-testid="number-currency">
+            <NumberFormat value={42.5} style="currency" />
+          </p>
+          <p data-testid="number-percent">
+            <NumberFormat value={0.856} style="percent" />
+          </p>
+
+          <h3>{t`Advanced ICU`}</h3>
+          <p data-testid="nested-icu">
+            {i18n.format(
+              '{count, plural, =0 {{gender, select, male {He has no items} female {She has no items} other {They have no items}}} one {{gender, select, male {He has # item} female {She has # item} other {They have # item}}} other {{gender, select, male {He has # items} female {She has # items} other {They have # items}}}}',
+              { count: 3, gender: 'female' }
+            )}
+          </p>
+          <p data-testid="ordinal">
+            {i18n.format('{n, selectordinal, one {#st} two {#nd} few {#rd} other {#th}} place', { n: 1 })}
+          </p>
 
           <div data-testid="msg-roles">
             <span data-testid="msg-admin">{i18n.t(ROLES.admin)}</span>

@@ -1,5 +1,5 @@
 import { createSignal, type Component, type JSX } from 'solid-js'
-import { createI18n, useI18n, Trans, Plural, Select } from '@fluenti/solid'
+import { createI18n, useI18n, Trans, Plural, Select, DateTime, NumberFormat } from '@fluenti/solid'
 import en from './locales/compiled/en.js'
 import zhCN from './locales/compiled/zh-CN.js'
 import ja from './locales/compiled/ja.js'
@@ -446,6 +446,32 @@ export const App: Component = () => {
               <div style={demoItemStyle}>
                 <div style={demoLabelStyle}>n(1234.5, 'decimal')</div>
                 <div>{n(1234.5, 'decimal')}</div>
+              </div>
+            </div>
+          </section>
+
+          <section style={{ 'margin-bottom': '24px' }}>
+            <h2 style={{ 'margin-bottom': '12px' }}>{'Feature: <DateTime> & <NumberFormat> Components'}</h2>
+            <div style={cardStyle}>
+              <div style={demoItemStyle}>
+                <div style={demoLabelStyle}>{'<DateTime value={Date.now()} />'}</div>
+                <div><DateTime value={Date.now()} /></div>
+              </div>
+              <div style={demoItemStyle}>
+                <div style={demoLabelStyle}>{'<DateTime value={Date.now()} style="long" />'}</div>
+                <div><DateTime value={Date.now()} style="long" /></div>
+              </div>
+              <div style={demoItemStyle}>
+                <div style={demoLabelStyle}>{'<NumberFormat value={1234567.89} />'}</div>
+                <div><NumberFormat value={1234567.89} /></div>
+              </div>
+              <div style={demoItemStyle}>
+                <div style={demoLabelStyle}>{'<NumberFormat value={42.5} style="currency" />'}</div>
+                <div><NumberFormat value={42.5} style="currency" /></div>
+              </div>
+              <div style={demoItemStyle}>
+                <div style={demoLabelStyle}>{'<NumberFormat value={0.856} style="percent" />'}</div>
+                <div><NumberFormat value={0.856} style="percent" /></div>
               </div>
             </div>
           </section>

@@ -28,20 +28,36 @@ const { t, locale } = useI18n()
     <div class="section">
       <h2>$d() — Date Formatting</h2>
       <div class="demo-item">
-        <div class="demo-label">$d(Date.now())</div>
+        <div class="demo-label">$d(Date.now()) — default</div>
         <div>{{ $d(Date.now()) }}</div>
+      </div>
+      <div class="demo-item">
+        <div class="demo-label">$d(Date.now(), 'short')</div>
+        <div>{{ $d(Date.now(), 'short') }}</div>
+      </div>
+      <div class="demo-item">
+        <div class="demo-label">$d(Date.now(), 'long')</div>
+        <div>{{ $d(Date.now(), 'long') }}</div>
       </div>
     </div>
 
     <div class="section">
       <h2>$n() — Number Formatting</h2>
       <div class="demo-item">
-        <div class="demo-label">$n(1234567.89)</div>
+        <div class="demo-label">$n(1234567.89) — default</div>
         <div>{{ $n(1234567.89) }}</div>
       </div>
       <div class="demo-item">
-        <div class="demo-label">$n(0.42)</div>
-        <div>{{ $n(0.42) }}</div>
+        <div class="demo-label">$n(42.5, 'currency')</div>
+        <div>{{ $n(42.5, 'currency') }}</div>
+      </div>
+      <div class="demo-item">
+        <div class="demo-label">$n(0.856, 'percent')</div>
+        <div>{{ $n(0.856, 'percent') }}</div>
+      </div>
+      <div class="demo-item">
+        <div class="demo-label">$n(1234.5, 'decimal')</div>
+        <div>{{ $n(1234.5, 'decimal') }}</div>
       </div>
     </div>
 

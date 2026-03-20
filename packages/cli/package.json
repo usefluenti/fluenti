@@ -33,6 +33,11 @@
       "require": { "types": "./dist/vue-extractor.d.ts", "default": "./dist/vue-extractor.cjs" }
     }
   },
+  "typesVersions": {
+    "*": {
+      "vue-extractor": ["./dist/vue-extractor.d.ts"]
+    }
+  },
   "files": ["dist"],
   "scripts": {
     "build": "vite build",

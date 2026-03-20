@@ -10,11 +10,18 @@ const messages = { en, 'zh-CN': zhCN, ja }
 
 function Root() {
   const [locale, setLocale] = useState('en')
+
+  const handleMissing = (locale: string, id: string) => {
+    console.warn(`[fluenti] Missing translation: locale="${locale}" id="${id}"`)
+    return undefined
+  }
+
   return (
     <I18nProvider
       locale={locale}
       fallbackLocale="en"
       messages={messages}
+      missing={handleMissing}
     >
       <App onLocaleChange={setLocale} />
     </I18nProvider>
