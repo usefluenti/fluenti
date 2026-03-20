@@ -1,4 +1,3 @@
-import { createRequire } from 'node:module'
 import type { SourceNode } from './source-analysis'
 import type { DirectImportBinding, ScopeTransformOptions } from './scope-types'
 
@@ -19,27 +18,6 @@ export function classifyExpression(expr: string): string {
     return callMatch[1]!.replace(/\./g, '_')
   }
   return ''
-}
-
-const require = createRequire(
-  typeof __filename !== 'undefined' ? __filename : import.meta.url,
-)
-let generateCode:
-  | ((ast: unknown, options?: unknown) => { code: string })
-  | null = null
-
-export function getGenerateCode(): (ast: unknown, options?: unknown) => { code: string } {
-  if (generateCode) return generateCode
-
-  const generatorModule = require('@babel/generator') as {
-    default?: (ast: unknown, options?: unknown) => { code: string }
-  }
-
-  generateCode = typeof generatorModule.default === 'function'
-    ? generatorModule.default
-    : (generatorModule as unknown as (ast: unknown, options?: unknown) => { code: string })
-
-  return generateCode
 }
 
 export function overwriteNode(target: SourceNode, replacement: SourceNode): void {

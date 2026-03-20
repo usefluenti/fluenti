@@ -216,7 +216,7 @@ const msg = t\`Hello \${name}\`
     expect(result.code).not.toContain('unref')
   })
 
-  it('throws a stable error for unsupported imported t() runtime lookups', () => {
+  it('transforms imported t() with string literal argument', () => {
     const code = `
 import { t } from '@fluenti/react'
 export function Card() {
@@ -224,10 +224,9 @@ export function Card() {
 }
 `
 
-    expect(() => scopeTransform(code, opts)).toThrow(
-      '[fluenti] Imported `t` only supports tagged templates and static descriptor calls. ' +
-        'Use useI18n().t(...) or await getI18n() for runtime lookups.',
-    )
+    const result = scopeTransform(code, opts)
+    expect(result.transformed).toBe(true)
+    expect(result.code).toContain("message: 'nav.home'")
   })
 
   it('throws a stable error for unsupported direct-import client scopes', () => {

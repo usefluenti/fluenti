@@ -41,6 +41,9 @@ export { detectLocale, getSSRLocaleScript, getHydratedLocale } from './ssr'
 export { formatNumber, DEFAULT_NUMBER_FORMATS, LOCALE_CURRENCY_MAP } from './formatters/number'
 export { formatDate, DEFAULT_DATE_FORMATS } from './formatters/date'
 export { formatRelativeTime } from './formatters/relative'
+// Config loading (loadConfig, loadConfigSync) is exported from '@fluenti/core/config'
+// subpath to avoid pulling jiti + node:* modules into client bundles.
+export { defineConfig } from './define-config'
 
 import type {
   FluentConfigExtended,
@@ -150,6 +153,14 @@ export function createFluent(config: FluentConfigExtended): FluentInstanceExtend
     return undefined
   }
 
+  const devWarningsEnabled = config.devWarnings
+    || (typeof process !== 'undefined' && process.env?.['FLUENTI_DEBUG'] === 'true')
+
+  function warnMissing(id: string): void {
+    if (!devWarningsEnabled) return
+    console.warn(`[fluenti] Missing translation for "${id}" in locale "${currentLocale}"`)
+  }
+
   function resolveMessage(id: string, values?: Record<string, unknown>): string {
     const catalogResult = lookupCatalog(id, values)
     if (catalogResult !== undefined) {
@@ -166,7 +177,9 @@ export function createFluent(config: FluentConfigExtended): FluentInstanceExtend
     if (id.includes('{')) {
       return applyTransform(interp(id, values, currentLocale), id)
     }
-    return id
+
+    warnMissing(id)
+    return devWarningsEnabled ? `[!] ${id}` : id
   }
 
   const instance: FluentInstanceExtended = {

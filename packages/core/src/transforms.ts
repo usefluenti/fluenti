@@ -1,4 +1,5 @@
 export { transformTransComponents } from './trans-transform'
 export type { TransTransformResult } from './trans-transform'
-export { scopeTransform } from './scope-transform'
+export { scopeTransform, scopeTransformAst } from './scope-transform'
 export type { ScopeTransformOptions, ScopeTransformResult, Replacement } from './scope-transform'
+export type { ScopeTransformAstResult } from './scope-transform-ast'
