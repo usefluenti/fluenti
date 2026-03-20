@@ -253,6 +253,12 @@ export function extractTemplateTranslationParts(
 }
 
 export function extractStaticDescriptor(argument: SourceNode): StaticDescriptor | null {
+  // String literal shorthand: t('message') → { message: 'message' }
+  const stringValue = readStaticStringValue(argument)
+  if (stringValue !== undefined) {
+    return { message: stringValue }
+  }
+
   if (argument.type !== 'ObjectExpression') {
     return null
   }

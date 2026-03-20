@@ -7,11 +7,13 @@ export default defineConfig({
       entry: {
         index: 'src/index.ts',
         internal: 'src/internal.ts',
+        'internal-browser': 'src/internal-browser.ts',
+        config: 'src/config.ts',
       },
       formats: ['es', 'cjs'],
     },
     rollupOptions: {
-      external: [/^node:/],
+      external: [/^node:/, 'jiti'],
     },
     sourcemap: true,
     minify: false,

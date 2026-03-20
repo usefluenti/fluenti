@@ -230,6 +230,17 @@ export interface FluentConfigExtended extends FluentConfig {
    * the custom formatter is checked first, then the built-in Intl formatters.
    */
   formatters?: Record<string, CustomFormatter>
+  /**
+   * Enable development warnings for missing translations.
+   *
+   * When `true`:
+   * - Missing messages return `[!] {id}` prefixed text
+   * - `console.warn` is emitted for each missing translation
+   *
+   * Activated by `devWarnings: true` in `fluenti.config.ts` or
+   * `FLUENTI_DEBUG` environment variable.
+   */
+  devWarnings?: boolean
 }
 
 // ---- Extended FluentInstance ----

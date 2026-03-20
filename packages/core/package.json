@@ -26,8 +26,17 @@
       "require": { "types": "./dist/index.d.ts", "default": "./dist/index.cjs" }
     },
     "./internal": {
+      "browser": { "types": "./dist/internal-browser.d.ts", "default": "./dist/internal-browser.js" },
       "import": { "types": "./dist/internal.d.ts", "default": "./dist/internal.js" },
       "require": { "types": "./dist/internal.d.ts", "default": "./dist/internal.cjs" }
+    },
+    "./internal/browser": {
+      "import": { "types": "./dist/internal-browser.d.ts", "default": "./dist/internal-browser.js" },
+      "require": { "types": "./dist/internal-browser.d.ts", "default": "./dist/internal-browser.cjs" }
+    },
+    "./config": {
+      "import": { "types": "./dist/config.d.ts", "default": "./dist/config.js" },
+      "require": { "types": "./dist/config.d.ts", "default": "./dist/config.cjs" }
     }
   },
   "files": ["dist"],
@@ -40,7 +49,8 @@
   },
   "dependencies": {
     "@babel/generator": "^7.29.1",
-    "@babel/parser": "^7.28.4"
+    "@babel/parser": "^7.28.4",
+    "jiti": "^2"
   },
   "devDependencies": {
     "typescript": "^5.9",
