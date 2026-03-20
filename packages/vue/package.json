@@ -1,6 +1,6 @@
 {
   "name": "@fluenti/vue",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "type": "module",
   "description": "Vue 3 compile-time i18n — v-t directive, Trans/Plural/Select components, useI18n composable",
   "homepage": "https://fluenti.dev",
