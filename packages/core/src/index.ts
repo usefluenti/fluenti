@@ -41,8 +41,6 @@ export { detectLocale, getSSRLocaleScript, getHydratedLocale } from './ssr'
 export { formatNumber, DEFAULT_NUMBER_FORMATS, LOCALE_CURRENCY_MAP } from './formatters/number'
 export { formatDate, DEFAULT_DATE_FORMATS } from './formatters/date'
 export { formatRelativeTime } from './formatters/relative'
-// dev-runner is exported from './internal' (Node-only) to avoid
-// pulling node:child_process into browser bundles.
 
 import type {
   FluentConfigExtended,

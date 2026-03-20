@@ -4,7 +4,7 @@ import { resolve, dirname } from 'node:path'
 import type { WithFluentConfig } from './types'
 import { resolveConfig } from './read-config'
 import { generateServerModule } from './generate-server-module'
-import { createDebouncedRunner, resolveCliBin } from '@fluenti/core/internal'
+import { createDebouncedRunner } from './dev-runner'
 
 type NextConfig = Record<string, unknown>
 
@@ -106,16 +106,20 @@ function applyFluenti(
       config.resolve.alias = config.resolve.alias ?? {}
       config.resolve.alias['@fluenti/next$'] = serverModulePath
 
-      // Auto extract+compile before production build (run once across server+client passes)
+      // Auto compile before production build (run once across server+client passes)
       const buildAutoCompile = fluentConfig.buildAutoCompile ?? true
       if (!options.dev && buildAutoCompile && !buildCompileRan) {
         buildCompileRan = true
-        const cliBin = resolveCliBin(projectRoot)
-        if (cliBin) {
-          execSync(`${cliBin} compile`, {
-            cwd: projectRoot,
-            stdio: 'inherit',
-          })
+        try {
+          // Use node -e with dynamic import — avoids CLI binary resolution issues.
+          // webpack() is sync, so we use execSync to block until compile finishes.
+          const escapedRoot = projectRoot.replace(/\\/g, '\\\\').replace(/'/g, "\\'")
+          execSync(
+            `node --input-type=module -e "const { runCompile } = await import('@fluenti/cli'); await runCompile('${escapedRoot}')"`,
+            { cwd: projectRoot, stdio: 'inherit' },
+          )
+        } catch {
+          // @fluenti/cli not available or compile failed — skip silently
         }
       }
 

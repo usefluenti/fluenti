@@ -2,7 +2,7 @@ import type { Plugin } from 'vite'
 import type { FluentiCoreOptions, RuntimeGenerator } from './types'
 import { setResolvedMode, isBuildMode } from './mode-detect'
 import { resolve } from 'node:path'
-import { createDebouncedRunner, runExtractCompile, resolveCliBin } from '@fluenti/core/internal'
+import { createDebouncedRunner, runExtractCompile } from './dev-runner'
 import { transformForDynamicSplit, transformForStaticSplit, injectCatalogImport } from './build-transform'
 import { resolveVirtualSplitId, loadVirtualSplitModule } from './virtual-modules'
 import { deriveRouteName, parseCompiledCatalog, buildChunkModule, readCatalogSource } from './route-resolve'
@@ -210,7 +210,6 @@ export function createFluentiPlugins(
     async buildStart() {
       if (!isBuildMode((this as any).environment) || !buildAutoCompile) return
       const cwd = process.cwd()
-      if (!resolveCliBin(cwd)) return // CLI not installed — skip silently
       await runExtractCompile({ cwd, throwOnError: true, compileOnly: true })
     },
   }

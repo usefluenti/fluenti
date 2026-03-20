@@ -4,12 +4,11 @@ import { hashMessage } from '@fluenti/core'
 import { createFluentiPlugins } from '../src/index'
 import type { FluentiCoreOptions } from '../src/types'
 
-vi.mock('@fluenti/core/internal', async () => {
-  const actual = await vi.importActual<typeof import('@fluenti/core/internal')>('@fluenti/core/internal')
+vi.mock('../src/dev-runner', async () => {
+  const actual = await vi.importActual<typeof import('../src/dev-runner')>('../src/dev-runner')
   return {
     ...actual,
     runExtractCompile: vi.fn(() => Promise.resolve()),
-    resolveCliBin: vi.fn(() => '/project/node_modules/.bin/fluenti'),
   }
 })
 
@@ -198,7 +197,7 @@ const label = t('nav.home')
 
   describe('build-compile plugin', () => {
     it('calls runExtractCompile in build mode', async () => {
-      const { runExtractCompile } = await import('@fluenti/core/internal')
+      const { runExtractCompile } = await import('../src/dev-runner')
       const mockRun = vi.mocked(runExtractCompile)
       mockRun.mockClear()
 
@@ -211,7 +210,7 @@ const label = t('nav.home')
     })
 
     it('does not call runExtractCompile in dev mode', async () => {
-      const { runExtractCompile } = await import('@fluenti/core/internal')
+      const { runExtractCompile } = await import('../src/dev-runner')
       const mockRun = vi.mocked(runExtractCompile)
       mockRun.mockClear()
 
@@ -224,7 +223,7 @@ const label = t('nav.home')
     })
 
     it('does not call runExtractCompile when buildAutoCompile is false', async () => {
-      const { runExtractCompile } = await import('@fluenti/core/internal')
+      const { runExtractCompile } = await import('../src/dev-runner')
       const mockRun = vi.mocked(runExtractCompile)
       mockRun.mockClear()
 
