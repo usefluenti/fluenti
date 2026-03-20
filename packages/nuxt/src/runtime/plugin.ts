@@ -77,13 +77,15 @@ export default defineNuxtPlugin(async (nuxtApp) => {
   }
 
   // --- Inject global helpers ---
-  nuxtApp.vueApp.config.globalProperties.$localePath = (path: string, locale?: string) => {
-    return localePath(
-      path,
-      locale ?? currentLocale.value,
-      config.defaultLocale,
-      config.strategy,
-    )
+  if (config.injectGlobalProperties) {
+    nuxtApp.vueApp.config.globalProperties.$localePath = (path: string, locale?: string) => {
+      return localePath(
+        path,
+        locale ?? currentLocale.value,
+        config.defaultLocale,
+        config.strategy,
+      )
+    }
   }
 
   return {

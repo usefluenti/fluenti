@@ -97,6 +97,41 @@ export interface FluentNuxtOptions {
   isr?: ISROptions
   /** Enable @fluenti/vue-i18n-compat bridge mode */
   compat?: boolean
+  /**
+   * Whether to auto-import composables (useLocalePath, useSwitchLocalePath, useLocaleHead, useI18n).
+   *
+   * Set to `false` to disable all auto-imports. Useful when migrating from `@nuxtjs/i18n`
+   * or when you want explicit imports to avoid naming collisions.
+   *
+   * @default true
+   */
+  autoImports?: boolean
+  /**
+   * Query parameter name for locale detection (e.g. `?lang=ja`).
+   *
+   * @default 'locale'
+   */
+  queryParamKey?: string
+  /**
+   * Whether to inject `$localePath` onto `app.config.globalProperties`.
+   *
+   * Set to `false` if another plugin (e.g. `@nuxtjs/i18n`) already provides `$localePath`,
+   * or when using composition API exclusively.
+   *
+   * @default true
+   */
+  injectGlobalProperties?: boolean
+  /**
+   * Whether the locale redirect middleware should be registered globally.
+   *
+   * Set to `false` to register it as a named middleware instead, so you can
+   * apply it only to specific pages via `definePageMeta({ middleware: ['fluenti-locale-redirect'] })`.
+   *
+   * Only relevant when `strategy` is `'prefix'`.
+   *
+   * @default true
+   */
+  globalMiddleware?: boolean
 }
 
 /** ISR configuration */
@@ -115,4 +150,8 @@ export interface FluentNuxtRuntimeConfig {
   detectBrowserLanguage?: DetectBrowserLanguageOptions
   /** Ordered list of detector names/paths */
   detectOrder: Array<string>
+  /** Query parameter name for locale detection */
+  queryParamKey: string
+  /** Whether to inject $localePath onto globalProperties */
+  injectGlobalProperties: boolean
 }
