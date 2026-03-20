@@ -40,7 +40,7 @@ Then migrate messages one at a time. When done, remove the bridge and use @fluen
 
 ```bash
 pnpm add @fluenti/core @fluenti/vue
-pnpm add -D @fluenti/cli @fluenti/vite-plugin
+pnpm add -D @fluenti/cli
 ```
 
 ### 2. Update Vite config
@@ -48,10 +48,10 @@ pnpm add -D @fluenti/cli @fluenti/vite-plugin
 ```ts
 // vite.config.ts
 import vue from '@vitejs/plugin-vue'
-import fluenti from '@fluenti/vite-plugin'
+import fluentiVue from '@fluenti/vue/vite-plugin'
 
 export default {
-  plugins: [vue(), fluenti({ framework: 'vue' })],
+  plugins: [vue(), fluentiVue()],
 }
 ```
 

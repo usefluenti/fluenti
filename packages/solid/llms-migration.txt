@@ -18,7 +18,7 @@ Key differences:
 
 ```bash
 pnpm add @fluenti/core @fluenti/solid
-pnpm add -D @fluenti/cli @fluenti/vite-plugin
+pnpm add -D @fluenti/cli
 ```
 
 ### 2. Replace provider setup
@@ -90,10 +90,10 @@ setLocale('ja')
 ```ts
 // vite.config.ts
 import solid from 'vite-plugin-solid'
-import fluenti from '@fluenti/vite-plugin'
+import fluentiSolid from '@fluenti/solid/vite-plugin'
 
 export default {
-  plugins: [solid(), fluenti({ framework: 'solid' })],
+  plugins: [solid(), fluentiSolid()],
 }
 ```
 
