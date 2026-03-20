@@ -9,7 +9,7 @@
 | `packages/solid` | `@fluenti/solid` | SolidJS integration: `<Trans>`, `<Plural>`, `<Select>`, `I18nProvider`, `useI18n()` |
 | `packages/cli` | `@fluenti/cli` | Message extraction (Vue SFC + TSX), PO/JSON catalog format, compilation |
 | `packages/vite-plugin` | `@fluenti/vite-plugin` | Vite plugin: virtual modules, build-time transforms, code splitting |
-| `packages/next-plugin` | `@fluenti/next` | Next.js plugin: `withFluenti()`, webpack loader for `t\`\``, FluentProvider, RSC support |
+| `packages/next-plugin` | `@fluenti/next` | Next.js plugin: `withFluenti()`, webpack loader for `t\`\``, I18nProvider, RSC support |
 | `examples/vue` | `playground-vue` | Vue 3 demo app showcasing all i18n features |
 | `examples/solid` | `playground-solid` | SolidJS demo app showcasing all i18n features |
 | `examples/react` | `playground-react` | React 19 SPA demo with PO format + CLI workflow |

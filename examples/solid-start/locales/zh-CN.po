@@ -1,47 +1,64 @@
 msgid ""
-msgstr "Content-Type: text/plain; charset=UTF-8\n"
+msgstr "Content-Type: text/plain; charset=utf-8\n"
 
-msgid "Welcome to Fluenti"
-msgstr "欢迎使用 Fluenti"
-
-msgid "A compile-time i18n library with SSR support"
-msgstr "支持 SSR 的编译时 i18n 库"
-
-msgid "Hello, {name}!"
-msgstr "你好，{name}！"
-
-msgid "Current locale: {locale}"
-msgstr "当前语言：{locale}"
-
-msgid "Rich Text"
-msgstr "富文本"
-
-msgid "Welcome to <bold>Fluenti</bold> for <italic>SolidStart</italic>!"
-msgstr "欢迎使用 <bold>Fluenti</bold> 的 <italic>SolidStart</italic> 版！"
-
-msgid "Supports <bold>bold</bold>, <italic>italic</italic>, and <link>links</link>."
-msgstr "支持 <bold>粗体</bold>、<italic>斜体</italic> 和 <link>链接</link>。"
-
-msgid "Plurals"
-msgstr "复数形式"
-
-msgid "Your cart is empty."
-msgstr "您的购物车是空的。"
-
-msgid "You have # item in your cart."
-msgstr "您的购物车中有 # 件商品。"
-
-msgid "You have # items in your cart."
-msgstr "您的购物车中有 # 件商品。"
-
-msgid "Reset"
-msgstr "重置"
-
+#: ./src/app.tsx:44
 msgid "Home"
 msgstr "首页"
 
+#: ./src/routes/rich-text.tsx:21
+msgid "Rich Text"
+msgstr "富文本"
+
+#: ./src/routes/plurals.tsx:9
+msgid "Plurals"
+msgstr "复数形式"
+
+#: ./src/routes/index.tsx:10
+msgid "Welcome to Fluenti"
+msgstr "欢迎使用 Fluenti"
+
+#: ./src/routes/index.tsx:12
+msgid "A compile-time i18n library with SSR support"
+msgstr "支持 SSR 的编译时 i18n 库"
+
+#: ./src/routes/index.tsx:16
+msgid "Hello, {name}!"
+msgstr "你好，{name}！"
+
+#: ./src/routes/index.tsx:17
 msgid "This page is server-side rendered with per-request locale isolation."
 msgstr "此页面使用每请求语言隔离进行服务端渲染。"
+
+#: ./src/routes/index.tsx:19
+msgid "Current locale: {currentLocale}"
+msgstr ""
+
+#: ./src/routes/plurals.tsx:33
+msgid "Your cart is empty."
+msgstr "您的购物车是空的。"
+
+#: ./src/routes/plurals.tsx:34
+msgid "You have # item in your cart."
+msgstr "您的购物车中有 # 件商品。"
+
+#: ./src/routes/plurals.tsx:35
+msgid "You have # items in your cart."
+msgstr "您的购物车中有 # 件商品。"
+
+#: ./src/routes/plurals.tsx:74
+msgid "Reset"
+msgstr "重置"
+
+#: ./src/routes/rich-text.tsx:40
+msgid "Welcome to <bold>Fluenti</bold> for <italic>SolidStart</italic>!"
+msgstr "欢迎使用 <bold>Fluenti</bold> 的 <italic>SolidStart</italic> 版！"
+
+#: ./src/routes/rich-text.tsx:55
+msgid "Supports <bold>bold</bold>, <italic>italic</italic>, and <link>links</link>."
+msgstr "支持 <bold>粗体</bold>、<italic>斜体</italic> 和 <link>链接</link>。"
+
+msgid "Current locale: {locale}"
+msgstr "当前语言：{locale}"
 
 msgid "Formatting"
 msgstr "格式化"

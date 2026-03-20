@@ -1,28 +1,36 @@
 msgid ""
-msgstr "Content-Type: text/plain; charset=UTF-8\n"
+msgstr "Content-Type: text/plain; charset=utf-8\n"
 
-msgid "Welcome to Fluenti"
-msgstr ""
-
-msgid "Hello, {name}!"
-msgstr ""
-
+#: ./src/App.tsx:14
 msgid "Home"
 msgstr ""
 
+#: ./src/App.tsx:16
 msgid "About"
 msgstr ""
 
-msgid "This is the home page."
-msgstr ""
-
+#: ./src/pages/About.tsx:8
 msgid "About our project"
 msgstr ""
 
+#: ./src/pages/About.tsx:9
 msgid "Learn more about Fluenti."
 msgstr ""
 
+#: ./src/pages/About.tsx:10
 msgid "Contact us at {email}"
+msgstr ""
+
+#: ./src/pages/Home.tsx:8
+msgid "Welcome to Fluenti"
+msgstr ""
+
+#: ./src/pages/Home.tsx:9
+msgid "This is the home page."
+msgstr ""
+
+#: ./src/pages/Home.tsx:10
+msgid "Hello, {name}!"
 msgstr ""
 
 msgid "Switch Language"

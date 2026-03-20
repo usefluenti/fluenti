@@ -1,29 +1,37 @@
 msgid ""
-msgstr "Content-Type: text/plain; charset=UTF-8\n"
+msgstr "Content-Type: text/plain; charset=utf-8\n"
 
-msgid "Welcome to Fluenti"
-msgstr "Fluentiへようこそ"
-
-msgid "Hello, {name}!"
-msgstr "こんにちは、{name}さん！"
-
+#: ./src/App.vue:10
 msgid "Home"
 msgstr "ホーム"
 
+#: ./src/App.vue:11
 msgid "About"
 msgstr "概要"
 
-msgid "This is the home page."
-msgstr "これはホームページです。"
-
+#: ./src/pages/About.vue:9
 msgid "About our project"
 msgstr "プロジェクトについて"
 
+#: ./src/pages/About.vue:10
 msgid "Learn more about Fluenti."
 msgstr "Fluentiの詳細をご覧ください。"
 
+#: ./src/pages/About.vue:11
 msgid "Contact us at {email}"
 msgstr "{email}にお問い合わせください"
+
+#: ./src/pages/Home.vue:9
+msgid "Welcome to Fluenti"
+msgstr "Fluentiへようこそ"
+
+#: ./src/pages/Home.vue:10
+msgid "This is the home page."
+msgstr "これはホームページです。"
+
+#: ./src/pages/Home.vue:11
+msgid "Hello, {name}!"
+msgstr "こんにちは、{name}さん！"
 
 msgid "Switch Language"
 msgstr "言語を切り替え"
