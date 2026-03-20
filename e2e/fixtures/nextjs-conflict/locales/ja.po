@@ -1,0 +1,14 @@
+msgid ""
+msgstr "Content-Type: text/plain; charset=utf-8\n"
+
+msgid "Welcome to Fluenti"
+msgstr "Fluentiへようこそ"
+
+msgid "Hello, {name}!"
+msgstr "こんにちは、{name}！"
+
+msgid "Server rendered"
+msgstr "サーバーレンダリング"
+
+msgid "Current server locale: {locale}"
+msgstr "サーバーロケール: {locale}"
