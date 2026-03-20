@@ -11,8 +11,12 @@ export interface WithFluentConfig {
   locales?: string[]
   /** Override `fluenti.config.ts` sourceLocale (used as defaultLocale) */
   defaultLocale?: string
+  /** Override sourceLocale — canonical name (alias for defaultLocale) */
+  sourceLocale?: string
   /** Override `fluenti.config.ts` compileOutDir */
   compiledDir?: string
+  /** Override compileOutDir — canonical name (alias for compiledDir) */
+  compileOutDir?: string
 
   /** Custom serverModule path (skip auto-generation) */
   serverModule?: string
@@ -62,6 +66,8 @@ export interface ResolvedFluentConfig {
   dateFormats?: DateFormatOptions
   numberFormats?: NumberFormatOptions
   fallbackChain?: Record<string, Locale[]>
+  /** Glob patterns for source files (from fluenti.config.ts `include`) */
+  include?: string[]
 }
 
 /**

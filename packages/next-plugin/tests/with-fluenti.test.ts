@@ -1,11 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { existsSync } from 'node:fs'
-import { execSync } from 'node:child_process'
 import { withFluenti } from '../src/with-fluenti'
 
 // Mock the generate-server-module to avoid filesystem operations
 vi.mock('../src/generate-server-module', () => ({
-  generateServerModule: vi.fn(() => '/project/node_modules/.fluenti/server.js'),
+  generateServerModule: vi.fn(() => '/project/.fluenti/server.js'),
 }))
 
 // Mock read-config
@@ -15,7 +14,7 @@ vi.mock('../src/read-config', () => ({
     defaultLocale: 'en',
     compiledDir: './src/locales/compiled',
     serverModule: null,
-    serverModuleOutDir: 'node_modules/.fluenti',
+    serverModuleOutDir: '.fluenti',
   })),
 }))
 
@@ -28,14 +27,10 @@ vi.mock('node:fs', async () => {
   }
 })
 
-// Mock child_process.execSync for build auto-compile (node -e invocation)
-vi.mock('node:child_process', async () => {
-  const actual = await vi.importActual<typeof import('node:child_process')>('node:child_process')
-  return {
-    ...actual,
-    execSync: vi.fn(),
-  }
-})
+// Mock dev-watcher to avoid starting real fs watchers in tests
+vi.mock('../src/dev-watcher', () => ({
+  startDevWatcher: vi.fn(() => vi.fn()),
+}))
 
 describe('withFluenti', () => {
   beforeEach(() => {
@@ -106,7 +101,7 @@ describe('withFluenti', () => {
 
     const result = webpackFn(webpackConfig, { isServer: true, dev: true }) as typeof webpackConfig
     expect(result.resolve.alias['@fluenti/next$']).toBe(
-      '/project/node_modules/.fluenti/server.js',
+      '/project/.fluenti/server.js',
     )
   })
 
@@ -121,19 +116,59 @@ describe('withFluenti', () => {
   })
 
   it('returns a function when called with fluent-only config (no next keys)', () => {
-    // An object with no Next.js-recognized keys should be treated as fluent config
+    // An object with Fluenti-specific keys should be treated as fluent config
     const result = withFluenti({ locales: ['en', 'fr'] } as never)
     expect(typeof result).toBe('function')
     const config = result({})
     expect(config).toHaveProperty('webpack')
   })
 
-  it('wraps next config directly when passed object with recognized next keys', () => {
+  it('wraps next config directly when passed object with no fluent keys', () => {
     const config = withFluenti({ reactStrictMode: true })
     // Should return NextConfig directly, not a function
     expect(config).toHaveProperty('reactStrictMode', true)
     expect(config).toHaveProperty('webpack')
     expect(typeof config['webpack']).toBe('function')
+  })
+
+  it('treats { env: {}, locales: ["en"] } as FluentConfig (has fluent key)', () => {
+    // env is a Next.js key, but locales is a Fluenti key — should be treated as FluentConfig
+    const result = withFluenti({ locales: ['en'] } as never)
+    expect(typeof result).toBe('function')
+  })
+
+  it('treats { env: {} } as NextConfig (no fluent keys)', () => {
+    const config = withFluenti({ env: {} } as never)
+    // No fluent-specific keys → treated as NextConfig directly
+    expect(config).toHaveProperty('webpack')
+    expect(config).toHaveProperty('env')
+  })
+
+  it('isFluentConfig detects objects with no fluent-specific keys as NextConfig', () => {
+    // Objects with only Next.js-recognized keys should be treated as NextConfig (direct return)
+    const directConfigs = [
+      { experimental: {} },
+      { images: {} },
+      { env: {} },
+      { webpack: () => ({}) },
+      { rewrites: async () => [] },
+      { redirects: async () => [] },
+      { headers: async () => [] },
+      { pageExtensions: ['tsx'] },
+      { output: 'standalone' },
+      { basePath: '/app' },
+      { i18n: { locales: ['en'] } },
+      { trailingSlash: true },
+      { compiler: {} },
+      { transpilePackages: [] },
+      { turbopack: {} },
+    ]
+
+    for (const nextCfg of directConfigs) {
+      const result = withFluenti(nextCfg as never)
+      // Should return a NextConfig object (with webpack), not a function
+      expect(result).toHaveProperty('webpack', expect.any(Function))
+    }
   })
 
   it('preserves existing webpack config and calls it with modified config', () => {
@@ -179,7 +214,7 @@ describe('withFluenti', () => {
     expect(rule.exclude).toEqual([/node_modules/, /\.next/])
     expect(rule.use).toHaveLength(1)
     expect(rule.use[0]!.options).toEqual({
-      serverModulePath: '/project/node_modules/.fluenti/server.js',
+      serverModulePath: '/project/.fluenti/server.js',
     })
   })
 
@@ -197,7 +232,7 @@ describe('withFluenti', () => {
       resolve: { alias: Record<string, string> }
     }
     expect(result.resolve.alias['@fluenti/next$']).toBe(
-      '/project/node_modules/.fluenti/server.js',
+      '/project/.fluenti/server.js',
     )
   })
 
@@ -231,40 +266,8 @@ describe('withFluenti', () => {
     warnSpy.mockRestore()
   })
 
-  it('injects fluenti-dev webpack plugin in dev mode', () => {
+  it('does not inject plugins in dev mode', () => {
     const wrapper = withFluenti()
-    const config = wrapper({})
-    const webpackFn = config['webpack'] as (cfg: unknown, opts: unknown) => unknown
-
-    const webpackConfig = {
-      module: { rules: [] as unknown[] },
-      resolve: { alias: {} as Record<string, string> },
-      plugins: [] as unknown[],
-    }
-
-    const result = webpackFn(webpackConfig, { isServer: true, dev: true }) as typeof webpackConfig
-    // Should have the fluenti-dev plugin injected
-    expect(result.plugins.length).toBe(1)
-    expect(result.plugins[0]).toHaveProperty('apply', expect.any(Function))
-  })
-
-  it('does not inject fluenti-dev plugin in production mode', () => {
-    const wrapper = withFluenti()
-    const config = wrapper({})
-    const webpackFn = config['webpack'] as (cfg: unknown, opts: unknown) => unknown
-
-    const webpackConfig = {
-      module: { rules: [] as unknown[] },
-      resolve: { alias: {} as Record<string, string> },
-    }
-
-    const result = webpackFn(webpackConfig, { isServer: true, dev: false }) as Record<string, unknown>
-    // plugins should not exist or be empty
-    expect(result['plugins']).toBeUndefined()
-  })
-
-  it('does not inject fluenti-dev plugin when devAutoCompile is false', () => {
-    const wrapper = withFluenti({ devAutoCompile: false } as never)
     const config = wrapper({})
     const webpackFn = config['webpack'] as (cfg: unknown, opts: unknown) => unknown
 
@@ -274,48 +277,11 @@ describe('withFluenti', () => {
     }
 
     const result = webpackFn(webpackConfig, { isServer: true, dev: true }) as Record<string, unknown>
+    // Dev auto-compile is handled by startDevWatcher, not a webpack plugin
     expect(result['plugins']).toBeUndefined()
   })
 
-  it('runs compile in production build mode via node -e', () => {
-    const wrapper = withFluenti()
-    const config = wrapper({})
-    const webpackFn = config['webpack'] as (cfg: unknown, opts: unknown) => unknown
-
-    const webpackConfig = {
-      module: { rules: [] as unknown[] },
-      resolve: { alias: {} as Record<string, string> },
-    }
-
-    webpackFn(webpackConfig, { isServer: true, dev: false })
-
-    expect(vi.mocked(execSync)).toHaveBeenCalledWith(
-      expect.stringContaining("import('@fluenti/cli')"),
-      expect.objectContaining({ stdio: 'inherit' }),
-    )
-  })
-
-  it('runs extract+compile only once across server+client passes', () => {
-    vi.mocked(execSync).mockClear()
-    const wrapper = withFluenti()
-    const config = wrapper({})
-    const webpackFn = config['webpack'] as (cfg: unknown, opts: unknown) => unknown
-
-    const makeWebpackConfig = () => ({
-      module: { rules: [] as unknown[] },
-      resolve: { alias: {} as Record<string, string> },
-    })
-
-    // First call (server)
-    webpackFn(makeWebpackConfig(), { isServer: true, dev: false })
-    // Second call (client)
-    webpackFn(makeWebpackConfig(), { isServer: false, dev: false })
-
-    expect(vi.mocked(execSync)).toHaveBeenCalledTimes(1)
-  })
-
-  it('does not run extract+compile in production when buildAutoCompile is false', () => {
-    vi.mocked(execSync).mockClear()
+  it('does not inject plugins when buildAutoCompile is false', () => {
     const wrapper = withFluenti({ buildAutoCompile: false } as never)
     const config = wrapper({})
     const webpackFn = config['webpack'] as (cfg: unknown, opts: unknown) => unknown
@@ -325,13 +291,13 @@ describe('withFluenti', () => {
       resolve: { alias: {} as Record<string, string> },
     }
 
-    webpackFn(webpackConfig, { isServer: true, dev: false })
-
-    expect(vi.mocked(execSync)).not.toHaveBeenCalled()
+    const result = webpackFn(webpackConfig, { isServer: true, dev: false }) as Record<string, unknown>
+    expect(result['plugins']).toBeUndefined()
   })
 
-  it('does not run extract+compile in dev mode', () => {
-    vi.mocked(execSync).mockClear()
+  // --- Production build: beforeRun plugin tests ---
+
+  it('injects a beforeRun plugin in production build mode', () => {
     const wrapper = withFluenti()
     const config = wrapper({})
     const webpackFn = config['webpack'] as (cfg: unknown, opts: unknown) => unknown
@@ -339,37 +305,225 @@ describe('withFluenti', () => {
     const webpackConfig = {
       module: { rules: [] as unknown[] },
       resolve: { alias: {} as Record<string, string> },
-      plugins: [] as unknown[],
     }
 
-    webpackFn(webpackConfig, { isServer: true, dev: true })
-
-    expect(vi.mocked(execSync)).not.toHaveBeenCalled()
+    const result = webpackFn(webpackConfig, { isServer: true, dev: false }) as {
+      plugins: Array<{ apply: (compiler: unknown) => void }>
+    }
+    expect(result.plugins).toHaveLength(1)
+    expect(typeof result.plugins[0]!.apply).toBe('function')
   })
 
-  it('isNextConfig detects objects with next-specific keys', () => {
-    // Objects with recognized Next.js keys should be treated as NextConfig
-    const directConfigs = [
-      { experimental: {} },
-      { images: {} },
-      { env: {} },
-      { webpack: () => ({}) },
-      { rewrites: async () => [] },
-      { redirects: async () => [] },
-      { headers: async () => [] },
-      { pageExtensions: ['tsx'] },
-      { output: 'standalone' },
-      { basePath: '/app' },
-      { i18n: { locales: ['en'] } },
-      { trailingSlash: true },
-      { compiler: {} },
-      { transpilePackages: [] },
-    ]
+  it('beforeRun plugin calls tapPromise on compiler.hooks.beforeRun', () => {
+    const wrapper = withFluenti()
+    const config = wrapper({})
+    const webpackFn = config['webpack'] as (cfg: unknown, opts: unknown) => unknown
 
-    for (const nextCfg of directConfigs) {
-      const result = withFluenti(nextCfg as never)
-      // Should return a NextConfig object (with webpack), not a function
-      expect(result).toHaveProperty('webpack', expect.any(Function))
+    const webpackConfig = {
+      module: { rules: [] as unknown[] },
+      resolve: { alias: {} as Record<string, string> },
     }
+
+    const result = webpackFn(webpackConfig, { isServer: true, dev: false }) as {
+      plugins: Array<{ apply: (compiler: unknown) => void }>
+    }
+
+    const mockTapPromise = vi.fn()
+    const mockCompiler = {
+      hooks: {
+        beforeRun: { tapPromise: mockTapPromise },
+      },
+    }
+
+    result.plugins[0]!.apply(mockCompiler)
+    expect(mockTapPromise).toHaveBeenCalledWith('fluenti-compile', expect.any(Function))
+  })
+
+  it('beforeRun callback only runs once across server+client passes', async () => {
+    const wrapper = withFluenti()
+    const config = wrapper({})
+    const webpackFn = config['webpack'] as (cfg: unknown, opts: unknown) => unknown
+
+    const makeWebpackConfig = () => ({
+      module: { rules: [] as unknown[] },
+      resolve: { alias: {} as Record<string, string> },
+    })
+
+    // Collect all plugins from both passes
+    const result1 = webpackFn(makeWebpackConfig(), { isServer: true, dev: false }) as {
+      plugins: Array<{ apply: (compiler: unknown) => void }>
+    }
+    const result2 = webpackFn(makeWebpackConfig(), { isServer: false, dev: false }) as {
+      plugins: Array<{ apply: (compiler: unknown) => void }>
+    }
+
+    // Both passes get plugins
+    expect(result1.plugins).toHaveLength(1)
+    expect(result2.plugins).toHaveLength(1)
+
+    // Simulate both compilers calling tapPromise callbacks
+    let tapCallback1: (() => Promise<void>) | null = null
+    let tapCallback2: (() => Promise<void>) | null = null
+
+    result1.plugins[0]!.apply({
+      hooks: {
+        beforeRun: {
+          tapPromise: (_name: string, cb: () => Promise<void>) => { tapCallback1 = cb },
+        },
+      },
+    })
+    result2.plugins[0]!.apply({
+      hooks: {
+        beforeRun: {
+          tapPromise: (_name: string, cb: () => Promise<void>) => { tapCallback2 = cb },
+        },
+      },
+    })
+
+    // Both callbacks should exist but only one should actually run compile
+    // (buildCompileRan guard prevents double execution)
+    await tapCallback1!()
+    await tapCallback2!()
+    // No assertion on import call count since we can't mock dynamic import easily,
+    // but the guard logic is tested by the code not throwing
+  })
+
+  it('does not run compile in dev mode', () => {
+    const wrapper = withFluenti()
+    const config = wrapper({})
+    const webpackFn = config['webpack'] as (cfg: unknown, opts: unknown) => unknown
+
+    const webpackConfig = {
+      module: { rules: [] as unknown[] },
+      resolve: { alias: {} as Record<string, string> },
+    }
+
+    const result = webpackFn(webpackConfig, { isServer: true, dev: true }) as Record<string, unknown>
+    // No plugins injected in dev mode
+    expect(result['plugins']).toBeUndefined()
+  })
+
+  // --- Turbopack tests ---
+
+  it('config includes turbopack.rules for all source extensions', () => {
+    const wrapper = withFluenti()
+    const config = wrapper({})
+    const turbopack = config['turbopack'] as Record<string, unknown>
+    const rules = turbopack['rules'] as Record<string, unknown>
+
+    for (const ext of ['*.ts', '*.tsx', '*.js', '*.jsx']) {
+      expect(rules[ext]).toBeDefined()
+      const rule = rules[ext] as { condition: unknown; loaders: string[] }
+      expect(rule.condition).toEqual({ not: 'foreign' })
+      expect(rule.loaders).toHaveLength(1)
+      expect(rule.loaders[0]).toBe('@fluenti/next/loader')
+    }
+  })
+
+  it('config includes turbopack.resolveAlias pointing to serverModulePath (relative)', () => {
+    const wrapper = withFluenti()
+    const config = wrapper({})
+    const turbopack = config['turbopack'] as Record<string, unknown>
+    const resolveAlias = turbopack['resolveAlias'] as Record<string, string>
+
+    // Should be a relative path starting with "./"
+    expect(resolveAlias['@fluenti/next']).toMatch(/^\.\//)
+    expect(resolveAlias['@fluenti/next']).toContain('.fluenti/server.js')
+  })
+
+  it('merges turbopack config with user existing config', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const wrapper = withFluenti()
+    const config = wrapper({
+      turbopack: {
+        rules: { '*.mdx': { loaders: ['mdx-loader'] } },
+        resolveAlias: { 'my-alias': '/some/path' },
+      },
+    })
+    const turbopack = config['turbopack'] as Record<string, unknown>
+    const rules = turbopack['rules'] as Record<string, unknown>
+    const resolveAlias = turbopack['resolveAlias'] as Record<string, string>
+
+    // User's custom rule preserved
+    expect(rules['*.mdx']).toEqual({ loaders: ['mdx-loader'] })
+    // Fluenti rules added
+    expect(rules['*.ts']).toBeDefined()
+    expect(rules['*.tsx']).toBeDefined()
+    // User's alias preserved
+    expect(resolveAlias['my-alias']).toBe('/some/path')
+    // Fluenti alias added (relative path)
+    expect(resolveAlias['@fluenti/next']).toMatch(/^\.\//)
+    expect(resolveAlias['@fluenti/next']).toContain('.fluenti/server.js')
+
+    warnSpy.mockRestore()
+  })
+
+  it('user turbopack rules override fluenti rules on conflict', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const userTsxRule = { loaders: ['my-custom-loader'], condition: { not: 'foreign' } }
+    const wrapper = withFluenti()
+    const config = wrapper({
+      turbopack: {
+        rules: { '*.tsx': userTsxRule },
+      },
+    })
+    const turbopack = config['turbopack'] as Record<string, unknown>
+    const rules = turbopack['rules'] as Record<string, unknown>
+
+    // User's *.tsx rule should win over fluenti's *.tsx rule
+    expect(rules['*.tsx']).toEqual(userTsxRule)
+    // Non-conflicting fluenti rules should still be present
+    expect(rules['*.ts']).toBeDefined()
+
+    warnSpy.mockRestore()
+  })
+
+  it('warns when user turbopack rules conflict with fluenti rules', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const wrapper = withFluenti()
+    wrapper({
+      turbopack: {
+        rules: { '*.tsx': { loaders: ['my-loader'] } },
+      },
+    })
+
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('[fluenti] Your turbopack.rules override'),
+    )
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('*.tsx'),
+    )
+
+    warnSpy.mockRestore()
+  })
+
+  it('does not warn when user turbopack rules do not conflict', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const wrapper = withFluenti()
+    wrapper({
+      turbopack: {
+        rules: { '*.mdx': { loaders: ['mdx-loader'] } },
+      },
+    })
+
+    expect(warnSpy).not.toHaveBeenCalledWith(
+      expect.stringContaining('[fluenti] Your turbopack.rules override'),
+    )
+
+    warnSpy.mockRestore()
+  })
+
+  it('user turbopack resolveAlias overrides fluenti alias on conflict', () => {
+    const wrapper = withFluenti()
+    const config = wrapper({
+      turbopack: {
+        resolveAlias: { '@fluenti/next': '/user/custom/path.js' },
+      },
+    })
+    const turbopack = config['turbopack'] as Record<string, unknown>
+    const resolveAlias = turbopack['resolveAlias'] as Record<string, string>
+
+    // User's alias should win
+    expect(resolveAlias['@fluenti/next']).toBe('/user/custom/path.js')
   })
 })

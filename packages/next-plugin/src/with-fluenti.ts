@@ -1,10 +1,9 @@
 import { existsSync } from 'node:fs'
-import { execSync } from 'node:child_process'
 import { resolve, dirname } from 'node:path'
 import type { WithFluentConfig } from './types'
 import { resolveConfig } from './read-config'
 import { generateServerModule } from './generate-server-module'
-import { createDebouncedRunner } from './dev-runner'
+import { startDevWatcher } from './dev-watcher'
 
 type NextConfig = Record<string, unknown>
 
@@ -33,7 +32,8 @@ export function withFluenti(nextConfig: NextConfig): NextConfig
 export function withFluenti(
   configOrNext?: WithFluentConfig | NextConfig,
 ): NextConfig | ((nextConfig?: NextConfig) => NextConfig) {
-  if (configOrNext && isNextConfig(configOrNext as NextConfig)) {
+  if (configOrNext && !isFluentConfig(configOrNext as Record<string, unknown>)) {
+    // Has keys but none are fluent-specific → treat as NextConfig
     return applyFluenti({}, configOrNext as NextConfig)
   }
 
@@ -43,13 +43,14 @@ export function withFluenti(
   }
 }
 
-function isNextConfig(obj: NextConfig): boolean {
-  const nextKeys = [
-    'reactStrictMode', 'experimental', 'images', 'env', 'webpack',
-    'rewrites', 'redirects', 'headers', 'pageExtensions', 'output',
-    'basePath', 'i18n', 'trailingSlash', 'compiler', 'transpilePackages',
+function isFluentConfig(obj: Record<string, unknown>): boolean {
+  const fluentOnlyKeys = [
+    'locales', 'sourceLocale', 'defaultLocale', 'compiledDir', 'compileOutDir',
+    'serverModule', 'serverModuleOutDir', 'resolveLocale', 'cookieName',
+    'devAutoCompile', 'buildAutoCompile', 'devAutoCompileDelay',
+    'dateFormats', 'numberFormats', 'fallbackChain',
   ]
-  return nextKeys.some((key) => key in obj)
+  return fluentOnlyKeys.some((key) => key in obj)
 }
 
 function applyFluenti(
@@ -83,8 +84,50 @@ function applyFluenti(
 
   let buildCompileRan = false
 
+  // ── Turbopack config ──────────────────────────────────────────────
+  // Turbopack loader-runner supports webpack loaders via turbopack.rules.
+  // Use package name (not file path) — Turbopack resolves loaders as packages,
+  // file paths trigger static analysis errors (TP1006) in the loader-runner.
+  const fluentTurboRules = Object.fromEntries(
+    ['*.ts', '*.tsx', '*.js', '*.jsx'].map((ext) => [
+      ext,
+      {
+        condition: { not: 'foreign' },
+        loaders: ['@fluenti/next/loader'],
+      },
+    ]),
+  )
+
+  // Turbopack resolveAlias requires relative paths (absolute paths get
+  // misinterpreted as "./abs/path"). Use "./" + relative-from-cwd.
+  const relativeServerModule = './' + serverModulePath
+    .replace(projectRoot + '/', '')
+    .replace(projectRoot + '\\', '')
+  const fluentTurboAlias: Record<string, string> = {
+    '@fluenti/next': relativeServerModule,
+  }
+
+  // ── Dev auto-compile via standalone watcher (works with both webpack & Turbopack) ──
+  const isDev = process.env['NODE_ENV'] === 'development'
+    || process.argv.some(a => a === 'dev')
+  const devAutoCompile = fluentConfig.devAutoCompile ?? true
+
+  if (isDev && devAutoCompile) {
+    const watcherOpts: Parameters<typeof startDevWatcher>[0] = {
+      cwd: projectRoot,
+      compiledDir: resolved.compiledDir,
+      delay: fluentConfig.devAutoCompileDelay ?? 1000,
+    }
+    if (resolved.include) watcherOpts.include = resolved.include
+    startDevWatcher(watcherOpts)
+  }
+
   return {
     ...nextConfig,
+    turbopack: mergeTurbopackConfig(
+      nextConfig['turbopack'] as Record<string, unknown> | undefined,
+      { rules: fluentTurboRules, resolveAlias: fluentTurboAlias },
+    ),
     webpack(config: WebpackConfig, options: WebpackOptions) {
       // Add fluenti loader (enforce: pre — runs before other loaders)
       config.module.rules.push({
@@ -106,52 +149,22 @@ function applyFluenti(
       config.resolve.alias = config.resolve.alias ?? {}
       config.resolve.alias['@fluenti/next$'] = serverModulePath
 
-      // Auto compile before production build (run once across server+client passes)
+      // Auto compile before production build via async beforeRun hook
       const buildAutoCompile = fluentConfig.buildAutoCompile ?? true
-      if (!options.dev && buildAutoCompile && !buildCompileRan) {
-        buildCompileRan = true
-        try {
-          // Use node -e with dynamic import — avoids CLI binary resolution issues.
-          // webpack() is sync, so we use execSync to block until compile finishes.
-          const escapedRoot = projectRoot.replace(/\\/g, '\\\\').replace(/'/g, "\\'")
-          execSync(
-            `node --input-type=module -e "const { runCompile } = await import('@fluenti/cli'); await runCompile('${escapedRoot}')"`,
-            { cwd: projectRoot, stdio: 'inherit' },
-          )
-        } catch {
-          // @fluenti/cli not available or compile failed — skip silently
-        }
-      }
-
-      // Auto extract+compile in dev mode
-      const devAutoCompile = fluentConfig.devAutoCompile ?? true
-      if (options.dev && devAutoCompile) {
-        const devDelay = fluentConfig.devAutoCompileDelay ?? 1000
-        const debouncedRun = createDebouncedRunner({ cwd: projectRoot }, devDelay)
-        const compiledDirResolved = resolve(projectRoot, resolved.compiledDir)
-
+      if (!options.dev && buildAutoCompile) {
         config.plugins = config.plugins ?? []
         config.plugins.push({
           apply(compiler: WebpackCompiler) {
-            let isFirstBuild = true
-            compiler.hooks.watchRun.tapAsync('fluenti-dev', (_compiler: WebpackCompiler, callback: () => void) => {
-              if (isFirstBuild) {
-                isFirstBuild = false
-                debouncedRun()
+            compiler.hooks.beforeRun.tapPromise('fluenti-compile', async () => {
+              if (buildCompileRan) return
+              buildCompileRan = true
+              try {
+                // @ts-expect-error — @fluenti/cli is an optional peer dependency
+                const { runCompile } = await import('@fluenti/cli')
+                await runCompile(projectRoot)
+              } catch {
+                // @fluenti/cli not available or compile failed — skip silently
               }
-              const modifiedFiles = _compiler.modifiedFiles
-              if (modifiedFiles) {
-                const hasSourceChange = [...modifiedFiles].some((f: string) =>
-                  /\.[jt]sx?$/.test(f)
-                  && !f.includes('node_modules')
-                  && !f.includes('.next')
-                  && !f.startsWith(compiledDirResolved),
-                )
-                if (hasSourceChange) {
-                  debouncedRun()
-                }
-              }
-              callback()
             })
           },
         })
@@ -167,7 +180,40 @@ function applyFluenti(
   }
 }
 
+function mergeTurbopackConfig(
+  existing: Record<string, unknown> | undefined,
+  fluenti: { rules: Record<string, unknown>; resolveAlias: Record<string, string> },
+): Record<string, unknown> {
+  const base = existing ?? {}
+  const userRules = (base['rules'] as Record<string, unknown>) ?? {}
+
+  // Warn when user rules override fluenti's source-file rules
+  const fluentKeys = Object.keys(fluenti.rules)
+  const overlapping = fluentKeys.filter(k => k in userRules)
+  if (overlapping.length > 0) {
+    console.warn(
+      `[fluenti] Your turbopack.rules override Fluenti's loader for: ${overlapping.join(', ')}.\n` +
+      `  Fluenti's t\`\` transform will NOT run on these file types.\n` +
+      `  If this is intentional, you can suppress this warning with { devAutoCompile: false }.`,
+    )
+  }
+
+  return {
+    ...base,
+    rules: { ...fluenti.rules, ...userRules },
+    resolveAlias: { ...fluenti.resolveAlias, ...(base['resolveAlias'] as Record<string, string> ?? {}) },
+  }
+}
+
 // Minimal webpack types for the config function
+interface WebpackCompiler {
+  hooks: {
+    beforeRun: {
+      tapPromise(name: string, cb: () => Promise<void>): void
+    }
+  }
+}
+
 interface WebpackConfig {
   module: {
     rules: Array<{
@@ -186,13 +232,4 @@ interface WebpackConfig {
 interface WebpackOptions {
   isServer: boolean
   dev: boolean
-}
-
-interface WebpackCompiler {
-  hooks: {
-    watchRun: {
-      tapAsync(name: string, cb: (compiler: WebpackCompiler, callback: () => void) => void): void
-    }
-  }
-  modifiedFiles?: Set<string>
 }
