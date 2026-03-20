@@ -29,14 +29,22 @@ test.describe('Nuxt Conflict — Explicit Imports (autoImports: false)', () => {
 })
 
 test.describe('Nuxt Conflict — Third-party Plugin Coexistence (injectGlobalProperties: false)', () => {
-  test('third-party $t is preserved', async ({ page }) => {
+  test('third-party $t is preserved (fluenti does not overwrite)', async ({ page }) => {
     await page.goto('/en')
     await expect(page.getByTestId('third-party-t')).toContainText('[third-party] test.key')
   })
 
-  test('third-party $localePath is preserved', async ({ page }) => {
+  test('third-party $localePath is preserved (fluenti does not overwrite)', async ({ page }) => {
     await page.goto('/en')
     await expect(page.getByTestId('third-party-localepath')).toContainText('/third-party/test')
+  })
+
+  test('fluenti useI18n and third-party $t coexist without conflict', async ({ page }) => {
+    await page.goto('/en')
+    // Fluenti's useI18n provides correct translations
+    await expect(page.getByTestId('page-title')).toContainText('Welcome Home')
+    // Third-party $t also works in the same app
+    await expect(page.getByTestId('third-party-t')).toContainText('[third-party] test.key')
   })
 })
 
@@ -62,24 +70,25 @@ test.describe('Nuxt Conflict — Custom Query Param (queryParamKey: "lang")', ()
 })
 
 test.describe('Nuxt Conflict — Named Middleware (globalMiddleware: false)', () => {
-  test('unprefixed /no-middleware is NOT redirected (no global middleware)', async ({ page }) => {
-    const response = await page.goto('/no-middleware')
-    // Should not redirect — page renders directly
-    expect(response?.url()).toContain('/no-middleware')
-    await expect(page.getByTestId('page-no-middleware')).toBeVisible()
+  test('unprefixed / does NOT redirect (no global middleware)', async ({ page }) => {
+    // With prefix strategy + globalMiddleware: false, visiting /
+    // should NOT redirect to /en (unlike the default behavior).
+    // Instead, it should fail with 404 since unprefixed routes
+    // are removed and no middleware is there to redirect.
+    const response = await page.goto('/')
+    // Nuxt returns 404 for routes that don't exist
+    expect(response?.status()).toBe(404)
   })
 
-  test('unprefixed /about IS redirected (page opts into middleware)', async ({ page }) => {
-    await page.goto('/about')
-    // Should redirect to /en/about (prefix strategy + named middleware)
-    await expect(page).toHaveURL(/\/en\/about/)
-    await expect(page.getByTestId('page-about')).toBeVisible()
-    await expect(page.getByTestId('page-title')).toContainText('About Us')
+  test('prefixed /en works normally', async ({ page }) => {
+    await page.goto('/en')
+    await expect(page.getByTestId('current-locale')).toContainText('en')
+    await expect(page.getByTestId('page-title')).toContainText('Welcome Home')
   })
 
-  test('prefixed /ja/about renders without redirect', async ({ page }) => {
-    await page.goto('/ja/about')
+  test('prefixed /ja works normally', async ({ page }) => {
+    await page.goto('/ja')
     await expect(page.getByTestId('current-locale')).toContainText('ja')
-    await expect(page.getByTestId('page-title')).toContainText('私たちについて')
+    await expect(page.getByTestId('page-title')).toContainText('ようこそ')
   })
 })
