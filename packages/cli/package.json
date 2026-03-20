@@ -27,6 +27,10 @@
     ".": {
       "import": { "types": "./dist/index.d.ts", "default": "./dist/index.js" },
       "require": { "types": "./dist/index.d.ts", "default": "./dist/index.cjs" }
+    },
+    "./vue-extractor": {
+      "import": { "types": "./dist/vue-extractor.d.ts", "default": "./dist/vue-extractor.js" },
+      "require": { "types": "./dist/vue-extractor.d.ts", "default": "./dist/vue-extractor.cjs" }
     }
   },
   "files": ["dist"],
@@ -43,6 +47,14 @@
     "fast-glob": "^3",
     "gettext-parser": "^9",
     "jiti": "^2"
+  },
+  "peerDependencies": {
+    "@vue/compiler-sfc": "^3.5"
+  },
+  "peerDependenciesMeta": {
+    "@vue/compiler-sfc": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "typescript": "^5.9",

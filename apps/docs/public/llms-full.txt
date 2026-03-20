@@ -422,8 +422,8 @@ fluenti migrate [--from vue-i18n|nuxt-i18n|react-i18next|next-intl|next-i18next|
 ### Programmatic API
 
 ```ts
+import { extractFromVue } from '@fluenti/cli/vue-extractor'
 import {
-  extractFromVue,
   extractFromTsx,
   updateCatalog,
   compileCatalog,
