@@ -1,106 +1,152 @@
 msgid ""
 msgstr "Content-Type: text/plain; charset=utf-8\n"
 
+#: ./src/components/Nav.tsx:20
 msgid "Home"
 msgstr "ホーム"
 
+#: ./src/components/Nav.tsx:21
 msgid "About"
 msgstr "概要"
 
+#: ./src/components/Nav.tsx:22
 msgid "Plurals"
 msgstr "複数形"
 
-msgid "Welcome to Fluenti"
-msgstr "Fluenti へようこそ"
-
-msgid "This is the home page."
-msgstr "こちらはホームページです。"
-
-msgid "Hello, {name}!"
-msgstr "こんにちは、{name}さん！"
-
-msgid "About our project"
-msgstr "私たちのプロジェクトについて"
-
-msgid "Learn more about Fluenti."
-msgstr "Fluenti についてもっと学びましょう。"
-
-msgid "Contact us at {email}"
-msgstr "お問い合わせ：{email}"
-
-msgid "Add"
-msgstr "追加"
-
-msgid "Reset"
-msgstr "リセット"
-
+#: ./src/components/Nav.tsx:23
 msgid "RSC"
 msgstr "RSC"
 
+#: ./src/components/Nav.tsx:24
 msgid "Metadata"
 msgstr "メタデータ"
 
+#: ./src/app/streaming/page.tsx:14
 msgid "Streaming"
 msgstr "ストリーミング"
 
+#: ./src/components/Nav.tsx:26
 msgid "Actions"
 msgstr "アクション"
 
-msgid "Server rendered"
-msgstr "サーバーレンダリング"
-
-msgid "This page is a React Server Component."
-msgstr "このページは React サーバーコンポーネントです。"
-
-msgid "Current server locale: {locale}"
-msgstr "現在のサーバーロケール：{locale}"
-
-msgid "Metadata Page"
-msgstr "メタデータページ"
-
-msgid "This page has translated metadata."
-msgstr "このページには翻訳されたメタデータがあります。"
-
-msgid "Streamed content loaded!"
-msgstr "ストリーミングコンテンツが読み込まれました！"
-
-msgid "Server Action Demo"
-msgstr "サーバーアクションデモ"
-
-msgid "Submit"
-msgstr "送信"
-
-msgid "Server says: {result}"
-msgstr "サーバーの応答：{result}"
-
-msgid "Hello from server action"
-msgstr "サーバーアクションからこんにちは"
-
+#: ./src/components/Nav.tsx:27
 msgid "Rich Text"
 msgstr "リッチテキスト"
 
+#: ./src/app/rsc-richtext/page.tsx:6
+msgid "RSC Rich Text"
+msgstr ""
+
+#: ./src/components/Nav.tsx:29
 msgid "Fallback"
 msgstr "フォールバック"
 
+#: ./src/app/fallback/page.tsx:15
+msgid "Welcome to Fluenti"
+msgstr "Fluenti へようこそ"
+
+#: ./src/app/page.tsx:11
+msgid "This is the home page."
+msgstr "こちらはホームページです。"
+
+#: ./src/app/page.tsx:12
+msgid "Hello, {name}!"
+msgstr "こんにちは、{name}さん！"
+
+#: ./src/app/about/page.tsx:10
+msgid "About our project"
+msgstr "私たちのプロジェクトについて"
+
+#: ./src/app/about/page.tsx:11
+msgid "Learn more about Fluenti."
+msgstr "Fluenti についてもっと学びましょう。"
+
+#: ./src/app/about/page.tsx:12
+msgid "Contact us at {email}"
+msgstr "お問い合わせ：{email}"
+
+#: ./src/app/fallback/page.tsx:10
 msgid "Fallback Demo"
 msgstr "フォールバックデモ"
 
-#. msg`Rich Text Demos`
-msgid "1x4v5ca"
-msgstr "リッチテキストデモ"
+#: ./src/app/fallback/page.tsx:13
+msgid "This text is only translated in English"
+msgstr ""
 
-#. msg`Components for complex translations`
-msgid "1kjrwe6"
-msgstr "複雑な翻訳のためのコンポーネント"
+#: ./src/app/metadata/page.tsx:16
+msgid "Metadata Page"
+msgstr "メタデータページ"
 
-#. Trans: Read the <a>documentation</a> for more info.
-msgid "18r06yp"
+#: ./src/app/metadata/page.tsx:17
+msgid "This page has translated metadata."
+msgstr "このページには翻訳されたメタデータがあります。"
+
+#: ./src/app/plurals/page.tsx:14
+msgid "{count, plural, =0 {No messages} one {# message} other {# messages}}"
+msgstr ""
+
+#: ./src/app/plurals/page.tsx:23
+msgid "Add"
+msgstr "追加"
+
+#: ./src/app/plurals/page.tsx:26
+msgid "Reset"
+msgstr "リセット"
+
+#: ./src/app/rsc-richtext/page.tsx:9
+msgid "Read the <0>documentation</0> for more info."
 msgstr "<0>ドキュメント</0>で詳細をご覧ください。"
 
-#. Trans: This is <strong>important</strong> information.
-msgid "p3nupq"
+#: ./src/app/rsc-richtext/page.tsx:13
+msgid "This is <0>important</0> information."
 msgstr "これは<0>重要な</0>情報です。"
 
-#. Trans: Please <a>sign in</a> or <strong>register</strong> to continue.
-msgid "166utyv"
+#: ./src/app/richtext/page.tsx:28
+msgid "Please <0>sign in</0> or <1>register</1> to continue."
 msgstr "<0>サインイン</0>するか、<1>登録</1>して続けてください。"
+
+#: ./src/app/rsc/page.tsx:11
+msgid "Server rendered"
+msgstr "サーバーレンダリング"
+
+#: ./src/app/rsc/page.tsx:12
+msgid "This page is a React Server Component."
+msgstr "このページは React サーバーコンポーネントです。"
+
+#: ./src/app/rsc/page.tsx:13
+msgid "Current server locale: {locale}"
+msgstr "現在のサーバーロケール：{locale}"
+
+#: ./src/app/rsc-richtext/page.tsx:17
+msgid "{5, plural, one {# item} other {# items}}"
+msgstr ""
+
+#: ./src/app/rsc-richtext/page.tsx:21
+msgid "{0, plural, =0 {No items} one {# item} other {# items}}"
+msgstr ""
+
+#: ./src/app/server-action/actions.ts:6
+msgid "Hello from server action"
+msgstr "サーバーアクションからこんにちは"
+
+#: ./src/app/server-action/page.tsx:13
+msgid "Server Action Demo"
+msgstr "サーバーアクションデモ"
+
+#: ./src/app/server-action/page.tsx:21
+msgid "Submit"
+msgstr "送信"
+
+#: ./src/app/server-action/page.tsx:24
+msgid "Server says: {result}"
+msgstr "サーバーの応答：{result}"
+
+#: ./src/app/streaming/page.tsx:7
+msgid "Streamed content loaded!"
+msgstr "ストリーミングコンテンツが読み込まれました！"
+
+msgid "Rich Text Demos"
+msgstr "リッチテキストデモ"
+
+msgid "Components for complex translations"
+msgstr "複雑な翻訳のためのコンポーネント"
