@@ -1,0 +1,23 @@
+{
+  "name": "e2e-nextjs-conflict",
+  "private": true,
+  "scripts": {
+    "compile": "fluenti compile",
+    "build": "next build",
+    "start": "next start"
+  },
+  "dependencies": {
+    "@fluenti/cli": "workspace:*",
+    "@fluenti/core": "workspace:*",
+    "@fluenti/next": "workspace:*",
+    "@fluenti/react": "workspace:*",
+    "next": "^15",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "typescript": "^5.9"
+  }
+}

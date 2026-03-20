@@ -25,6 +25,8 @@ const serverMap: Record<string, { command: string; port: number; timeout?: numbe
   'vue-no-plugin':   { command: 'cd e2e/fixtures/vue-no-plugin && pnpm build && pnpm preview --port 5194', port: 5194 },
   'splitting-solid': { command: 'cd e2e/fixtures/solid-splitting && pnpm build && pnpm preview --port 5195', port: 5195, timeout: 120_000 },
   'nextjs-routes':   { command: 'cd e2e/fixtures/nextjs-routes && pnpm build && pnpm start -p 5196', port: 5196, timeout: 120_000 },
+  'nuxt-conflict':   { command: 'cd e2e/fixtures/nuxt-conflict && pnpm build && pnpm preview --port 5197', port: 5197, timeout: 120_000 },
+  'nextjs-conflict': { command: 'cd e2e/fixtures/nextjs-conflict && pnpm build && pnpm start -p 5198', port: 5198, timeout: 120_000 },
 }
 
 // Filter webServers to only those needed by the selected projects.
@@ -72,6 +74,8 @@ export default defineConfig({
     { name: 'vue-no-plugin', use: { baseURL: 'http://localhost:5194' }, testMatch: '**/vue-no-plugin.spec.ts' },
     { name: 'splitting-solid', use: { baseURL: 'http://localhost:5195' }, testMatch: '**/splitting-solid.spec.ts' },
     { name: 'nextjs-routes', use: { baseURL: 'http://localhost:5196' }, testMatch: '**/nextjs-routes.spec.ts' },
+    { name: 'nuxt-conflict', use: { baseURL: 'http://localhost:5197' }, testMatch: '**/nuxt-conflict.spec.ts' },
+    { name: 'nextjs-conflict', use: { baseURL: 'http://localhost:5198' }, testMatch: '**/nextjs-conflict.spec.ts' },
   ],
   webServer,
 })
