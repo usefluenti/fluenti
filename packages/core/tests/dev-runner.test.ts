@@ -41,7 +41,7 @@ describe('runExtractCompile', () => {
     await runExtractCompile({ cwd: '/project' })
 
     expect(mockExec).toHaveBeenCalledWith(
-      'npx fluenti extract && npx fluenti compile',
+      'npx @fluenti/cli extract && npx @fluenti/cli compile',
       { cwd: '/project' },
       expect.any(Function),
     )

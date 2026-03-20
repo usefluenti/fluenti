@@ -1,19 +1,23 @@
 {
   "147gn91": {
     "message": "Switch Language",
-    "translation": "言語を切り替え"
+    "translation": "言語を切り替え",
+    "origin": "./src/App.tsx:32"
   },
   "1kjapm1": {
     "message": "Welcome to Fluenti",
-    "translation": "Fluentiへようこそ"
+    "translation": "Fluentiへようこそ",
+    "origin": "./src/App.tsx:33"
   },
   "yvn7bx": {
     "message": "Hello, {name}!",
-    "translation": "こんにちは、{name}さん！"
+    "translation": "こんにちは、{name}さん！",
+    "origin": "./src/App.tsx:34"
   },
   "cart-count": {
     "message": "{count, plural, =0 {No items} one {# item} other {# items}}",
-    "translation": "{count, plural, =0 {アイテムはありません} one {# 件} other {# 件}}"
+    "translation": "{count, plural, =0 {アイテムはありません} one {# 件} other {# 件}}",
+    "origin": "./src/App.tsx:36"
   },
   "role-select": {
     "message": "{value, select, admin {Administrator} user {User} other {Guest}}",
