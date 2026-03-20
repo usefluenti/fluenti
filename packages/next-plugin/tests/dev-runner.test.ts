@@ -72,7 +72,7 @@ describe('resolveCliBin', () => {
 })
 
 describe('runExtractCompile', () => {
-  it('calls runCompile in compileOnly mode', async () => {
+  it('calls runCompile in compileOnly mode (named export)', async () => {
     await runExtractCompile({ cwd: '/project', compileOnly: true })
     expect(mockRunCompile).toHaveBeenCalledWith('/project')
     expect(mockExec).not.toHaveBeenCalled()

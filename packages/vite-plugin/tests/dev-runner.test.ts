@@ -84,7 +84,7 @@ describe('resolveCliBin', () => {
 
 describe('runExtractCompile', () => {
   describe('compileOnly mode (in-process)', () => {
-    it('calls runCompile from @fluenti/cli', async () => {
+    it('calls runCompile from @fluenti/cli (named export)', async () => {
       await runExtractCompile({ cwd: '/project', compileOnly: true })
 
       expect(mockRunCompile).toHaveBeenCalledWith('/project')
