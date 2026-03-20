@@ -35,6 +35,8 @@ export default defineNuxtModule<FluentNuxtOptions>({
       strategy: options.strategy ?? 'prefix_except_default',
       detectBrowserLanguage: options.detectBrowserLanguage,
       detectOrder,
+      queryParamKey: options.queryParamKey ?? 'locale',
+      injectGlobalProperties: options.injectGlobalProperties !== false,
     }
 
     // --- Auto-register @fluenti/vite-plugin ---
@@ -74,17 +76,19 @@ export default defineNuxtModule<FluentNuxtOptions>({
       addRouteMiddleware({
         name: 'fluenti-locale-redirect',
         path: resolve('./runtime/middleware/locale-redirect'),
-        global: true,
+        global: options.globalMiddleware !== false,
       })
     }
 
     // --- Auto-import composables ---
-    addImports([
-      { name: 'useLocalePath', from: resolve('./runtime/composables') },
-      { name: 'useSwitchLocalePath', from: resolve('./runtime/composables') },
-      { name: 'useLocaleHead', from: resolve('./runtime/composables') },
-      { name: 'useI18n', from: '@fluenti/vue' },
-    ])
+    if (options.autoImports !== false) {
+      addImports([
+        { name: 'useLocalePath', from: resolve('./runtime/composables') },
+        { name: 'useSwitchLocalePath', from: resolve('./runtime/composables') },
+        { name: 'useLocaleHead', from: resolve('./runtime/composables') },
+        { name: 'useI18n', from: '@fluenti/vue' },
+      ])
+    }
 
     // --- Register NuxtLinkLocale component ---
     const prefix = options.componentPrefix ?? ''
