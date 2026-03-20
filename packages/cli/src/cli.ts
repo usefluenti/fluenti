@@ -15,44 +15,8 @@ import { translateCatalog } from './translate'
 import type { AIProvider } from './translate'
 import { runMigrate } from './migrate'
 import { runInit } from './init'
-import type { ExtractedMessage, FluentiConfig } from '@fluenti/core'
-
-const defaultConfig: FluentiConfig = {
-  sourceLocale: 'en',
-  locales: ['en'],
-  catalogDir: './locales',
-  format: 'po',
-  include: ['./src/**/*.{vue,tsx,jsx,ts,js}'],
-  compileOutDir: './src/locales/compiled',
-}
-
-async function loadConfig(configPath?: string): Promise<FluentiConfig> {
-  const paths = configPath
-    ? [resolve(configPath)]
-    : [
-        resolve('fluenti.config.ts'),
-        resolve('fluenti.config.js'),
-        resolve('fluenti.config.mjs'),
-      ]
-
-  for (const p of paths) {
-    if (existsSync(p)) {
-      try {
-        const { createJiti } = await import('jiti')
-        const jiti = createJiti(import.meta.url)
-        const mod = await jiti.import(p) as { default?: Partial<FluentiConfig> }
-        const userConfig = mod.default ?? mod as unknown as Partial<FluentiConfig>
-        return { ...defaultConfig, ...userConfig }
-      } catch (e) {
-        consola.error(`Failed to load config from ${p}`)
-        consola.error(e instanceof Error ? e.message : String(e))
-        process.exit(1)
-      }
-    }
-  }
-
-  return defaultConfig
-}
+import { loadConfig } from './config-loader'
+import type { ExtractedMessage } from '@fluenti/core'
 
 function readCatalog(filePath: string, format: 'json' | 'po'): CatalogData {
   if (!existsSync(filePath)) return {}
