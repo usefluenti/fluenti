@@ -9,6 +9,7 @@ vi.mock('@fluenti/core/internal', async () => {
   return {
     ...actual,
     runExtractCompile: vi.fn(() => Promise.resolve()),
+    resolveCliBin: vi.fn(() => '/project/node_modules/.bin/fluenti'),
   }
 })
 

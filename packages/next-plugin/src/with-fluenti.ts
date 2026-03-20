@@ -4,7 +4,7 @@ import { resolve, dirname } from 'node:path'
 import type { WithFluentConfig } from './types'
 import { resolveConfig } from './read-config'
 import { generateServerModule } from './generate-server-module'
-import { createDebouncedRunner } from '@fluenti/core/internal'
+import { createDebouncedRunner, resolveCliBin } from '@fluenti/core/internal'
 
 type NextConfig = Record<string, unknown>
 
@@ -110,10 +110,13 @@ function applyFluenti(
       const buildAutoCompile = fluentConfig.buildAutoCompile ?? true
       if (!options.dev && buildAutoCompile && !buildCompileRan) {
         buildCompileRan = true
-        execSync('node_modules/.bin/fluenti compile', {
-          cwd: projectRoot,
-          stdio: 'inherit',
-        })
+        const cliBin = resolveCliBin(projectRoot)
+        if (cliBin) {
+          execSync(`${cliBin} compile`, {
+            cwd: projectRoot,
+            stdio: 'inherit',
+          })
+        }
       }
 
       // Auto extract+compile in dev mode

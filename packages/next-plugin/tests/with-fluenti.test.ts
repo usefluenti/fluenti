@@ -37,6 +37,15 @@ vi.mock('node:child_process', async () => {
   }
 })
 
+// Mock resolveCliBin to return a fake path (CLI "installed")
+vi.mock('@fluenti/core/internal', async () => {
+  const actual = await vi.importActual<typeof import('@fluenti/core/internal')>('@fluenti/core/internal')
+  return {
+    ...actual,
+    resolveCliBin: vi.fn(() => '/project/node_modules/.bin/fluenti'),
+  }
+})
+
 describe('withFluenti', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -290,7 +299,7 @@ describe('withFluenti', () => {
     webpackFn(webpackConfig, { isServer: true, dev: false })
 
     expect(vi.mocked(execSync)).toHaveBeenCalledWith(
-      'node_modules/.bin/fluenti compile',
+      '/project/node_modules/.bin/fluenti compile',
       expect.objectContaining({ stdio: 'inherit' }),
     )
   })

@@ -1,17 +1,36 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { runExtractCompile, createDebouncedRunner } from '../src/dev-runner'
+import { runExtractCompile, createDebouncedRunner, resolveCliBin } from '../src/dev-runner'
 
 vi.mock('node:child_process', () => ({
   exec: vi.fn(),
 }))
 
+vi.mock('node:fs', async () => {
+  const actual = await vi.importActual<typeof import('node:fs')>('node:fs')
+  return {
+    ...actual,
+    existsSync: vi.fn((p: string) => {
+      // Simulate CLI binary existing at /project/node_modules/.bin/fluenti
+      if (typeof p === 'string' && p.includes('node_modules/.bin/fluenti')) return true
+      return false
+    }),
+  }
+})
+
 import { exec } from 'node:child_process'
+import { existsSync } from 'node:fs'
 
 const mockExec = vi.mocked(exec)
+const mockExistsSync = vi.mocked(existsSync)
 
 beforeEach(() => {
   vi.clearAllMocks()
   vi.useFakeTimers()
+  // Re-apply default mock for existsSync
+  mockExistsSync.mockImplementation((p: unknown) => {
+    if (typeof p === 'string' && p.includes('node_modules/.bin/fluenti')) return true
+    return false
+  })
 })
 
 afterEach(() => {
@@ -34,14 +53,25 @@ function simulateExecFailure(msg = 'compile error'): void {
   })
 }
 
+describe('resolveCliBin', () => {
+  it('returns bin path when found', () => {
+    expect(resolveCliBin('/project')).toContain('node_modules/.bin/fluenti')
+  })
+
+  it('returns null when not found', () => {
+    mockExistsSync.mockReturnValue(false)
+    expect(resolveCliBin('/project')).toBeNull()
+  })
+})
+
 describe('runExtractCompile', () => {
-  it('calls exec with correct command and cwd', async () => {
+  it('calls exec with resolved bin path and cwd', async () => {
     simulateExecSuccess()
 
     await runExtractCompile({ cwd: '/project' })
 
     expect(mockExec).toHaveBeenCalledWith(
-      'node_modules/.bin/fluenti extract && node_modules/.bin/fluenti compile',
+      expect.stringContaining('fluenti extract'),
       { cwd: '/project' },
       expect.any(Function),
     )
@@ -86,6 +116,27 @@ describe('runExtractCompile', () => {
     expect(onError).not.toHaveBeenCalled()
     expect(warnSpy).not.toHaveBeenCalled()
     warnSpy.mockRestore()
+  })
+
+  it('skips gracefully when CLI is not installed', async () => {
+    mockExistsSync.mockReturnValue(false)
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+    await runExtractCompile({ cwd: '/project' })
+
+    expect(mockExec).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('CLI not found'))
+    warnSpy.mockRestore()
+  })
+
+  it('uses compileOnly flag for compile-only command', async () => {
+    simulateExecSuccess()
+
+    await runExtractCompile({ cwd: '/project', compileOnly: true })
+
+    const cmd = mockExec.mock.calls[0]![0] as string
+    expect(cmd).toContain('compile')
+    expect(cmd).not.toContain('extract')
   })
 })
 

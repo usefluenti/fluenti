@@ -1,4 +1,6 @@
 import { exec } from 'node:child_process'
+import { existsSync } from 'node:fs'
+import { resolve, dirname } from 'node:path'
 
 export interface DevRunnerOptions {
   cwd: string
@@ -11,11 +13,36 @@ export interface DevRunnerOptions {
 }
 
 /**
+ * Walk up from `cwd` to find `node_modules/.bin/fluenti`.
+ * Returns the absolute path or null if not found.
+ */
+export function resolveCliBin(cwd: string): string | null {
+  let dir = cwd
+  for (;;) {
+    const bin = resolve(dir, 'node_modules/.bin/fluenti')
+    if (existsSync(bin)) return bin
+    const parent = dirname(dir)
+    if (parent === dir) break
+    dir = parent
+  }
+  return null
+}
+
+/**
  * Run extract + compile via the CLI binary.
  * Non-blocking — errors are reported but never throw.
  */
 export function runExtractCompile(options: DevRunnerOptions): Promise<void> {
-  const bin = 'node_modules/.bin/fluenti'
+  const bin = resolveCliBin(options.cwd)
+  if (!bin) {
+    const msg = '[fluenti] CLI not found — skipping auto-compile. Install @fluenti/cli as a devDependency.'
+    if (options.throwOnError) {
+      return Promise.reject(new Error(msg))
+    }
+    console.warn(msg)
+    return Promise.resolve()
+  }
+
   const command = options.compileOnly
     ? `${bin} compile`
     : `${bin} extract && ${bin} compile`
