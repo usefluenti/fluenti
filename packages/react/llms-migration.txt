@@ -20,7 +20,7 @@ Key differences:
 
 ```bash
 pnpm add @fluenti/core @fluenti/react
-pnpm add -D @fluenti/cli @fluenti/vite-plugin
+pnpm add -D @fluenti/cli
 ```
 
 ### 2. Replace provider setup
@@ -128,7 +128,7 @@ react-i18next plurals → ICU plural:
 
 ```bash
 pnpm add @fluenti/core @fluenti/react
-pnpm add -D @fluenti/cli @fluenti/vite-plugin
+pnpm add -D @fluenti/cli
 ```
 
 ### 2. Replace provider
@@ -246,16 +246,16 @@ npx fluenti compile    # Compile to JS modules
 ```ts
 // vite.config.ts
 import react from '@vitejs/plugin-react'
-import fluenti from '@fluenti/vite-plugin'
+import fluentiReact from '@fluenti/react/vite-plugin'
 
 export default {
-  plugins: [react(), fluenti({ framework: 'react' })],
+  plugins: [react(), fluentiReact()],
 }
 ```
 
 ### For Next.js projects
 
-Use @fluenti/next instead of @fluenti/vite-plugin:
+Use @fluenti/next instead of the Vite plugin:
 
 ```ts
 // next.config.ts

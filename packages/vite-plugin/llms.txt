@@ -1,35 +1,29 @@
 # @fluenti/vite-plugin
 
-> Vite plugin for Fluenti — compile-time transforms for Vue, React, and Solid, plus stable locale chunk splitting.
+> Internal Vite plugin core for Fluenti — provides `createFluentiPlugins()` factory used by framework packages.
 
-Docs: https://fluenti.dev  
+Docs: https://fluenti.dev
 GitHub: https://github.com/usefluenti/fluenti/tree/main/packages/vite-plugin
 
-## Install
+## This is an internal package
 
-```bash
-pnpm add -D @fluenti/vite-plugin
-```
-
-## Setup
+Users should NOT install this directly. Instead use framework subpath exports:
 
 ```ts
-// vite.config.ts
-import fluenti from '@fluenti/vite-plugin'
+// Vue
+import fluentiVue from '@fluenti/vue/vite-plugin'
 
-export default {
-  plugins: [
-    fluenti({
-      framework: 'vue',      // 'vue' | 'react' | 'solid' | 'auto'
-      splitting: 'dynamic',  // 'dynamic' | 'static' | false
-    }),
-  ],
-}
+// React
+import fluentiReact from '@fluenti/react/vite-plugin'
+
+// Solid
+import fluentiSolid from '@fluenti/solid/vite-plugin'
 ```
 
-## Public Options
+## Plugin Options
 
-- `framework`: `'vue' | 'react' | 'solid' | 'auto'` (default: `'auto'`)
+All framework plugins accept the same `FluentiPluginOptions`:
+
 - `catalogDir`: path to compiled message catalogs (default: `'src/locales/compiled'`)
 - `sourceLocale`: source locale (default: `'en'`)
 - `locales`: available locales (default: `[sourceLocale]`)
@@ -40,10 +34,8 @@ export default {
 
 - direct-import `t` from `@fluenti/vue`, `@fluenti/react`, or `@fluenti/solid`
 - runtime `t` bindings from `useI18n()`
-- Vue `v-t`
+- Vue `v-t` (via `@fluenti/vue/vite-plugin`)
 - `<Trans>`, `<Plural>`, and `<Select>`
-
-The plugin is strict and AST-based. It does not rely on regex fallback, magic globals, or public runtime proxies.
 
 ## Splitting Model
 
@@ -51,13 +43,9 @@ The plugin is strict and AST-based. It does not rely on regex fallback, magic gl
 - `'static'`: inline one locale at build time, ideal for SSR / SSG single-locale builds
 - `false`: no locale chunk splitting
 
-`per-route` remains internal and is not part of the stable public contract.
-
-## Important Boundary
-
-The plugin uses `virtual:fluenti/*` modules internally to connect transformed code to compiled catalogs. Those virtual modules are implementation details, not the main app-facing API. Application code should stay on framework APIs such as `setLocale()`, `preloadLocale()`, `loadMessages()`, and `chunkLoader`.
-
 ## Exports
 
-- `default`: `fluentiPlugin(options?): Plugin[]`
-- `FluentiPluginOptions`: public plugin options type
+- `createFluentiPlugins(options, frameworkPlugins, runtimeGenerator): Plugin[]`
+- `FluentiPluginOptions`: user-facing plugin options type
+- `FluentiCoreOptions`: internal options type (includes `framework` field)
+- `RuntimeGenerator`, `RuntimeGeneratorOptions`: interface for framework-specific runtime generation

@@ -60,16 +60,16 @@ When writing code with Fluenti, prefer compile-time APIs over runtime lookups:
 ### Vue 3
 
 ```bash
-pnpm add @fluenti/core @fluenti/vue @fluenti/vite-plugin @fluenti/cli
+pnpm add @fluenti/core @fluenti/vue @fluenti/cli
 ```
 
 ```ts
 // vite.config.ts
 import vue from '@vitejs/plugin-vue'
-import fluenti from '@fluenti/vite-plugin'
+import fluentiVue from '@fluenti/vue/vite-plugin'
 
 export default {
-  plugins: [vue(), fluenti({ framework: 'vue' })],
+  plugins: [vue(), fluentiVue()],
 }
 ```
 
@@ -103,7 +103,7 @@ createApp(App).use(fluent).mount('#app')
 ### React
 
 ```bash
-pnpm add @fluenti/core @fluenti/react @fluenti/vite-plugin @fluenti/cli
+pnpm add @fluenti/core @fluenti/react @fluenti/cli
 ```
 
 ```tsx
@@ -132,7 +132,7 @@ function Greeting({ name }: { name: string }) {
 ### SolidJS
 
 ```bash
-pnpm add @fluenti/core @fluenti/solid @fluenti/vite-plugin @fluenti/cli
+pnpm add @fluenti/core @fluenti/solid @fluenti/cli
 ```
 
 ```tsx
@@ -480,12 +480,19 @@ export default defineConfig({
 ## 8. Vite Plugin Options
 
 ```ts
-import fluenti from '@fluenti/vite-plugin'
+// Vue
+import fluentiVue from '@fluenti/vue/vite-plugin'
+
+// React
+import fluentiReact from '@fluenti/react/vite-plugin'
+
+// Solid
+import fluentiSolid from '@fluenti/solid/vite-plugin'
 
 export default {
   plugins: [
-    fluenti({
-      framework: 'auto',        // 'vue' | 'react' | 'solid' | 'auto'
+    // Use the import matching your framework:
+    fluentiVue({
       catalogDir: 'src/locales/compiled',
       sourceLocale: 'en',
       locales: ['en', 'ja'],

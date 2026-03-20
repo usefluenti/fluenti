@@ -1,174 +1,124 @@
 # @fluenti/vite-plugin
 
-> Vite plugin for Fluenti — compile-time transforms for Vue, React, and Solid, plus stable locale chunk splitting.
+> Internal Vite plugin core for Fluenti — provides `createFluentiPlugins()` factory used by framework packages.
 
-Docs: https://fluenti.dev  
-GitHub: https://github.com/usefluenti/fluenti/tree/main/packages/vite-plugin  
+Docs: https://fluenti.dev
+GitHub: https://github.com/usefluenti/fluenti/tree/main/packages/vite-plugin
 License: MIT
 
-## Install
+## This is an internal package
 
-```bash
-pnpm add -D @fluenti/vite-plugin
-```
-
-Peer dependency: `vite ^5 || ^6 || ^8`  
-Runtime dependency: `@fluenti/core`
-
-## Setup
+Users should NOT install `@fluenti/vite-plugin` directly. It is automatically installed as a dependency of the framework packages. Use framework subpath exports instead:
 
 ```ts
-// vite.config.ts
-import vue from '@vitejs/plugin-vue'
-import fluenti from '@fluenti/vite-plugin'
+// Vue — vite.config.ts
+import fluentiVue from '@fluenti/vue/vite-plugin'
+export default { plugins: [vue(), fluentiVue()] }
 
-export default {
-  plugins: [
-    vue(),
-    fluenti({
-      framework: 'vue',
-      splitting: 'dynamic',
-    }),
-  ],
-}
+// React — vite.config.ts
+import fluentiReact from '@fluenti/react/vite-plugin'
+export default { plugins: [fluentiReact(), react()] }
+
+// Solid — vite.config.ts
+import fluentiSolid from '@fluenti/solid/vite-plugin'
+export default { plugins: [solidPlugin(), fluentiSolid()] }
 ```
+
+Peer dependency: `vite ^5 || ^6 || ^8`
+Runtime dependency: `@fluenti/core`
 
 ## Public Options
 
+All framework plugins accept the same `FluentiPluginOptions`:
+
 ```ts
 interface FluentiPluginOptions {
-  framework?: 'vue' | 'react' | 'solid' | 'auto'
-  catalogDir?: string
-  sourceLocale?: string
-  locales?: string[]
-  splitting?: 'dynamic' | 'static' | false
-  defaultBuildLocale?: string
+  catalogDir?: string        // default: 'src/locales/compiled'
+  sourceLocale?: string      // default: 'en'
+  locales?: string[]         // default: [sourceLocale]
+  splitting?: 'dynamic' | 'static' | false  // default: false
+  defaultBuildLocale?: string // default: sourceLocale
+  include?: string[]         // default: ['src/**/*.{vue,tsx,jsx,ts,js}']
+  devAutoCompile?: boolean   // default: true
 }
 ```
 
-Option semantics:
+## Architecture
 
-- `framework`: lock the transform to one framework, or use per-file auto detection
-- `catalogDir`: directory containing compiled locale modules
-- `sourceLocale`: source language used when generating defaults
-- `locales`: list of supported locales for split runtime generation
-- `splitting`: build-time locale chunk strategy
-- `defaultBuildLocale`: locale inlined for `'static'` builds
+`@fluenti/vite-plugin` provides a `createFluentiPlugins()` factory that assembles the Vite plugin pipeline:
 
-## Stable Public Contract
+1. `fluenti:virtual` — resolves virtual modules (`virtual:fluenti/messages/*`, `virtual:fluenti/runtime`)
+2. Framework-specific plugins (injected by the calling framework package)
+3. `fluenti:script-transform` — AST-based `t`` ` tagged template and `<Trans>` compile-time transforms
+4. `fluenti:build-split` — build-time code splitting (dynamic/static/per-route)
+5. `fluenti:dev` — dev-mode auto-compile + HMR for catalog changes
 
-This package has two public responsibilities:
-
-1. compile-time transforms for Fluenti authoring APIs
-2. locale chunk planning for `'dynamic'` and `'static'` builds
-
-Stable public support is intentionally limited to:
-
-- `splitting: 'dynamic' | 'static' | false`
-- official authoring paths:
-  - direct-import `t`
-  - `useI18n().t`
-  - Vue `v-t`
-  - `<Trans>`, `<Plural>`, `<Select>`
-
-`per-route` still exists internally but is not part of the stable public contract.
+Framework packages provide:
+- A `RuntimeGenerator` that generates framework-specific reactive runtime code (Vue uses `shallowReactive`, Solid uses `createStore`, React uses plain objects)
+- Framework-specific plugins (e.g., Vue's `v-t` template transform)
 
 ## What The Plugin Transforms
 
 ### direct-import `t`
 
-Recognized forms:
-
 ```ts
 import { t } from '@fluenti/react'
-import { t as tt } from '@fluenti/vue'
-```
-
-Supported compile-time surface:
-
-```ts
 t`Hello ${name}`
 t({ message: 'Hello {name}', context: 'home.hero' }, { name })
 ```
 
-The plugin rewrites these calls to the framework runtime `t` binding and injects stable IDs where needed.
+Rewritten to framework runtime `t` binding with stable IDs.
 
 ### `useI18n().t`
-
-Recognized patterns include destructuring and aliases:
 
 ```ts
 const { t } = useI18n()
 const { t: translate } = useI18n()
 ```
 
-These bindings remain valid runtime APIs and also participate in build-time chunk planning.
+Runtime APIs that also participate in build-time chunk planning.
 
-### Vue template features
+### Vue template features (via `@fluenti/vue/vite-plugin`)
 
-- `v-t`
-- `v-t.plural`
-- translated attributes such as `.alt`, `.placeholder`, `.title`
-- `<Trans>`, `<Plural>`, `<Select>`
+- `v-t` directive
+- `v-t.plural`, `.alt`, `.placeholder`, `.title` modifiers
+- `<Trans>`, `<Plural>`, `<Select>` components
 
-Vue template transforms are compile-time optimizations. They are not the primary runtime contract.
+### JSX components (React & Solid)
 
-### JSX components
-
-For React and Solid, the plugin recognizes `<Trans>`, `<Plural>`, and `<Select>` when collecting message usage for chunk splitting.
+`<Trans>`, `<Plural>`, and `<Select>` message usage collected for chunk splitting.
 
 ## Chunk Splitting
 
 ### `'dynamic'`
 
-Recommended default.
-
-- the default locale stays in the initial bundle
-- non-default locales are loaded on demand
-- transformed lookups read from an internal reactive catalog
-- application code switches locales via framework APIs:
-  - React: `loadMessages`
-  - Vue / Solid: `chunkLoader` + `lazyLocaleLoading`
+- Default locale in initial bundle
+- Non-default locales loaded on demand via `switchLocale()`
+- Transformed lookups read from an internal reactive catalog
 
 ### `'static'`
 
-Use when a build only needs one locale embedded at compile time.
-
-- all lookups are rewritten to statically imported catalog entries
-- ideal for SSR / SSG builds that emit one locale per deployment target
+- All lookups rewritten to statically imported catalog entries
+- Ideal for SSR / SSG single-locale builds
 
 ### `false`
 
-Disables build-time locale chunk splitting.
-
-## Official Runtime APIs
-
-Chunk splitting is designed to work with framework-level APIs, not direct virtual-module imports.
-
-- React: `I18nProvider` + `loadMessages`
-- Vue: `createFluentVue({ lazyLocaleLoading: true, chunkLoader })`
-- Solid: `createI18n(...)` or `<I18nProvider ...>` with `lazyLocaleLoading` + `chunkLoader`
-
-The plugin's virtual modules are implementation details used to connect transformed lookups to compiled catalogs.
-
-## Internal Details That Are Not The Primary Public API
-
-The plugin still uses internal `virtual:fluenti/*` modules under the hood for transformed bundle output. These remain supported as implementation details for the plugin itself, but application code should not treat them as the main integration surface.
-
-## Auto Detection
-
-When `framework` is `'auto'`, detection is per file:
-
-1. `.vue` file extension → Vue
-2. Solid imports / Solid-specific syntax → Solid
-3. React imports / React JSX patterns → React
-4. fallback → Vue
+Disables locale chunk splitting.
 
 ## Exports
 
 ```ts
-export default function fluentiPlugin(options?: FluentiPluginOptions): Plugin[]
-export type { FluentiPluginOptions }
+// Named exports only — no default export
+export function createFluentiPlugins(
+  options: FluentiCoreOptions,
+  frameworkPlugins: Plugin[],
+  runtimeGenerator?: RuntimeGenerator,
+): Plugin[]
+
+export type { FluentiPluginOptions }    // user-facing options
+export type { FluentiCoreOptions }      // internal options (includes framework field)
+export type { RuntimeGenerator }        // framework-specific runtime generator
+export type { RuntimeGeneratorOptions } // options passed to generator methods
 ```
 
-The package no longer documents internal transform helpers as primary public exports.
+The `sfc-transform` subpath export provides Vue SFC template transformation utilities used by `@fluenti/vue/vite-plugin`.

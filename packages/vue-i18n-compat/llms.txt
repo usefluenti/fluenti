@@ -1,0 +1,59 @@
+# @fluenti/vue-i18n-compat
+
+> Progressive migration bridge between vue-i18n and Fluenti — share locale state, translate across both libraries with configurable lookup priority.
+
+- Package: `@fluenti/vue-i18n-compat`
+- Peer dependencies: `vue ^3.5`, `vue-i18n ^9 || ^10`
+- Dependencies: `@fluenti/core`, `@fluenti/vue`
+- Docs: https://fluenti.dev
+- Source: https://github.com/usefluenti/fluenti/tree/main/packages/vue-i18n-compat
+
+## Install
+
+```bash
+pnpm add @fluenti/vue-i18n-compat @fluenti/core @fluenti/vue
+```
+
+## Key Exports
+
+- `createFluentBridge(options)` — Factory that creates a Vue plugin connecting vue-i18n and Fluenti. Installs both libraries, syncs locale bidirectionally, and overrides `$t`/`$te`/`$tc` global properties with bridged versions.
+- `useI18n()` — Composable returning the `BridgeContext` with unified translation methods. Throws if the bridge plugin is not installed.
+- `BRIDGE_KEY` — Vue injection key (`InjectionKey<BridgeContext>`) for the bridge context.
+
+## BridgeOptions
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `vueI18n` | `VueI18nInstance` | — | The vue-i18n instance from `createI18n()` |
+| `fluenti` | `FluentVuePlugin` | — | The Fluenti plugin from `createFluentVue()` |
+| `priority` | `'fluenti-first' \| 'vue-i18n-first'` | `'fluenti-first'` | Which library to check first for translations |
+
+## BridgeContext (returned by useI18n())
+
+- `t(key, values?)` — Translate a message, checking both libraries per priority
+- `tc(key, count, values?)` — Pluralized translation (ICU via Fluenti, pipe-separated via vue-i18n)
+- `te(key, locale?)` — Check if a key exists in either library
+- `tm(key)` — Get raw message (from vue-i18n)
+- `d(value, style?)` — Format a date
+- `n(value, style?)` — Format a number
+- `format(message, values?)` — Format an ICU message string directly
+- `locale` — Reactive locale ref (synced across both libraries)
+- `setLocale(locale)` — Change locale (syncs to both libraries)
+- `availableLocales` — Computed union of locales from both libraries
+- `isLoading` — Whether Fluenti is loading a locale chunk
+- `fluenti` — Access the underlying Fluenti context
+- `vueI18n` — Access the underlying vue-i18n global composer
+
+## Key Types
+
+- `BridgeOptions` — Options for `createFluentBridge()`
+- `BridgeContext` — Context returned by `useI18n()`
+- `BridgePlugin` — Return type of `createFluentBridge()` (has `install()` and `global`)
+- `BridgePriority` — `'fluenti-first' | 'vue-i18n-first'`
+- `VueI18nInstance` — Minimal vue-i18n instance interface
+- `VueI18nGlobal` — Minimal vue-i18n global composer interface
+
+## Documentation
+
+- Full docs: https://fluenti.dev
+- llms-full.txt: Detailed reference with code examples
