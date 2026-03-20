@@ -18,6 +18,9 @@ export default defineNuxtPlugin((nuxtApp) => {
   const fluent = createFluentVue({
     locale: initialLocale,
     fallbackLocale: 'en',
+    fallbackChain: {
+      ja: ['en'],
+    },
     messages: {
       en,
       ja,

@@ -254,3 +254,13 @@ msgstr ""
 #, fuzzy
 msgid "Read the <link>getting started guide</link> for setup instructions."
 msgstr ""
+
+#. Menu navigation item
+msgctxt "navigation"
+msgid "Home"
+msgstr ""
+
+#. User's home/residence
+msgctxt "address"
+msgid "Home"
+msgstr ""

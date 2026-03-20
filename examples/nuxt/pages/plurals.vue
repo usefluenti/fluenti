@@ -3,6 +3,7 @@ import { ref } from 'vue'
 
 const appleCount = ref(0)
 const messageCount = ref(1)
+const gender = ref('other')
 </script>
 
 <template>
@@ -43,6 +44,28 @@ const messageCount = ref(1)
           zero="No new messages"
           one="1 new message"
           other="# new messages"
+        />
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>Feature: &lt;Select&gt; Component</h2>
+      <div class="controls">
+        <button
+          v-for="g in ['male', 'female', 'other']"
+          :key="g"
+          :class="{ active: gender === g }"
+          @click="gender = g"
+        >
+          {{ g }}
+        </button>
+      </div>
+      <div class="demo-item">
+        <div class="demo-label">&lt;Select :value="gender" ...&gt;</div>
+        <Select
+          :value="gender"
+          :options="{ male: 'He liked this', female: 'She liked this' }"
+          other="They liked this"
         />
       </div>
     </div>

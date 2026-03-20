@@ -7,7 +7,7 @@ const ROLES = {
 }
 
 function Home() {
-  const { t, i18n, locale } = useI18n()
+  const { t, i18n, locale, d, n } = useI18n()
   const name = 'World'
   const count = 3
   return (
@@ -34,6 +34,16 @@ function Home() {
         <li>{t`Built-in plural support`}</li>
         <li>{t`Type-safe message catalogs`}</li>
       </ul>
+
+      <h3>{t`Date Formatting`}</h3>
+      <p data-testid="date-default">{d(new Date(2025, 0, 15))}</p>
+      <p data-testid="date-long">{d(new Date(2025, 0, 15), 'long')}</p>
+      <p data-testid="date-short">{d(new Date(2025, 0, 15), 'short')}</p>
+
+      <h3>{t`Number Formatting`}</h3>
+      <p data-testid="number-default">{n(1234567.89)}</p>
+      <p data-testid="number-currency">{n(42.5, 'currency')}</p>
+      <p data-testid="number-percent">{n(0.856, 'percent')}</p>
     </section>
   )
 }
