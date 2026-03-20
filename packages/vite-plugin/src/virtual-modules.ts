@@ -20,10 +20,11 @@ const RESOLVED_ROUTE_RUNTIME = '\0virtual:fluenti/route-runtime'
 
 export interface VirtualModuleOptions {
   catalogDir: string
+  catalogExtension: string
   locales: string[]
   sourceLocale: string
   defaultBuildLocale: string
-  framework: 'vue' | 'solid' | 'react'
+  framework: string
   runtimeGenerator?: RuntimeGenerator | undefined
 }
 
@@ -65,11 +66,11 @@ function generateRuntimeModule(options: VirtualModuleOptions): string {
 }
 
 function generateStaticMessagesModule(options: VirtualModuleOptions): string {
-  const { catalogDir, defaultBuildLocale, sourceLocale } = options
+  const { catalogDir, catalogExtension, defaultBuildLocale, sourceLocale } = options
   const defaultLocale = defaultBuildLocale || sourceLocale
   const absoluteCatalogDir = resolve(process.cwd(), catalogDir)
 
-  return `export * from '${absoluteCatalogDir}/${defaultLocale}.js'\n`
+  return `export * from '${absoluteCatalogDir}/${defaultLocale}${catalogExtension}'\n`
 }
 
 /**
@@ -90,22 +91,22 @@ export function generateRouteRuntimeModule(options: VirtualModuleOptions): strin
 }
 
 function toRuntimeGeneratorOptions(options: VirtualModuleOptions): RuntimeGeneratorOptions {
-  const { catalogDir, locales, sourceLocale, defaultBuildLocale } = options
-  return { catalogDir, locales, sourceLocale, defaultBuildLocale }
+  const { catalogDir, catalogExtension, locales, sourceLocale, defaultBuildLocale } = options
+  return { catalogDir, catalogExtension, locales, sourceLocale, defaultBuildLocale }
 }
 
 // ─── Legacy inline runtime generators (used when no RuntimeGenerator is provided) ──
 
 function generateLegacyRuntimeModule(options: VirtualModuleOptions): string {
-  const { catalogDir, locales, sourceLocale, defaultBuildLocale, framework } = options
+  const { catalogDir, catalogExtension, locales, sourceLocale, defaultBuildLocale, framework } = options
   const defaultLocale = defaultBuildLocale || sourceLocale
   const absoluteCatalogDir = resolve(process.cwd(), catalogDir)
-  const runtimeKey = `fluenti.runtime.${framework}`
+  const runtimeKey = `fluenti.runtime.${framework}.v1`
   const lazyLocales = locales.filter((locale) => locale !== defaultLocale)
 
   if (framework === 'react') {
     return `
-import __defaultMsgs from '${absoluteCatalogDir}/${defaultLocale}.js'
+import __defaultMsgs from '${absoluteCatalogDir}/${defaultLocale}${catalogExtension}'
 
 const __catalog = { ...__defaultMsgs }
 let __currentLocale = '${defaultLocale}'
@@ -115,7 +116,7 @@ const __cache = new Map()
 const __normalizeMessages = (mod) => mod.default ?? mod
 
 const __loaders = {
-${lazyLocales.map((l) => `  '${l}': () => import('${absoluteCatalogDir}/${l}.js'),`).join('\n')}
+${lazyLocales.map((l) => `  '${l}': () => import('${absoluteCatalogDir}/${l}${catalogExtension}'),`).join('\n')}
 }
 
 async function __switchLocale(locale) {
@@ -154,7 +155,7 @@ export { __catalog, __switchLocale, __preloadLocale, __currentLocale, __loading,
   if (framework === 'vue') {
     return `
 import { shallowReactive, triggerRef, ref } from 'vue'
-import __defaultMsgs from '${absoluteCatalogDir}/${defaultLocale}.js'
+import __defaultMsgs from '${absoluteCatalogDir}/${defaultLocale}${catalogExtension}'
 
 const __catalog = shallowReactive({ ...__defaultMsgs })
 const __currentLocale = ref('${defaultLocale}')
@@ -164,7 +165,7 @@ const __cache = new Map()
 const __normalizeMessages = (mod) => mod.default ?? mod
 
 const __loaders = {
-${lazyLocales.map((l) => `  '${l}': () => import('${absoluteCatalogDir}/${l}.js'),`).join('\n')}
+${lazyLocales.map((l) => `  '${l}': () => import('${absoluteCatalogDir}/${l}${catalogExtension}'),`).join('\n')}
 }
 
 async function __switchLocale(locale) {
@@ -204,7 +205,7 @@ export { __catalog, __switchLocale, __preloadLocale, __currentLocale, __loading,
   return `
 import { createSignal } from 'solid-js'
 import { createStore, reconcile } from 'solid-js/store'
-import __defaultMsgs from '${absoluteCatalogDir}/${defaultLocale}.js'
+import __defaultMsgs from '${absoluteCatalogDir}/${defaultLocale}${catalogExtension}'
 
 const [__catalog, __setCatalog] = createStore({ ...__defaultMsgs })
 const [__currentLocale, __setCurrentLocale] = createSignal('${defaultLocale}')
@@ -214,7 +215,7 @@ const __cache = new Map()
 const __normalizeMessages = (mod) => mod.default ?? mod
 
 const __loaders = {
-${lazyLocales.map((l) => `  '${l}': () => import('${absoluteCatalogDir}/${l}.js'),`).join('\n')}
+${lazyLocales.map((l) => `  '${l}': () => import('${absoluteCatalogDir}/${l}${catalogExtension}'),`).join('\n')}
 }
 
 async function __switchLocale(locale) {
@@ -251,16 +252,16 @@ export { __catalog, __switchLocale, __preloadLocale, __currentLocale, __loading,
 }
 
 function generateLegacyRouteRuntimeModule(options: VirtualModuleOptions): string {
-  const { catalogDir, locales, sourceLocale, defaultBuildLocale, framework } = options
+  const { catalogDir, catalogExtension, locales, sourceLocale, defaultBuildLocale, framework } = options
   const defaultLocale = defaultBuildLocale || sourceLocale
   const absoluteCatalogDir = resolve(process.cwd(), catalogDir)
-  const runtimeKey = `fluenti.runtime.${framework}`
+  const runtimeKey = `fluenti.runtime.${framework}.v1`
   const lazyLocales = locales.filter((locale) => locale !== defaultLocale)
 
   if (framework === 'vue') {
     return `
 import { shallowReactive, ref } from 'vue'
-import __defaultMsgs from '${absoluteCatalogDir}/${defaultLocale}.js'
+import __defaultMsgs from '${absoluteCatalogDir}/${defaultLocale}${catalogExtension}'
 
 const __catalog = shallowReactive({ ...__defaultMsgs })
 const __currentLocale = ref('${defaultLocale}')
@@ -271,7 +272,7 @@ const __loadedRoutes = new Set()
 const __normalizeMessages = (mod) => mod.default ?? mod
 
 const __loaders = {
-${lazyLocales.map((l) => `  '${l}': () => import('${absoluteCatalogDir}/${l}.js'),`).join('\n')}
+${lazyLocales.map((l) => `  '${l}': () => import('${absoluteCatalogDir}/${l}${catalogExtension}'),`).join('\n')}
 }
 
 const __routeLoaders = {}
@@ -328,7 +329,7 @@ export { __catalog, __switchLocale, __preloadLocale, __loadRoute, __registerRout
   return `
 import { createSignal } from 'solid-js'
 import { createStore, reconcile } from 'solid-js/store'
-import __defaultMsgs from '${absoluteCatalogDir}/${defaultLocale}.js'
+import __defaultMsgs from '${absoluteCatalogDir}/${defaultLocale}${catalogExtension}'
 
 const [__catalog, __setCatalog] = createStore({ ...__defaultMsgs })
 const [__currentLocale, __setCurrentLocale] = createSignal('${defaultLocale}')
@@ -339,7 +340,7 @@ const __loadedRoutes = new Set()
 const __normalizeMessages = (mod) => mod.default ?? mod
 
 const __loaders = {
-${lazyLocales.map((l) => `  '${l}': () => import('${absoluteCatalogDir}/${l}.js'),`).join('\n')}
+${lazyLocales.map((l) => `  '${l}': () => import('${absoluteCatalogDir}/${l}${catalogExtension}'),`).join('\n')}
 }
 
 const __routeLoaders = {}

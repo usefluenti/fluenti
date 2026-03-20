@@ -1,6 +1,6 @@
 import type { Plugin } from 'vite'
 import type { FluentiCoreOptions, RuntimeGenerator } from './types'
-import { setResolvedMode, isBuildMode } from './mode-detect'
+import { setResolvedMode, isBuildMode, getPluginEnvironment } from './mode-detect'
 import { resolve } from 'node:path'
 import { createDebouncedRunner, runExtractCompile } from './dev-runner'
 import { transformForDynamicSplit, transformForStaticSplit, injectCatalogImport } from './build-transform'
@@ -8,9 +8,9 @@ import { resolveVirtualSplitId, loadVirtualSplitModule } from './virtual-modules
 import { deriveRouteName, parseCompiledCatalog, buildChunkModule, readCatalogSource } from './route-resolve'
 import { scopeTransform } from './scope-transform'
 import { transformTransComponents } from './trans-transform'
-export type { FluentiPluginOptions, FluentiCoreOptions, RuntimeGenerator, RuntimeGeneratorOptions } from './types'
+export type { FluentiPluginOptions, FluentiCoreOptions, RuntimeGenerator, RuntimeGeneratorOptions, IdGenerator } from './types'
 export { resolveVirtualSplitId, loadVirtualSplitModule } from './virtual-modules'
-export { setResolvedMode, isBuildMode } from './mode-detect'
+export { setResolvedMode, isBuildMode, getPluginEnvironment } from './mode-detect'
 
 const VIRTUAL_PREFIX = 'virtual:fluenti/messages/'
 const RESOLVED_PREFIX = '\0virtual:fluenti/messages/'
@@ -28,11 +28,15 @@ export function createFluentiPlugins(
   runtimeGenerator?: RuntimeGenerator,
 ): Plugin[] {
   const catalogDir = options.catalogDir ?? 'src/locales/compiled'
+  const catalogExtension = options.catalogExtension ?? '.js'
   const framework = options.framework
   const splitting = (options.splitting as InternalSplitStrategy | undefined) ?? false
   const sourceLocale = options.sourceLocale ?? 'en'
   const locales = options.locales ?? [sourceLocale]
   const defaultBuildLocale = options.defaultBuildLocale ?? sourceLocale
+  const idGenerator = options.idGenerator
+  const onBeforeCompile = options.onBeforeCompile
+  const onAfterCompile = options.onAfterCompile
 
   const virtualPlugin: Plugin = {
     name: 'fluenti:virtual',
@@ -52,12 +56,13 @@ export function createFluentiPlugins(
     load(id) {
       if (id.startsWith(RESOLVED_PREFIX)) {
         const locale = id.slice(RESOLVED_PREFIX.length)
-        const catalogPath = `${catalogDir}/${locale}.js`
+        const catalogPath = `${catalogDir}/${locale}${catalogExtension}`
         return `export { default } from '${catalogPath}'`
       }
       if (splitting) {
         const result = loadVirtualSplitModule(id, {
           catalogDir,
+          catalogExtension,
           locales,
           sourceLocale,
           defaultBuildLocale,
@@ -112,14 +117,15 @@ export function createFluentiPlugins(
     name: 'fluenti:build-split',
     transform(code, id) {
       if (!splitting) return undefined
-      if (!isBuildMode((this as any).environment)) return undefined
+      if (!isBuildMode(getPluginEnvironment(this))) return undefined
       if (id.includes('node_modules')) return undefined
       if (!id.match(/\.(vue|tsx|jsx|ts|js)(\?|$)/)) return undefined
 
       const strategy = splitting === 'static' ? 'static' : 'dynamic'
+      const transformOptions = idGenerator ? { hashFn: idGenerator } : undefined
       const transformed = strategy === 'static'
-        ? transformForStaticSplit(code)
-        : transformForDynamicSplit(code)
+        ? transformForStaticSplit(code, transformOptions)
+        : transformForDynamicSplit(code, transformOptions)
 
       if (splitting === 'per-route' && transformed.usedHashes.size > 0) {
         moduleMessages.set(id, transformed.usedHashes)
@@ -128,7 +134,7 @@ export function createFluentiPlugins(
       if (!transformed.needsCatalogImport) return undefined
 
       const importStrategy = splitting === 'per-route' ? 'per-route' : strategy
-      const finalCode = injectCatalogImport(transformed.code, importStrategy, transformed.usedHashes)
+      const finalCode = injectCatalogImport(transformed.code, importStrategy, transformed.usedHashes, idGenerator)
       return { code: finalCode, map: null }
     },
 
@@ -208,9 +214,16 @@ export function createFluentiPlugins(
   const buildCompilePlugin: Plugin = {
     name: 'fluenti:build-compile',
     async buildStart() {
-      if (!isBuildMode((this as any).environment) || !buildAutoCompile) return
+      if (!isBuildMode(getPluginEnvironment(this)) || !buildAutoCompile) return
+      if (onBeforeCompile) {
+        const result = await onBeforeCompile()
+        if (result === false) return
+      }
       const cwd = process.cwd()
       await runExtractCompile({ cwd, throwOnError: true, compileOnly: true })
+      if (onAfterCompile) {
+        await onAfterCompile()
+      }
     },
   }
 
@@ -222,12 +235,15 @@ export function createFluentiPlugins(
     configureServer(server) {
       if (!devAutoCompile) return
 
-      const debouncedRun = createDebouncedRunner({
+      const runnerOptions: Parameters<typeof createDebouncedRunner>[0] = {
         cwd: server.config.root,
         onSuccess: () => {
           // Existing hotUpdate will pick up catalog changes
         },
-      })
+      }
+      if (onBeforeCompile) runnerOptions.onBeforeCompile = onBeforeCompile
+      if (onAfterCompile) runnerOptions.onAfterCompile = onAfterCompile
+      const debouncedRun = createDebouncedRunner(runnerOptions)
 
       debouncedRun()
 

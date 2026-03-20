@@ -50,6 +50,13 @@ export interface WithFluentConfig {
   devAutoCompileDelay?: number
   /** Auto extract+compile before production build (default: true) */
   buildAutoCompile?: boolean
+  /**
+   * Webpack loader enforce mode (default: 'pre').
+   *
+   * Set to `undefined` to let webpack determine ordering, or `'post'` to run after other loaders.
+   * This can be useful when other loaders need to process files before Fluenti's transform.
+   */
+  loaderEnforce?: 'pre' | 'post' | undefined
 }
 
 /**

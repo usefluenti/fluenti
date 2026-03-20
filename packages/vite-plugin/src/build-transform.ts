@@ -5,13 +5,20 @@
  * Strategy 'static': rewrites to direct named imports from compiled locale modules.
  */
 
-import { hashMessage } from '@fluenti/core'
+import { hashMessage as defaultHashMessage } from '@fluenti/core'
 import { parseSourceModule, walkSourceAst, type SourceNode } from '@fluenti/core/internal'
+
+export type HashFunction = (message: string, context?: string) => string
 
 export interface BuildTransformResult {
   code: string
   needsCatalogImport: boolean
   usedHashes: Set<string>
+}
+
+export interface BuildTransformOptions {
+  /** Custom hash function for message IDs (defaults to @fluenti/core hashMessage) */
+  hashFn?: HashFunction
 }
 
 type SplitStrategy = 'dynamic' | 'static'
@@ -143,18 +150,20 @@ interface RuntimeBindings {
   unref: Set<string>
 }
 
-export function transformForDynamicSplit(code: string): BuildTransformResult {
-  return transformForSplitStrategy(code, 'dynamic')
+export function transformForDynamicSplit(code: string, options?: BuildTransformOptions): BuildTransformResult {
+  return transformForSplitStrategy(code, 'dynamic', options)
 }
 
-export function transformForStaticSplit(code: string): BuildTransformResult {
-  return transformForSplitStrategy(code, 'static')
+export function transformForStaticSplit(code: string, options?: BuildTransformOptions): BuildTransformResult {
+  return transformForSplitStrategy(code, 'static', options)
 }
 
 function transformForSplitStrategy(
   code: string,
   strategy: SplitStrategy,
+  options?: BuildTransformOptions,
 ): BuildTransformResult {
+  const hashFn = options?.hashFn ?? defaultHashMessage
   const ast = parseSourceModule(code)
   if (!ast || ast.type !== 'Program') {
     return { code, needsCatalogImport: false, usedHashes: new Set() }
@@ -165,13 +174,13 @@ function transformForSplitStrategy(
   const usedHashes = new Set<string>()
 
   walkSourceAst(ast, (node) => {
-    const replacement = extractCallReplacement(code, node, bindings, strategy, usedHashes)
+    const replacement = extractCallReplacement(code, node, bindings, strategy, usedHashes, hashFn)
     if (replacement) {
       replacements.push(replacement)
       return
     }
 
-    collectComponentUsage(node, usedHashes)
+    collectComponentUsage(node, usedHashes, hashFn)
   })
 
   if (replacements.length === 0) {
@@ -252,19 +261,20 @@ function extractCallReplacement(
   bindings: RuntimeBindings,
   strategy: SplitStrategy,
   usedHashes: Set<string>,
+  hashFn: HashFunction,
 ): SplitReplacement | undefined {
   if (!isCallExpression(node) || node.start == null || node.end == null) {
     return undefined
   }
 
-  const splitTarget = resolveSplitTarget(code, node, bindings)
+  const splitTarget = resolveSplitTarget(code, node, bindings, hashFn)
   if (!splitTarget) {
     return undefined
   }
 
   const { catalogId } = splitTarget
   usedHashes.add(catalogId)
-  const exportHash = hashMessage(catalogId)
+  const exportHash = hashFn(catalogId)
   const replacementTarget = strategy === 'dynamic'
     ? `__catalog[${JSON.stringify(catalogId)}]`
     : `_${exportHash}`
@@ -283,6 +293,7 @@ function resolveSplitTarget(
   code: string,
   call: CallExpressionNode,
   bindings: RuntimeBindings,
+  hashFn: HashFunction,
 ): SplitTarget | undefined {
   if (call.arguments.length === 0) return undefined
 
@@ -310,7 +321,7 @@ function resolveSplitTarget(
     return undefined
   }
 
-  const catalogId = extractCatalogId(call.arguments[0]!)
+  const catalogId = extractCatalogId(call.arguments[0]!, hashFn)
   if (!catalogId) return undefined
 
   const valuesSource = call.arguments[1] && call.arguments[1]!.start != null && call.arguments[1]!.end != null
@@ -322,10 +333,10 @@ function resolveSplitTarget(
     : { catalogId, valuesSource }
 }
 
-function extractCatalogId(argument: SourceNode): string | undefined {
+function extractCatalogId(argument: SourceNode, hashFn: HashFunction): string | undefined {
   const staticString = readStaticString(argument)
   if (staticString !== undefined) {
-    return hashMessage(staticString)
+    return hashFn(staticString)
   }
 
   if (!isObjectExpression(argument)) {
@@ -350,11 +361,11 @@ function extractCatalogId(argument: SourceNode): string | undefined {
   }
 
   if (id) return id
-  if (message) return hashMessage(message, context)
+  if (message) return hashFn(message, context)
   return undefined
 }
 
-function collectComponentUsage(node: SourceNode, usedHashes: Set<string>): void {
+function collectComponentUsage(node: SourceNode, usedHashes: Set<string>, hashFn: HashFunction): void {
   if (!isJsxElement(node)) return
 
   const componentName = readJsxName(node.openingElement.name)
@@ -370,13 +381,13 @@ function collectComponentUsage(node: SourceNode, usedHashes: Set<string>): void 
     const message = readJsxStaticAttribute(node.openingElement, '__message')
     const context = readJsxStaticAttribute(node.openingElement, 'context')
     if (message) {
-      usedHashes.add(hashMessage(message, context))
+      usedHashes.add(hashFn(message, context))
     }
     return
   }
 
   if (componentName === 'Plural') {
-    const messageId = buildPluralMessageId(node.openingElement)
+    const messageId = buildPluralMessageId(node.openingElement, hashFn)
     if (messageId) {
       usedHashes.add(messageId)
     }
@@ -384,14 +395,14 @@ function collectComponentUsage(node: SourceNode, usedHashes: Set<string>): void 
   }
 
   if (componentName === 'Select') {
-    const messageId = buildSelectMessageId(node.openingElement)
+    const messageId = buildSelectMessageId(node.openingElement, hashFn)
     if (messageId) {
       usedHashes.add(messageId)
     }
   }
 }
 
-function buildPluralMessageId(openingElement: JSXOpeningElementNode): string | undefined {
+function buildPluralMessageId(openingElement: JSXOpeningElementNode, hashFn: HashFunction): string | undefined {
   const id = readJsxStaticAttribute(openingElement, 'id')
   if (id) return id
 
@@ -410,10 +421,10 @@ function buildPluralMessageId(openingElement: JSXOpeningElementNode): string | u
 
   const offsetPart = typeof offsetRaw === 'number' ? ` offset:${offsetRaw}` : ''
   const icuMessage = `{count, plural,${offsetPart} ${forms.join(' ')}}`
-  return hashMessage(icuMessage, context)
+  return hashFn(icuMessage, context)
 }
 
-function buildSelectMessageId(openingElement: JSXOpeningElementNode): string | undefined {
+function buildSelectMessageId(openingElement: JSXOpeningElementNode, hashFn: HashFunction): string | undefined {
   const id = readJsxStaticAttribute(openingElement, 'id')
   if (id) return id
 
@@ -423,7 +434,7 @@ function buildSelectMessageId(openingElement: JSXOpeningElementNode): string | u
 
   const orderedKeys = [...Object.keys(forms).filter((key) => key !== 'other').sort(), 'other']
   const icuMessage = `{value, select, ${orderedKeys.map((key) => `${key} {${forms[key]!}}`).join(' ')}}`
-  return hashMessage(icuMessage, context)
+  return hashFn(icuMessage, context)
 }
 
 function readStaticSelectForms(openingElement: JSXOpeningElementNode): Record<string, string> | undefined {
@@ -582,7 +593,7 @@ function readImportedName(specifier: ImportSpecifierNode): string | undefined {
 /**
  * Inject the catalog import statement at the top of the module.
  */
-export function injectCatalogImport(code: string, strategy: 'dynamic' | 'static' | 'per-route', hashes: Set<string>): string {
+export function injectCatalogImport(code: string, strategy: 'dynamic' | 'static' | 'per-route', hashes: Set<string>, hashFn?: HashFunction): string {
   if (strategy === 'dynamic') {
     return `import { __catalog } from 'virtual:fluenti/runtime';\n${code}`
   }
@@ -592,6 +603,7 @@ export function injectCatalogImport(code: string, strategy: 'dynamic' | 'static'
   }
 
   // Static: import named exports directly
-  const imports = [...hashes].map((id) => `_${hashMessage(id)}`).join(', ')
+  const hash = hashFn ?? defaultHashMessage
+  const imports = [...hashes].map((id) => `_${hash(id)}`).join(', ')
   return `import { ${imports} } from 'virtual:fluenti/messages';\n${code}`
 }

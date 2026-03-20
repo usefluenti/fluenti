@@ -12,7 +12,7 @@ interface SplitRuntimeModule {
   __preloadLocale?: (locale: string) => Promise<void>
 }
 
-const SPLIT_RUNTIME_KEY = Symbol.for('fluenti.runtime.solid')
+const SPLIT_RUNTIME_KEY = Symbol.for('fluenti.runtime.solid.v1')
 
 function getSplitRuntimeModule(): SplitRuntimeModule | null {
   const runtime = (globalThis as Record<PropertyKey, unknown>)[SPLIT_RUNTIME_KEY]

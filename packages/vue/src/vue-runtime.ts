@@ -3,15 +3,16 @@ import type { RuntimeGenerator, RuntimeGeneratorOptions } from '@fluenti/vite-pl
 
 export const vueRuntimeGenerator: RuntimeGenerator = {
   generateRuntime(options: RuntimeGeneratorOptions): string {
-    const { catalogDir, locales, sourceLocale, defaultBuildLocale } = options
+    const { catalogDir, catalogExtension, locales, sourceLocale, defaultBuildLocale } = options
     const defaultLocale = defaultBuildLocale || sourceLocale
     const absoluteCatalogDir = resolve(process.cwd(), catalogDir)
-    const runtimeKey = 'fluenti.runtime.vue'
+    const ext = catalogExtension || '.js'
+    const runtimeKey = 'fluenti.runtime.vue.v1'
     const lazyLocales = locales.filter((locale) => locale !== defaultLocale)
 
     return `
 import { shallowReactive, ref } from 'vue'
-import __defaultMsgs from '${absoluteCatalogDir}/${defaultLocale}.js'
+import __defaultMsgs from '${absoluteCatalogDir}/${defaultLocale}${ext}'
 
 const __catalog = shallowReactive({ ...__defaultMsgs })
 const __currentLocale = ref('${defaultLocale}')
@@ -21,7 +22,7 @@ const __cache = new Map()
 const __normalizeMessages = (mod) => mod.default ?? mod
 
 const __loaders = {
-${lazyLocales.map((l) => `  '${l}': () => import('${absoluteCatalogDir}/${l}.js'),`).join('\n')}
+${lazyLocales.map((l) => `  '${l}': () => import('${absoluteCatalogDir}/${l}${ext}'),`).join('\n')}
 }
 
 async function __switchLocale(locale) {
@@ -58,15 +59,16 @@ export { __catalog, __switchLocale, __preloadLocale, __currentLocale, __loading,
   },
 
   generateRouteRuntime(options: RuntimeGeneratorOptions): string {
-    const { catalogDir, locales, sourceLocale, defaultBuildLocale } = options
+    const { catalogDir, catalogExtension, locales, sourceLocale, defaultBuildLocale } = options
     const defaultLocale = defaultBuildLocale || sourceLocale
     const absoluteCatalogDir = resolve(process.cwd(), catalogDir)
-    const runtimeKey = 'fluenti.runtime.vue'
+    const ext = catalogExtension || '.js'
+    const runtimeKey = 'fluenti.runtime.vue.v1'
     const lazyLocales = locales.filter((locale) => locale !== defaultLocale)
 
     return `
 import { shallowReactive, ref } from 'vue'
-import __defaultMsgs from '${absoluteCatalogDir}/${defaultLocale}.js'
+import __defaultMsgs from '${absoluteCatalogDir}/${defaultLocale}${ext}'
 
 const __catalog = shallowReactive({ ...__defaultMsgs })
 const __currentLocale = ref('${defaultLocale}')
@@ -77,7 +79,7 @@ const __loadedRoutes = new Set()
 const __normalizeMessages = (mod) => mod.default ?? mod
 
 const __loaders = {
-${lazyLocales.map((l) => `  '${l}': () => import('${absoluteCatalogDir}/${l}.js'),`).join('\n')}
+${lazyLocales.map((l) => `  '${l}': () => import('${absoluteCatalogDir}/${l}${ext}'),`).join('\n')}
 }
 
 const __routeLoaders = {}

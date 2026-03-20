@@ -22,7 +22,7 @@ interface SplitRuntimeModule {
   __preloadLocale?: (locale: string) => Promise<void>
 }
 
-const SPLIT_RUNTIME_KEY = Symbol.for('fluenti.runtime.vue')
+const SPLIT_RUNTIME_KEY = Symbol.for('fluenti.runtime.vue.v1')
 
 function getSplitRuntimeModule(): SplitRuntimeModule | null {
   const runtime = (globalThis as Record<PropertyKey, unknown>)[SPLIT_RUNTIME_KEY]
@@ -103,6 +103,15 @@ export interface FluentVueOptions {
    * @default '' (no prefix — Trans, Plural, Select)
    */
   componentPrefix?: string
+  /**
+   * Whether to inject `$t`, `$d`, `$n`, `$vtRich` onto `app.config.globalProperties`.
+   *
+   * Set to `false` to avoid polluting the global namespace (e.g. when migrating from vue-i18n
+   * or when using composition API exclusively via `useI18n()`).
+   *
+   * @default true
+   */
+  injectGlobalProperties?: boolean
 }
 
 /** Return value of `createFluentVue()` */
@@ -375,10 +384,12 @@ export function createFluentVue(options: FluentVueOptions): FluentVuePlugin {
       app.component(`${prefix}Select`, Select)
       app.component(`${prefix}DateTime`, DateTime)
       app.component(`${prefix}NumberFormat`, NumberFormat)
-      app.config.globalProperties['$t'] = t
-      app.config.globalProperties['$d'] = d
-      app.config.globalProperties['$n'] = n
-      app.config.globalProperties['$vtRich'] = vtRich
+      if (options.injectGlobalProperties !== false) {
+        app.config.globalProperties['$t'] = t
+        app.config.globalProperties['$d'] = d
+        app.config.globalProperties['$n'] = n
+        app.config.globalProperties['$vtRich'] = vtRich
+      }
 
       // Runtime v-t directive (fallback when compile-time transform is not used)
       const vtOriginalIds = new WeakMap<HTMLElement, string>()

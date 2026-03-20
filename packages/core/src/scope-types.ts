@@ -16,17 +16,17 @@ export interface Replacement {
   replacement: string
 }
 
-export const FLUENTI_PACKAGES = {
+export const FLUENTI_PACKAGES: Record<string, string> = {
   react: '@fluenti/react',
   vue: '@fluenti/vue',
   solid: '@fluenti/solid',
-} as const
+}
 
 export const NEXT_I18N_MODULES = new Set(['@fluenti/next', '@fluenti/next/server'])
 export const SERVER_AUTHORING_EXPORTS = new Set(['Trans', 'Plural', 'Select', 'DateTime', 'NumberFormat'])
 
 export interface ScopeTransformOptions {
-  framework: 'vue' | 'solid' | 'react'
+  framework: string
   allowTopLevelImportedT?: boolean
   serverModuleImport?: string
   treatFrameworkDirectImportsAsServer?: boolean

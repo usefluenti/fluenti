@@ -48,7 +48,7 @@ function isFluentConfig(obj: Record<string, unknown>): boolean {
     'locales', 'sourceLocale', 'defaultLocale', 'compiledDir', 'compileOutDir',
     'serverModule', 'serverModuleOutDir', 'resolveLocale', 'cookieName',
     'devAutoCompile', 'buildAutoCompile', 'devAutoCompileDelay',
-    'dateFormats', 'numberFormats', 'fallbackChain',
+    'dateFormats', 'numberFormats', 'fallbackChain', 'loaderEnforce',
   ]
   return fluentOnlyKeys.some((key) => key in obj)
 }
@@ -129,10 +129,13 @@ function applyFluenti(
       { rules: fluentTurboRules, resolveAlias: fluentTurboAlias },
     ),
     webpack(config: WebpackConfig, options: WebpackOptions) {
-      // Add fluenti loader (enforce: pre — runs before other loaders)
+      // Add fluenti loader
+      const loaderEnforce = fluentConfig.loaderEnforce === undefined && !('loaderEnforce' in (fluentConfig as Record<string, unknown>))
+        ? 'pre' as const
+        : fluentConfig.loaderEnforce
       config.module.rules.push({
         test: /\.[jt]sx?$/,
-        enforce: 'pre' as const,
+        ...(loaderEnforce ? { enforce: loaderEnforce } : {}),
         exclude: [/node_modules/, /\.next/],
         use: [
           {
@@ -216,12 +219,7 @@ interface WebpackCompiler {
 
 interface WebpackConfig {
   module: {
-    rules: Array<{
-      test: RegExp
-      enforce?: 'pre' | 'post'
-      exclude?: Array<RegExp>
-      use: Array<{ loader: string; options: Record<string, unknown> }>
-    }>
+    rules: Array<Record<string, unknown>>
   }
   resolve: {
     alias?: Record<string, string>

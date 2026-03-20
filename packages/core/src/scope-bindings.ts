@@ -43,7 +43,7 @@ export function collectImportBindings(
     serverImports: [],
   }
 
-  const frameworkSource = fluentiPackages[options.framework]
+  const frameworkSource = fluentiPackages[options.framework] ?? `@fluenti/${options.framework}`
   const serverSource = options.serverModuleImport ?? '@fluenti/next'
   const frameworkServerSymbols = new Set<string>()
   const generatedServerSymbols = new Set<string>()
