@@ -4,6 +4,7 @@ import type { VirtualModuleOptions } from '../src/virtual-modules'
 
 const defaultOptions: VirtualModuleOptions = {
   catalogDir: 'src/locales/compiled',
+  catalogExtension: '.js',
   locales: ['en', 'fr', 'ja'],
   sourceLocale: 'en',
   defaultBuildLocale: 'en',
@@ -60,7 +61,7 @@ describe('loadVirtualSplitModule', () => {
 
       expect(code).toContain('__switchLocale')
       expect(code).toContain('__preloadLocale')
-      expect(code).toContain("globalThis[Symbol.for('fluenti.runtime.vue')]")
+      expect(code).toContain("globalThis[Symbol.for('fluenti.runtime.vue.v1')]")
     })
 
     it('exports loading state', () => {
@@ -169,7 +170,7 @@ describe('loadVirtualSplitModule', () => {
       expect(code).not.toContain("'en': () => import(")
       expect(code).toContain("'fr': () => import(")
       expect(code).toContain("'ja': () => import(")
-      expect(code).toContain("globalThis[Symbol.for('fluenti.runtime.react')]")
+      expect(code).toContain("globalThis[Symbol.for('fluenti.runtime.react.v1')]")
     })
   })
 

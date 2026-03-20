@@ -37,7 +37,7 @@ describe('fluentiReact', () => {
       expect(code).not.toContain('shallowReactive')
       expect(code).not.toContain('createStore')
       expect(code).not.toContain('createSignal')
-      expect(code).toContain("globalThis[Symbol.for('fluenti.runtime.react')]")
+      expect(code).toContain("globalThis[Symbol.for('fluenti.runtime.react.v1')]")
     })
 
     it('generates React route runtime', () => {

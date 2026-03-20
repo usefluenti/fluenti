@@ -19,7 +19,7 @@ function unwrapMessages(allMessages: Record<string, unknown>): Record<string, Me
   return result
 }
 
-const SPLIT_RUNTIME_KEY = Symbol.for('fluenti.runtime.react')
+const SPLIT_RUNTIME_KEY = Symbol.for('fluenti.runtime.react.v1')
 
 function getSplitRuntimeModule(): SplitRuntimeModule | null {
   const runtime = (globalThis as Record<PropertyKey, unknown>)[SPLIT_RUNTIME_KEY]

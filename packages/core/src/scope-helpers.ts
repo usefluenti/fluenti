@@ -39,7 +39,7 @@ export function finalizeImports(
   needsServerImport: boolean,
   options: ScopeTransformOptions,
 ): void {
-  const frameworkSource = FLUENTI_PACKAGES[options.framework]
+  const frameworkSource = FLUENTI_PACKAGES[options.framework] ?? `@fluenti/${options.framework}`
   const serverSource = options.serverModuleImport ?? '@fluenti/next'
 
   for (const statement of program.body) {

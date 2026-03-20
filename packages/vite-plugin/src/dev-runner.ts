@@ -11,6 +11,10 @@ export interface DevRunnerOptions {
   throwOnError?: boolean
   /** Run only compile (skip extract). Useful for production builds where source is unchanged. */
   compileOnly?: boolean
+  /** Called before compile runs. Return false to skip compilation. */
+  onBeforeCompile?: () => boolean | void | Promise<boolean | void>
+  /** Called after compile completes successfully */
+  onAfterCompile?: () => void | Promise<void>
 }
 
 /**
@@ -34,6 +38,11 @@ export function resolveCliBin(cwd: string): string | null {
  * or fall back to shell-out for extract + compile (dev mode).
  */
 export async function runExtractCompile(options: DevRunnerOptions): Promise<void> {
+  if (options.onBeforeCompile) {
+    const result = await options.onBeforeCompile()
+    if (result === false) return
+  }
+
   if (options.compileOnly) {
     try {
       // Resolve @fluenti/cli from the project's cwd (not from this package's location)
@@ -44,6 +53,7 @@ export async function runExtractCompile(options: DevRunnerOptions): Promise<void
       const { runCompile } = projectRequire('@fluenti/cli')
       await runCompile(options.cwd)
       console.log('[fluenti] Compiling... done')
+      if (options.onAfterCompile) await options.onAfterCompile()
       options.onSuccess?.()
       return
     } catch (e) {
@@ -82,6 +92,7 @@ export async function runExtractCompile(options: DevRunnerOptions): Promise<void
           options.onError?.(error)
         } else {
           console.log('[fluenti] Extracting and compiling... done')
+          if (options.onAfterCompile) void Promise.resolve(options.onAfterCompile()).catch(() => {})
           options.onSuccess?.()
         }
         resolve()
