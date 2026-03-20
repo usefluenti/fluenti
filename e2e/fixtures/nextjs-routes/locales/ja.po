@@ -1,65 +1,94 @@
 msgid ""
 msgstr "Content-Type: text/plain; charset=utf-8\n"
 
+#: ./src/components/Nav.tsx:24
 msgid "Home"
 msgstr "ホーム"
 
+#: ./src/app/[locale]/plurals/page.tsx:11
 msgid "Plurals"
 msgstr "複数形"
 
+#: ./src/components/Nav.tsx:26
 msgid "RSC"
 msgstr "RSC"
 
+#: ./src/app/[locale]/streaming/page.tsx:14
 msgid "Streaming"
 msgstr "ストリーミング"
 
+#: ./src/components/Nav.tsx:28
 msgid "Actions"
 msgstr "アクション"
 
+#: ./src/components/Nav.tsx:29
 msgid "Fallback"
 msgstr "フォールバック"
 
+#: ./src/app/[locale]/fallback/page.tsx:13
 msgid "Welcome to Fluenti"
 msgstr "Fluenti へようこそ"
 
+#: ./src/app/[locale]/page.tsx:12
 msgid "This is the home page."
 msgstr "こちらはホームページです。"
 
+#: ./src/app/[locale]/page.tsx:13
 msgid "Hello, {name}!"
 msgstr "こんにちは、{name}さん！"
 
+#: ./src/app/[locale]/page.tsx:14
 msgid "Current locale: {locale}"
 msgstr "現在のロケール：{locale}"
 
+#: ./src/app/[locale]/fallback/page.tsx:10
+msgid "Fallback Demo"
+msgstr "フォールバックデモ"
+
+#: ./src/app/[locale]/fallback/page.tsx:12
+msgid "This key only exists in English"
+msgstr ""
+
+#: ./src/app/[locale]/plurals/page.tsx:13
+msgid "{count, plural, =0 {No messages} one {# message} other {# messages}}"
+msgstr ""
+
+#: ./src/app/[locale]/plurals/page.tsx:22
 msgid "Add"
 msgstr "追加"
 
+#: ./src/app/[locale]/plurals/page.tsx:25
 msgid "Reset"
 msgstr "リセット"
 
+#: ./src/app/[locale]/rsc/page.tsx:18
 msgid "Server rendered"
 msgstr "サーバーレンダリング"
 
+#: ./src/app/[locale]/rsc/page.tsx:19
 msgid "This page is a React Server Component."
 msgstr "このページは React サーバーコンポーネントです。"
 
+#: ./src/app/[locale]/rsc/page.tsx:20
 msgid "Current server locale: {locale}"
 msgstr "現在のサーバーロケール：{locale}"
 
-msgid "Streamed content loaded!"
-msgstr "ストリーミングコンテンツが読み込まれました！"
-
-msgid "Server Action Demo"
-msgstr "サーバーアクションデモ"
-
-msgid "Submit"
-msgstr "送信"
-
-msgid "Server says: {result}"
-msgstr "サーバーの応答：{result}"
-
+#: ./src/app/[locale]/server-action/actions.ts:6
 msgid "Hello from server action"
 msgstr "サーバーアクションからこんにちは"
 
-msgid "Fallback Demo"
-msgstr "フォールバックデモ"
+#: ./src/app/[locale]/server-action/page.tsx:12
+msgid "Server Action Demo"
+msgstr "サーバーアクションデモ"
+
+#: ./src/app/[locale]/server-action/page.tsx:20
+msgid "Submit"
+msgstr "送信"
+
+#: ./src/app/[locale]/server-action/page.tsx:23
+msgid "Server says: {result}"
+msgstr "サーバーの応答：{result}"
+
+#: ./src/app/[locale]/streaming/page.tsx:7
+msgid "Streamed content loaded!"
+msgstr "ストリーミングコンテンツが読み込まれました！"

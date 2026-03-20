@@ -1,65 +1,94 @@
 msgid ""
 msgstr "Content-Type: text/plain; charset=utf-8\n"
 
+#: ./src/components/Nav.tsx:24
 msgid "Home"
 msgstr "首页"
 
+#: ./src/app/[locale]/plurals/page.tsx:11
 msgid "Plurals"
 msgstr "复数"
 
+#: ./src/components/Nav.tsx:26
 msgid "RSC"
 msgstr "RSC"
 
+#: ./src/app/[locale]/streaming/page.tsx:14
 msgid "Streaming"
 msgstr "流式传输"
 
+#: ./src/components/Nav.tsx:28
 msgid "Actions"
 msgstr "操作"
 
+#: ./src/components/Nav.tsx:29
 msgid "Fallback"
 msgstr "回退"
 
+#: ./src/app/[locale]/fallback/page.tsx:13
 msgid "Welcome to Fluenti"
 msgstr "欢迎使用 Fluenti"
 
+#: ./src/app/[locale]/page.tsx:12
 msgid "This is the home page."
 msgstr "这是首页。"
 
+#: ./src/app/[locale]/page.tsx:13
 msgid "Hello, {name}!"
 msgstr "你好，{name}！"
 
+#: ./src/app/[locale]/page.tsx:14
 msgid "Current locale: {locale}"
 msgstr "当前语言：{locale}"
 
+#: ./src/app/[locale]/fallback/page.tsx:10
+msgid "Fallback Demo"
+msgstr "回退演示"
+
+#: ./src/app/[locale]/fallback/page.tsx:12
+msgid "This key only exists in English"
+msgstr ""
+
+#: ./src/app/[locale]/plurals/page.tsx:13
+msgid "{count, plural, =0 {No messages} one {# message} other {# messages}}"
+msgstr ""
+
+#: ./src/app/[locale]/plurals/page.tsx:22
 msgid "Add"
 msgstr "添加"
 
+#: ./src/app/[locale]/plurals/page.tsx:25
 msgid "Reset"
 msgstr "重置"
 
+#: ./src/app/[locale]/rsc/page.tsx:18
 msgid "Server rendered"
 msgstr "服务端渲染"
 
+#: ./src/app/[locale]/rsc/page.tsx:19
 msgid "This page is a React Server Component."
 msgstr "此页面是 React 服务端组件。"
 
+#: ./src/app/[locale]/rsc/page.tsx:20
 msgid "Current server locale: {locale}"
 msgstr "当前服务端语言：{locale}"
 
-msgid "Streamed content loaded!"
-msgstr "流式内容加载完成！"
-
-msgid "Server Action Demo"
-msgstr "Server Action 演示"
-
-msgid "Submit"
-msgstr "提交"
-
-msgid "Server says: {result}"
-msgstr "服务端响应：{result}"
-
+#: ./src/app/[locale]/server-action/actions.ts:6
 msgid "Hello from server action"
 msgstr "来自 Server Action 的问候"
 
-msgid "Fallback Demo"
-msgstr "回退演示"
+#: ./src/app/[locale]/server-action/page.tsx:12
+msgid "Server Action Demo"
+msgstr "Server Action 演示"
+
+#: ./src/app/[locale]/server-action/page.tsx:20
+msgid "Submit"
+msgstr "提交"
+
+#: ./src/app/[locale]/server-action/page.tsx:23
+msgid "Server says: {result}"
+msgstr "服务端响应：{result}"
+
+#: ./src/app/[locale]/streaming/page.tsx:7
+msgid "Streamed content loaded!"
+msgstr "流式内容加载完成！"

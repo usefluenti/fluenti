@@ -19,6 +19,11 @@ function escapeStringLiteral(str: string): string {
     .replace(/\r/g, '\\r')
 }
 
+/** Generate safe JS property access: `v.name` for identifiers, `v[0]` for numeric names */
+function propAccess(obj: string, name: string): string {
+  return /^\d/.test(name) ? `${obj}[${name}]` : `${obj}.${name}`
+}
+
 function escapeTemplateLiteral(str: string): string {
   return str
     .replace(/\\/g, '\\\\')
@@ -29,7 +34,7 @@ function escapeTemplateLiteral(str: string): string {
 }
 
 function messageToTemplateString(message: string): string {
-  return message.replace(ICU_VAR_REGEX, (_match, name: string) => `\${v.${name}}`)
+  return message.replace(ICU_VAR_REGEX, (_match, name: string) => `\${${propAccess('v', name)}}`)
 }
 
 
@@ -62,7 +67,7 @@ function astNodeToJs(node: ASTNode, locale: string): string {
 
     case 'variable':
       if (node.name === '#') return 'String(__c)'
-      return `String(v.${node.name} ?? '{${node.name}}')`
+      return `String(${propAccess('v', node.name)} ?? '{${node.name}}')`
 
     case 'plural':
       return pluralToJs(node as PluralNode, locale)
@@ -71,13 +76,14 @@ function astNodeToJs(node: ASTNode, locale: string): string {
       return selectToJs(node as SelectNode, locale)
 
     case 'function':
-      return `String(v.${node.variable} ?? '')`
+      return `String(${propAccess('v', node.variable)} ?? '')`
   }
 }
 
 function pluralToJs(node: PluralNode, locale: string): string {
   const offset = node.offset ?? 0
-  const countExpr = offset ? `(v.${node.variable} - ${offset})` : `v.${node.variable}`
+  const access = propAccess('v', node.variable)
+  const countExpr = offset ? `(${access} - ${offset})` : access
 
   const lines: string[] = []
   lines.push(`((c) => { const __c = c; `)
@@ -127,7 +133,7 @@ function selectToJs(node: SelectNode, locale: string): string {
     ? astToJsExpression(node.options['other'], locale)
     : "''"
   lines.push(`return ${otherBody}; `)
-  lines.push(`})(String(v.${node.variable} ?? ''))`)
+  lines.push(`})(String(${propAccess('v', node.variable)} ?? ''))`)
 
   return lines.join('')
 }
