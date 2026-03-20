@@ -5,12 +5,14 @@ import solidPlugin from 'vite-plugin-solid'
 export default defineConfig({
   build: {
     lib: {
-      entry: 'src/index.ts',
+      entry: {
+        index: 'src/index.ts',
+        'vite-plugin': 'src/vite-plugin.ts',
+      },
       formats: ['es', 'cjs'],
-      fileName: 'index',
     },
     rollupOptions: {
-      external: ['solid-js', 'solid-js/web', 'solid-js/jsx-runtime', '@fluenti/core'],
+      external: ['solid-js', 'solid-js/web', 'solid-js/jsx-runtime', 'solid-js/store', '@fluenti/core', /^@fluenti\/vite-plugin/, 'vite', /^node:/],
     },
     sourcemap: true,
     emptyOutDir: true,

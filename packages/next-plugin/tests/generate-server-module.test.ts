@@ -74,7 +74,7 @@ describe('generateServerModule', () => {
     })
 
     const serverSource = writtenFiles['/project/node_modules/.fluenti/server.js']!
-    expect(serverSource).toContain("import __resolveLocale from './lib/resolve-locale'")
+    expect(serverSource).toContain("import __resolveLocale from '../../lib/resolve-locale'")
     expect(serverSource).toContain('resolveLocale: __resolveLocale,')
     expect(serverSource).not.toContain("cookies().get('locale')")
   })

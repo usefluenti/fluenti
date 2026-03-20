@@ -62,6 +62,59 @@ export default withFluenti({
 `@fluenti/next/provider` also exports a `I18nProvider`, but that is a **client-only** wrapper without server-side initialization. Unless you have a custom server setup, always import from `@fluenti/next`.
 </Aside>
 
+#### Path-based routing (recommended)
+
+Use `[locale]` segments so the server always knows the correct locale from the URL. This prevents hydration mismatches and ensures correct SSR/SEO:
+
+```tsx
+// src/app/[locale]/layout.tsx
+import { getDirection } from '@fluenti/core'
+import { I18nProvider } from '@fluenti/next'
+
+export default async function LocaleLayout({
+  children,
+  params,
+}: {
+  children: React.ReactNode
+  params: Promise<{ locale: string }>
+}) {
+  const { locale } = await params
+  return (
+    <div dir={getDirection(locale)}>
+      <I18nProvider locale={locale}>{children}</I18nProvider>
+    </div>
+  )
+}
+```
+
+Add middleware to redirect bare paths to the default locale:
+
+```ts
+// src/middleware.ts
+import { NextResponse, type NextRequest } from 'next/server'
+
+const locales = ['en', 'zh-CN', 'ja']
+const defaultLocale = 'en'
+
+export function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl
+  const hasLocale = locales.some(l => pathname.startsWith(`/${l}/`) || pathname === `/${l}`)
+  if (hasLocale) return
+  const locale = request.cookies.get('locale')?.value ?? defaultLocale
+  return NextResponse.redirect(new URL(`/${locale}${pathname}`, request.url))
+}
+
+export const config = { matcher: ['/((?!_next|api|favicon).*)'] }
+```
+
+<Aside type="caution">
+  **Cookie-only locale detection causes SSR mismatches.** If you don't use `[locale]` in the URL, the server has no reliable way to determine the locale for the initial render. This leads to the server rendering `defaultLocale` content, which then flickers to the correct locale on the client. Always use path-based routing for production apps.
+</Aside>
+
+#### Cookie-based routing (alternative)
+
+If path-based routing is not possible, you can read the locale from a cookie:
+
 ```tsx
 // src/app/layout.tsx
 import { cookies } from 'next/headers'
@@ -73,9 +126,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang={locale} dir={getDirection(locale)}>
       <body>
-        <I18nProvider locale={locale}>
-          {children}
-        </I18nProvider>
+        <I18nProvider locale={locale}>{children}</I18nProvider>
       </body>
     </html>
   )
@@ -86,25 +137,45 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   The `@fluenti/next` module is generated at build time by `withFluenti()`. Types are exported directly from the package, so no `@ts-expect-error` is needed.
 </Aside>
 
+## `generateMetadata`
+
+Next.js conventional exports like `generateMetadata` are automatically recognized as server-eligible and promoted to `async` by the compiler. No special setup is needed:
+
+```tsx
+// src/app/[locale]/page.tsx
+import { t } from '@fluenti/react'
+
+export function generateMetadata() {
+  return {
+    title: t`My Page`,
+    description: t`Welcome to my page`,
+  }
+}
+```
+
+This also works for `generateStaticParams`, `generateViewport`, `generateSitemaps`, and `generateImageMetadata`.
+
 ## Client Components
 
 Client components use `` t`...` `` via `import { t } from '@fluenti/react'`:
 
 ```tsx
-// src/app/page.tsx
+// src/components/LocaleSwitcher.tsx
 'use client'
 
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import { t, useI18n } from '@fluenti/react'
 
-export default function Home() {
-  const { setLocale, preloadLocale } = useI18n()
+export function LocaleSwitcher() {
+  const { locale, setLocale, preloadLocale } = useI18n()
   const router = useRouter()
+  const pathname = usePathname()
+  const pathWithoutLocale = pathname.replace(/^\/[^/]+/, '') || '/'
 
   const switchLocale = async (loc: string) => {
     document.cookie = `locale=${loc};path=/;max-age=31536000`
     await setLocale(loc)
-    router.refresh()
+    router.push(`/${loc}${pathWithoutLocale}`)
   }
 
   return (
@@ -120,7 +191,7 @@ export default function Home() {
 ```
 
 <Aside type="caution">
-  **Locale switching requires `router.refresh()`.** After updating the locale cookie and calling `setLocale()`, call `router.refresh()` from `next/navigation` to trigger the server layout to re-read the cookie and update `<html lang>`.
+  **With path-based routing, use `router.push()` to navigate to the new locale path.** The cookie is set for future visits. With cookie-only routing, use `router.refresh()` instead.
 </Aside>
 
 ## React Server Components (RSC)
@@ -207,24 +278,25 @@ export const { setLocale, getI18n, Trans, Plural, DateTime, NumberFormat } = cre
 
 ## Hybrid: Client + Server in the same app
 
-You can use both patterns together. The `I18nProvider` in your layout handles both:
+You can use both patterns together. The `I18nProvider` in your `[locale]` layout handles both:
 
 ```tsx
-// app/layout.tsx
-import { cookies } from 'next/headers'
+// app/[locale]/layout.tsx
 import { getDirection } from '@fluenti/core'
 import { I18nProvider } from '@fluenti/next'
 
-export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const locale = (await cookies()).get('locale')?.value ?? 'en'
+export default async function LocaleLayout({
+  children,
+  params,
+}: {
+  children: React.ReactNode
+  params: Promise<{ locale: string }>
+}) {
+  const { locale } = await params
   return (
-    <html lang={locale} dir={getDirection(locale)}>
-      <body>
-        <I18nProvider locale={locale}>
-          {children}
-        </I18nProvider>
-      </body>
-    </html>
+    <div dir={getDirection(locale)}>
+      <I18nProvider locale={locale}>{children}</I18nProvider>
+    </div>
   )
 }
 ```

@@ -24,6 +24,10 @@
     ".": {
       "import": { "types": "./dist/index.d.ts", "default": "./dist/index.js" },
       "require": { "types": "./dist/index.d.ts", "default": "./dist/index.cjs" }
+    },
+    "./vite-plugin": {
+      "import": { "types": "./dist/vite-plugin.d.ts", "default": "./dist/vite-plugin.js" },
+      "require": { "types": "./dist/vite-plugin.d.ts", "default": "./dist/vite-plugin.cjs" }
     }
   },
   "files": ["dist"],
@@ -34,10 +38,15 @@
     "typecheck": "tsc --noEmit"
   },
   "peerDependencies": {
-    "vue": "^3.5"
+    "vue": "^3.5",
+    "vite": "^5 || ^6 || ^8"
+  },
+  "peerDependenciesMeta": {
+    "vite": { "optional": true }
   },
   "dependencies": {
-    "@fluenti/core": "workspace:*"
+    "@fluenti/core": "workspace:*",
+    "@fluenti/vite-plugin": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^5.9",

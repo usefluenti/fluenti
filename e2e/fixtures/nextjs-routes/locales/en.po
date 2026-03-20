@@ -1,0 +1,68 @@
+msgid ""
+msgstr "Content-Type: text/plain; charset=utf-8\n"
+
+msgid "Home"
+msgstr ""
+
+msgid "Plurals"
+msgstr ""
+
+msgid "RSC"
+msgstr ""
+
+msgid "Streaming"
+msgstr ""
+
+msgid "Actions"
+msgstr ""
+
+msgid "Fallback"
+msgstr ""
+
+msgid "Welcome to Fluenti"
+msgstr ""
+
+msgid "This is the home page."
+msgstr ""
+
+msgid "Hello, {name}!"
+msgstr ""
+
+msgid "Current locale: {locale}"
+msgstr ""
+
+msgid "This key only exists in English"
+msgstr ""
+
+msgid "Add"
+msgstr ""
+
+msgid "Reset"
+msgstr ""
+
+msgid "Server rendered"
+msgstr ""
+
+msgid "This page is a React Server Component."
+msgstr ""
+
+msgid "Current server locale: {locale}"
+msgstr ""
+
+msgid "Streamed content loaded!"
+msgstr ""
+
+msgid "Server Action Demo"
+msgstr ""
+
+msgid "Submit"
+msgstr ""
+
+msgid "Server says: {result}"
+msgstr ""
+
+msgid "Hello from server action"
+msgstr ""
+
+msgid "Fallback Demo"
+msgstr ""

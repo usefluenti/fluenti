@@ -4,9 +4,11 @@ import dts from 'vite-plugin-dts'
 export default defineConfig({
   build: {
     lib: {
-      entry: 'src/index.ts',
+      entry: {
+        index: 'src/index.ts',
+        'sfc-transform': 'src/sfc-transform.ts',
+      },
       formats: ['es', 'cjs'],
-      fileName: 'index',
     },
     rollupOptions: {
       external: ['vite', /^@fluenti\/core/, '@vue/compiler-sfc', /^node:/],
@@ -15,7 +17,7 @@ export default defineConfig({
     emptyOutDir: true,
   },
   plugins: [
-    dts({ rollupTypes: false }),
+    dts({ rollupTypes: false, tsconfigPath: './tsconfig.build.json' }),
   ],
   test: {
     coverage: {

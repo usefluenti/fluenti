@@ -60,7 +60,7 @@ const formatted = t('You have {count} items', { count: 42 })
 ### 1. Install
 
 ```bash
-pnpm add @fluenti/core @fluenti/vue @fluenti/vite-plugin
+pnpm add @fluenti/core @fluenti/vue
 ```
 
 ### 2. Configure Vite
@@ -68,10 +68,10 @@ pnpm add @fluenti/core @fluenti/vue @fluenti/vite-plugin
 ```ts
 // vite.config.ts
 import vue from '@vitejs/plugin-vue'
-import fluenti from '@fluenti/vite-plugin'
+import fluentiVue from '@fluenti/vue/vite-plugin'
 
 export default {
-  plugins: [vue(), fluenti({ framework: 'vue' })],
+  plugins: [vue(), fluentiVue()],
 }
 ```
 

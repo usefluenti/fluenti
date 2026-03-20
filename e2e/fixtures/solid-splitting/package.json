@@ -9,7 +9,6 @@
   "dependencies": {
     "@fluenti/cli": "workspace:*",
     "@fluenti/solid": "workspace:*",
-    "@fluenti/vite-plugin": "workspace:*",
     "solid-js": "^1.8"
   },
   "devDependencies": {

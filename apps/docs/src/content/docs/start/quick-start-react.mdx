@@ -11,7 +11,7 @@ import { Steps } from '@astrojs/starlight/components'
 
    ```bash
    pnpm add @fluenti/core @fluenti/react
-   pnpm add -D @fluenti/cli @fluenti/vite-plugin
+   pnpm add -D @fluenti/cli
    ```
 
 2. **Configure Vite**
@@ -20,11 +20,11 @@ import { Steps } from '@astrojs/starlight/components'
    // vite.config.ts
    import { defineConfig } from 'vite'
    import react from '@vitejs/plugin-react'
-   import fluenti from '@fluenti/vite-plugin'
+   import fluentiReact from '@fluenti/react/vite-plugin'
 
    export default defineConfig({
      plugins: [
-       fluenti({ framework: 'react' }),
+       fluentiReact(),
        react(),
      ],
    })

@@ -4,12 +4,14 @@ import dts from 'vite-plugin-dts'
 export default defineConfig({
   build: {
     lib: {
-      entry: 'src/index.ts',
+      entry: {
+        index: 'src/index.ts',
+        'vite-plugin': 'src/vite-plugin.ts',
+      },
       formats: ['es', 'cjs'],
-      fileName: 'index',
     },
     rollupOptions: {
-      external: ['vue', '@fluenti/core'],
+      external: ['vue', '@fluenti/core', /^@fluenti\/vite-plugin/, 'vite', /^node:/],
     },
     sourcemap: true,
     emptyOutDir: true,

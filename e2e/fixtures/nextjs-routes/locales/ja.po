@@ -1,0 +1,65 @@
+msgid ""
+msgstr "Content-Type: text/plain; charset=utf-8\n"
+
+msgid "Home"
+msgstr "ホーム"
+
+msgid "Plurals"
+msgstr "複数形"
+
+msgid "RSC"
+msgstr "RSC"
+
+msgid "Streaming"
+msgstr "ストリーミング"
+
+msgid "Actions"
+msgstr "アクション"
+
+msgid "Fallback"
+msgstr "フォールバック"
+
+msgid "Welcome to Fluenti"
+msgstr "Fluenti へようこそ"
+
+msgid "This is the home page."
+msgstr "こちらはホームページです。"
+
+msgid "Hello, {name}!"
+msgstr "こんにちは、{name}さん！"
+
+msgid "Current locale: {locale}"
+msgstr "現在のロケール：{locale}"
+
+msgid "Add"
+msgstr "追加"
+
+msgid "Reset"
+msgstr "リセット"
+
+msgid "Server rendered"
+msgstr "サーバーレンダリング"
+
+msgid "This page is a React Server Component."
+msgstr "このページは React サーバーコンポーネントです。"
+
+msgid "Current server locale: {locale}"
+msgstr "現在のサーバーロケール：{locale}"
+
+msgid "Streamed content loaded!"
+msgstr "ストリーミングコンテンツが読み込まれました！"
+
+msgid "Server Action Demo"
+msgstr "サーバーアクションデモ"
+
+msgid "Submit"
+msgstr "送信"
+
+msgid "Server says: {result}"
+msgstr "サーバーの応答：{result}"
+
+msgid "Hello from server action"
+msgstr "サーバーアクションからこんにちは"
+
+msgid "Fallback Demo"
+msgstr "フォールバックデモ"

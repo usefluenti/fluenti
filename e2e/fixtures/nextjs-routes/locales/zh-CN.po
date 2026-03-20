@@ -1,0 +1,65 @@
+msgid ""
+msgstr "Content-Type: text/plain; charset=utf-8\n"
+
+msgid "Home"
+msgstr "首页"
+
+msgid "Plurals"
+msgstr "复数"
+
+msgid "RSC"
+msgstr "RSC"
+
+msgid "Streaming"
+msgstr "流式传输"
+
+msgid "Actions"
+msgstr "操作"
+
+msgid "Fallback"
+msgstr "回退"
+
+msgid "Welcome to Fluenti"
+msgstr "欢迎使用 Fluenti"
+
+msgid "This is the home page."
+msgstr "这是首页。"
+
+msgid "Hello, {name}!"
+msgstr "你好，{name}！"
+
+msgid "Current locale: {locale}"
+msgstr "当前语言：{locale}"
+
+msgid "Add"
+msgstr "添加"
+
+msgid "Reset"
+msgstr "重置"
+
+msgid "Server rendered"
+msgstr "服务端渲染"
+
+msgid "This page is a React Server Component."
+msgstr "此页面是 React 服务端组件。"
+
+msgid "Current server locale: {locale}"
+msgstr "当前服务端语言：{locale}"
+
+msgid "Streamed content loaded!"
+msgstr "流式内容加载完成！"
+
+msgid "Server Action Demo"
+msgstr "Server Action 演示"
+
+msgid "Submit"
+msgstr "提交"
+
+msgid "Server says: {result}"
+msgstr "服务端响应：{result}"
+
+msgid "Hello from server action"
+msgstr "来自 Server Action 的问候"
+
+msgid "Fallback Demo"
+msgstr "回退演示"

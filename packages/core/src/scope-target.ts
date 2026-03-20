@@ -8,6 +8,19 @@ import type {
   ScopeTransformOptions,
 } from './scope-types'
 
+/**
+ * Next.js conventional exports that are server-eligible even though
+ * they start with a lowercase letter (not PascalCase components).
+ * These are automatically promoted to async when they use `t`.
+ */
+const NEXT_CONVENTIONAL_EXPORTS = new Set([
+  'generateMetadata',
+  'generateStaticParams',
+  'generateViewport',
+  'generateSitemaps',
+  'generateImageMetadata',
+])
+
 export function createTargetContext(
   node: ProgramNode | FunctionLikeNode,
   scope: Scope,
@@ -37,6 +50,7 @@ export function createFunctionTarget(
     : isComponentName(name) || isHookName(name)
   const serverEligible = node.async === true
     || (options.treatFrameworkDirectImportsAsServer === true && isComponentName(name))
+    || (options.treatFrameworkDirectImportsAsServer === true && isNextConventionalExport(name))
 
   if (!clientEligible && !serverEligible) {
     return null
@@ -74,4 +88,8 @@ export function isComponentName(name: string | null): boolean {
 
 export function isHookName(name: string | null): boolean {
   return !!name && /^use[A-Z0-9_]/.test(name)
+}
+
+export function isNextConventionalExport(name: string | null): boolean {
+  return !!name && NEXT_CONVENTIONAL_EXPORTS.has(name)
 }

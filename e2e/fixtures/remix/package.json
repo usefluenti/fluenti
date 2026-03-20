@@ -11,7 +11,6 @@
     "@fluenti/cli": "workspace:*",
     "@fluenti/core": "workspace:*",
     "@fluenti/react": "workspace:*",
-    "@fluenti/vite-plugin": "workspace:*",
     "@remix-run/node": "^2",
     "@remix-run/react": "^2",
     "react": "^19.0.0",

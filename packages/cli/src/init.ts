@@ -23,10 +23,10 @@ const FRAMEWORK_DETECTION: Array<{
 }> = [
   { dep: 'next', name: 'nextjs', pluginPackage: '@fluenti/next' },
   { dep: 'nuxt', name: 'nuxt', pluginPackage: '@fluenti/vue' },
-  { dep: '@solidjs/start', name: 'solidstart', pluginPackage: '@fluenti/vite-plugin' },
-  { dep: 'vue', name: 'vue', pluginPackage: '@fluenti/vite-plugin' },
-  { dep: 'solid-js', name: 'solid', pluginPackage: '@fluenti/vite-plugin' },
-  { dep: 'react', name: 'react', pluginPackage: '@fluenti/vite-plugin' },
+  { dep: '@solidjs/start', name: 'solidstart', pluginPackage: '@fluenti/solid' },
+  { dep: 'vue', name: 'vue', pluginPackage: '@fluenti/vue' },
+  { dep: 'solid-js', name: 'solid', pluginPackage: '@fluenti/solid' },
+  { dep: 'react', name: 'react', pluginPackage: '@fluenti/react' },
 ]
 
 /**
@@ -183,8 +183,8 @@ export async function runInit(options: { cwd: string }): Promise<void> {
       framework.name === 'nextjs'
         ? '2. Add withFluenti() to your next.config.ts'
         : framework.name !== 'unknown'
-          ? '2. Add fluentiPlugin() to your vite.config.ts'
-          : '2. Configure your build tool to use @fluenti/vite-plugin or @fluenti/next',
+          ? '2. Add the Vite plugin to your vite.config.ts (e.g. fluentiVue() from @fluenti/vue/vite-plugin)'
+          : '2. Configure your build tool with the framework Vite plugin or @fluenti/next',
       '3. Run: npx fluenti extract',
       '4. Translate your messages',
       '5. Run: npx fluenti compile',

@@ -29,7 +29,7 @@ Fluenti compiles your translations at build time so your production bundle ships
 
 ```bash
 pnpm add @fluenti/core @fluenti/react
-pnpm add -D @fluenti/cli @fluenti/vite-plugin
+pnpm add -D @fluenti/cli
 ```
 
 ### 2. Configure Vite
@@ -37,11 +37,11 @@ pnpm add -D @fluenti/cli @fluenti/vite-plugin
 ```ts
 // vite.config.ts
 import react from '@vitejs/plugin-react'
-import fluenti from '@fluenti/vite-plugin'
+import fluentiReact from '@fluenti/react/vite-plugin'
 
 export default {
   plugins: [
-    fluenti({ framework: 'react' }),
+    fluentiReact(),
     react(),
   ],
 }

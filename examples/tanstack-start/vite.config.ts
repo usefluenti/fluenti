@@ -2,7 +2,7 @@ import { defineConfig } from 'vite'
 import { tanstackStart } from '@tanstack/react-start/plugin/vite'
 import react from '@vitejs/plugin-react'
 import tsConfigPaths from 'vite-tsconfig-paths'
-import fluenti from '@fluenti/vite-plugin'
+import fluentiReact from '@fluenti/react/vite-plugin'
 
 export default defineConfig({
   server: {
@@ -12,7 +12,7 @@ export default defineConfig({
     tsConfigPaths({
       projects: ['./tsconfig.json'],
     }),
-    fluenti({ framework: 'react' }),
+    fluentiReact(),
     tanstackStart(),
     react(),
   ],

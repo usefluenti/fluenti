@@ -11,11 +11,11 @@ import { Steps, Aside } from '@astrojs/starlight/components'
 
    ```bash
    pnpm add @fluenti/core @fluenti/solid @solidjs/router @solidjs/start solid-js vinxi
-   pnpm add -D @fluenti/cli @fluenti/vite-plugin
+   pnpm add -D @fluenti/cli
    ```
 
    <Aside type="note">
-     SolidStart uses vinxi under the hood, but you still need `@fluenti/vite-plugin` in `app.config.ts` for compile-time `t` transforms.
+     SolidStart uses vinxi under the hood, but you still need the Fluenti Vite plugin in `app.config.ts` for compile-time `t` transforms.
    </Aside>
 
 2. **Configure SolidStart**
@@ -23,12 +23,12 @@ import { Steps, Aside } from '@astrojs/starlight/components'
    ```typescript
    // app.config.ts
    import { defineConfig } from '@solidjs/start/config'
-   import fluenti from '@fluenti/vite-plugin'
+   import fluentiSolid from '@fluenti/solid/vite-plugin'
 
    export default defineConfig({
      server: { preset: 'node-server' },
      vite: {
-       plugins: [fluenti({ framework: 'solid' })],
+       plugins: [fluentiSolid()],
      },
    })
    ```

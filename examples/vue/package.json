@@ -11,7 +11,6 @@
     "@fluenti/core": "workspace:*",
     "@fluenti/cli": "workspace:*",
     "@fluenti/vue": "workspace:*",
-    "@fluenti/vite-plugin": "workspace:*",
     "vue": "^3.5"
   },
   "devDependencies": {

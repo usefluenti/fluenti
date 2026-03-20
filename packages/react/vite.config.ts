@@ -8,6 +8,7 @@ export default defineConfig({
       entry: {
         index: 'src/index.ts',
         server: 'src/server.ts',
+        'vite-plugin': 'src/vite-plugin.ts',
       },
       formats: ['es', 'cjs'],
     },
@@ -16,6 +17,9 @@ export default defineConfig({
         /^react(?:\/.*)?$/,
         /^react-dom(?:\/.*)?$/,
         '@fluenti/core',
+        /^@fluenti\/vite-plugin/,
+        'vite',
+        /^node:/,
       ],
     },
     sourcemap: true,

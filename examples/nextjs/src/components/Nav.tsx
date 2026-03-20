@@ -1,17 +1,21 @@
 'use client'
 
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import { t, useI18n } from '@fluenti/react'
 
 export function Nav() {
   const { locale, setLocale, preloadLocale } = useI18n()
   const router = useRouter()
+  const pathname = usePathname()
+
+  /** Extract the path after the locale prefix: /en/plurals → /plurals */
+  const pathWithoutLocale = pathname.replace(/^\/[^/]+/, '') || '/'
 
   const switchLocale = async (loc: string) => {
     document.cookie = `locale=${loc};path=/;max-age=31536000`
     await setLocale(loc)
-    router.refresh()
+    router.push(`/${loc}${pathWithoutLocale}`)
   }
 
   return (
@@ -22,14 +26,14 @@ export function Nav() {
       </header>
 
       <nav style={{ display: 'flex', gap: '16px', marginBottom: '20px', flexWrap: 'wrap' }}>
-        <Link href="/" data-testid="nav-home">{t`Home`}</Link>
-        <Link href="/plurals" data-testid="nav-plurals">{t`Plurals`}</Link>
-        <Link href="/richtext" data-testid="nav-richtext">{t`Rich Text`}</Link>
-        <Link href="/rsc" data-testid="nav-rsc">{t`RSC`}</Link>
-        <Link href="/rsc-richtext" data-testid="nav-rsc-richtext">{t`RSC Rich Text`}</Link>
-        <Link href="/streaming" data-testid="nav-streaming">{t`Streaming`}</Link>
-        <Link href="/server-action" data-testid="nav-actions">{t`Actions`}</Link>
-        <Link href="/fallback" data-testid="nav-fallback">{t`Fallback`}</Link>
+        <Link href={`/${locale}`} data-testid="nav-home">{t`Home`}</Link>
+        <Link href={`/${locale}/plurals`} data-testid="nav-plurals">{t`Plurals`}</Link>
+        <Link href={`/${locale}/richtext`} data-testid="nav-richtext">{t`Rich Text`}</Link>
+        <Link href={`/${locale}/rsc`} data-testid="nav-rsc">{t`RSC`}</Link>
+        <Link href={`/${locale}/rsc-richtext`} data-testid="nav-rsc-richtext">{t`RSC Rich Text`}</Link>
+        <Link href={`/${locale}/streaming`} data-testid="nav-streaming">{t`Streaming`}</Link>
+        <Link href={`/${locale}/server-action`} data-testid="nav-actions">{t`Actions`}</Link>
+        <Link href={`/${locale}/fallback`} data-testid="nav-fallback">{t`Fallback`}</Link>
       </nav>
 
       <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>

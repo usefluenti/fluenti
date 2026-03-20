@@ -3,7 +3,9 @@ title: Formatting
 description: ICU interpolation, date formatting, and number formatting
 ---
 
-Fluenti provides ICU message interpolation via `format()`, catalog-based translation via `t()`, and locale-aware date/number formatting via `$d()` and `$n()`.
+import { Tabs, TabItem } from '@astrojs/starlight/components'
+
+Fluenti provides ICU message interpolation via `format()`, catalog-based translation via `t()`, and locale-aware date/number formatting via `d()` and `n()`.
 
 ## `t()` vs `format()`
 
@@ -48,18 +50,88 @@ Messages used with `t()` are extracted by `fluenti extract` and compiled into pe
 
 ---
 
-Fluenti also provides locale-aware date and number formatting via `$d()` and `$n()`.
+## Date Formatting — `d()`
 
-## Date Formatting — $d()
+<Tabs>
+<TabItem label="Vue">
 
 ```vue
+<script setup>
+import { useI18n } from '@fluenti/vue'
+const { d } = useI18n()
+const createdAt = new Date()
+</script>
+
 <template>
-  <p>{{ $d(createdAt) }}</p>           <!-- Default format -->
-  <p>{{ $d(createdAt, 'short') }}</p>  <!-- 1/15/2025 -->
-  <p>{{ $d(createdAt, 'long') }}</p>   <!-- Wednesday, January 15, 2025 -->
-  <p>{{ $d(createdAt, 'relative') }}</p> <!-- 3 days ago -->
+  <p>{{ d(createdAt) }}</p>              <!-- Default format -->
+  <p>{{ d(createdAt, 'short') }}</p>     <!-- 1/15/2025 -->
+  <p>{{ d(createdAt, 'long') }}</p>      <!-- Wednesday, January 15, 2025 -->
+  <p>{{ d(createdAt, 'relative') }}</p>  <!-- 3 days ago -->
 </template>
 ```
+
+Or use the `<DateTime>` component:
+
+```vue
+<DateTime :value="createdAt" style="long" />
+```
+
+</TabItem>
+<TabItem label="React">
+
+```tsx
+import { useI18n } from '@fluenti/react'
+
+function DateExample() {
+  const { d } = useI18n()
+  const createdAt = new Date()
+
+  return (
+    <div>
+      <p>{d(createdAt)}</p>              {/* Default format */}
+      <p>{d(createdAt, 'short')}</p>     {/* 1/15/2025 */}
+      <p>{d(createdAt, 'long')}</p>      {/* Wednesday, January 15, 2025 */}
+      <p>{d(createdAt, 'relative')}</p>  {/* 3 days ago */}
+    </div>
+  )
+}
+```
+
+Or use the `<DateTime>` component:
+
+```tsx
+<DateTime value={createdAt} style="long" />
+```
+
+</TabItem>
+<TabItem label="Solid">
+
+```tsx
+import { useI18n } from '@fluenti/solid'
+
+function DateExample() {
+  const { d } = useI18n()
+  const createdAt = new Date()
+
+  return (
+    <div>
+      <p>{d(createdAt)}</p>
+      <p>{d(createdAt, 'short')}</p>
+      <p>{d(createdAt, 'long')}</p>
+      <p>{d(createdAt, 'relative')}</p>
+    </div>
+  )
+}
+```
+
+Or use the `<DateTime>` component:
+
+```tsx
+<DateTime value={createdAt} style="long" />
+```
+
+</TabItem>
+</Tabs>
 
 ### Built-in Date Styles
 
@@ -72,15 +144,82 @@ Fluenti also provides locale-aware date and number formatting via `$d()` and `$n
 | `datetime` | Jan 15, 2025, 3:30 PM |
 | `relative` | 3 days ago / in 2 hours |
 
-## Number Formatting — $n()
+## Number Formatting — `n()`
+
+<Tabs>
+<TabItem label="Vue">
 
 ```vue
+<script setup>
+import { useI18n } from '@fluenti/vue'
+const { n } = useI18n()
+</script>
+
 <template>
-  <p>{{ $n(price, 'currency') }}</p>  <!-- $1,234.50 -->
-  <p>{{ $n(ratio, 'percent') }}</p>   <!-- 85% -->
-  <p>{{ $n(value, 'decimal') }}</p>   <!-- 1,234.50 -->
+  <p>{{ n(1234.5, 'currency') }}</p>  <!-- $1,234.50 -->
+  <p>{{ n(0.85, 'percent') }}</p>     <!-- 85% -->
+  <p>{{ n(1234.5, 'decimal') }}</p>   <!-- 1,234.50 -->
 </template>
 ```
+
+Or use the `<NumberFormat>` component:
+
+```vue
+<NumberFormat :value="1234.5" style="currency" />
+```
+
+</TabItem>
+<TabItem label="React">
+
+```tsx
+import { useI18n } from '@fluenti/react'
+
+function NumberExample() {
+  const { n } = useI18n()
+
+  return (
+    <div>
+      <p>{n(1234.5, 'currency')}</p>  {/* $1,234.50 */}
+      <p>{n(0.85, 'percent')}</p>     {/* 85% */}
+      <p>{n(1234.5, 'decimal')}</p>   {/* 1,234.50 */}
+    </div>
+  )
+}
+```
+
+Or use the `<NumberFormat>` component:
+
+```tsx
+<NumberFormat value={1234.5} style="currency" />
+```
+
+</TabItem>
+<TabItem label="Solid">
+
+```tsx
+import { useI18n } from '@fluenti/solid'
+
+function NumberExample() {
+  const { n } = useI18n()
+
+  return (
+    <div>
+      <p>{n(1234.5, 'currency')}</p>
+      <p>{n(0.85, 'percent')}</p>
+      <p>{n(1234.5, 'decimal')}</p>
+    </div>
+  )
+}
+```
+
+Or use the `<NumberFormat>` component:
+
+```tsx
+<NumberFormat value={1234.5} style="currency" />
+```
+
+</TabItem>
+</Tabs>
 
 ### Built-in Number Styles
 
@@ -105,9 +244,12 @@ The `currency` style automatically uses the correct currency for each locale:
 
 ## Custom Format Styles
 
-You can define your own date and number format styles when creating your i18n instance.
+Define your own date and number format styles when creating your i18n instance.
 
 ### Custom Date Formats
+
+<Tabs>
+<TabItem label="Vue">
 
 ```typescript
 const i18n = createFluentVue({
@@ -121,9 +263,53 @@ const i18n = createFluentVue({
 })
 ```
 
-Usage: `{{ $d(date, 'month-year') }}` → "January 2025"
+Usage: `{{ d(date, 'month-year') }}` → "January 2025"
+
+</TabItem>
+<TabItem label="React">
+
+```tsx
+<I18nProvider
+  locale="en"
+  messages={messages}
+  dateFormats={{
+    'month-year': { year: 'numeric', month: 'long' },
+    'time-24h': { hour: '2-digit', minute: '2-digit', hour12: false },
+    relative: 'relative',
+  }}
+>
+  <App />
+</I18nProvider>
+```
+
+Usage: `d(date, 'month-year')` → "January 2025"
+
+</TabItem>
+<TabItem label="Solid">
+
+```tsx
+<I18nProvider
+  locale="en"
+  messages={messages}
+  dateFormats={{
+    'month-year': { year: 'numeric', month: 'long' },
+    'time-24h': { hour: '2-digit', minute: '2-digit', hour12: false },
+    relative: 'relative',
+  }}
+>
+  <App />
+</I18nProvider>
+```
+
+Usage: `d(date, 'month-year')` → "January 2025"
+
+</TabItem>
+</Tabs>
 
 ### Custom Number Formats
+
+<Tabs>
+<TabItem label="Vue">
 
 ```typescript
 const i18n = createFluentVue({
@@ -141,17 +327,43 @@ const i18n = createFluentVue({
 })
 ```
 
-Usage: `{{ $n(1234567, 'compact') }}` → "1.2M"
+Usage: `{{ n(1234567, 'compact') }}` → "1.2M"
 
-### Solid
+</TabItem>
+<TabItem label="React">
 
-The same format options work with `createI18nContext`:
-
-```typescript
-const ctx = createI18nContext({
-  locale: 'en',
-  messages,
-  dateFormats: { ... },
-  numberFormats: { ... },
-})
+```tsx
+<I18nProvider
+  locale="en"
+  messages={messages}
+  numberFormats={{
+    compact: { notation: 'compact' },
+    'currency-no-cents': { style: 'currency', currency: 'USD', maximumFractionDigits: 0 },
+  }}
+>
+  <App />
+</I18nProvider>
 ```
+
+Usage: `n(1234567, 'compact')` → "1.2M"
+
+</TabItem>
+<TabItem label="Solid">
+
+```tsx
+<I18nProvider
+  locale="en"
+  messages={messages}
+  numberFormats={{
+    compact: { notation: 'compact' },
+    'currency-no-cents': { style: 'currency', currency: 'USD', maximumFractionDigits: 0 },
+  }}
+>
+  <App />
+</I18nProvider>
+```
+
+Usage: `n(1234567, 'compact')` → "1.2M"
+
+</TabItem>
+</Tabs>

@@ -1,5 +1,14 @@
+import type { Metadata } from 'next'
 import { t } from '@fluenti/react'
 import { setLocale, getI18n } from '@fluenti/next'
+
+// generateMetadata is auto-promoted to async and uses the locale from I18nProvider
+export function generateMetadata(): Metadata {
+  return {
+    title: t`Server rendered`,
+    description: t`This page is a React Server Component.`,
+  }
+}
 
 export default async function RSCPage({
   searchParams,
