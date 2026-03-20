@@ -40,7 +40,12 @@ export async function runExtractCompile(options: DevRunnerOptions): Promise<void
       // using createRequire so pnpm's strict node_modules layout works correctly.
       const projectRequire = createRequire(join(options.cwd, 'package.json'))
       const cliPath = projectRequire.resolve('@fluenti/cli')
-      const { runCompile } = await import(cliPath)
+      const mod = await import(cliPath)
+      // Handle CJS interop: minified CJS may wrap named exports under .default
+      const runCompile = mod.runCompile ?? mod.default?.runCompile
+      if (typeof runCompile !== 'function') {
+        throw new Error('Could not resolve runCompile from @fluenti/cli')
+      }
       await runCompile(options.cwd)
       console.log('[fluenti] Compiling... done')
       options.onSuccess?.()
