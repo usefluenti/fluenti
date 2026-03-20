@@ -1,70 +1,131 @@
 msgid ""
 msgstr "Content-Type: text/plain; charset=utf-8\n"
 
+#: ./src/App.tsx:27
 msgid "Fluenti React Playground"
 msgstr ""
 
+#: ./src/App.tsx:29
 msgid "Write text. Fluenti translates it. Zero config."
 msgstr ""
 
-msgid "Built with Fluenti and React"
+#: ./src/App.tsx:35
+msgid "Home"
 msgstr ""
 
+#: ./src/App.tsx:38
+msgid "Plurals"
+msgstr ""
+
+#: ./src/App.tsx:41
+msgid "Rich Text"
+msgstr ""
+
+#: ./src/App.tsx:69
 msgid "Welcome to Fluenti"
 msgstr ""
 
+#: ./src/App.tsx:70
 msgid "A modern i18n library for React"
 msgstr ""
 
+#: ./src/App.tsx:71
 msgid "Hello, {name}!"
+msgstr ""
+
+#: ./src/App.tsx:72
+msgid "You have {itemCount} items in your cart."
+msgstr ""
+
+#: ./src/App.tsx:73
+msgid "Current locale: {locale}"
+msgstr ""
+
+#: ./src/App.tsx:82
+msgid "This key only exists in English"
+msgstr ""
+
+#: ./src/App.tsx:84
+msgid "Features"
+msgstr ""
+
+#: ./src/App.tsx:86
+msgid "Reactive locale switching"
+msgstr ""
+
+#: ./src/App.tsx:87
+msgid "Rich text with React components"
+msgstr ""
+
+#: ./src/App.tsx:88
+msgid "Built-in plural support"
+msgstr ""
+
+#: ./src/App.tsx:89
+msgid "Type-safe message catalogs"
+msgstr ""
+
+#: ./src/App.tsx:96
+msgid "Plural Demos"
+msgstr ""
+
+#: ./src/App.tsx:98
+msgid "{count, plural, =0 {No messages} one {# message} other {# messages}}"
+msgstr ""
+
+#: ./src/App.tsx:107
+msgid "Add"
+msgstr ""
+
+#: ./src/App.tsx:110
+msgid "Remove"
+msgstr ""
+
+#: ./src/App.tsx:113
+msgid "Reset"
+msgstr ""
+
+#: ./src/App.tsx:117
+msgid "Select Demo"
+msgstr ""
+
+#: ./src/App.tsx:127
+msgid "Male"
+msgstr ""
+
+#: ./src/App.tsx:128
+msgid "Female"
+msgstr ""
+
+#: ./src/App.tsx:129
+msgid "Other"
+msgstr ""
+
+#: ./src/App.tsx:136
+msgid "Rich Text Demos"
+msgstr ""
+
+#: ./src/App.tsx:138
+msgid "Read the <0>documentation</0> for more info."
+msgstr ""
+
+#: ./src/App.tsx:141
+msgid "This is <0>important</0> information."
+msgstr ""
+
+#: ./src/App.tsx:144
+msgid "Please <0>sign in</0> or <1>register</1> to continue."
+msgstr ""
+
+#: ./src/App.tsx:150
+msgid "Built with Fluenti and React"
 msgstr ""
 
 msgid "You have {count} items in your cart."
 msgstr ""
 
-msgid "Current locale: {locale}"
-msgstr ""
-
-msgid "Features"
-msgstr ""
-
-msgid "Reactive locale switching"
-msgstr ""
-
-msgid "Rich text with React components"
-msgstr ""
-
-msgid "Built-in plural support"
-msgstr ""
-
-msgid "Type-safe message catalogs"
-msgstr ""
-
-msgid "Home"
-msgstr ""
-
-msgid "Plurals"
-msgstr ""
-
-msgid "Rich Text"
-msgstr ""
-
-msgid "Add"
-msgstr ""
-
-msgid "Remove"
-msgstr ""
-
-msgid "Reset"
-msgstr ""
-
-#. msg`Administrator`
-msgid "1d03gh6"
+msgid "Administrator"
 msgstr "Administrator"
 
-#. msg`Regular User`
-msgid "154355u"
+msgid "Regular User"
 msgstr "Regular User"
-
-msgid "This key only exists in English"
-msgstr ""

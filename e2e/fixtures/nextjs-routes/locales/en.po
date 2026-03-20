@@ -41,14 +41,6 @@ msgstr ""
 msgid "Current locale: {locale}"
 msgstr ""
 
-#: ./src/app/[locale]/fallback/page.tsx:10
-msgid "Fallback Demo"
-msgstr ""
-
-#: ./src/app/[locale]/fallback/page.tsx:12
-msgid "This key only exists in English"
-msgstr ""
-
 #: ./src/app/[locale]/plurals/page.tsx:13
 msgid "{count, plural, =0 {No messages} one {# message} other {# messages}}"
 msgstr ""
@@ -61,6 +53,14 @@ msgstr ""
 msgid "Reset"
 msgstr ""
 
+#: ./src/app/[locale]/fallback/page.tsx:10
+msgid "Fallback Demo"
+msgstr ""
+
+#: ./src/app/[locale]/fallback/page.tsx:12
+msgid "This key only exists in English"
+msgstr ""
+
 #: ./src/app/[locale]/rsc/page.tsx:18
 msgid "Server rendered"
 msgstr ""
@@ -71,6 +71,10 @@ msgstr ""
 
 #: ./src/app/[locale]/rsc/page.tsx:20
 msgid "Current server locale: {locale}"
+msgstr ""
+
+#: ./src/app/[locale]/streaming/page.tsx:7
+msgid "Streamed content loaded!"
 msgstr ""
 
 #: ./src/app/[locale]/server-action/actions.ts:6
@@ -87,8 +91,4 @@ msgstr ""
 
 #: ./src/app/[locale]/server-action/page.tsx:23
 msgid "Server says: {result}"
-msgstr ""
-
-#: ./src/app/[locale]/streaming/page.tsx:7
-msgid "Streamed content loaded!"
 msgstr ""

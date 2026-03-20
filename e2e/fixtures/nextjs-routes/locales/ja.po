@@ -41,14 +41,6 @@ msgstr "こんにちは、{name}さん！"
 msgid "Current locale: {locale}"
 msgstr "現在のロケール：{locale}"
 
-#: ./src/app/[locale]/fallback/page.tsx:10
-msgid "Fallback Demo"
-msgstr "フォールバックデモ"
-
-#: ./src/app/[locale]/fallback/page.tsx:12
-msgid "This key only exists in English"
-msgstr ""
-
 #: ./src/app/[locale]/plurals/page.tsx:13
 msgid "{count, plural, =0 {No messages} one {# message} other {# messages}}"
 msgstr ""
@@ -61,6 +53,14 @@ msgstr "追加"
 msgid "Reset"
 msgstr "リセット"
 
+#: ./src/app/[locale]/fallback/page.tsx:10
+msgid "Fallback Demo"
+msgstr "フォールバックデモ"
+
+#: ./src/app/[locale]/fallback/page.tsx:12
+msgid "This key only exists in English"
+msgstr ""
+
 #: ./src/app/[locale]/rsc/page.tsx:18
 msgid "Server rendered"
 msgstr "サーバーレンダリング"
@@ -72,6 +72,10 @@ msgstr "このページは React サーバーコンポーネントです。"
 #: ./src/app/[locale]/rsc/page.tsx:20
 msgid "Current server locale: {locale}"
 msgstr "現在のサーバーロケール：{locale}"
+
+#: ./src/app/[locale]/streaming/page.tsx:7
+msgid "Streamed content loaded!"
+msgstr "ストリーミングコンテンツが読み込まれました！"
 
 #: ./src/app/[locale]/server-action/actions.ts:6
 msgid "Hello from server action"
@@ -88,7 +92,3 @@ msgstr "送信"
 #: ./src/app/[locale]/server-action/page.tsx:23
 msgid "Server says: {result}"
 msgstr "サーバーの応答：{result}"
-
-#: ./src/app/[locale]/streaming/page.tsx:7
-msgid "Streamed content loaded!"
-msgstr "ストリーミングコンテンツが読み込まれました！"

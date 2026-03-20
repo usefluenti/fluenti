@@ -1,46 +1,63 @@
 msgid ""
-msgstr "Content-Type: text/plain; charset=UTF-8\n"
+msgstr "Content-Type: text/plain; charset=utf-8\n"
 
-msgid "Welcome to Fluenti"
-msgstr ""
-
-msgid "A compile-time i18n library with SSR support"
-msgstr ""
-
-msgid "Hello, {name}!"
-msgstr ""
-
-msgid "Current locale: {locale}"
-msgstr ""
-
-msgid "Rich Text"
-msgstr ""
-
-msgid "Welcome to <bold>Fluenti</bold> for <italic>SolidStart</italic>!"
-msgstr ""
-
-msgid "Supports <bold>bold</bold>, <italic>italic</italic>, and <link>links</link>."
-msgstr ""
-
-msgid "Plurals"
-msgstr ""
-
-msgid "Your cart is empty."
-msgstr ""
-
-msgid "You have # item in your cart."
-msgstr ""
-
-msgid "You have # items in your cart."
-msgstr ""
-
-msgid "Reset"
-msgstr ""
-
+#: ./src/app.tsx:44
 msgid "Home"
 msgstr ""
 
+#: ./src/routes/rich-text.tsx:21
+msgid "Rich Text"
+msgstr ""
+
+#: ./src/routes/plurals.tsx:9
+msgid "Plurals"
+msgstr ""
+
+#: ./src/routes/index.tsx:10
+msgid "Welcome to Fluenti"
+msgstr ""
+
+#: ./src/routes/index.tsx:12
+msgid "A compile-time i18n library with SSR support"
+msgstr ""
+
+#: ./src/routes/index.tsx:16
+msgid "Hello, {name}!"
+msgstr ""
+
+#: ./src/routes/index.tsx:17
 msgid "This page is server-side rendered with per-request locale isolation."
+msgstr ""
+
+#: ./src/routes/index.tsx:19
+msgid "Current locale: {currentLocale}"
+msgstr ""
+
+#: ./src/routes/plurals.tsx:33
+msgid "Your cart is empty."
+msgstr ""
+
+#: ./src/routes/plurals.tsx:34
+msgid "You have # item in your cart."
+msgstr ""
+
+#: ./src/routes/plurals.tsx:35
+msgid "You have # items in your cart."
+msgstr ""
+
+#: ./src/routes/plurals.tsx:74
+msgid "Reset"
+msgstr ""
+
+#: ./src/routes/rich-text.tsx:40
+msgid "Welcome to <bold>Fluenti</bold> for <italic>SolidStart</italic>!"
+msgstr ""
+
+#: ./src/routes/rich-text.tsx:55
+msgid "Supports <bold>bold</bold>, <italic>italic</italic>, and <link>links</link>."
+msgstr ""
+
+msgid "Current locale: {locale}"
 msgstr ""
 
 msgid "Formatting"

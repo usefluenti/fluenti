@@ -81,6 +81,18 @@ msgstr "صفحة البيانات الوصفية"
 msgid "This page has translated metadata."
 msgstr "هذه الصفحة تحتوي على بيانات وصفية مترجمة."
 
+#: ./src/app/rsc-richtext/page.tsx:9
+msgid "Read the <0>documentation</0> for more info."
+msgstr ""
+
+#: ./src/app/rsc-richtext/page.tsx:13
+msgid "This is <0>important</0> information."
+msgstr ""
+
+#: ./src/app/richtext/page.tsx:28
+msgid "Please <0>sign in</0> or <1>register</1> to continue."
+msgstr ""
+
 #: ./src/app/plurals/page.tsx:14
 msgid "{count, plural, =0 {No messages} one {# message} other {# messages}}"
 msgstr ""
@@ -93,16 +105,12 @@ msgstr "إضافة"
 msgid "Reset"
 msgstr "إعادة تعيين"
 
-#: ./src/app/rsc-richtext/page.tsx:9
-msgid "Read the <0>documentation</0> for more info."
+#: ./src/app/rsc-richtext/page.tsx:17
+msgid "{5, plural, one {# item} other {# items}}"
 msgstr ""
 
-#: ./src/app/rsc-richtext/page.tsx:13
-msgid "This is <0>important</0> information."
-msgstr ""
-
-#: ./src/app/richtext/page.tsx:28
-msgid "Please <0>sign in</0> or <1>register</1> to continue."
+#: ./src/app/rsc-richtext/page.tsx:21
+msgid "{0, plural, =0 {No items} one {# item} other {# items}}"
 msgstr ""
 
 #: ./src/app/rsc/page.tsx:11
@@ -117,13 +125,9 @@ msgstr "هذه الصفحة هي مكون خادم React."
 msgid "Current server locale: {locale}"
 msgstr "لغة الخادم الحالية: {locale}"
 
-#: ./src/app/rsc-richtext/page.tsx:17
-msgid "{5, plural, one {# item} other {# items}}"
-msgstr ""
-
-#: ./src/app/rsc-richtext/page.tsx:21
-msgid "{0, plural, =0 {No items} one {# item} other {# items}}"
-msgstr ""
+#: ./src/app/streaming/page.tsx:7
+msgid "Streamed content loaded!"
+msgstr "تم تحميل المحتوى!"
 
 #: ./src/app/server-action/actions.ts:6
 msgid "Hello from server action"
@@ -140,7 +144,3 @@ msgstr "إرسال"
 #: ./src/app/server-action/page.tsx:24
 msgid "Server says: {result}"
 msgstr "الخادم يقول: {result}"
-
-#: ./src/app/streaming/page.tsx:7
-msgid "Streamed content loaded!"
-msgstr "تم تحميل المحتوى!"

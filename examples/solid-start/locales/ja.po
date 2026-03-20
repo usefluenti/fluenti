@@ -1,47 +1,64 @@
 msgid ""
-msgstr "Content-Type: text/plain; charset=UTF-8\n"
+msgstr "Content-Type: text/plain; charset=utf-8\n"
 
-msgid "Welcome to Fluenti"
-msgstr "Fluenti へようこそ"
-
-msgid "A compile-time i18n library with SSR support"
-msgstr "SSR対応のコンパイル時i18nライブラリ"
-
-msgid "Hello, {name}!"
-msgstr "こんにちは、{name}さん！"
-
-msgid "Current locale: {locale}"
-msgstr "現在のロケール：{locale}"
-
-msgid "Rich Text"
-msgstr "リッチテキスト"
-
-msgid "Welcome to <bold>Fluenti</bold> for <italic>SolidStart</italic>!"
-msgstr "<bold>Fluenti</bold> の <italic>SolidStart</italic> 版へようこそ！"
-
-msgid "Supports <bold>bold</bold>, <italic>italic</italic>, and <link>links</link>."
-msgstr "<bold>太字</bold>、<italic>斜体</italic>、<link>リンク</link> をサポート。"
-
-msgid "Plurals"
-msgstr "複数形"
-
-msgid "Your cart is empty."
-msgstr "カートは空です。"
-
-msgid "You have # item in your cart."
-msgstr "カートに # 個のアイテムがあります。"
-
-msgid "You have # items in your cart."
-msgstr "カートに # 個のアイテムがあります。"
-
-msgid "Reset"
-msgstr "リセット"
-
+#: ./src/app.tsx:44
 msgid "Home"
 msgstr "ホーム"
 
+#: ./src/routes/rich-text.tsx:21
+msgid "Rich Text"
+msgstr "リッチテキスト"
+
+#: ./src/routes/plurals.tsx:9
+msgid "Plurals"
+msgstr "複数形"
+
+#: ./src/routes/index.tsx:10
+msgid "Welcome to Fluenti"
+msgstr "Fluenti へようこそ"
+
+#: ./src/routes/index.tsx:12
+msgid "A compile-time i18n library with SSR support"
+msgstr "SSR対応のコンパイル時i18nライブラリ"
+
+#: ./src/routes/index.tsx:16
+msgid "Hello, {name}!"
+msgstr "こんにちは、{name}さん！"
+
+#: ./src/routes/index.tsx:17
 msgid "This page is server-side rendered with per-request locale isolation."
 msgstr "このページはリクエストごとのロケール分離でサーバーサイドレンダリングされています。"
+
+#: ./src/routes/index.tsx:19
+msgid "Current locale: {currentLocale}"
+msgstr ""
+
+#: ./src/routes/plurals.tsx:33
+msgid "Your cart is empty."
+msgstr "カートは空です。"
+
+#: ./src/routes/plurals.tsx:34
+msgid "You have # item in your cart."
+msgstr "カートに # 個のアイテムがあります。"
+
+#: ./src/routes/plurals.tsx:35
+msgid "You have # items in your cart."
+msgstr "カートに # 個のアイテムがあります。"
+
+#: ./src/routes/plurals.tsx:74
+msgid "Reset"
+msgstr "リセット"
+
+#: ./src/routes/rich-text.tsx:40
+msgid "Welcome to <bold>Fluenti</bold> for <italic>SolidStart</italic>!"
+msgstr "<bold>Fluenti</bold> の <italic>SolidStart</italic> 版へようこそ！"
+
+#: ./src/routes/rich-text.tsx:55
+msgid "Supports <bold>bold</bold>, <italic>italic</italic>, and <link>links</link>."
+msgstr "<bold>太字</bold>、<italic>斜体</italic>、<link>リンク</link> をサポート。"
+
+msgid "Current locale: {locale}"
+msgstr "現在のロケール：{locale}"
 
 msgid "Formatting"
 msgstr "フォーマット"

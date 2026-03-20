@@ -9,9 +9,18 @@ msgstr "Fluenti へようこそ"
 msgid "A type-safe i18n library for Solid"
 msgstr "Solid 向けの型安全な i18n ライブラリ"
 
+#: ./src/App.tsx:122
+msgid "Hello, {developer}!"
+msgstr ""
+
 #: ./src/App.tsx:123
 msgid "This playground demonstrates the features of @fluenti/solid."
 msgstr "このプレイグラウンドは @fluenti/solid の機能をデモンストレーションします。"
+
+#: ./src/App.tsx:189
+#, fuzzy
+msgid "Current locale: {locale}"
+msgstr "現在のロケール：{locale}"
 
 #: ./src/App.tsx:134
 msgid "Username"
@@ -45,6 +54,23 @@ msgstr "コンパイル時変換"
 msgid ""
 "These demos showcase compile-time features: function calls and tagged "
 "templates — all transformed at build time by the Vite plugin."
+msgstr ""
+
+#: ./src/App.tsx:207
+#, fuzzy
+msgid "Hello, {name}!"
+msgstr "こんにちは、{name}さん！"
+
+#: ./src/App.tsx:182
+msgid "You have {compileCount} items."
+msgstr ""
+
+#: ./src/App.tsx:224
+msgid "You have {compileCount} items in your cart."
+msgstr ""
+
+#: ./src/App.tsx:238
+msgid "Total: {formattedPrice}"
 msgstr ""
 
 #: ./src/App.tsx:247
@@ -93,6 +119,10 @@ msgstr "リアクティビティデモ"
 msgid "In SolidJS, the component body runs only once. Text nodes update reactively."
 msgstr "SolidJS では、コンポーネント本体は一度だけ実行されます。テキストノードはリアクティブに更新されます。"
 
+#: ./src/App.tsx:366
+msgid "Counter value: {reactivityCount}"
+msgstr ""
+
 #: ./src/App.tsx:370
 msgid "Decrement"
 msgstr "減少"
@@ -122,20 +152,10 @@ msgstr ""
 msgid "source text"
 msgstr ""
 
-#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/Home.tsx:13
-#, fuzzy
-msgid "Hello, {name}!"
-msgstr "こんにちは、{name}さん！"
-
 #: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/CompileTime.tsx:43
 #, fuzzy
 msgid "You have {count} items."
 msgstr "{count} 個のアイテムがあります。"
-
-#: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/Home.tsx:16
-#, fuzzy
-msgid "Current locale: {locale}"
-msgstr "現在のロケール：{locale}"
 
 #: /Users/ins/Code/fluenti/apps/playground-solid/src/pages/CompileTime.tsx:91
 #, fuzzy

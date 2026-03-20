@@ -1,35 +1,50 @@
 msgid ""
 msgstr "Content-Type: text/plain; charset=utf-8\n"
 
-msgid "Home"
-msgstr "ホーム"
-
-msgid "About"
-msgstr "概要"
-
-msgid "Plurals"
-msgstr "複数形"
-
-msgid "Welcome to Fluenti"
-msgstr "Fluenti へようこそ"
-
-msgid "This is the home page."
-msgstr "こちらはホームページです。"
-
-msgid "Hello, {name}!"
-msgstr "こんにちは、{name}さん！"
-
+#: ./src/pages/About.tsx:7
 msgid "About our project"
 msgstr "私たちのプロジェクトについて"
 
+#: ./src/pages/About.tsx:8
 msgid "Learn more about Fluenti."
 msgstr "Fluenti についてもっと学びましょう。"
 
+#: ./src/pages/About.tsx:9
 msgid "Contact us at {email}"
 msgstr "お問い合わせ：{email}"
 
+#: ./src/pages/Home.tsx:7
+msgid "Welcome to Fluenti"
+msgstr "Fluenti へようこそ"
+
+#: ./src/pages/Home.tsx:8
+msgid "This is the home page."
+msgstr "こちらはホームページです。"
+
+#: ./src/pages/Home.tsx:9
+msgid "Hello, {name}!"
+msgstr "こんにちは、{name}さん！"
+
+#: ./src/pages/Layout.tsx:15
+msgid "Home"
+msgstr "ホーム"
+
+#: ./src/pages/Layout.tsx:16
+msgid "About"
+msgstr "概要"
+
+#: ./src/pages/Layout.tsx:17
+msgid "Plurals"
+msgstr "複数形"
+
+#: ./src/pages/Plurals.tsx:11
+msgid "{count, plural, =0 {No messages} one {# message} other {# messages}}"
+msgstr ""
+
+#: ./src/pages/Plurals.tsx:20
 msgid "Add"
 msgstr "追加"
 
+#: ./src/pages/Plurals.tsx:23
 msgid "Reset"
 msgstr "リセット"

@@ -1,5 +1,87 @@
 msgid ""
-msgstr "Content-Type: text/plain; charset=UTF-8\n"
+msgstr "Content-Type: text/plain; charset=utf-8\n"
+
+#: ./pages/index.vue:9
+msgid "Welcome to Fluenti"
+msgstr ""
+
+#: ./pages/index.vue:10
+msgid "A modern i18n library with SSR support"
+msgstr ""
+
+#: ./pages/index.vue:49
+msgid "Features"
+msgstr ""
+
+#: ./pages/index.vue:51
+msgid "Server-side rendering"
+msgstr ""
+
+#: ./pages/index.vue:52
+msgid "Locale detection from cookies"
+msgstr ""
+
+#: ./pages/index.vue:53
+msgid "Hydration without flash"
+msgstr ""
+
+#: ./pages/index.vue:54
+msgid "Reactive locale switching"
+msgstr ""
+
+#: ./pages/index.vue:16
+msgid "Hello, {name}!"
+msgstr ""
+
+#: ./pages/index.vue:20
+msgid "Current locale: {locale}"
+msgstr ""
+
+#: ./pages/index.vue:24
+msgid "You have {count} items in your cart."
+msgstr ""
+
+#: ./pages/plurals.vue:10
+msgid "Plural Demos"
+msgstr ""
+
+#: ./pages/plurals.vue:34
+msgid "Remove"
+msgstr ""
+
+#: ./pages/plurals.vue:36
+msgid "Add"
+msgstr ""
+
+#: ./pages/plurals.vue:37
+msgid "Reset"
+msgstr ""
+
+#: ./pages/plurals.vue:22
+msgid "{appleCount, plural, =0 {No apples} one {1 apple} other {# apples}}"
+msgstr ""
+
+#: ./pages/plurals.vue:41
+msgid ""
+"{messageCount, plural, =0 {No new messages} one {1 new message} other {# "
+"new messages}}"
+msgstr ""
+
+#: ./pages/rich-text.vue:6
+msgid "Rich Text Demos"
+msgstr ""
+
+#: ./pages/rich-text.vue:13
+msgid "Visit our <0>documentation</0> to learn more."
+msgstr ""
+
+#: ./pages/rich-text.vue:18
+msgid "This is <0>important</0> information."
+msgstr ""
+
+#: ./pages/rich-text.vue:23
+msgid "Please <0>sign in</0> or <1>register</1> to continue."
+msgstr ""
 
 msgid "Fluenti Nuxt Playground"
 msgstr ""
@@ -13,39 +95,6 @@ msgstr ""
 msgid "Built with Fluenti and Nuxt 3"
 msgstr ""
 
-msgid "Welcome to Fluenti"
-msgstr ""
-
-msgid "A modern i18n library with SSR support"
-msgstr ""
-
-msgid "Hello, {name}!"
-msgstr ""
-
-msgid "Current locale: {locale}"
-msgstr ""
-
-msgid "You have {count} items in your cart."
-msgstr ""
-
-msgid "Features"
-msgstr ""
-
-msgid "Server-side rendering"
-msgstr ""
-
-msgid "Locale detection from cookies"
-msgstr ""
-
-msgid "Hydration without flash"
-msgstr ""
-
-msgid "Reactive locale switching"
-msgstr ""
-
-msgid "Rich Text Demos"
-msgstr ""
-
 msgid "Visit our <link>documentation</link> to learn more."
 msgstr ""
 
@@ -53,24 +102,6 @@ msgid "This is <bold>important</bold> information."
 msgstr ""
 
 msgid "Please <link>sign in</link> or <bold>register</bold> to continue."
-msgstr ""
-
-msgid "Plural Demos"
-msgstr ""
-
-msgid "Remove"
-msgstr ""
-
-msgid "Add"
-msgstr ""
-
-msgid "Reset"
-msgstr ""
-
-msgid "{appleCount, plural, =0 {No apples} one {1 apple} other {# apples}}"
-msgstr ""
-
-msgid "{messageCount, plural, =0 {No new messages} one {1 new message} other {# new messages}}"
 msgstr ""
 
 msgid "Home"

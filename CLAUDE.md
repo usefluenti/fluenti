@@ -5,11 +5,12 @@
 | Path | Package | Description |
 |------|---------|-------------|
 | `packages/core` | `@fluenti/core` | Framework-agnostic core: ICU parser, compiler, interpolation, plural/select, formatters, SSR |
-| `packages/vue` | `@fluenti/vue` | Vue 3 integration: `<Trans>`, `<Plural>`, `<Select>`, `useI18n()`, plugin |
-| `packages/solid` | `@fluenti/solid` | SolidJS integration: `<Trans>`, `<Plural>`, `<Select>`, `I18nProvider`, `useI18n()` |
+| `packages/vue` | `@fluenti/vue` | Vue 3 integration: `<Trans>`, `<Plural>`, `<Select>`, `useI18n()`, plugin + `@fluenti/vue/vite-plugin` subpath |
+| `packages/solid` | `@fluenti/solid` | SolidJS integration: `<Trans>`, `<Plural>`, `<Select>`, `I18nProvider`, `useI18n()` + `@fluenti/solid/vite-plugin` subpath |
+| `packages/react` | `@fluenti/react` | React integration: `I18nProvider`, `useI18n`, `Trans/Plural/Select` + `@fluenti/react/vite-plugin` subpath |
 | `packages/cli` | `@fluenti/cli` | Message extraction (Vue SFC + TSX), PO/JSON catalog format, compilation |
-| `packages/vite-plugin` | `@fluenti/vite-plugin` | Vite plugin: virtual modules, build-time transforms, code splitting |
-| `packages/next-plugin` | `@fluenti/next` | Next.js plugin: `withFluenti()`, webpack loader for `t\`\``, FluentProvider, RSC support |
+| `packages/vite-plugin` | `@fluenti/vite-plugin` | Vite plugin core: virtual modules, build-time transforms, code splitting (framework-agnostic) |
+| `packages/next-plugin` | `@fluenti/next` | Next.js plugin: `withFluenti()`, webpack loader for `t\`\``, I18nProvider, RSC support |
 | `examples/vue` | `playground-vue` | Vue 3 demo app showcasing all i18n features |
 | `examples/solid` | `playground-solid` | SolidJS demo app showcasing all i18n features |
 | `examples/react` | `playground-react` | React 19 SPA demo with PO format + CLI workflow |
@@ -23,17 +24,19 @@
 ## Dependency Graph
 
 ```
-examples/vue  ──► @fluenti/vue  ──► @fluenti/core
-examples/solid ──► @fluenti/solid ──► @fluenti/core
-examples/react ──► @fluenti/react ──► @fluenti/core
+examples/vue  ──► @fluenti/vue (+ vue/vite-plugin) ──► @fluenti/vite-plugin ──► @fluenti/core
+examples/solid ──► @fluenti/solid (+ solid/vite-plugin) ──► @fluenti/vite-plugin ──► @fluenti/core
+examples/react ──► @fluenti/react (+ react/vite-plugin) ──► @fluenti/vite-plugin ──► @fluenti/core
 examples/nextjs ──► @fluenti/next ──► @fluenti/react ──► @fluenti/core (+ next)
-examples/react-router ──► @fluenti/react ──► @fluenti/core (+ react-router-dom)
-examples/tanstack-start ──► @fluenti/react ──► @fluenti/core (+ @tanstack/react-start)
-examples/nuxt ──► @fluenti/vue ──► @fluenti/core (+ nuxt)
-examples/solid-start ──► @fluenti/solid ──► @fluenti/core (+ solid-start)
+examples/react-router ──► @fluenti/react (+ react/vite-plugin) ──► @fluenti/vite-plugin ──► @fluenti/core
+examples/tanstack-start ──► @fluenti/react (+ react/vite-plugin) ──► @fluenti/vite-plugin ──► @fluenti/core
+examples/nuxt ──► @fluenti/vue (+ vue/vite-plugin) ──► @fluenti/vite-plugin ──► @fluenti/core (+ nuxt)
+examples/solid-start ──► @fluenti/solid (+ solid/vite-plugin) ──► @fluenti/vite-plugin ──► @fluenti/core
 apps/docs (standalone)
 @fluenti/cli ──► @fluenti/core
-@fluenti/vite-plugin ──► @fluenti/core
+@fluenti/vue ──► @fluenti/vite-plugin ──► @fluenti/core
+@fluenti/solid ──► @fluenti/vite-plugin ──► @fluenti/core
+@fluenti/react ──► @fluenti/vite-plugin ──► @fluenti/core
 ```
 
 ## Tech Stack
