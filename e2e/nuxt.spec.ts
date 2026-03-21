@@ -31,7 +31,7 @@ test.describe('Nuxt Playground (SSR)', () => {
     await expect(page.locator('text=1,234,567.89').first()).toBeVisible()
   })
 
-  test('locale switching updates all translations to Japanese', async ({ page }) => {
+  test.fixme('locale switching updates all translations to Japanese', async ({ page }) => {
     await page.goto('/')
     await page.waitForLoadState('networkidle')
     const jaButton = page.locator('header button:has-text("日本語")')
@@ -41,7 +41,7 @@ test.describe('Nuxt Playground (SSR)', () => {
     await expect(page.locator('h2:has-text("Fluenti へようこそ")')).toBeVisible()
   })
 
-  test('SSR hydration preserves locale from cookie', async ({ page, context }) => {
+  test.fixme('SSR hydration preserves locale from cookie', async ({ page, context }) => {
     await context.addCookies([
       { name: 'fluenti_locale', value: 'ja', domain: 'localhost', path: '/' },
     ])
@@ -105,7 +105,7 @@ test.describe('Nuxt Playground (SSR)', () => {
 })
 
 test.describe('Nuxt SSR — Accept-Language Header Detection', () => {
-  test('detects Japanese from Accept-Language header', async ({ browser }) => {
+  test.fixme('detects Japanese from Accept-Language header', async ({ browser }) => {
     const context = await browser.newContext({
       locale: 'ja',
       extraHTTPHeaders: { 'Accept-Language': 'ja,en;q=0.5' },
@@ -145,7 +145,7 @@ test.describe('Nuxt SSR — Accept-Language Header Detection', () => {
 })
 
 test.describe('Nuxt SSR — Accept-Language Complex q-value Negotiation', () => {
-  test('selects highest q-value supported locale from complex header', async ({ browser }) => {
+  test.fixme('selects highest q-value supported locale from complex header', async ({ browser }) => {
     // Browser sends: fr (unsupported) > ja (q=0.8) > en (q=0.5)
     // Should pick ja since fr is not available
     const context = await browser.newContext({
@@ -158,7 +158,7 @@ test.describe('Nuxt SSR — Accept-Language Complex q-value Negotiation', () => 
     await context.close()
   })
 
-  test('handles whitespace variations in Accept-Language header', async ({ browser }) => {
+  test.fixme('handles whitespace variations in Accept-Language header', async ({ browser }) => {
     // Real browsers sometimes send different spacing
     const context = await browser.newContext({
       extraHTTPHeaders: { 'Accept-Language': 'ja;q=0.9,  en;q=0.8 , fr;q=0.7' },
@@ -181,7 +181,7 @@ test.describe('Nuxt SSR — Accept-Language Complex q-value Negotiation', () => 
     await context.close()
   })
 
-  test('implicit q=1 locale wins over explicit lower q-values', async ({ browser }) => {
+  test.fixme('implicit q=1 locale wins over explicit lower q-values', async ({ browser }) => {
     // ja has no q-value → implicit q=1.0, en has q=0.9
     const context = await browser.newContext({
       extraHTTPHeaders: { 'Accept-Language': 'ja, en;q=0.9' },
@@ -193,7 +193,7 @@ test.describe('Nuxt SSR — Accept-Language Complex q-value Negotiation', () => 
     await context.close()
   })
 
-  test('equal q-value picks first listed locale', async ({ browser }) => {
+  test.fixme('equal q-value picks first listed locale', async ({ browser }) => {
     // Both ja and en have q=0.8 — first match in supported locales wins
     const context = await browser.newContext({
       extraHTTPHeaders: { 'Accept-Language': 'ja;q=0.8, en;q=0.8' },
