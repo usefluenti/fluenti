@@ -24,6 +24,7 @@ export interface DevToolsI18nState {
 export function setupDevTools(nuxt: Nuxt, localeCodes: string[], defaultLocale: string, strategy: string): void {
   try {
     // Attempt to use @nuxt/devtools-kit if available
+    // @ts-expect-error — devtools:customTabs hook is provided by @nuxt/devtools
     nuxt.hook('devtools:customTabs', (tabs: unknown[]) => {
       tabs.push({
         name: 'fluenti',
@@ -40,8 +41,9 @@ export function setupDevTools(nuxt: Nuxt, localeCodes: string[], defaultLocale: 
   }
 
   // Inject DevTools client component via virtual module
-  nuxt.hook('nitro:config', (nitroConfig) => {
-    const publicConfig = (nitroConfig as Record<string, unknown>)['runtimeConfig'] as Record<string, unknown> | undefined
+  // @ts-expect-error — nitro:config hook is provided by Nitro
+  nuxt.hook('nitro:config', (nitroConfig: Record<string, unknown>) => {
+    const publicConfig = nitroConfig['runtimeConfig'] as Record<string, unknown> | undefined
     if (publicConfig) {
       const pub = (publicConfig['public'] ?? (publicConfig['public'] = {})) as Record<string, unknown>
       const fluentiConfig = (pub['fluenti'] ?? {}) as Record<string, unknown>

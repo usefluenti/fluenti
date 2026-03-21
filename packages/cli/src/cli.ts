@@ -209,11 +209,12 @@ const lint = defineCommand({
 
     consola.info(`Linting ${targetLocales ? targetLocales.join(', ') : 'all locales'} (source: ${config.sourceLocale})`)
 
-    const diagnostics = lintCatalogs(allCatalogs, {
+    const lintOpts: Parameters<typeof lintCatalogs>[1] = {
       sourceLocale: config.sourceLocale,
-      locales: targetLocales,
       strict: args.strict ?? false,
-    })
+    }
+    if (targetLocales) lintOpts.locales = targetLocales
+    const diagnostics = lintCatalogs(allCatalogs, lintOpts)
 
     consola.log('')
     consola.log(formatDiagnostics(diagnostics))
