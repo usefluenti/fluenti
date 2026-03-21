@@ -305,4 +305,119 @@ describe('extendPages', () => {
 
     expect(pages.find((p) => p.name === 'index___ja')).toBeDefined()
   })
+
+  it('applies routeOverrides for custom locale paths', () => {
+    const pages: PageRoute[] = [
+      { path: '/', name: 'index' },
+      { path: '/about', name: 'about' },
+    ]
+
+    extendPages(pages, {
+      locales: ['en', 'ja'],
+      defaultLocale: 'en',
+      strategy: 'prefix_except_default',
+      routeOverrides: {
+        '/about': { ja: '/について' },
+      },
+    })
+
+    const jaAbout = pages.find((p) => p.name === 'about___ja')
+    expect(jaAbout).toBeDefined()
+    expect(jaAbout!.path).toBe('/ja/について')
+  })
+
+  it('uses original path when no routeOverride exists for locale', () => {
+    const pages: PageRoute[] = [
+      { path: '/contact', name: 'contact' },
+    ]
+
+    extendPages(pages, {
+      locales: ['en', 'ja', 'zh'],
+      defaultLocale: 'en',
+      strategy: 'prefix_except_default',
+      routeOverrides: {
+        '/contact': { ja: '/お問い合わせ' },
+      },
+    })
+
+    // zh has no override, should use original path
+    const zhContact = pages.find((p) => p.name === 'contact___zh')
+    expect(zhContact!.path).toBe('/zh/contact')
+
+    // ja has override
+    const jaContact = pages.find((p) => p.name === 'contact___ja')
+    expect(jaContact!.path).toBe('/ja/お問い合わせ')
+  })
+
+  it('does nothing for domains strategy', () => {
+    const pages: PageRoute[] = [
+      { path: '/', name: 'index' },
+    ]
+
+    extendPages(pages, {
+      locales: ['en', 'ja'],
+      defaultLocale: 'en',
+      strategy: 'domains',
+    })
+
+    expect(pages).toHaveLength(1)
+  })
+
+  it('respects per-page locale restriction via meta.i18nRoute', () => {
+    const pages: PageRoute[] = [
+      { path: '/', name: 'index' },
+      { path: '/pricing', name: 'pricing', meta: { i18nRoute: { locales: ['en'] } } },
+    ]
+
+    extendPages(pages, {
+      locales: ['en', 'ja'],
+      defaultLocale: 'en',
+      strategy: 'prefix',
+    })
+
+    // index: 2 prefixed (en + ja), pricing: 1 prefixed (en only) = 3
+    expect(pages.find((p) => p.path === '/en' && p.name === 'index___en')).toBeDefined()
+    expect(pages.find((p) => p.path === '/ja' && p.name === 'index___ja')).toBeDefined()
+    expect(pages.find((p) => p.path === '/en/pricing' && p.name === 'pricing___en')).toBeDefined()
+    expect(pages.find((p) => p.path === '/ja/pricing')).toBeUndefined()
+  })
+
+  it('excludes page entirely when meta.i18nRoute is false', () => {
+    const pages: PageRoute[] = [
+      { path: '/', name: 'index' },
+      { path: '/internal', name: 'internal', meta: { i18nRoute: false } },
+    ]
+
+    extendPages(pages, {
+      locales: ['en', 'ja'],
+      defaultLocale: 'en',
+      strategy: 'prefix',
+    })
+
+    // index: 2 prefixed, internal: 0 (disabled) = 2
+    expect(pages).toHaveLength(2)
+    expect(pages.find((p) => p.path === '/en')).toBeDefined()
+    expect(pages.find((p) => p.path === '/ja')).toBeDefined()
+    expect(pages.find((p) => p.path.includes('internal'))).toBeUndefined()
+  })
+
+  it('filters out disabled pages for default locale in prefix_except_default', () => {
+    const pages: PageRoute[] = [
+      { path: '/', name: 'index' },
+      { path: '/ja-only', name: 'ja-only', meta: { i18nRoute: { locales: ['ja'] } } },
+    ]
+
+    extendPages(pages, {
+      locales: ['en', 'ja'],
+      defaultLocale: 'en',
+      strategy: 'prefix_except_default',
+    })
+
+    // index: original + ja = 2, ja-only: ja prefixed only = 1, total = 3
+    expect(pages.find((p) => p.path === '/' && p.name === 'index')).toBeDefined()
+    expect(pages.find((p) => p.path === '/ja' && p.name === 'index___ja')).toBeDefined()
+    expect(pages.find((p) => p.path === '/ja/ja-only' && p.name === 'ja-only___ja')).toBeDefined()
+    // ja-only should NOT appear as unprefixed (default locale)
+    expect(pages.find((p) => p.path === '/ja-only' && p.name === 'ja-only')).toBeUndefined()
+  })
 })
