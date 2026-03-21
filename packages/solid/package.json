@@ -48,7 +48,8 @@
     "build": "vite build",
     "dev": "vite build --watch",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "bench": "vitest bench"
   },
   "peerDependencies": {
     "solid-js": "^1.8",
