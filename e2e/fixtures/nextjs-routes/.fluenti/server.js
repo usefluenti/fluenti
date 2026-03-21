@@ -42,7 +42,7 @@ export const NumberFormat = serverI18n.NumberFormat
  * Sets up both server-side (React.cache) and client-side (I18nProvider) i18n.
  */
 export async function I18nProvider({ locale, children }) {
-  const activeLocale = locale ?? 'en'
+  const activeLocale = (locale && locale.trim()) ? locale : 'en'
 
   // 1. Initialize server-side i18n (React.cache scoped)
   serverI18n.setLocale(activeLocale)

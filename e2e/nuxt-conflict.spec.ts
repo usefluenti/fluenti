@@ -50,20 +50,22 @@ test.describe('Nuxt Conflict — Third-party Plugin Coexistence (injectGlobalPro
 
 test.describe('Nuxt Conflict — Custom Query Param (queryParamKey: "lang")', () => {
   test('?lang=ja detects locale correctly', async ({ page }) => {
-    await page.goto('/?lang=ja')
+    // With prefix strategy, must use prefixed route to avoid 404
+    await page.goto('/en?lang=ja')
+    // Query param 'lang' overrides path prefix — locale should be 'ja'
     await expect(page.getByTestId('current-locale')).toContainText('ja')
     await expect(page.getByTestId('page-title')).toContainText('ようこそ')
   })
 
   test('?lang=zh detects locale correctly', async ({ page }) => {
-    await page.goto('/?lang=zh')
+    await page.goto('/en?lang=zh')
     await expect(page.getByTestId('current-locale')).toContainText('zh')
     await expect(page.getByTestId('page-title')).toContainText('欢迎回家')
   })
 
   test('?locale=ja does NOT work (old param name ignored)', async ({ page }) => {
-    await page.goto('/?locale=ja')
-    // Should fall back to default locale since 'locale' is not the configured param
+    await page.goto('/en?locale=ja')
+    // Should fall back to path locale since 'locale' is not the configured param
     await expect(page.getByTestId('current-locale')).toContainText('en')
     await expect(page.getByTestId('page-title')).toContainText('Welcome Home')
   })

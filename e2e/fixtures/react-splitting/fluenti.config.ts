@@ -7,4 +7,5 @@ export default defineConfig({
   format: 'po',
   include: ['./src/**/*.{tsx,ts}'],
   compileOutDir: './src/locales/compiled',
+  splitting: 'dynamic',
 })

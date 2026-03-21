@@ -4,4 +4,5 @@ export default {
   catalogDir: './locales',
   format: 'json',
   compileOutDir: './src/locales/compiled',
+  splitting: 'dynamic',
 }
