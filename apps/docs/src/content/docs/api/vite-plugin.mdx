@@ -3,6 +3,8 @@ title: "@fluenti/vite-plugin"
 description: Vite plugin API reference
 ---
 
+import { Aside } from '@astrojs/starlight/components'
+
 ## Usage
 
 Import the plugin from your framework's package:
@@ -23,25 +25,48 @@ export default defineConfig({ plugins: [solidPlugin(), fluentiSolid()] })
 
 ## Options
 
+The plugin accepts a single `config` option — either a path to a config file or an inline `FluentiConfig` object. When omitted, the plugin auto-discovers `fluenti.config.ts` in the project root.
+
 ```typescript
+// Zero-config — auto-discovers fluenti.config.ts
+fluentiVue()
+
+// Point to a specific config file
+fluentiVue({ config: './i18n/fluenti.config.ts' })
+
+// Inline config override
 fluentiVue({
-  catalogDir: 'src/locales/compiled',
-  splitting: 'dynamic',  // 'dynamic' | 'static' | false
+  config: {
+    compileOutDir: './src/locales/compiled',
+    splitting: 'dynamic',
+  },
 })
 ```
 
+<Aside type="tip">
+Most projects only need `fluentiVue()` with a `fluenti.config.ts` at the project root. Inline config is useful for monorepos or custom setups where you need per-app overrides.
+</Aside>
+
+### `config` fields
+
+The following fields are accepted when passing an inline config object. All fields are optional — defaults come from `fluenti.config.ts` or the built-in defaults shown below.
+
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `catalogDir` | `string` | `'src/locales/compiled'` | Compiled catalogs directory |
 | `sourceLocale` | `string` | `'en'` | Source locale used for descriptor fallback and build transforms |
-| `locales` | `string[]` | `[sourceLocale]` | Locale codes available to the build |
+| `locales` | `LocaleDefinition[]` | `['en']` | Locale codes or objects (`string \| { code, name?, iso?, dir?, domain? }`) available to the build |
+| `format` | `'json' \| 'po'` | `'po'` | Catalog file format |
+| `compileOutDir` | `string` | `'./src/locales/compiled'` | Directory where compiled catalog files are read from |
 | `splitting` | `'dynamic' \| 'static' \| false` | `false` | Build-time locale chunking strategy |
 | `defaultBuildLocale` | `string` | `sourceLocale` | Locale inlined for `'static'` builds |
-| `include` | `string[]` | `['src/**/*.{vue,tsx,jsx,ts,js}']` | Source file patterns for dev watcher |
+| `include` | `string[]` | `['./src/**/*.{vue,tsx,jsx,ts,js}']` | Source file patterns for dev watcher |
+| `exclude` | `string[]` | `['**/*.test.*', '**/*.spec.*', '**/__tests__/**', '**/*.d.ts']` | File patterns excluded from dev watcher |
 | `devAutoCompile` | `boolean` | `true` | Auto extract+compile on file change during dev |
 | `buildAutoCompile` | `boolean` | `true` | Auto extract+compile before production build |
+| `devAutoCompileDelay` | `number` | `500` | Debounce delay (ms) for dev auto-compile |
+| `parallelCompile` | `boolean` | `false` | Use worker threads for compilation (effective with 5+ locales) |
 | `catalogExtension` | `string` | `'.js'` | File extension for compiled catalog files (e.g. `'.mjs'`, `'.json'`) |
-| `idGenerator` | `(message: string, context?: string) => string` | built-in SHA256 | Custom message ID generator. Replaces the default hash-based ID strategy |
+| `idGenerator` | `(message: string, context?: string) => string` | built-in FNV-1a | Custom message ID generator. Replaces the default hash-based ID strategy |
 | `onBeforeCompile` | `() => boolean \| void \| Promise<…>` | — | Hook called before auto-compile. Return `false` to skip compilation |
 | `onAfterCompile` | `() => void \| Promise<void>` | — | Hook called after auto-compile completes |
 
