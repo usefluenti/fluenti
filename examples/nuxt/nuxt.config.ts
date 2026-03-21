@@ -8,5 +8,9 @@ export default defineNuxtConfig({
     defaultLocale: 'en',
     sourceLocale: 'en',
     catalogDir: 'locales/compiled',
+    detectBrowserLanguage: {
+      useCookie: true,
+      cookieKey: 'fluenti_locale',
+    },
   },
 })
