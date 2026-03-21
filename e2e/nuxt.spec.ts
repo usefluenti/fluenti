@@ -31,6 +31,7 @@ test.describe('Nuxt Playground (SSR)', () => {
     await expect(page.locator('text=1,234,567.89').first()).toBeVisible()
   })
 
+  // FIXME: v-t directive needs compile-time SFC transform (register @fluenti/vue/vite-plugin in nuxt module)
   test.fixme('locale switching updates all translations to Japanese', async ({ page }) => {
     await page.goto('/')
     await page.waitForLoadState('networkidle')
@@ -41,6 +42,7 @@ test.describe('Nuxt Playground (SSR)', () => {
     await expect(page.locator('h2:has-text("Fluenti へようこそ")')).toBeVisible()
   })
 
+  // FIXME: v-t directive needs compile-time SFC transform
   test.fixme('SSR hydration preserves locale from cookie', async ({ page, context }) => {
     await context.addCookies([
       { name: 'fluenti_locale', value: 'ja', domain: 'localhost', path: '/' },
@@ -105,6 +107,7 @@ test.describe('Nuxt Playground (SSR)', () => {
 })
 
 test.describe('Nuxt SSR — Accept-Language Header Detection', () => {
+  // FIXME: v-t not transformed in SSR — detected locale is correct but template renders English fallback
   test.fixme('detects Japanese from Accept-Language header', async ({ browser }) => {
     const context = await browser.newContext({
       locale: 'ja',

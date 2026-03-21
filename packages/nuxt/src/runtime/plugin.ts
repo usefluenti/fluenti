@@ -22,18 +22,25 @@ export default defineNuxtPlugin(async (nuxtApp) => {
   const cookieKey = cookieCfg?.cookieKey ?? 'fluenti_locale'
   const localeCookie = cookieCfg ? useCookie(cookieKey) : null
 
-  // Resolve host for domain-based detection
+  // Hoist all server-side header/cookie reads BEFORE any await.
+  // Nuxt composables rely on async local storage that is dropped after await.
   let host: string | undefined
-  if (config.strategy === 'domains') {
+  let acceptLanguage: string | undefined
+  if (import.meta.server) {
     try {
-      if (import.meta.server) {
-        const headers = useRequestHeaders(['host'])
-        host = headers['host']
-      } else {
-        host = window.location.host
+      const reqHeaders = useRequestHeaders(['host', 'accept-language'])
+      acceptLanguage = reqHeaders['accept-language']
+      if (config.strategy === 'domains') {
+        host = reqHeaders['host']
       }
     } catch {
-      // host detection failed — domain detector will be skipped
+      // header read failed
+    }
+  } else if (config.strategy === 'domains') {
+    try {
+      host = window.location.host
+    } catch {
+      // domain detection failed
     }
   }
 
@@ -49,10 +56,19 @@ export default defineNuxtPlugin(async (nuxtApp) => {
         await (nuxtApp.callHook as Function)('fluenti:detect-locale', ctx)
       },
       host,
+      localeCookie?.value ?? undefined,
+      acceptLanguage,
     )
     // Store in payload — Nuxt serializes this to HTML automatically.
     // The client reads it back to ensure hydration uses the same locale.
     nuxtApp.payload['fluentiLocale'] = detectedLocale
+    // Also set on event context so other plugins (e.g. i18n.ts) can read it
+    try {
+      const event = (nuxtApp as unknown as { ssrContext?: { event?: { context: Record<string, unknown> } } }).ssrContext?.event
+      if (event) event.context['locale'] = detectedLocale
+    } catch {
+      // event context not available
+    }
   } else if (nuxtApp.payload['fluentiLocale']) {
     // --- Client (SSR hydration): read from payload to avoid mismatch ---
     detectedLocale = nuxtApp.payload['fluentiLocale'] as string

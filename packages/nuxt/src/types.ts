@@ -73,6 +73,10 @@ export interface LocaleDetectContext {
   isServer: boolean
   /** The request hostname (available when `strategy: 'domains'`) */
   host?: string
+  /** Pre-read cookie value (hoisted before await in plugin) */
+  cookieValue?: string | null
+  /** Pre-read Accept-Language header (hoisted before await in plugin) */
+  acceptLanguage?: string
 }
 
 /**

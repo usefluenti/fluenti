@@ -4,11 +4,13 @@ import en from '~/locales/compiled/en.js'
 import ja from '~/locales/compiled/ja.js'
 
 export default defineNuxtPlugin((nuxtApp) => {
-  // On the server, read locale from the event context (set by server plugin).
-  // On the client, read from the SSR-injected window variable or cookie.
+  // Read locale from the detection plugin (nuxt module sets this in payload)
+  // Falls back to event context, hydration script, or default.
   let initialLocale = 'en'
 
-  if (import.meta.server) {
+  if (nuxtApp.payload?.['fluentiLocale']) {
+    initialLocale = nuxtApp.payload['fluentiLocale'] as string
+  } else if (import.meta.server) {
     const event = useRequestEvent()
     initialLocale = (event?.context?.['locale'] as string) ?? 'en'
   } else {

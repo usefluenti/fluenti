@@ -4,17 +4,23 @@ import type { LocaleDetectContext } from '../../types'
 /** Detect locale from Accept-Language header (SSR only) */
 export default function detectHeader(ctx: LocaleDetectContext): void {
   if (!ctx.isServer) return
+
+  // Prefer pre-read header from plugin (hoisted before await)
+  const acceptLang = ctx.acceptLanguage ?? readAcceptLanguage()
+  if (acceptLang) {
+    const matched = negotiateLocale(acceptLang, ctx.locales)
+    if (matched) {
+      ctx.setLocale(matched)
+    }
+  }
+}
+
+function readAcceptLanguage(): string | undefined {
   try {
     const headers = useRequestHeaders(['accept-language'])
-    const acceptLang = headers['accept-language']
-    if (acceptLang) {
-      const matched = negotiateLocale(acceptLang, ctx.locales)
-      if (matched) {
-        ctx.setLocale(matched)
-      }
-    }
+    return headers['accept-language']
   } catch {
-    // May fail if not in a request context
+    return undefined
   }
 }
 
