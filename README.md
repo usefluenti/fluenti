@@ -13,8 +13,8 @@
   <a href="https://www.npmjs.com/package/@fluenti/core"><img src="https://img.shields.io/npm/dm/@fluenti/core?color=6366f1&label=" alt="npm downloads" /></a>
   <a href="https://github.com/usefluenti/fluenti/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/usefluenti/fluenti/ci.yml?label=CI" alt="CI" /></a>
   <a href="https://github.com/usefluenti/fluenti/actions/workflows/e2e.yml"><img src="https://img.shields.io/github/actions/workflow/status/usefluenti/fluenti/e2e.yml?label=E2E" alt="E2E" /></a>
-  <img src="https://img.shields.io/badge/tests-1827-4caf50" alt="tests" />
-  <img src="https://img.shields.io/badge/coverage-97%25-4caf50" alt="coverage" />
+  <img src="https://img.shields.io/badge/tests-2110-4caf50" alt="tests" />
+  <img src="https://img.shields.io/badge/coverage-92%25-4caf50" alt="coverage" />
   <a href="https://github.com/usefluenti/fluenti/blob/main/LICENSE"><img src="https://img.shields.io/github/license/usefluenti/fluenti?color=4338ca&label=" alt="license" /></a>
 </p>
 

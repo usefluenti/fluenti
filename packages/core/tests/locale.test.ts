@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { negotiateLocale, parseLocale, isRTL, getDirection } from '../src/locale'
+import { negotiateLocale, parseLocale, isRTL, getDirection, validateLocale } from '../src/locale'
 
 describe('parseLocale', () => {
   it('parses language only', () => {
@@ -27,6 +27,29 @@ describe('parseLocale', () => {
 
   it('normalizes case', () => {
     expect(parseLocale('EN-us')).toEqual({ language: 'en', region: 'US' })
+  })
+
+  it('does not treat 4-char numeric variant as script', () => {
+    // BCP 47: '1901' is a variant (historical German), not a script
+    expect(parseLocale('de-1901')).toEqual({ language: 'de', region: '1901' })
+  })
+
+  it('does not treat alphanumeric 4-char subtag as script', () => {
+    // '1694' contains digits, so it's a variant not a script
+    expect(parseLocale('ca-1694')).toEqual({ language: 'ca', region: '1694' })
+  })
+
+  it('handles 3-part locale where parts[1] is not a script', () => {
+    // parts[1] = '1901' (variant), parts[2] = 'DE' (region)
+    expect(parseLocale('de-1901-DE')).toEqual({ language: 'de', region: '1901' })
+  })
+
+  it('parses sr-Latn-RS correctly', () => {
+    expect(parseLocale('sr-Latn-RS')).toEqual({
+      language: 'sr',
+      script: 'Latn',
+      region: 'RS',
+    })
   })
 })
 
@@ -113,6 +136,40 @@ describe('getDirection', () => {
     expect(getDirection('en')).toBe('ltr')
     expect(getDirection('de-DE')).toBe('ltr')
     expect(getDirection('ja')).toBe('ltr')
+  })
+})
+
+// ─── validateLocale BCP 47 ──────────────────────────────────────────────
+
+describe('validateLocale', () => {
+  describe('valid BCP 47 locales', () => {
+    it.each([
+      'en',
+      'zh-CN',
+      'zh-Hans-CN',
+      'en-US',
+      'ja',
+      'pt-BR',
+      'en-001',
+      'ckb',
+    ])('accepts %s', (locale) => {
+      expect(() => validateLocale(locale, 'test')).not.toThrow()
+    })
+  })
+
+  describe('invalid locales', () => {
+    it.each([
+      ['en<script>', 'XSS injection'],
+      ['../../passwd', 'path traversal'],
+      ['en US', 'contains space'],
+      ['!!!', 'special characters'],
+      ['en;drop', 'semicolon injection'],
+      ['', 'empty string'],
+      ['en/US', 'slash'],
+      ['en_US', 'underscore instead of hyphen'],
+    ])('rejects %s (%s)', (locale) => {
+      expect(() => validateLocale(locale, 'test')).toThrow()
+    })
   })
 })
 

@@ -153,7 +153,10 @@ function renderFunction(
   if (customFn) {
     try {
       return customFn(val, node.style ?? '', locale)
-    } catch {
+    } catch (err) {
+      if (typeof process !== 'undefined' && process.env?.['NODE_ENV'] !== 'production') {
+        console.warn(`[fluenti] Custom formatter "${node.fn}" threw for variable "${node.variable}":`, err)
+      }
       return `{${node.variable}}`
     }
   }
@@ -203,7 +206,10 @@ function renderFunction(
       default:
         return String(val ?? '')
     }
-  } catch {
+  } catch (err) {
+    if (typeof process !== 'undefined' && process.env?.['NODE_ENV'] !== 'production') {
+      console.warn(`[fluenti] Built-in formatter "${node.fn}" threw for variable "${node.variable}":`, err)
+    }
     return `{${node.variable}}`
   }
 }

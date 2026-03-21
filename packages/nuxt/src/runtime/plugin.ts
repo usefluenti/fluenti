@@ -33,14 +33,14 @@ export default defineNuxtPlugin(async (nuxtApp) => {
       if (config.strategy === 'domains') {
         host = reqHeaders['host']
       }
-    } catch {
-      // header read failed
+    } catch (err) {
+      if (import.meta.dev) console.debug('[fluenti] Header read failed:', err)
     }
   } else if (config.strategy === 'domains') {
     try {
       host = window.location.host
-    } catch {
-      // domain detection failed
+    } catch (err) {
+      if (import.meta.dev) console.debug('[fluenti] Domain detection failed:', err)
     }
   }
 
@@ -66,8 +66,8 @@ export default defineNuxtPlugin(async (nuxtApp) => {
     try {
       const event = (nuxtApp as unknown as { ssrContext?: { event?: { context: Record<string, unknown> } } }).ssrContext?.event
       if (event) event.context['locale'] = detectedLocale
-    } catch {
-      // event context not available
+    } catch (err) {
+      if (import.meta.dev) console.debug('[fluenti] Event context not available:', err)
     }
   } else if (nuxtApp.payload['fluentiLocale']) {
     // --- Client (SSR hydration): read from payload to avoid mismatch ---
@@ -148,8 +148,9 @@ export default defineNuxtPlugin(async (nuxtApp) => {
       if (!gp['$t']) gp['$t'] = ctx.t
       if (!gp['$d']) gp['$d'] = ctx.d
       if (!gp['$n']) gp['$n'] = ctx.n
-    } catch {
+    } catch (err) {
       // @fluenti/vue plugin not yet installed — $t/$d/$n will be provided by it
+      if (import.meta.dev) console.debug('[fluenti] Vue plugin not yet installed, skipping $t/$d/$n injection:', err)
     }
   }
 

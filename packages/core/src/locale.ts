@@ -1,6 +1,15 @@
 import type { Locale } from './types'
 
 /**
+ * BCP 47 locale format: 2-3 letter language, optionally followed by
+ * hyphen-separated subtags (script, region, variants) each 1-8 alphanumeric chars.
+ */
+const LOCALE_RE = /^[a-zA-Z]{2,3}(-[a-zA-Z0-9]{1,8})*$/
+
+/** BCP 47 script subtags are exactly 4 alphabetic characters (e.g. Hans, Latn). */
+const SCRIPT_RE = /^[a-zA-Z]{4}$/
+
+/**
  * Parsed locale components from a BCP 47 locale string.
  */
 export interface ParsedLocale {
@@ -22,15 +31,21 @@ export function parseLocale(locale: Locale): ParsedLocale {
   const result: ParsedLocale = { language: parts[0]!.toLowerCase() }
 
   if (parts.length === 2) {
-    // Could be script (4 chars, title case) or region (2-3 chars)
-    if (parts[1]!.length === 4) {
+    // Script subtags are exactly 4 alphabetic chars (e.g. Hans, Latn).
+    // 4-char subtags that contain digits (e.g. 1901) are variants, not scripts.
+    if (SCRIPT_RE.test(parts[1]!)) {
       result.script = parts[1]![0]!.toUpperCase() + parts[1]!.slice(1).toLowerCase()
     } else {
       result.region = parts[1]!.toUpperCase()
     }
   } else if (parts.length >= 3) {
-    result.script = parts[1]![0]!.toUpperCase() + parts[1]!.slice(1).toLowerCase()
-    result.region = parts[2]!.toUpperCase()
+    if (SCRIPT_RE.test(parts[1]!)) {
+      result.script = parts[1]![0]!.toUpperCase() + parts[1]!.slice(1).toLowerCase()
+      result.region = parts[2]!.toUpperCase()
+    } else {
+      // parts[1] is not a script (e.g. variant or region), treat parts[1] as region
+      result.region = parts[1]!.toUpperCase()
+    }
   }
 
   return result
@@ -163,5 +178,8 @@ export function getDirection(locale: Locale): 'rtl' | 'ltr' {
 export function validateLocale(locale: string, context: string): void {
   if (typeof locale !== 'string' || locale.trim() === '') {
     throw new Error(`[fluenti] ${context}: locale must be a non-empty string, got ${JSON.stringify(locale)}`)
+  }
+  if (!LOCALE_RE.test(locale)) {
+    throw new Error(`[fluenti] ${context}: locale must be a valid BCP 47 tag (e.g. "en", "en-US"), got ${JSON.stringify(locale)}`)
   }
 }

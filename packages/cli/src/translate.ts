@@ -60,7 +60,12 @@ export function extractJSON(text: string): Record<string, string> {
   if (!match) {
     throw new Error('No JSON object found in AI response')
   }
-  const parsed = JSON.parse(match[0])
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(match[0])
+  } catch {
+    throw new Error(`Failed to parse JSON from AI response: ${match[0].slice(0, 200)}`)
+  }
   if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
     throw new Error('AI response is not a valid JSON object')
   }
