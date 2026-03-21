@@ -11,6 +11,7 @@ import { readJsonCatalog, writeJsonCatalog } from './json-format'
 import { readPoCatalog, writePoCatalog } from './po-format'
 import { compileCatalog, compileIndex, collectAllIds, compileTypeDeclaration } from './compile'
 import { formatStatsRow } from './stats-format'
+import { lintCatalogs, formatDiagnostics } from './lint'
 import { translateCatalog } from './translate'
 import type { AIProvider } from './translate'
 import { runMigrate } from './migrate'
@@ -185,6 +186,50 @@ const stats = defineCommand({
   },
 })
 
+const lint = defineCommand({
+  meta: { name: 'lint', description: 'Check translation quality (missing, inconsistent placeholders, fuzzy)' },
+  args: {
+    config: { type: 'string', description: 'Path to config file' },
+    strict: { type: 'boolean', description: 'Treat warnings as errors', default: false },
+    locale: { type: 'string', description: 'Lint a specific locale only' },
+  },
+  async run({ args }) {
+    const config = await loadConfig(args.config)
+    const ext = config.format === 'json' ? '.json' : '.po'
+
+    const allCatalogs: Record<string, CatalogData> = {}
+    for (const locale of config.locales) {
+      const catalogPath = resolve(config.catalogDir, `${locale}${ext}`)
+      allCatalogs[locale] = readCatalog(catalogPath, config.format)
+    }
+
+    const targetLocales = args.locale
+      ? [args.locale]
+      : undefined
+
+    consola.info(`Linting ${targetLocales ? targetLocales.join(', ') : 'all locales'} (source: ${config.sourceLocale})`)
+
+    const diagnostics = lintCatalogs(allCatalogs, {
+      sourceLocale: config.sourceLocale,
+      locales: targetLocales,
+      strict: args.strict ?? false,
+    })
+
+    consola.log('')
+    consola.log(formatDiagnostics(diagnostics))
+    consola.log('')
+
+    const errors = diagnostics.filter((d) => d.severity === 'error')
+    const warnings = diagnostics.filter((d) => d.severity === 'warning')
+
+    if (errors.length > 0) {
+      process.exitCode = 1
+    } else if (args.strict && warnings.length > 0) {
+      process.exitCode = 1
+    }
+  },
+})
+
 const translate = defineCommand({
   meta: { name: 'translate', description: 'Translate messages using AI (Claude Code or Codex CLI)' },
   args: {
@@ -297,7 +342,7 @@ const main = defineCommand({
     version: '0.0.1',
     description: 'Compile-time i18n for modern frameworks',
   },
-  subCommands: { init, extract, compile, stats, translate, migrate },
+  subCommands: { init, extract, compile, stats, lint, translate, migrate },
 })
 
 runMain(main)

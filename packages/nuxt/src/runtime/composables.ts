@@ -1,6 +1,7 @@
 import { computed } from 'vue'
 import type { ComputedRef } from 'vue'
-import { useRoute, useRuntimeConfig } from '#imports'
+import { useRoute, useRouter, useRuntimeConfig } from '#imports'
+import type { RouteLocationRaw, RouteLocationResolved } from 'vue-router'
 import { useI18n } from '@fluenti/vue'
 import { localePath, switchLocalePath } from './path-utils'
 import type { FluentNuxtRuntimeConfig } from '../types'
@@ -61,6 +62,83 @@ export function useSwitchLocalePath(): (locale: string) => string {
       config.defaultLocale,
       config.strategy,
     )
+  }
+}
+
+/**
+ * Composable that returns a function to resolve a locale-prefixed route object.
+ *
+ * Unlike `useLocalePath()` which returns a path string, this returns a full
+ * resolved `RouteLocationResolved` that can be passed to `router.push()`.
+ *
+ * @example
+ * ```ts
+ * const localeRoute = useLocaleRoute()
+ * const route = localeRoute('/about')       // resolved route for '/ja/about'
+ * const route = localeRoute('/about', 'en') // resolved route for '/about'
+ * router.push(route)
+ * ```
+ */
+export function useLocaleRoute(): (to: RouteLocationRaw, locale?: string) => RouteLocationResolved {
+  const { locale } = useI18n()
+  const router = useRouter()
+  const config = useFluentiConfig()
+
+  return (to: RouteLocationRaw, targetLocale?: string) => {
+    const resolvedLocale = targetLocale ?? locale.value
+    if (typeof to === 'string') {
+      const path = localePath(to, resolvedLocale, config.defaultLocale, config.strategy)
+      return router.resolve(path)
+    }
+    // For object routes, prefix the path if present
+    if ('path' in to && to.path) {
+      const path = localePath(to.path, resolvedLocale, config.defaultLocale, config.strategy)
+      return router.resolve({ ...to, path })
+    }
+    // For named routes, resolve as-is
+    return router.resolve(to)
+  }
+}
+
+/**
+ * Composable that returns a namespace-scoped i18n context.
+ *
+ * The `t()` function automatically prepends the namespace to message keys,
+ * reducing boilerplate when a component only uses messages from one section.
+ *
+ * @example
+ * ```ts
+ * const { t } = useI18nScoped('Navbar')
+ * t('home')     // looks up 'Navbar.home'
+ * t('about')    // looks up 'Navbar.about'
+ * ```
+ */
+export function useI18nScoped(namespace: string) {
+  const ctx = useI18n()
+  const separator = '.'
+
+  return {
+    ...ctx,
+    t(idOrDescriptor: unknown, values?: Record<string, unknown>): string {
+      if (typeof idOrDescriptor === 'string') {
+        return ctx.t(`${namespace}${separator}${idOrDescriptor}`, values)
+      }
+      // MessageDescriptor — prefix the id
+      if (idOrDescriptor && typeof idOrDescriptor === 'object' && 'id' in idOrDescriptor) {
+        const desc = idOrDescriptor as { id: string }
+        return ctx.t({ ...desc, id: `${namespace}${separator}${desc.id}` }, values)
+      }
+      // Tagged template — pass through (no namespacing for tagged templates)
+      return (ctx.t as Function)(idOrDescriptor, values)
+    },
+    te(key: string, locale?: string): boolean {
+      return ctx.te(`${namespace}${separator}${key}`, locale)
+    },
+    tm(key: string, locale?: string) {
+      return ctx.tm(`${namespace}${separator}${key}`, locale)
+    },
+    /** The namespace this context is scoped to */
+    namespace,
   }
 }
 

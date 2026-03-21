@@ -177,6 +177,36 @@ export interface FluentNuxtOptions {
    * ```
    */
   onMissingTranslation?: (locale: string, id: string) => string | undefined
+  /**
+   * Structured error handler for i18n errors.
+   *
+   * Called when translations are missing, locale loading fails, or message
+   * formatting errors occur. Provides more context than `onMissingTranslation`.
+   *
+   * @example
+   * ```ts
+   * onError: (error) => {
+   *   if (error.code === 'MISSING_MESSAGE') {
+   *     console.warn(`[i18n] Missing: ${error.key} [${error.locale}]`)
+   *   }
+   * }
+   * ```
+   */
+  onError?: I18nErrorHandler
+  /**
+   * Generate fallback text when a translation is missing or errors.
+   *
+   * Return a string to use as the fallback, or `undefined` for default behavior.
+   *
+   * @example
+   * ```ts
+   * getMessageFallback: (error) => {
+   *   if (error.code === 'MISSING_MESSAGE') return `⚠️ ${error.key}`
+   *   return undefined
+   * }
+   * ```
+   */
+  getMessageFallback?: MessageFallbackHandler
   /** Browser language detection settings */
   detectBrowserLanguage?: DetectBrowserLanguageOptions
   /**
@@ -314,6 +344,34 @@ export interface FluentNuxtOptions {
    */
   domains?: DomainConfig[]
 }
+
+/** Structured i18n error types */
+export type I18nErrorCode = 'MISSING_MESSAGE' | 'MISSING_LOCALE' | 'FORMAT_ERROR' | 'LOAD_ERROR'
+
+/** Structured error passed to the onError callback */
+export interface I18nError {
+  /** Error classification */
+  code: I18nErrorCode
+  /** Human-readable error message */
+  message: string
+  /** The message key that caused the error */
+  key?: string
+  /** The locale that caused the error */
+  locale?: string
+  /** The original error (if wrapping a lower-level error) */
+  cause?: unknown
+}
+
+/** Callback for structured i18n error handling */
+export type I18nErrorHandler = (error: I18nError) => void
+
+/**
+ * Callback to generate fallback text when a translation is missing or errors.
+ *
+ * Return a string to use as the fallback, or `undefined` for default behavior
+ * (which shows the message key).
+ */
+export type MessageFallbackHandler = (error: I18nError) => string | undefined
 
 /** ISR configuration */
 export interface ISROptions {

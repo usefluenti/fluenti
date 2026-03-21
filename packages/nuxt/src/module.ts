@@ -1,17 +1,21 @@
-import { defineNuxtModule, addPlugin, addImports, addComponent, addRouteMiddleware, createResolver } from '@nuxt/kit'
+import { defineNuxtModule, addPlugin, addImports, addComponent, addRouteMiddleware, addServerHandler, createResolver } from '@nuxt/kit'
 import type { FluentNuxtOptions } from './types'
 import { resolveLocaleCodes, resolveLocaleProperties, resolveDomainConfigs } from './types'
 import { extendPages } from './runtime/page-extend'
 import { validateISRConfig } from './isr-validation'
+import { setupDevTools } from './devtools'
+import { createPageMetaTransform } from './page-meta-transform'
 
-export type { FluentNuxtOptions, Strategy, FluentNuxtRuntimeConfig, DetectBrowserLanguageOptions, LocaleDetectContext, LocaleDetectorFn, BuiltinDetector, ISROptions, IdGenerator, LocaleObject, LocaleDefinition, DomainConfig, I18nRouteConfig } from './types'
+export type { FluentNuxtOptions, Strategy, FluentNuxtRuntimeConfig, DetectBrowserLanguageOptions, LocaleDetectContext, LocaleDetectorFn, BuiltinDetector, ISROptions, IdGenerator, LocaleObject, LocaleDefinition, DomainConfig, I18nRouteConfig, I18nError, I18nErrorCode, I18nErrorHandler, MessageFallbackHandler } from './types'
+export { generateSitemapUrls, createSitemapHook } from './sitemap'
+export type { SitemapUrl } from './sitemap'
 export { resolveLocaleCodes, resolveLocaleProperties, resolveDomainConfigs } from './types'
 export { localePath, extractLocaleFromPath, switchLocalePath } from './runtime/path-utils'
 export { extendPages } from './runtime/page-extend'
 export type { PageRoute, RouteNameTemplate, ExtendPagesOptions } from './runtime/page-extend'
 export { buildLocaleHead } from './runtime/locale-head'
 export type { LocaleHeadMeta, LocaleHeadOptions } from './runtime/locale-head'
-export { useLocalePath, useSwitchLocalePath, useLocaleHead } from './runtime/standalone-composables'
+export { useLocalePath, useSwitchLocalePath, useLocaleRoute, useLocaleHead } from './runtime/standalone-composables'
 export { defineI18nRoute } from './runtime/define-i18n-route'
 
 export const MODULE_NAME = '@fluenti/nuxt'
@@ -120,6 +124,11 @@ export default defineNuxtModule<FluentNuxtOptions>({
       }
     }
 
+    // --- Register definePageMeta({ i18n }) transform ---
+    nuxt.options.vite = nuxt.options.vite || {}
+    nuxt.options.vite.plugins = nuxt.options.vite.plugins || []
+    ;(nuxt.options.vite.plugins as unknown[]).push(createPageMetaTransform())
+
     // --- Register runtime plugin ---
     addPlugin({
       src: resolve('./runtime/plugin'),
@@ -154,7 +163,9 @@ export default defineNuxtModule<FluentNuxtOptions>({
       addImports([
         { name: 'useLocalePath', from: resolve('./runtime/composables') },
         { name: 'useSwitchLocalePath', from: resolve('./runtime/composables') },
+        { name: 'useLocaleRoute', from: resolve('./runtime/composables') },
         { name: 'useLocaleHead', from: resolve('./runtime/composables') },
+        { name: 'useI18nScoped', from: resolve('./runtime/composables') },
         { name: 'useI18n', from: '@fluenti/vue' },
         { name: 'defineI18nRoute', from: resolve('./runtime/define-i18n-route') },
       ])
@@ -210,6 +221,19 @@ export default defineNuxtModule<FluentNuxtOptions>({
           }
         }
       }
+    }
+
+    // --- Nuxt DevTools integration ---
+    if (nuxt.options.dev) {
+      setupDevTools(nuxt, localeCodes, options.defaultLocale, strategy)
+    }
+
+    // --- Nitro server handler for locale redirect (T2-10) ---
+    if (strategy === 'prefix' || strategy === 'prefix_and_default') {
+      addServerHandler({
+        handler: resolve('./runtime/server/locale-redirect'),
+        middleware: true,
+      })
     }
   },
 })
