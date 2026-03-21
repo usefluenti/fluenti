@@ -1,0 +1,804 @@
+---
+title: Complex Languages
+description: Patterns for Arabic, Russian, Japanese, and other languages with rich grammar — plurals, gender, nesting, RTL, and custom formatters.
+---
+
+import { Tabs, TabItem, Aside } from '@astrojs/starlight/components'
+
+Languages differ wildly in grammar. English has 2 plural forms; Arabic has 6.
+Russian mixes gender with plurals. Japanese has no plurals at all but uses
+counters and honorifics. Fluenti handles all of these through ICU MessageFormat
+with full support for nested messages — a capability many i18n libraries lack.
+
+<Aside type="tip">
+**Fluenti's key principle:** Your source code stays clean — write natural
+English with `` t` ` ``, `v-t`, `<Plural>`, or `<Select>`. All linguistic
+complexity (nested plurals, gender agreement, counters) lives in the PO
+catalogs where translators control it. The compiler handles the rest at build
+time.
+</Aside>
+
+## CLDR Plural Categories
+
+The Unicode CLDR defines 6 plural categories. Each language uses a different
+subset:
+
+| Language | Categories used | Example rule |
+|----------|----------------|-------------|
+| English | `one`, `other` | 1 → one, 2+ → other |
+| French | `one`, `many`, `other` | 0–1 → one, 1M+ → many |
+| Arabic | `zero`, `one`, `two`, `few`, `many`, `other` | All 6 categories |
+| Russian | `one`, `few`, `many`, `other` | 1 → one, 2–4 → few, 5–20 → many |
+| Polish | `one`, `few`, `many`, `other` | Similar to Russian with different ranges |
+| Japanese | `other` | Only 1 category — no plural forms |
+| Chinese | `other` | Only 1 category |
+| Korean | `other` | Only 1 category |
+| Welsh | `zero`, `one`, `two`, `few`, `many`, `other` | All 6 categories |
+
+Fluenti uses the browser's `Intl.PluralRules` which implements the full CLDR
+specification. You only need to provide the categories your target language
+requires.
+
+## Arabic — Full 6-Category Plurals
+
+Arabic uses all 6 CLDR plural categories with different noun forms for each.
+
+**PO catalog** (`locales/ar.po`):
+
+```po
+msgid "{count, plural, one {# message} other {# messages}}"
+msgstr "{count, plural, zero {لا رسائل} one {رسالة واحدة} two {رسالتان} few {# رسائل} many {# رسالة} other {# رسالة}}"
+```
+
+The source English message has 2 branches; the Arabic translation expands to 6.
+Fluenti compiles both correctly — translators add the branches their language
+needs.
+
+**Component usage:**
+
+<Tabs>
+<TabItem label="Vue">
+```vue
+<template>
+  <!-- Source locale (en): "# message" / "# messages" -->
+  <!-- Arabic locale: all 6 categories from the PO catalog -->
+  <Plural :value="unreadCount" one="# message" other="# messages" />
+</template>
+
+<script setup>
+import { Plural } from '@fluenti/vue'
+
+const props = defineProps<{ unreadCount: number }>()
+</script>
+```
+</TabItem>
+
+<TabItem label="React">
+```tsx
+import { Plural } from '@fluenti/react'
+
+function Inbox({ unreadCount }: { unreadCount: number }) {
+  return <Plural value={unreadCount} one="# message" other="# messages" />
+}
+```
+</TabItem>
+
+<TabItem label="Solid">
+```tsx
+import { Plural } from '@fluenti/solid'
+
+function Inbox(props: { unreadCount: number }) {
+  return <Plural value={props.unreadCount} one="# message" other="# messages" />
+}
+```
+</TabItem>
+</Tabs>
+
+The source code only needs `one` and `other` (English rules). When the locale
+is `ar`, Fluenti loads the compiled Arabic catalog which contains all 6 forms.
+
+| Count | Category | Arabic output |
+|-------|----------|---------------|
+| 0 | `zero` | لا رسائل |
+| 1 | `one` | رسالة واحدة |
+| 2 | `two` | رسالتان |
+| 3–10 | `few` | ٣ رسائل |
+| 11–99 | `many` | ١١ رسالة |
+| 100+ | `other` | ١٠٠ رسالة |
+
+<Aside type="tip">
+You can use exact matches (`=0`, `=1`, `=2`) alongside CLDR categories.
+Exact matches are checked first, so `=0 {No messages}` takes priority over
+`zero {…}`.
+</Aside>
+
+## Russian — Plurals with Gender
+
+Russian has 4 plural categories **and** grammatical gender. When a message
+combines quantity with a gendered noun, the translation needs nesting —
+but your source code stays simple:
+
+<Tabs>
+<TabItem label="Vue">
+```vue
+<template>
+  <!-- Your code: plain English, no ICU syntax -->
+  <p v-t>{{ count }} people arrived</p>
+</template>
+
+<script setup>
+const props = defineProps<{ count: number }>()
+</script>
+```
+</TabItem>
+
+<TabItem label="React">
+```tsx
+import { t } from '@fluenti/react'
+
+function ArrivalNotice({ count }: { count: number }) {
+  return <p>{t`${count} people arrived`}</p>
+}
+```
+</TabItem>
+
+<TabItem label="Solid">
+```tsx
+import { t } from '@fluenti/solid'
+
+function ArrivalNotice(props: { count: number }) {
+  return <p>{t`${props.count} people arrived`}</p>
+}
+```
+</TabItem>
+</Tabs>
+
+The CLI extracts this as a simple message. The **translator** adds all the
+complexity in the PO catalog — your code never changes:
+
+**PO catalog** (`locales/ru.po`):
+
+```po
+msgid "{count} people arrived"
+msgstr "{count, plural, one {Пришёл # человек} few {Пришли # человека} many {Пришло # человек} other {Пришло # человек}}"
+```
+
+When gender matters, use `<Select>` with `<Plural>` inside:
+
+<Tabs>
+<TabItem label="Vue">
+```vue
+<template>
+  <Select :value="gender"
+    male="He arrived"
+    female="She arrived"
+    other="They arrived"
+  />
+</template>
+
+<script setup>
+import { Select } from '@fluenti/vue'
+const props = defineProps<{ gender: string }>()
+</script>
+```
+</TabItem>
+
+<TabItem label="React">
+```tsx
+import { Select } from '@fluenti/react'
+
+function ArrivalNotice({ gender }: { gender: string }) {
+  return (
+    <Select value={gender}
+      male="He arrived"
+      female="She arrived"
+      other="They arrived"
+    />
+  )
+}
+```
+</TabItem>
+
+<TabItem label="Solid">
+```tsx
+import { Select } from '@fluenti/solid'
+
+function ArrivalNotice(props: { gender: string }) {
+  return (
+    <Select value={props.gender}
+      male="He arrived"
+      female="She arrived"
+      other="They arrived"
+    />
+  )
+}
+```
+</TabItem>
+</Tabs>
+
+The Russian translator nests `plural` inside each gender branch:
+
+```po
+msgid "{gender, select, male {He arrived} female {She arrived} other {They arrived}}"
+msgstr "{gender, select, male {{count, plural, one {# мужчина пришёл} few {# мужчины пришли} many {# мужчин пришло} other {# мужчин пришло}}} female {{count, plural, one {# женщина пришла} few {# женщины пришли} many {# женщин пришло} other {# женщин пришло}}} other {{count, plural, one {# человек пришёл} few {# человека пришли} many {# человек пришло} other {# человек пришло}}}}"
+```
+
+The verb ending, noun form, and plural category all agree — impossible
+without nesting.
+
+<Aside type="caution">
+Some i18n libraries based on gettext cannot nest plural inside select.
+Fluenti supports **arbitrary nesting depth** — you can nest select inside
+plural inside select if your language requires it.
+</Aside>
+
+## Japanese — Counters and Formality
+
+Japanese has no grammatical plurals (only `other`), but uses counters
+(助数詞) and formality levels. Your code stays in English:
+
+<Tabs>
+<TabItem label="Vue">
+```vue
+<template>
+  <p v-t>{{ fileCount }} files</p>
+</template>
+
+<script setup>
+const props = defineProps<{ fileCount: number }>()
+</script>
+```
+</TabItem>
+
+<TabItem label="React">
+```tsx
+import { t } from '@fluenti/react'
+
+function FileCount({ fileCount }: { fileCount: number }) {
+  return <p>{t`${fileCount} files`}</p>
+}
+```
+</TabItem>
+
+<TabItem label="Solid">
+```tsx
+import { t } from '@fluenti/solid'
+
+function FileCount(props: { fileCount: number }) {
+  return <p>{t`${props.fileCount} files`}</p>
+}
+```
+</TabItem>
+</Tabs>
+
+The translator adds the correct counter (件) in the PO catalog:
+
+```po
+msgid "{fileCount} files"
+msgstr "{fileCount}件のファイル"
+```
+
+For formality levels, write natural English — the translator handles
+the formality branching:
+
+<Tabs>
+<TabItem label="Vue">
+```vue
+<template>
+  <p v-t>You have {{ count }} files</p>
+</template>
+
+<script setup>
+const props = defineProps<{ count: number }>()
+</script>
+```
+</TabItem>
+
+<TabItem label="React">
+```tsx
+import { t } from '@fluenti/react'
+
+function FileStatus({ count }: { count: number }) {
+  return <p>{t`You have ${count} files`}</p>
+}
+```
+</TabItem>
+
+<TabItem label="Solid">
+```tsx
+import { t } from '@fluenti/solid'
+
+function FileStatus(props: { count: number }) {
+  return <p>{t`You have ${props.count} files`}</p>
+}
+```
+</TabItem>
+</Tabs>
+
+The Japanese translator can add formality via `select` — complexity stays
+in the catalog, not your code:
+
+```po
+msgid "You have {count} files"
+msgstr "{count}件のファイルがあります"
+```
+
+<Aside type="tip">
+Japanese sentences never need plural branching, but **counters** (件, 個, 人,
+本, 枚, etc.) are important. Include the correct counter in each message
+string — this is a translation concern, not a code concern.
+</Aside>
+
+## Gender Agreement
+
+Many European languages require gender agreement across the sentence. Your
+source code uses `<Plural>` — the translator handles gender in the catalog.
+
+<Tabs>
+<TabItem label="Vue">
+```vue
+<template>
+  <Plural :value="count" one="# friend is online" other="# friends are online" />
+</template>
+
+<script setup>
+import { Plural } from '@fluenti/vue'
+const props = defineProps<{ count: number }>()
+</script>
+```
+</TabItem>
+
+<TabItem label="React">
+```tsx
+import { Plural } from '@fluenti/react'
+
+function FriendStatus({ count }: { count: number }) {
+  return <Plural value={count} one="# friend is online" other="# friends are online" />
+}
+```
+</TabItem>
+
+<TabItem label="Solid">
+```tsx
+import { Plural } from '@fluenti/solid'
+
+function FriendStatus(props: { count: number }) {
+  return <Plural value={props.count} one="# friend is online" other="# friends are online" />
+}
+```
+</TabItem>
+</Tabs>
+
+The English source is gender-neutral. The French translator nests `select`
+inside `plural` to get the correct adjective endings:
+
+**PO catalog** (`locales/fr.po`):
+
+```po
+msgid "{count, plural, one {# friend is online} other {# friends are online}}"
+msgstr "{count, plural, one {{gender, select, male {# ami est connecté} female {# amie est connectée} other {# ami(e) est connecté(e)}}} other {{gender, select, male {# amis sont connectés} female {# amies sont connectées} other {# ami(e)s sont connecté(e)s}}}}"
+```
+
+Four French adjective endings (`connecté` / `connectée` / `connectés` /
+`connectées`) — all derived from the same `<Plural>` component.
+
+## Selectordinal
+
+For ordinal numbers (1st, 2nd, 3rd), write the position naturally with
+`` t` ` ``:
+
+<Tabs>
+<TabItem label="Vue">
+```vue
+<template>
+  <span v-t>Finished in {{ position }} place</span>
+</template>
+
+<script setup>
+const props = defineProps<{ position: number }>()
+</script>
+```
+</TabItem>
+
+<TabItem label="React">
+```tsx
+import { t } from '@fluenti/react'
+
+function Ranking({ position }: { position: number }) {
+  return <span>{t`Finished in ${position} place`}</span>
+}
+```
+</TabItem>
+
+<TabItem label="Solid">
+```tsx
+import { t } from '@fluenti/solid'
+
+function Ranking(props: { position: number }) {
+  return <span>{t`Finished in ${props.position} place`}</span>
+}
+```
+</TabItem>
+</Tabs>
+
+The English translator uses `selectordinal` in the PO catalog to produce
+"1st", "2nd", "3rd", etc.:
+
+```po
+msgid "Finished in {position} place"
+msgstr "Finished in {position, selectordinal, one {#st} two {#nd} few {#rd} other {#th}} place"
+```
+
+Japanese uses a completely different pattern — no ordinal branching needed:
+
+```po
+msgid "Finished in {position} place"
+msgstr "第{position}位でフィニッシュ"
+```
+
+This uses `Intl.PluralRules` with `type: 'ordinal'` — rules vary by language.
+
+## Custom Formatters
+
+Register custom formatters for language-specific formatting needs:
+
+<Tabs>
+<TabItem label="Vue">
+```typescript
+import { createFluentVue } from '@fluenti/vue'
+
+const i18n = createFluentVue({
+  locale: 'ar',
+  formatters: {
+    // Arabic-Indic numerals
+    arabicNum: (value, _style, locale) =>
+      new Intl.NumberFormat(locale, {
+        numberingSystem: 'arab',
+      }).format(Number(value)),
+
+    // Japanese era-based dates
+    japaneseDate: (value, style, locale) =>
+      new Intl.DateTimeFormat(locale, {
+        calendar: 'japanese',
+        dateStyle: style || 'long',
+      }).format(value as Date),
+
+    // Locale-aware list formatting
+    list: (value, style, locale) =>
+      new Intl.ListFormat(locale, {
+        type: (style as Intl.ListFormatType) || 'conjunction',
+      }).format(value as string[]),
+  },
+})
+```
+</TabItem>
+
+<TabItem label="React">
+```tsx
+import { I18nProvider } from '@fluenti/react'
+
+function App() {
+  return (
+    <I18nProvider
+      locale="ar"
+      formatters={{
+        arabicNum: (value, _style, locale) =>
+          new Intl.NumberFormat(locale, {
+            numberingSystem: 'arab',
+          }).format(Number(value)),
+
+        japaneseDate: (value, style, locale) =>
+          new Intl.DateTimeFormat(locale, {
+            calendar: 'japanese',
+            dateStyle: style || 'long',
+          }).format(value as Date),
+
+        list: (value, style, locale) =>
+          new Intl.ListFormat(locale, {
+            type: (style as Intl.ListFormatType) || 'conjunction',
+          }).format(value as string[]),
+      }}
+    >
+      {/* ... */}
+    </I18nProvider>
+  )
+}
+```
+</TabItem>
+
+<TabItem label="Solid">
+```tsx
+import { I18nProvider } from '@fluenti/solid'
+
+function App() {
+  return (
+    <I18nProvider config={{
+      locale: 'ar',
+      formatters: {
+        arabicNum: (value, _style, locale) =>
+          new Intl.NumberFormat(locale, {
+            numberingSystem: 'arab',
+          }).format(Number(value)),
+
+        japaneseDate: (value, style, locale) =>
+          new Intl.DateTimeFormat(locale, {
+            calendar: 'japanese',
+            dateStyle: style || 'long',
+          }).format(value as Date),
+
+        list: (value, style, locale) =>
+          new Intl.ListFormat(locale, {
+            type: (style as Intl.ListFormatType) || 'conjunction',
+          }).format(value as string[]),
+      },
+    }}>
+      {/* ... */}
+    </I18nProvider>
+  )
+}
+```
+</TabItem>
+</Tabs>
+
+Then use them in your components with `` t` ` ``:
+
+<Tabs>
+<TabItem label="Vue">
+```vue
+<template>
+  <p v-t>Your balance: {{ balance }}</p>
+  <p v-t>Date: {{ today }}</p>
+  <p v-t>Attendees: {{ attendees }}</p>
+</template>
+
+<script setup>
+const balance = 1234.56
+const today = new Date()
+const attendees = ['Alice', 'Bob', 'Charlie']
+</script>
+```
+</TabItem>
+
+<TabItem label="React">
+```tsx
+import { t } from '@fluenti/react'
+
+function Summary() {
+  const balance = 1234.56
+  const today = new Date()
+  const attendees = ['Alice', 'Bob', 'Charlie']
+
+  return (
+    <div>
+      <p>{t`Your balance: ${balance}`}</p>
+      <p>{t`Date: ${today}`}</p>
+      <p>{t`Attendees: ${attendees}`}</p>
+    </div>
+  )
+}
+```
+</TabItem>
+
+<TabItem label="Solid">
+```tsx
+import { t } from '@fluenti/solid'
+
+function Summary() {
+  const balance = 1234.56
+  const today = new Date()
+  const attendees = ['Alice', 'Bob', 'Charlie']
+
+  return (
+    <div>
+      <p>{t`Your balance: ${balance}`}</p>
+      <p>{t`Date: ${today}`}</p>
+      <p>{t`Attendees: ${attendees}`}</p>
+    </div>
+  )
+}
+```
+</TabItem>
+</Tabs>
+
+The translator applies the custom formatters in the PO catalog:
+
+```po
+msgid "Your balance: {balance}"
+msgstr "رصيدك: {balance, arabicNum}"
+
+msgid "Date: {today}"
+msgstr "日付: {today, japaneseDate, long}"
+
+msgid "Attendees: {attendees}"
+msgstr "参加者: {attendees, list, conjunction}"
+```
+
+## RTL Support
+
+Fluenti provides `getDirection()` for right-to-left languages (Arabic, Hebrew,
+Persian, Urdu). Set it on your root layout:
+
+<Tabs>
+<TabItem label="Vue">
+```vue
+<template>
+  <html :lang="locale" :dir="dir">
+    <body>
+      <slot />
+    </body>
+  </html>
+</template>
+
+<script setup>
+import { computed } from 'vue'
+import { getDirection } from '@fluenti/core'
+import { useI18n } from '@fluenti/vue'
+
+const { locale } = useI18n()
+const dir = computed(() => getDirection(locale.value))
+</script>
+```
+</TabItem>
+
+<TabItem label="React">
+```tsx
+import { getDirection } from '@fluenti/core'
+import { useI18n } from '@fluenti/react'
+
+function RootLayout({ children }: { children: React.ReactNode }) {
+  const { locale } = useI18n()
+
+  return (
+    <html lang={locale} dir={getDirection(locale)}>
+      <body>{children}</body>
+    </html>
+  )
+}
+```
+</TabItem>
+
+<TabItem label="Solid">
+```tsx
+import { getDirection } from '@fluenti/core'
+import { useI18n } from '@fluenti/solid'
+
+function RootLayout(props: { children: any }) {
+  const { locale } = useI18n()
+
+  return (
+    <html lang={locale()} dir={getDirection(locale())}>
+      <body>{props.children}</body>
+    </html>
+  )
+}
+```
+</TabItem>
+</Tabs>
+
+<Aside type="tip">
+Use CSS logical properties (`margin-inline-start` instead of `margin-left`,
+`padding-inline-end` instead of `padding-right`) to make layouts automatically
+adapt to RTL without extra CSS rules.
+</Aside>
+
+### Bidirectional text isolation
+
+When embedding LTR content inside RTL text (or vice versa), use the `<bdi>`
+element to prevent garbled display:
+
+```html
+<!-- Isolate user-generated LTR content inside RTL context -->
+<p dir="rtl">المستخدم: <bdi>{{ username }}</bdi> أرسل رسالة</p>
+```
+
+## Full Example — Photo Sharing Notification
+
+A real-world notification component. The source code is clean and readable —
+all linguistic complexity lives in the PO catalogs:
+
+<Tabs>
+<TabItem label="Vue">
+```vue
+<template>
+  <div class="notification" :dir="dir">
+    <img :src="avatar" :alt="name" />
+    <p v-t>{{ name }} shared {{ photoCount }} photos with you</p>
+  </div>
+</template>
+
+<script setup>
+import { computed } from 'vue'
+import { getDirection } from '@fluenti/core'
+import { useI18n } from '@fluenti/vue'
+
+const { locale } = useI18n()
+const props = defineProps<{
+  name: string
+  avatar: string
+  photoCount: number
+}>()
+
+const dir = computed(() => getDirection(locale.value))
+</script>
+```
+</TabItem>
+
+<TabItem label="React">
+```tsx
+import { getDirection } from '@fluenti/core'
+import { t, useI18n } from '@fluenti/react'
+
+interface NotificationProps {
+  name: string
+  avatar: string
+  photoCount: number
+}
+
+function PhotoNotification({ name, avatar, photoCount }: NotificationProps) {
+  const { locale } = useI18n()
+
+  return (
+    <div className="notification" dir={getDirection(locale)}>
+      <img src={avatar} alt={name} />
+      <p>{t`${name} shared ${photoCount} photos with you`}</p>
+    </div>
+  )
+}
+```
+</TabItem>
+
+<TabItem label="Solid">
+```tsx
+import { getDirection } from '@fluenti/core'
+import { t, useI18n } from '@fluenti/solid'
+
+interface NotificationProps {
+  name: string
+  avatar: string
+  photoCount: number
+}
+
+function PhotoNotification(props: NotificationProps) {
+  const { locale } = useI18n()
+
+  return (
+    <div class="notification" dir={getDirection(locale())}>
+      <img src={props.avatar} alt={props.name} />
+      <p>{t`${props.name} shared ${props.photoCount} photos with you`}</p>
+    </div>
+  )
+}
+```
+</TabItem>
+</Tabs>
+
+The source message is plain English. Each target language adds the grammatical
+complexity it needs:
+
+**English** (`locales/en.po`) — 2 plural forms:
+
+```po
+msgid "{name} shared {photoCount} photos with you"
+msgstr "{name} shared {photoCount, plural, one {# photo} other {# photos}} with you"
+```
+
+**Arabic** (`locales/ar.po`) — 6 plural forms × gender = 18 variants:
+
+```po
+msgid "{name} shared {photoCount} photos with you"
+msgstr "{gender, select, male {{photoCount, plural, zero {لم يشارك {name} أي صورة معك} one {شارك {name} صورة واحدة معك} two {شارك {name} صورتين معك} few {شارك {name} # صور معك} many {شارك {name} # صورة معك} other {شارك {name} # صورة معك}}} female {{photoCount, plural, zero {لم تشارك {name} أي صورة معك} one {شاركت {name} صورة واحدة معك} two {شاركت {name} صورتين معك} few {شاركت {name} # صور معك} many {شاركت {name} # صورة معك} other {شاركت {name} # صورة معك}}} other {{photoCount, plural, zero {لم تتم مشاركة أي صورة من {name} معك} one {تمت مشاركة صورة واحدة من {name} معك} two {تمت مشاركة صورتين من {name} معك} few {تمت مشاركة # صور من {name} معك} many {تمت مشاركة # صورة من {name} معك} other {تمت مشاركة # صورة من {name} معك}}}}"
+```
+
+**Japanese** (`locales/ja.po`) — no plurals, just a counter:
+
+```po
+msgid "{name} shared {photoCount} photos with you"
+msgstr "{name}さんが写真を{photoCount}枚共有しました"
+```
+
+<Aside type="tip">
+Same `` t` ` `` call, same message ID — three languages, three completely
+different grammatical structures. The developer writes natural English; the
+translator adds whatever complexity their language requires. Fluenti compiles
+each catalog independently at build time.
+</Aside>

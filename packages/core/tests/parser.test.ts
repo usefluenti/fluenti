@@ -438,4 +438,38 @@ describe('parse', () => {
       expect(parse('')).toEqual([])
     })
   })
+
+  // ─── Recursion depth limit ─────────────────────────────────────────
+  describe('recursion depth limit', () => {
+    /** Build a deeply nested select message with the given number of nesting levels. */
+    function buildNestedSelect(levels: number): string {
+      const vars = 'abcdefghijklmnopqrstuvwxyz'
+      let msg = ''
+      for (let i = 0; i < levels; i++) {
+        const v = vars[i % vars.length]! + (i >= vars.length ? String(i) : '')
+        msg += `{${v}, select, other {`
+      }
+      msg += 'leaf'
+      for (let i = 0; i < levels; i++) {
+        msg += '}}'
+      }
+      return msg
+    }
+
+    it('allows 10 levels of nesting', () => {
+      const msg = buildNestedSelect(10)
+      expect(() => parse(msg)).not.toThrow()
+    })
+
+    it('throws FluentParseError at 11 levels of nesting', () => {
+      const msg = buildNestedSelect(11)
+      expect(() => parse(msg)).toThrow(FluentParseError)
+      expect(() => parse(msg)).toThrow(/maximum nesting depth/i)
+    })
+
+    it('throws FluentParseError at 20 levels of nesting', () => {
+      const msg = buildNestedSelect(20)
+      expect(() => parse(msg)).toThrow(FluentParseError)
+    })
+  })
 })

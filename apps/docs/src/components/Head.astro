@@ -1,0 +1,80 @@
+---
+import Default from '@astrojs/starlight/components/Head.astro'
+
+const { starlightRoute } = Astro.locals
+const url = Astro.url
+const isHome = url.pathname === '/' || url.pathname === ''
+const site = Astro.site?.origin ?? 'https://fluenti.dev'
+
+// Build breadcrumb from URL path
+const segments = url.pathname.replace(/^\/|\/$/g, '').split('/').filter(Boolean)
+
+const breadcrumbItems = [
+  { '@type': 'ListItem', position: 1, name: 'Home', item: site },
+]
+
+const labelMap: Record<string, string> = {
+  start: 'Start Here',
+  essentials: 'Essentials',
+  frameworks: 'Frameworks',
+  advanced: 'Advanced',
+  api: 'API Reference',
+  vue: 'Vue',
+  react: 'React',
+  solid: 'SolidJS',
+  nuxt: 'Nuxt',
+}
+
+let pathSoFar = ''
+for (let i = 0; i < segments.length; i++) {
+  pathSoFar += `/${segments[i]}`
+  const isLast = i === segments.length - 1
+  const name = isLast
+    ? (starlightRoute?.entry?.data?.title ?? segments[i])
+    : (labelMap[segments[i]] ?? segments[i])
+
+  breadcrumbItems.push({
+    '@type': 'ListItem',
+    position: i + 2,
+    name,
+    item: `${site}${pathSoFar}/`,
+  })
+}
+
+const breadcrumbLd = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: breadcrumbItems,
+}
+
+const organizationLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  name: 'Fluenti',
+  url: site,
+  logo: `${site}/assets/logo-icon.svg`,
+  sameAs: ['https://github.com/usefluenti/fluenti'],
+}
+
+const softwareAppLd = {
+  '@context': 'https://schema.org',
+  '@type': 'SoftwareApplication',
+  name: 'Fluenti',
+  applicationCategory: 'DeveloperApplication',
+  operatingSystem: 'Cross-platform',
+  description: 'Compile-time i18n for Vue, React, SolidJS, Next.js and Nuxt',
+  url: site,
+  offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+  license: 'https://opensource.org/licenses/MIT',
+}
+
+const schemas = isHome
+  ? [organizationLd, softwareAppLd, breadcrumbLd]
+  : [breadcrumbLd]
+---
+
+<Default><slot /></Default>
+
+{schemas.map((schema) => (
+  <script type="application/ld+json" set:html={JSON.stringify(schema)} />
+))}

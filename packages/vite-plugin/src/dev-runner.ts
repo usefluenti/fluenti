@@ -1,4 +1,4 @@
-import { exec } from 'node:child_process'
+import { execFile } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import { resolve, dirname, join } from 'node:path'
 import { createRequire } from 'node:module'
@@ -91,27 +91,45 @@ export async function runExtractCompile(options: DevRunnerOptions): Promise<void
     return Promise.resolve()
   }
 
-  const parallelFlag = options.parallelCompile ? ' --parallel' : ''
-  const command = `${bin} extract && ${bin} compile${parallelFlag}`
+  const compileArgs = options.parallelCompile ? ['compile', '--parallel'] : ['compile']
   return new Promise<void>((resolve, reject) => {
-    exec(
-      command,
+    execFile(
+      bin,
+      ['extract'],
       { cwd: options.cwd },
-      (err, _stdout, stderr) => {
-        if (err) {
-          const error = new Error(stderr || err.message)
+      (extractErr, _stdout, extractStderr) => {
+        if (extractErr) {
+          const error = new Error(extractStderr || extractErr.message)
           if (options.throwOnError) {
             reject(error)
             return
           }
           console.warn('[fluenti] Extract/compile failed:', error.message)
           options.onError?.(error)
-        } else {
-          console.log('[fluenti] Extracting and compiling... done')
-          if (options.onAfterCompile) void Promise.resolve(options.onAfterCompile()).catch(() => {})
-          options.onSuccess?.()
+          resolve()
+          return
         }
-        resolve()
+        execFile(
+          bin,
+          compileArgs,
+          { cwd: options.cwd },
+          (compileErr, _compileStdout, compileStderr) => {
+            if (compileErr) {
+              const error = new Error(compileStderr || compileErr.message)
+              if (options.throwOnError) {
+                reject(error)
+                return
+              }
+              console.warn('[fluenti] Extract/compile failed:', error.message)
+              options.onError?.(error)
+            } else {
+              console.log('[fluenti] Extracting and compiling... done')
+              if (options.onAfterCompile) void Promise.resolve(options.onAfterCompile()).catch(() => {})
+              options.onSuccess?.()
+            }
+            resolve()
+          },
+        )
       },
     )
   })

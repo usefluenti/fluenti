@@ -331,22 +331,56 @@ export function createFluentVue(options: FluentVueOptions): FluentVuePlugin {
    */
   function vtRich(
     message: string | MessageDescriptor,
-    elements: Array<{ tag: string; attrs: Record<string, string> }>,
+    elements: Array<{ tag: string; attrs?: Record<string, string>; rawAttrs?: string }>,
     values?: Record<string, unknown>,
   ): string {
     const translated = values ? t(message, values) : t(message)
     // Escape the entire translated string first to neutralise any injected HTML
     const escaped = escapeHtml(translated)
-    // Restore numbered placeholders (now escaped as &lt;0&gt;...&lt;/0&gt;) back to real HTML
-    return escaped.replace(/&lt;(\d+)&gt;([\s\S]*?)&lt;\/\1&gt;/g, (_match, idxStr: string, content: string) => {
-      const el = elements[Number(idxStr)]
-      if (!el) return content
-      const attrs = Object.entries(el.attrs)
+
+    // Helper to build attribute string from element.
+    // Both rawAttrs and attrs are escaped to prevent XSS — even though rawAttrs
+    // originates from compile-time transforms, $vtRich is exposed on globalProperties
+    // so we apply defence-in-depth.
+    function buildAttrs(el: { attrs?: Record<string, string>; rawAttrs?: string }): string {
+      if (el.rawAttrs != null && el.rawAttrs !== '') {
+        // Parse rawAttrs back into key/value pairs and escape each one.
+        // Handles: key="val", key='val', and bare key (boolean attribute).
+        const parts: string[] = []
+        const attrRe = /([\w:@.!-]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'))?/g
+        let m: RegExpExecArray | null
+        while ((m = attrRe.exec(el.rawAttrs)) !== null) {
+          const key = escapeHtml(m[1]!)
+          const val = m[2] ?? m[3]
+          parts.push(val !== undefined ? `${key}="${escapeHtml(val)}"` : key)
+        }
+        return parts.join(' ')
+      }
+      if (!el.attrs) return ''
+      return Object.entries(el.attrs)
         .map(([k, v]) => v ? `${escapeHtml(k)}="${escapeHtml(v)}"` : escapeHtml(k))
         .join(' ')
+    }
+
+    // First: handle self-closing <idx/> (escaped as &lt;idx/&gt;)
+    let result = escaped.replace(/&lt;(\d+)\/&gt;/g, (_match, idxStr: string) => {
+      const el = elements[Number(idxStr)]
+      if (!el) return ''
       const tag = escapeHtml(el.tag)
+      const attrs = buildAttrs(el)
+      return `<${tag}${attrs ? ' ' + attrs : ''} />`
+    })
+
+    // Then: handle paired <idx>content</idx>
+    result = result.replace(/&lt;(\d+)&gt;([\s\S]*?)&lt;\/\1&gt;/g, (_match, idxStr: string, content: string) => {
+      const el = elements[Number(idxStr)]
+      if (!el) return content
+      const tag = escapeHtml(el.tag)
+      const attrs = buildAttrs(el)
       return `<${tag}${attrs ? ' ' + attrs : ''}>${content}</${tag}>`
     })
+
+    return result
   }
 
   function te(key: string, loc?: string): boolean {

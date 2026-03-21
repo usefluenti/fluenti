@@ -3,6 +3,7 @@ import type { FluentNuxtOptions } from './types'
 import { resolveLocaleProperties, resolveDomainConfigs } from './types'
 import { resolveLocaleCodes } from '@fluenti/core'
 import type { FluentiConfig } from '@fluenti/core'
+import fluentiVue from '@fluenti/vue/vite-plugin'
 import { extendPages } from './runtime/page-extend'
 import { validateISRConfig } from './isr-validation'
 import { setupDevTools } from './devtools'
@@ -74,9 +75,17 @@ export default defineNuxtModule<FluentNuxtOptions>({
   setup(options, nuxt) {
     const { resolve } = createResolver(import.meta.url)
 
-    // --- Resolve FluentiConfig from options.config ---
+    // --- Resolve FluentiConfig from options.config, then overlay module-level options ---
     const rootDir = nuxt.options.rootDir ?? process.cwd()
     const fluentiConfig = resolveFluentiConfig(options.config, rootDir)
+
+    // Module-level options (e.g. nuxt.config.ts `fluenti.locales`) override the
+    // resolved fluenti.config.ts values — this ensures Nuxt-specific config takes
+    // precedence even when config file loading fails (e.g. CJS/jiti issues).
+    if (options.locales) fluentiConfig.locales = options.locales
+    if (options.defaultLocale) fluentiConfig.defaultLocale = options.defaultLocale
+    if (options.sourceLocale) fluentiConfig.sourceLocale = options.sourceLocale
+    if (options.catalogDir) fluentiConfig.catalogDir = options.catalogDir
 
     // --- Resolve locale codes and metadata ---
     const localeCodes = resolveLocaleCodes(fluentiConfig.locales)
@@ -106,28 +115,11 @@ export default defineNuxtModule<FluentNuxtOptions>({
 
     // --- Auto-register @fluenti/vue vite plugin (includes v-t transform + scope transform) ---
     if (options.autoVitePlugin !== false) {
-      // Pass the resolved fluentiConfig directly to the vite plugin
-      const pluginOptions = {
-        config: fluentiConfig,
-      }
-      // Synchronously load @fluenti/vue/vite-plugin using createRequire
-      // (resolves from the user's project root, not from the nuxt module's node_modules)
-      try {
-        // eslint-disable-next-line @typescript-eslint/no-require-imports
-        const { createRequire } = require('node:module') as typeof import('node:module')
-        const projectRequire = createRequire(nuxt.options.rootDir + '/package.json')
-        const vuePluginPath = projectRequire.resolve('@fluenti/vue/vite-plugin')
-        const jitiMod = projectRequire('jiti') as { createJiti: (url: string, opts?: Record<string, unknown>) => (path: string) => unknown }
-        const jiti = jitiMod.createJiti(vuePluginPath, { interopDefault: true })
-        const fluentiVue = jiti(vuePluginPath) as Function
-        nuxt.options.vite = nuxt.options.vite || {}
-        nuxt.options.vite.plugins = nuxt.options.vite.plugins || []
-        ;(nuxt.options.vite.plugins as unknown[]).push(
-          ...fluentiVue(pluginOptions),
-        )
-      } catch {
-        // @fluenti/vue or jiti not available — v-t and scope transforms won't run
-      }
+      nuxt.options.vite = nuxt.options.vite || {}
+      nuxt.options.vite.plugins = nuxt.options.vite.plugins || []
+      ;(nuxt.options.vite.plugins as unknown[]).push(
+        ...fluentiVue({ config: fluentiConfig }),
+      )
     }
 
     // --- Register definePageMeta({ i18n }) transform ---

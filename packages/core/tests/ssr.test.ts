@@ -167,55 +167,45 @@ describe('getSSRLocaleScript', () => {
     )
   })
 
-  it('escapes < to prevent XSS', () => {
-    const result = getSSRLocaleScript('en<script>')
-    // The locale value inside the string should have < escaped
-    expect(result).toContain('\\u003c')
-    expect(result).toContain('\\u003e')
-    // Should not contain a raw <script> from the locale value
-    expect(result).toBe('<script>window.__FLUENTI_LOCALE__="en\\u003cscript\\u003e"</script>')
+  it('rejects XSS locale with < character', () => {
+    expect(() => getSSRLocaleScript('en<script>')).toThrow('locale must be a valid BCP 47 tag')
   })
 
-  it('escapes > to prevent XSS', () => {
-    const result = getSSRLocaleScript('en>')
-    expect(result).toContain('\\u003e')
+  it('rejects locale with > character', () => {
+    expect(() => getSSRLocaleScript('en>')).toThrow('locale must be a valid BCP 47 tag')
   })
 
-  it('escapes & to prevent XSS', () => {
-    const result = getSSRLocaleScript('en&amp')
-    expect(result).toContain('\\u0026')
+  it('rejects locale with & character', () => {
+    expect(() => getSSRLocaleScript('en&amp')).toThrow('locale must be a valid BCP 47 tag')
   })
 
-  it('escapes double quotes', () => {
-    const result = getSSRLocaleScript('en"test')
-    expect(result).toContain('\\"')
+  it('rejects locale with double quotes', () => {
+    expect(() => getSSRLocaleScript('en"test')).toThrow('locale must be a valid BCP 47 tag')
   })
 
-  it('escapes single quotes', () => {
-    const result = getSSRLocaleScript("en'test")
-    expect(result).toContain('\\u0027')
+  it('rejects locale with single quotes', () => {
+    expect(() => getSSRLocaleScript("en'test")).toThrow('locale must be a valid BCP 47 tag')
   })
 
-  it('prevents script tag breakout via locale value', () => {
-    const result = getSSRLocaleScript('</script><script>alert(1)</script>')
-    expect(result).not.toMatch(/<\/script><script>/)
-    expect(result).toContain('\\u003c/script\\u003e')
+  it('rejects script tag breakout via locale value', () => {
+    expect(() => getSSRLocaleScript('</script><script>alert(1)</script>')).toThrow('locale must be a valid BCP 47 tag')
   })
 
-  it('prevents JS string breakout via backslash + quote', () => {
-    const result = getSSRLocaleScript('en\\";alert(1)//')
-    // Backslash must be escaped first, then the quote
-    expect(result).toContain('\\\\')
-    expect(result).toContain('\\"')
-    // The escaped quote should not close the string — the output must be a valid JS string
-    // en\" becomes en\\\\" in the output (escaped backslash + escaped quote)
-    expect(result).toMatch(/^<script>window\.__FLUENTI_LOCALE__=".*"<\/script>$/)
+  it('rejects JS string breakout via backslash + quote', () => {
+    expect(() => getSSRLocaleScript('en\\";alert(1)//')).toThrow('locale must be a valid BCP 47 tag')
   })
 
-  it('prevents unicode escape sequence injection', () => {
-    const result = getSSRLocaleScript('en\u003cimg onerror=alert(1)\u003e')
-    expect(result).not.toContain('<img')
-    expect(result).toContain('\\u003c')
+  it('rejects unicode escape sequence injection', () => {
+    expect(() => getSSRLocaleScript('en\u003cimg onerror=alert(1)\u003e')).toThrow('locale must be a valid BCP 47 tag')
+  })
+
+  it('throws on locale exceeding 255 characters', () => {
+    const longLocale = 'a'.repeat(256)
+    expect(() => getSSRLocaleScript(longLocale)).toThrow('Locale exceeds maximum length of 255')
+  })
+
+  it('throws on invalid locale format', () => {
+    expect(() => getSSRLocaleScript('en<script>')).toThrow('locale must be a valid BCP 47 tag')
   })
 })
 
@@ -308,22 +298,17 @@ describe('edge cases - exhaustive', () => {
 
   // ─── getSSRLocaleScript ─────────────────────────────────────────────
 
-  it('getSSRLocaleScript empty string locale', () => {
-    const result = getSSRLocaleScript('')
-    expect(result).toBe('<script>window.__FLUENTI_LOCALE__=""</script>')
+  it('getSSRLocaleScript rejects empty string locale', () => {
+    expect(() => getSSRLocaleScript('')).toThrow('locale must be a non-empty string')
   })
 
-  it('getSSRLocaleScript very long locale (100 chars)', () => {
+  it('getSSRLocaleScript rejects very long locale (100 non-BCP47 chars)', () => {
     const longLocale = 'a'.repeat(100)
-    const result = getSSRLocaleScript(longLocale)
-    expect(result).toContain(longLocale)
-    expect(result).toMatch(/^<script>window\.__FLUENTI_LOCALE__=".*"<\/script>$/)
+    expect(() => getSSRLocaleScript(longLocale)).toThrow('locale must be a valid BCP 47 tag')
   })
 
-  it('getSSRLocaleScript null byte in locale', () => {
-    const result = getSSRLocaleScript('en\0test')
-    expect(result).toContain('en')
-    expect(typeof result).toBe('string')
+  it('getSSRLocaleScript rejects null byte in locale', () => {
+    expect(() => getSSRLocaleScript('en\0test')).toThrow('locale must be a valid BCP 47 tag')
   })
 
   // ─── getHydratedLocale ──────────────────────────────────────────────

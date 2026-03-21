@@ -31,6 +31,7 @@ export default defineConfig({
         '@nuxt/kit',
         '@fluenti/core',
         '@fluenti/vue',
+        '@fluenti/vue/vite-plugin',
         '@fluenti/vite-plugin',
         'h3',
         /^node:/,
