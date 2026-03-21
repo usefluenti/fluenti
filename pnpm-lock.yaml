@@ -1130,8 +1130,8 @@ importers:
         specifier: workspace:*
         version: link:../vue
       '@nuxt/kit':
-        specifier: ^3.0.0
-        version: 3.21.2(magicast@0.5.2)
+        specifier: ^4.4.2
+        version: 4.4.2(magicast@0.5.2)
       '@nuxt/schema':
         specifier: ^3.0.0
         version: 3.21.2
@@ -6722,6 +6722,9 @@ packages:
   mlly@1.8.1:
     resolution: {integrity: sha512-SnL6sNutTwRWWR/vcmCYHSADjiEesp5TGQQ0pXyLhW5IoeibRlF/CbSLailbB3CNqJUk9cVJ9dUDnbD7GrcHBQ==}
 
+  mlly@1.8.2:
+    resolution: {integrity: sha512-d+ObxMQFmbt10sretNDytwt85VrbkhhUA/JBGm1MPaWJ65Cl4wOgLaB1NYvJSZ0Ef03MMEU/0xpPMXUIQ29UfA==}
+
   mocked-exports@0.1.1:
     resolution: {integrity: sha512-aF7yRQr/Q0O2/4pIXm6PZ5G+jAd7QS4Yu8m+WEeEHGnbo+7mE36CbLSDQiXYV8bVL3NfmdeqPJct0tUlnjVSnA==}
 
@@ -10466,7 +10469,7 @@ snapshots:
       ignore: 7.0.5
       jiti: 2.6.1
       klona: 2.0.6
-      mlly: 1.8.1
+      mlly: 1.8.2
       ohash: 2.0.11
       pathe: 2.0.3
       pkg-types: 2.3.0
@@ -13722,7 +13725,7 @@ snapshots:
   externality@1.0.2:
     dependencies:
       enhanced-resolve: 5.20.0
-      mlly: 1.8.1
+      mlly: 1.8.2
       pathe: 1.1.2
       ufo: 1.6.3
 
@@ -14609,7 +14612,7 @@ snapshots:
       h3: 1.15.9
       http-shutdown: 1.2.2
       jiti: 2.6.1
-      mlly: 1.8.1
+      mlly: 1.8.2
       node-forge: 1.3.3
       pathe: 1.1.2
       std-env: 3.10.0
@@ -14672,7 +14675,7 @@ snapshots:
     dependencies:
       estree-walker: 3.0.3
       magic-string: 0.30.21
-      mlly: 1.8.1
+      mlly: 1.8.2
       regexp-tree: 0.1.27
       type-level-regexp: 0.1.17
       ufo: 1.6.3
@@ -15594,6 +15597,13 @@ snapshots:
       pkg-types: 1.3.1
       ufo: 1.6.3
 
+  mlly@1.8.2:
+    dependencies:
+      acorn: 8.16.0
+      pathe: 2.0.3
+      pkg-types: 1.3.1
+      ufo: 1.6.3
+
   mocked-exports@0.1.1: {}
 
   modern-ahocorasick@1.1.0: {}
@@ -16254,7 +16264,7 @@ snapshots:
   pkg-types@1.3.1:
     dependencies:
       confbox: 0.1.8
-      mlly: 1.8.1
+      mlly: 1.8.2
       pathe: 2.0.3
 
   pkg-types@2.3.0:
@@ -17654,7 +17664,7 @@ snapshots:
       estree-walker: 3.0.3
       local-pkg: 1.1.2
       magic-string: 0.30.21
-      mlly: 1.8.1
+      mlly: 1.8.2
       pathe: 2.0.3
       picomatch: 4.0.3
       pkg-types: 2.3.0
@@ -17849,7 +17859,7 @@ snapshots:
       exsolve: 1.0.8
       knitwork: 1.3.0
       magic-string: 0.30.21
-      mlly: 1.8.1
+      mlly: 1.8.2
       pathe: 2.0.3
       pkg-types: 2.3.0
 
