@@ -7,6 +7,19 @@ export interface PageRoute {
   children?: PageRoute[]
 }
 
+/** Route name template: (originalName, locale) => newName */
+export type RouteNameTemplate = (name: string, locale: string) => string
+
+const DEFAULT_ROUTE_NAME_TEMPLATE: RouteNameTemplate = (name, locale) =>
+  `${name}___${locale}`
+
+export interface ExtendPagesOptions {
+  locales: string[]
+  defaultLocale: string
+  strategy: Strategy
+  routeNameTemplate?: RouteNameTemplate
+}
+
 /**
  * Extend page routes with locale-prefixed variants.
  * Mutates the pages array in place (Nuxt convention).
@@ -15,11 +28,12 @@ export interface PageRoute {
  */
 export function extendPages(
   pages: PageRoute[],
-  options: { locales: string[]; defaultLocale: string; strategy: Strategy },
+  options: ExtendPagesOptions,
 ): void {
   const { locales, defaultLocale, strategy } = options
   if (strategy === 'no_prefix') return
 
+  const nameTemplate = options.routeNameTemplate ?? DEFAULT_ROUTE_NAME_TEMPLATE
   const originalPages = [...pages]
 
   for (const locale of locales) {
@@ -27,7 +41,7 @@ export function extendPages(
     if (strategy === 'prefix_except_default' && locale === defaultLocale) continue
 
     for (const page of originalPages) {
-      const prefixedPage = prefixPage(page, locale)
+      const prefixedPage = prefixPage(page, locale, nameTemplate)
       pages.push(prefixedPage)
     }
   }
@@ -40,20 +54,24 @@ export function extendPages(
   }
 }
 
-function prefixPage(page: PageRoute, locale: string): PageRoute {
+function prefixPage(
+  page: PageRoute,
+  locale: string,
+  nameTemplate: RouteNameTemplate,
+): PageRoute {
   const prefixed: PageRoute = {
     ...page,
     path: `/${locale}${page.path === '/' ? '' : page.path}`,
   }
   if (page.name) {
-    prefixed.name = `${page.name}___${locale}`
+    prefixed.name = nameTemplate(page.name, locale)
   }
 
   if (page.children) {
     prefixed.children = page.children.map((child) => {
       const prefixedChild: PageRoute = { ...child }
       if (child.name) {
-        prefixedChild.name = `${child.name}___${locale}`
+        prefixedChild.name = nameTemplate(child.name, locale)
       }
       return prefixedChild
     })

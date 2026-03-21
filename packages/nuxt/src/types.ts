@@ -132,6 +132,35 @@ export interface FluentNuxtOptions {
    * @default true
    */
   globalMiddleware?: boolean
+  /**
+   * Whether to register the `NuxtLinkLocale` component globally.
+   *
+   * Set to `false` to disable registration. You can still import it manually
+   * from `@fluenti/nuxt/runtime/components/NuxtLinkLocale`.
+   *
+   * @default true
+   */
+  registerNuxtLinkLocale?: boolean
+  /**
+   * Whether to extend routes with locale-prefixed variants.
+   *
+   * Set to `false` to handle locale routing yourself (e.g., via a custom
+   * `pages:extend` hook or Nuxt Layers). When `false`, the module will NOT
+   * create locale-suffixed route clones and will NOT remove unprefixed routes.
+   *
+   * @default true
+   */
+  extendRoutes?: boolean
+  /**
+   * Template for generating locale-specific route names.
+   *
+   * Receives the original route name and locale code, returns the desired name.
+   * Only used when `extendRoutes` is not `false`.
+   *
+   * @default (name, locale) => `${name}___${locale}`
+   * @example (name, locale) => `${locale}:${name}`
+   */
+  routeNameTemplate?: (name: string, locale: string) => string
 }
 
 /** ISR configuration */

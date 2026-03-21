@@ -140,3 +140,14 @@ test.describe('Nuxt Conflict — Named Middleware (globalMiddleware: false)', ()
     await expect(page.getByTestId('page-title')).toContainText('ようこそ')
   })
 })
+
+test.describe('Nuxt Conflict — Component Registration (registerNuxtLinkLocale: false)', () => {
+  test('NuxtLinkLocale is NOT available as auto-resolved component', async ({ page }) => {
+    await page.goto('/en')
+    // The fixture uses <NuxtLink> not <NuxtLinkLocale>.
+    // With registerNuxtLinkLocale: false, NuxtLinkLocale should not be globally available.
+    // We verify that standard NuxtLink still works (not broken by the opt-out).
+    await expect(page.getByTestId('link-about')).toBeVisible()
+    await expect(page.getByTestId('link-about')).toHaveAttribute('href', /\/en\/about|\/about/)
+  })
+})

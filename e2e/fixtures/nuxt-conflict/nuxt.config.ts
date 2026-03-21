@@ -19,6 +19,7 @@ export default defineNuxtConfig({
     injectGlobalProperties: false,
     queryParamKey: 'lang',
     globalMiddleware: false,
+    registerNuxtLinkLocale: false,
     detectOrder: ['query', 'path', 'cookie', 'header'],
     autoVitePlugin: false,
   },
