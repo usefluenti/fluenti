@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { transformVtDirectives } from '../src/sfc-transform'
+import { transformVtDirectives, escapeRegExp } from '../src/sfc-transform'
 
 describe('transformVtDirectives — no-op cases', () => {
   it('returns unchanged SFC without v-t/Trans/Plural', () => {
@@ -240,7 +240,7 @@ describe('transformVtDirectives — <Plural> component', () => {
       '</template>',
     ].join('\n')
     const result = transformVtDirectives(sfc)
-    expect(result).toContain("href: '/item'")
+    expect(result).toContain('rawAttrs: \'href=&quot;/item&quot;\'')
   })
 
   it('transforms <Trans> with context attribute', () => {
@@ -249,5 +249,166 @@ describe('transformVtDirectives — <Plural> component', () => {
     expect(result).toContain('{{ $t(')
     expect(result).toContain('Close')
     expect(result).not.toContain('context=')
+  })
+})
+
+// ─── Bug fix tests: void elements, nesting, dynamic attributes ──────────────
+
+describe('transformVtDirectives — void/self-closing elements', () => {
+  it('handles <br/> in <Trans>', () => {
+    const sfc = '<template><Trans>Hello <br/> world</Trans></template>'
+    const result = transformVtDirectives(sfc)
+    expect(result).toContain('$vtRich(')
+    expect(result).toContain('<0/>')
+    expect(result).toContain("tag: 'br'")
+  })
+
+  it('handles <img> with attributes in <Trans>', () => {
+    const sfc = '<template><Trans>View <img src="x.png" alt="pic" /> here</Trans></template>'
+    const result = transformVtDirectives(sfc)
+    expect(result).toContain('$vtRich(')
+    expect(result).toContain('<0/>')
+    expect(result).toContain("tag: 'img'")
+    expect(result).toContain('src=&quot;x.png&quot; alt=&quot;pic&quot;')
+  })
+
+  it('handles void element in v-t content', () => {
+    const sfc = '<template><p v-t>Line one<br/>Line two</p></template>'
+    const result = transformVtDirectives(sfc)
+    expect(result).toContain('$vtRich(')
+    expect(result).toContain('<0/>')
+    expect(result).toContain("tag: 'br'")
+  })
+
+  it('handles <img> in <Plural> slot', () => {
+    const sfc = [
+      '<template>',
+      '<Plural :value="count">',
+      '  <template #one>Buy <img src="cart.png"/> item</template>',
+      '  <template #other>Buy items</template>',
+      '</Plural>',
+      '</template>',
+    ].join('\n')
+    const result = transformVtDirectives(sfc)
+    expect(result).toContain('$vtRich(')
+    expect(result).toContain("tag: 'img'")
+    expect(result).toContain('<0/>')
+  })
+
+  it('handles mix of void and paired elements', () => {
+    const sfc = '<template><Trans>Hello <br/> click <a href="#">here</a></Trans></template>'
+    const result = transformVtDirectives(sfc)
+    expect(result).toContain('<0/>')
+    expect(result).toContain('<1>')
+    expect(result).toContain('</1>')
+    expect(result).toContain("tag: 'br'")
+    expect(result).toContain("tag: 'a'")
+  })
+})
+
+describe('transformVtDirectives — nested elements', () => {
+  it('handles nested elements in <Trans>', () => {
+    const sfc = '<template><Trans><div><span>nested</span> text</div></Trans></template>'
+    const result = transformVtDirectives(sfc)
+    expect(result).toContain('$vtRich(')
+    expect(result).toContain("tag: 'div'")
+    // The inner <span> is inside the content of <div>, so it appears as literal HTML in the message
+    expect(result).toContain('<0>')
+    expect(result).toContain('</0>')
+  })
+
+  it('handles same-name nested elements', () => {
+    const sfc = '<template><Trans><div>outer <div>inner</div> text</div></Trans></template>'
+    const result = transformVtDirectives(sfc)
+    expect(result).toContain('$vtRich(')
+    expect(result).toContain("tag: 'div'")
+    // The outer div should be fully matched including the inner div
+    expect(result).toContain('<0>')
+    expect(result).toContain('</0>')
+    expect(result).toContain('outer <div>inner</div> text')
+  })
+})
+
+describe('transformVtDirectives — dynamic attributes', () => {
+  it('preserves :href binding in <Trans>', () => {
+    const sfc = '<template><Trans>Click <a :href="url">here</a></Trans></template>'
+    const result = transformVtDirectives(sfc)
+    expect(result).toContain('$vtRich(')
+    expect(result).toContain("tag: 'a'")
+    expect(result).toContain(':href=&quot;url&quot;')
+  })
+
+  it('preserves @click binding in v-t content', () => {
+    const sfc = '<template><p v-t>Press <button @click="doIt">here</button></p></template>'
+    const result = transformVtDirectives(sfc)
+    expect(result).toContain('$vtRich(')
+    expect(result).toContain("tag: 'button'")
+    expect(result).toContain('@click=&quot;doIt&quot;')
+  })
+
+  it('preserves v-bind:class in element attributes', () => {
+    const sfc = '<template><Trans>See <span v-bind:class="cls">this</span></Trans></template>'
+    const result = transformVtDirectives(sfc)
+    expect(result).toContain('v-bind:class=&quot;cls&quot;')
+  })
+})
+
+// ─── escapeRegExp utility ────────────────────────────────────────────────────
+
+describe('escapeRegExp', () => {
+  it('escapes dot metacharacter', () => {
+    expect(escapeRegExp('foo.bar')).toBe('foo\\.bar')
+  })
+
+  it('escapes all regex metacharacters', () => {
+    const metacharacters = '.*+?^${}()|[]\\'
+    const escaped = escapeRegExp(metacharacters)
+    expect(escaped).toBe('\\.\\*\\+\\?\\^\\$\\{\\}\\(\\)\\|\\[\\]\\\\')
+  })
+
+  it('returns plain strings unchanged', () => {
+    expect(escapeRegExp('hello')).toBe('hello')
+    expect(escapeRegExp('simple_name')).toBe('simple_name')
+  })
+
+  it('escapes metacharacters embedded in realistic attr names', () => {
+    // Hypothetical attr name with regex-special chars
+    expect(escapeRegExp('data-value(1)')).toBe('data-value\\(1\\)')
+    expect(escapeRegExp('ns:attr[0]')).toBe('ns:attr\\[0\\]')
+  })
+
+  it('produces a pattern that matches the literal string', () => {
+    const dangerous = 'a]b.*c+d'
+    const re = new RegExp(escapeRegExp(dangerous))
+    expect(re.test(dangerous)).toBe(true)
+    expect(re.test('a]bXXcYd')).toBe(false)
+  })
+})
+
+// ─── Regex injection defense (escapeRegExp integration) ──────────────────────
+
+describe('transformVtDirectives — regex injection defense', () => {
+  it('findClosingTag handles tag names safely (no regex metacharacters in practice)', () => {
+    // Tag names are \w+ matched, so they won't contain metacharacters,
+    // but escapeRegExp adds defense-in-depth
+    const sfc = '<template><p v-t>Click <a href="/link">here</a> now</p></template>'
+    const result = transformVtDirectives(sfc)
+    expect(result).toContain('$vtRich(')
+    expect(result).toContain("tag: 'a'")
+  })
+
+  it('readStaticSfcAttr handles attr names with no injection risk', () => {
+    // Standard attr names work correctly with escapeRegExp wrapping
+    const sfc = '<template><Trans id="my.id">Hello</Trans></template>'
+    const result = transformVtDirectives(sfc)
+    expect(result).toContain("id: 'my.id'")
+    expect(result).not.toContain('<Trans')
+  })
+
+  it('v-t attribute binding works after escapeRegExp wrapping', () => {
+    const sfc = '<template><input v-t.placeholder placeholder="Type here"></template>'
+    const result = transformVtDirectives(sfc)
+    expect(result).toContain(':placeholder="$t(')
+    expect(result).toContain("message: 'Type here'")
   })
 })

@@ -163,7 +163,10 @@ export function loadConfigSync(configPath?: string, cwd?: string): FluentiConfig
     }
 
     return resolveConfigChainSync(configFilePath, createJiti, new Set())
-  } catch {
+  } catch (err) {
+    if (typeof process !== 'undefined' && process.env?.['NODE_ENV'] !== 'production') {
+      console.warn('[fluenti] Failed to load config, using defaults:', err)
+    }
     return { ...defaultConfig }
   }
 }

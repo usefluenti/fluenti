@@ -448,11 +448,11 @@ test.describe('Next.js — Cookie Edge Cases', () => {
   })
 
   test('empty cookie locale falls back to default', async ({ page }) => {
-    // An empty cookie value should not crash the server — it should fall
-    // back to the default locale. Currently Next.js surfaces the empty
-    // string before the server-side resolveLocale guard can filter it,
-    // causing createFluent to throw. Skip until the generated server
-    // module adds an explicit empty-string guard.
-    test.skip()
+    await page.context().addCookies([
+      { name: 'locale', value: '', url: 'http://localhost:5190' },
+    ])
+    await page.goto('/')
+    // Empty cookie should fall back to default English locale
+    await expect(page.getByTestId('welcome')).toContainText('Welcome to Fluenti')
   })
 })

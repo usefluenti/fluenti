@@ -55,7 +55,10 @@ export function formatDate(
       formatCache.set(cacheKey, formatter)
     }
     return formatter.format(value instanceof Date ? value : new Date(value))
-  } catch {
+  } catch (err) {
+    if (typeof process !== 'undefined' && process.env?.['NODE_ENV'] !== 'production') {
+      console.warn('[fluenti] Date formatting failed:', err)
+    }
     return ''
   }
 }
