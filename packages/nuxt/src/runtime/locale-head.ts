@@ -13,6 +13,8 @@ export interface LocaleHeadOptions {
   addSeoAttributes?: boolean
   /** Base URL for absolute hreflang links (e.g. 'https://example.com') */
   baseUrl?: string
+  /** Add a canonical link tag for the current page (default: true when addSeoAttributes is true) */
+  addCanonical?: boolean
 }
 
 /**
@@ -98,6 +100,34 @@ export function buildLocaleHead(
         hreflang: 'x-default',
         href: `${baseUrl}${defaultPath}`,
       })
+    }
+
+    // Canonical link tag (defaults to true when addSeoAttributes is enabled)
+    if (options.addCanonical !== false) {
+      if (config.strategy === 'domains' && config.domains?.length) {
+        const domainEntry = config.domains.find((d) => d.locale === locale)
+        if (domainEntry) {
+          const protocol = baseUrl.startsWith('https') ? 'https' : 'http'
+          head.link.push({
+            rel: 'canonical',
+            hreflang: '',
+            href: `${protocol}://${domainEntry.domain}${currentPath}`,
+          })
+        }
+      } else {
+        const canonicalPath = switchLocalePath(
+          currentPath,
+          locale,
+          config.locales,
+          config.defaultLocale,
+          config.strategy,
+        )
+        head.link.push({
+          rel: 'canonical',
+          hreflang: '',
+          href: `${baseUrl}${canonicalPath}`,
+        })
+      }
     }
 
     // og:locale (use ISO tag if available)

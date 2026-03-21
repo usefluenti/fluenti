@@ -10,7 +10,7 @@ export { buildLocaleHead } from './locale-head'
 export type { LocaleHeadMeta, LocaleHeadOptions } from './locale-head'
 
 // Nuxt composables (zero-argument, auto-inject from Nuxt context)
-export { useLocalePath, useSwitchLocalePath, useLocaleHead } from './composables'
+export { useLocalePath, useSwitchLocalePath, useLocaleRoute, useLocaleHead, useI18nScoped } from './composables'
 
 // Component
 export { NuxtLinkLocale } from './components/NuxtLinkLocale'

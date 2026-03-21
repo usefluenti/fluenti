@@ -24,8 +24,8 @@ describe('buildLocaleHead', () => {
   it('generates hreflang links when addSeoAttributes is true', () => {
     const head = buildLocaleHead('en', '/about', config, { addSeoAttributes: true })
 
-    // Should have links for en, ja, zh + x-default = 4
-    expect(head.link).toHaveLength(4)
+    // Should have links for en, ja, zh + x-default + canonical = 5
+    expect(head.link).toHaveLength(5)
 
     expect(head.link).toContainEqual({
       rel: 'alternate',
@@ -312,5 +312,80 @@ describe('buildLocaleHead with domains strategy', () => {
     expect(head.link.find((l) => l.hreflang === 'en')!.href).toBe('https://example.com/about')
     expect(head.link.find((l) => l.hreflang === 'ja')!.href).toBe('https://example.jp/about')
     expect(head.link.find((l) => l.hreflang === 'x-default')!.href).toBe('https://example.com/about')
+  })
+})
+
+// ─── T1-1: Canonical link tag ──────────────────────────────────────────────
+
+describe('buildLocaleHead canonical link', () => {
+  const config: FluentNuxtRuntimeConfig = {
+    locales: ['en', 'ja', 'zh'],
+    defaultLocale: 'en',
+    strategy: 'prefix_except_default',
+    detectOrder: ['path', 'cookie'],
+    queryParamKey: 'locale',
+    injectGlobalProperties: true,
+  }
+
+  it('generates canonical link when addSeoAttributes is true (default addCanonical)', () => {
+    const head = buildLocaleHead('ja', '/ja/about', config, {
+      addSeoAttributes: true,
+      baseUrl: 'https://example.com',
+    })
+
+    const canonical = head.link.find((l) => l.rel === 'canonical')
+    expect(canonical).toBeDefined()
+    expect(canonical!.href).toBe('https://example.com/ja/about')
+  })
+
+  it('generates canonical link for default locale (no prefix)', () => {
+    const head = buildLocaleHead('en', '/about', config, {
+      addSeoAttributes: true,
+      baseUrl: 'https://example.com',
+    })
+
+    const canonical = head.link.find((l) => l.rel === 'canonical')
+    expect(canonical).toBeDefined()
+    expect(canonical!.href).toBe('https://example.com/about')
+  })
+
+  it('skips canonical when addCanonical is false', () => {
+    const head = buildLocaleHead('ja', '/ja/about', config, {
+      addSeoAttributes: true,
+      addCanonical: false,
+    })
+
+    const canonical = head.link.find((l) => l.rel === 'canonical')
+    expect(canonical).toBeUndefined()
+  })
+
+  it('generates canonical with domain strategy', () => {
+    const domainConfig: FluentNuxtRuntimeConfig = {
+      locales: ['en', 'ja'],
+      defaultLocale: 'en',
+      strategy: 'domains',
+      detectOrder: ['domain'],
+      queryParamKey: 'locale',
+      injectGlobalProperties: true,
+      domains: [
+        { domain: 'example.com', locale: 'en' },
+        { domain: 'example.jp', locale: 'ja' },
+      ],
+    }
+
+    const head = buildLocaleHead('ja', '/about', domainConfig, {
+      addSeoAttributes: true,
+      baseUrl: 'https://example.com',
+    })
+
+    const canonical = head.link.find((l) => l.rel === 'canonical')
+    expect(canonical).toBeDefined()
+    expect(canonical!.href).toBe('https://example.jp/about')
+  })
+
+  it('does not generate canonical when addSeoAttributes is false', () => {
+    const head = buildLocaleHead('ja', '/ja/about', config)
+    const canonical = head.link.find((l) => l.rel === 'canonical')
+    expect(canonical).toBeUndefined()
   })
 })

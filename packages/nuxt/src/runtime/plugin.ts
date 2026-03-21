@@ -1,6 +1,6 @@
 import { defineNuxtPlugin, useRuntimeConfig, useRoute, useCookie, useRequestHeaders } from '#imports'
 import { ref, watch } from 'vue'
-import { localePath, extractLocaleFromPath } from './path-utils'
+import { localePath, extractLocaleFromPath, switchLocalePath } from './path-utils'
 import { runDetectors } from './detectors'
 import type { FluentNuxtRuntimeConfig, LocaleDetectContext } from '../types'
 
@@ -104,13 +104,36 @@ export default defineNuxtPlugin(async (nuxtApp) => {
 
   // --- Inject global helpers ---
   if (config.injectGlobalProperties) {
-    nuxtApp.vueApp.config.globalProperties.$localePath = (path: string, locale?: string) => {
+    const gp = nuxtApp.vueApp.config.globalProperties
+    gp.$localePath = (path: string, locale?: string) => {
       return localePath(
         path,
         locale ?? currentLocale.value,
         config.defaultLocale,
         config.strategy,
       )
+    }
+    gp.$switchLocalePath = (newLocale: string) => {
+      return switchLocalePath(
+        route.path,
+        newLocale,
+        config.locales,
+        config.defaultLocale,
+        config.strategy,
+      )
+    }
+
+    // Inject $t, $d, $n if @fluenti/vue plugin hasn't already injected them
+    // (the Vue plugin handles injection when installed directly, but in Nuxt
+    // the module may load before the Vue plugin is installed)
+    try {
+      const { useI18n } = await import('@fluenti/vue')
+      const ctx = useI18n()
+      if (!gp['$t']) gp['$t'] = ctx.t
+      if (!gp['$d']) gp['$d'] = ctx.d
+      if (!gp['$n']) gp['$n'] = ctx.n
+    } catch {
+      // @fluenti/vue plugin not yet installed — $t/$d/$n will be provided by it
     }
   }
 

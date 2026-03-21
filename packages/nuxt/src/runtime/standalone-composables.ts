@@ -1,5 +1,6 @@
 import { computed } from 'vue'
 import type { ComputedRef, Ref } from 'vue'
+import type { RouteLocationRaw, RouteLocationResolved, Router } from 'vue-router'
 import { localePath, switchLocalePath } from './path-utils'
 import type { FluentNuxtRuntimeConfig } from '../types'
 import type { LocaleHeadMeta, LocaleHeadOptions } from './locale-head'
@@ -39,6 +40,29 @@ export function useSwitchLocalePath(
       config.defaultLocale,
       config.strategy,
     )
+  }
+}
+
+/**
+ * Standalone composable for locale route resolution (no Nuxt dependency).
+ * Accepts explicit locale ref, router, and config.
+ */
+export function useLocaleRoute(
+  locale: Ref<string>,
+  router: Router,
+  config: FluentNuxtRuntimeConfig,
+): (to: RouteLocationRaw, targetLocale?: string) => RouteLocationResolved {
+  return (to: RouteLocationRaw, targetLocale?: string) => {
+    const resolvedLocale = targetLocale ?? locale.value
+    if (typeof to === 'string') {
+      const path = localePath(to, resolvedLocale, config.defaultLocale, config.strategy)
+      return router.resolve(path)
+    }
+    if ('path' in to && to.path) {
+      const path = localePath(to.path, resolvedLocale, config.defaultLocale, config.strategy)
+      return router.resolve({ ...to, path })
+    }
+    return router.resolve(to)
   }
 }
 
