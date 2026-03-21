@@ -144,6 +144,43 @@ describe('lintCatalogs', () => {
     // old_key is obsolete in source, so ja not having it is fine
     expect(diagnostics).toHaveLength(0)
   })
+
+  it('detects missing locale catalog', () => {
+    const catalogs: Record<string, CatalogData> = {
+      en: {
+        'hello': { message: 'Hello', translation: 'Hello' },
+      },
+    }
+
+    const diagnostics = lintCatalogs(catalogs, {
+      sourceLocale: 'en',
+      locales: ['en', 'ja'],
+    })
+
+    const missingLocale = diagnostics.filter((d) => d.rule === 'missing-locale')
+    expect(missingLocale).toHaveLength(1)
+    expect(missingLocale[0]!.locale).toBe('ja')
+    expect(missingLocale[0]!.severity).toBe('error')
+  })
+
+  it('detects extra placeholders in target', () => {
+    const catalogs: Record<string, CatalogData> = {
+      en: {
+        'simple': { message: 'Hello', translation: 'Hello' },
+      },
+      ja: {
+        'simple': { message: 'Hello', translation: 'こんにちは {name}' },
+      },
+    }
+
+    const diagnostics = lintCatalogs(catalogs, { sourceLocale: 'en' })
+    const extra = diagnostics.filter(
+      (d) => d.rule === 'inconsistent-placeholders' && d.severity === 'warning',
+    )
+    expect(extra).toHaveLength(1)
+    expect(extra[0]!.message).toContain('extra placeholders')
+    expect(extra[0]!.message).toContain('{name}')
+  })
 })
 
 describe('formatDiagnostics', () => {

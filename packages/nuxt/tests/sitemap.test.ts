@@ -111,4 +111,20 @@ describe('createSitemapHook', () => {
 
     expect(result).toEqual(input)
   })
+
+  it('strips domain from loc before re-expanding', () => {
+    const hook = createSitemapHook(
+      ['en', 'ja'],
+      'en',
+      'prefix',
+      'https://example.com',
+    )
+
+    const input = [{ loc: 'https://example.com/about' }]
+    const result = hook(input)
+
+    expect(result).toHaveLength(2)
+    expect(result.find((u) => u.loc === 'https://example.com/en/about')).toBeDefined()
+    expect(result.find((u) => u.loc === 'https://example.com/ja/about')).toBeDefined()
+  })
 })
