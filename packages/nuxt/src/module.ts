@@ -1,11 +1,12 @@
 import { defineNuxtModule, addPlugin, addImports, addComponent, addRouteMiddleware, createResolver } from '@nuxt/kit'
 import type { FluentNuxtOptions } from './types'
 import { extendPages } from './runtime/page-extend'
+import { validateISRConfig } from './isr-validation'
 
 export type { FluentNuxtOptions, Strategy, FluentNuxtRuntimeConfig, DetectBrowserLanguageOptions, LocaleDetectContext, LocaleDetectorFn, BuiltinDetector, ISROptions } from './types'
 export { localePath, extractLocaleFromPath, switchLocalePath } from './runtime/path-utils'
 export { extendPages } from './runtime/page-extend'
-export type { PageRoute } from './runtime/page-extend'
+export type { PageRoute, RouteNameTemplate, ExtendPagesOptions } from './runtime/page-extend'
 export { buildLocaleHead } from './runtime/locale-head'
 export type { LocaleHeadMeta, LocaleHeadOptions } from './runtime/locale-head'
 export { useLocalePath, useSwitchLocalePath, useLocaleHead } from './runtime/standalone-composables'
@@ -61,12 +62,13 @@ export default defineNuxtModule<FluentNuxtOptions>({
     })
 
     // --- Extend routes with locale prefixes ---
-    if (options.strategy !== 'no_prefix') {
+    if (options.strategy !== 'no_prefix' && options.extendRoutes !== false) {
       nuxt.hook('pages:extend', (pages) => {
         extendPages(pages, {
           locales: options.locales,
           defaultLocale: options.defaultLocale,
           strategy: options.strategy ?? 'prefix_except_default',
+          ...(options.routeNameTemplate ? { routeNameTemplate: options.routeNameTemplate } : {}),
         })
       })
     }
@@ -91,11 +93,13 @@ export default defineNuxtModule<FluentNuxtOptions>({
     }
 
     // --- Register NuxtLinkLocale component ---
-    const prefix = options.componentPrefix ?? ''
-    addComponent({
-      name: `${prefix}NuxtLinkLocale`,
-      filePath: resolve('./runtime/components/NuxtLinkLocale'),
-    })
+    if (options.registerNuxtLinkLocale !== false) {
+      const prefix = options.componentPrefix ?? ''
+      addComponent({
+        name: `${prefix}NuxtLinkLocale`,
+        filePath: resolve('./runtime/components/NuxtLinkLocale'),
+      })
+    }
 
     // --- SSG / ISR: configure nitro prerender and route rules ---
     const strategy = options.strategy ?? 'prefix_except_default'
@@ -117,7 +121,10 @@ export default defineNuxtModule<FluentNuxtOptions>({
         )
       }
 
-      // ISR: generate routeRules for each locale pattern
+      // ISR: validate configuration and generate routeRules
+      for (const w of validateISRConfig(options.isr, strategy, detectOrder)) {
+        console.warn(w.message)
+      }
       if (options.isr?.enabled) {
         const routeRules = (nuxtOpts['routeRules'] ?? (nuxtOpts['routeRules'] = {})) as Record<string, Record<string, unknown>>
         const ttl = options.isr.ttl ?? 3600

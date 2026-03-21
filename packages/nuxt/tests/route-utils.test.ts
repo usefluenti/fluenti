@@ -250,4 +250,59 @@ describe('extendPages', () => {
     expect(pages.find((p) => p.path === '/en')).toBeDefined()
     expect(pages.find((p) => p.path === '/ja')).toBeDefined()
   })
+
+  it('uses custom routeNameTemplate when provided', () => {
+    const pages: PageRoute[] = [
+      { path: '/', name: 'index' },
+      { path: '/about', name: 'about' },
+    ]
+
+    extendPages(pages, {
+      locales: ['en', 'ja'],
+      defaultLocale: 'en',
+      strategy: 'prefix_except_default',
+      routeNameTemplate: (name, locale) => `${locale}:${name}`,
+    })
+
+    expect(pages.find((p) => p.path === '/ja' && p.name === 'ja:index')).toBeDefined()
+    expect(pages.find((p) => p.path === '/ja/about' && p.name === 'ja:about')).toBeDefined()
+    // Original routes unchanged
+    expect(pages.find((p) => p.path === '/' && p.name === 'index')).toBeDefined()
+  })
+
+  it('applies routeNameTemplate to child routes', () => {
+    const pages: PageRoute[] = [
+      {
+        path: '/docs',
+        name: 'docs',
+        children: [{ path: 'guide', name: 'docs-guide' }],
+      },
+    ]
+
+    extendPages(pages, {
+      locales: ['en', 'ja'],
+      defaultLocale: 'en',
+      strategy: 'prefix_except_default',
+      routeNameTemplate: (name, locale) => `${locale}--${name}`,
+    })
+
+    const jaDoc = pages.find((p) => p.path === '/ja/docs')
+    expect(jaDoc?.name).toBe('ja--docs')
+    expect(jaDoc?.children?.[0]?.name).toBe('ja--docs-guide')
+  })
+
+  it('falls back to default ___locale template when routeNameTemplate is undefined', () => {
+    const pages: PageRoute[] = [
+      { path: '/', name: 'index' },
+    ]
+
+    extendPages(pages, {
+      locales: ['en', 'ja'],
+      defaultLocale: 'en',
+      strategy: 'prefix_except_default',
+      routeNameTemplate: undefined,
+    })
+
+    expect(pages.find((p) => p.name === 'index___ja')).toBeDefined()
+  })
 })
