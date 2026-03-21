@@ -54,10 +54,15 @@ describe('per-route splitting', () => {
 
   beforeEach(() => {
     plugins = createFluentiPlugins({
-      splitting: 'per-route' as any,
-      catalogDir: 'src/locales/compiled',
-      sourceLocale: 'en',
-      locales: ['en', 'ja'],
+      config: {
+        splitting: 'per-route' as any,
+        compileOutDir: 'src/locales/compiled',
+        sourceLocale: 'en',
+        locales: ['en', 'ja'],
+        catalogDir: './locales',
+        format: 'po',
+        include: ['./src/**/*.{vue,tsx,jsx,ts,js}'],
+      },
       framework: 'vue',
     }, [])
   })
@@ -202,10 +207,15 @@ describe('per-route splitting', () => {
 
     it('does not emit when splitting is not per-route', () => {
       const dynamicPlugins = createFluentiPlugins({
-        splitting: 'dynamic',
-        catalogDir: 'src/locales/compiled',
-        sourceLocale: 'en',
-        locales: ['en'],
+        config: {
+          splitting: 'dynamic',
+          compileOutDir: 'src/locales/compiled',
+          sourceLocale: 'en',
+          locales: ['en'],
+          catalogDir: './locales',
+          format: 'po',
+          include: ['./src/**/*.{vue,tsx,jsx,ts,js}'],
+        },
         framework: 'vue',
       }, [])
       const plugin = dynamicPlugins.find((p) => p.name === 'fluenti:build-split')!

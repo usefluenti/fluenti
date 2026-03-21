@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { Plugin } from 'vite'
 import { hashMessage } from '@fluenti/core'
+import type { FluentiConfig } from '@fluenti/core'
 import { createFluentiPlugins } from '../src/index'
 import type { FluentiCoreOptions } from '../src/types'
 
@@ -12,15 +13,19 @@ vi.mock('../src/dev-runner', async () => {
   }
 })
 
-function createPlugins(options?: Partial<FluentiCoreOptions>): Plugin[] {
-  return createFluentiPlugins({ framework: 'vue', ...options }, [])
+function createPlugins(configOverrides?: Partial<FluentiConfig>): Plugin[] {
+  const options: FluentiCoreOptions = {
+    framework: 'vue',
+    ...(configOverrides ? { config: { sourceLocale: 'en', locales: ['en'], catalogDir: './locales', format: 'po' as const, include: ['./src/**/*.{vue,tsx,jsx,ts,js}'], compileOutDir: 'src/locales/compiled', ...configOverrides } } : {}),
+  }
+  return createFluentiPlugins(options, [])
 }
 
 function getPlugin(
   name: string,
-  options?: Partial<FluentiCoreOptions>,
+  configOverrides?: Partial<FluentiConfig>,
 ): Plugin {
-  const plugin = createPlugins(options).find((entry) => entry.name === name)
+  const plugin = createPlugins(configOverrides).find((entry) => entry.name === name)
   if (!plugin) {
     throw new Error(`Missing plugin ${name}`)
   }
@@ -89,13 +94,14 @@ const msg = t\`Hello \${name}\`
     })
 
     it('supports renamed destructuring bindings', () => {
-      const plugin = getPlugin('fluenti:script-transform', { framework: 'react' })
       const code = `
 import { useI18n } from '@fluenti/react'
 const { t: translate } = useI18n()
 const label = translate\`Dashboard\`
 `
-      const result = callHook(plugin.transform, {}, code, 'Dashboard.tsx') as { code: string } | undefined
+      const plugins = createFluentiPlugins({ framework: 'react' }, [])
+      const scriptPlugin = plugins.find(p => p.name === 'fluenti:script-transform')!
+      const result = callHook(scriptPlugin.transform, {}, code, 'Dashboard.tsx') as { code: string } | undefined
 
       expect(result?.code).toContain("translate({ id:")
       expect(result?.code).toContain("message: 'Dashboard' })")
@@ -103,7 +109,8 @@ const label = translate\`Dashboard\`
     })
 
     it('supports direct-import t in React component scope', () => {
-      const plugin = getPlugin('fluenti:script-transform', { framework: 'react' })
+      const plugins = createFluentiPlugins({ framework: 'react' }, [])
+      const plugin = plugins.find(p => p.name === 'fluenti:script-transform')!
       const code = `
 import { t } from '@fluenti/react'
 export function Hero() {
@@ -119,7 +126,8 @@ export function Hero() {
     })
 
     it('supports direct-import descriptor calls with stable ids', () => {
-      const plugin = getPlugin('fluenti:script-transform', { framework: 'react' })
+      const plugins = createFluentiPlugins({ framework: 'react' }, [])
+      const plugin = plugins.find(p => p.name === 'fluenti:script-transform')!
       const code = `
 import { t } from '@fluenti/react'
 export function Nav() {
@@ -135,7 +143,8 @@ export function Nav() {
     })
 
     it('detects direct-import t when it is not the first imported specifier', () => {
-      const plugin = getPlugin('fluenti:script-transform', { framework: 'solid' })
+      const plugins = createFluentiPlugins({ framework: 'solid' }, [])
+      const plugin = plugins.find(p => p.name === 'fluenti:script-transform')!
       const code = `
 import { Plural, t } from '@fluenti/solid'
 export default function Demo() {
@@ -151,7 +160,8 @@ export default function Demo() {
     })
 
     it('throws for unsupported top-level direct-import t usage', () => {
-      const plugin = getPlugin('fluenti:script-transform', { framework: 'react' })
+      const plugins = createFluentiPlugins({ framework: 'react' }, [])
+      const plugin = plugins.find(p => p.name === 'fluenti:script-transform')!
       const code = `
 import { t } from '@fluenti/react'
 const label = t\`Hello\`
@@ -161,7 +171,8 @@ const label = t\`Hello\`
     })
 
     it('keeps direct t() calls as runtime code', () => {
-      const plugin = getPlugin('fluenti:script-transform', { framework: 'react' })
+      const plugins = createFluentiPlugins({ framework: 'react' }, [])
+      const plugin = plugins.find(p => p.name === 'fluenti:script-transform')!
       const code = `
 import { useI18n } from '@fluenti/react'
 const { t } = useI18n()
@@ -172,14 +183,16 @@ const label = t('nav.home')
     })
 
     it('leaves unbound tagged templates untouched', () => {
-      const plugin = getPlugin('fluenti:script-transform', { framework: 'react' })
+      const plugins = createFluentiPlugins({ framework: 'react' }, [])
+      const plugin = plugins.find(p => p.name === 'fluenti:script-transform')!
       const code = 'const msg = t`Hello`'
 
       expect(callHook(plugin.transform, {}, code, 'App.tsx')).toBeUndefined()
     })
 
     it('applies the JSX <Trans> fast path with context-aware ids', () => {
-      const plugin = getPlugin('fluenti:script-transform', { framework: 'react' })
+      const plugins = createFluentiPlugins({ framework: 'react' }, [])
+      const plugin = plugins.find(p => p.name === 'fluenti:script-transform')!
       const code = 'export function Hero() { return <Trans context="hero">Welcome</Trans> }'
       const result = callHook(plugin.transform, {}, code, 'Hero.tsx') as { code: string } | undefined
 
@@ -189,7 +202,8 @@ const label = t('nav.home')
     })
 
     it('skips node_modules and non-script vue blocks', () => {
-      const plugin = getPlugin('fluenti:script-transform', { framework: 'react' })
+      const plugins = createFluentiPlugins({ framework: 'react' }, [])
+      const plugin = plugins.find(p => p.name === 'fluenti:script-transform')!
       expect(callHook(plugin.transform, {}, 'const msg = t`Hello`', '/project/node_modules/pkg/index.tsx')).toBeUndefined()
       expect(callHook(plugin.transform, {}, '<template><Trans>Hello</Trans></template>', 'App.vue')).toBeUndefined()
     })
@@ -291,6 +305,18 @@ const label = t('nav.home')
       // Should not throw — just registers watcher
       callHook(plugin.configureServer, {}, server)
       expect(watcherEvents.has('change')).toBe(true)
+    })
+
+    it('accepts devAutoCompileDelay option without errors', () => {
+      const plugin = getPlugin('fluenti:dev', { devAutoCompileDelay: 800 })
+      expect(plugin).toBeDefined()
+      expect(plugin.name).toBe('fluenti:dev')
+    })
+
+    it('accepts parallelCompile option without errors', () => {
+      const plugin = getPlugin('fluenti:dev', { parallelCompile: true })
+      expect(plugin).toBeDefined()
+      expect(plugin.name).toBe('fluenti:dev')
     })
 
     it('does not set up auto-compile when devAutoCompile is false', () => {

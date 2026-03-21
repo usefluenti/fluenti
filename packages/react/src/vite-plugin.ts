@@ -7,7 +7,7 @@ export type { FluentiPluginOptions as FluentiReactOptions } from '@fluenti/vite-
 
 export default function fluentiReact(options?: FluentiPluginOptions): Plugin[] {
   return createFluentiPlugins(
-    { ...options, framework: 'react' },
+    { ...(options?.config !== undefined ? { config: options.config } : {}), framework: 'react' },
     [],
     reactRuntimeGenerator,
   )

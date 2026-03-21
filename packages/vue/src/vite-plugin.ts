@@ -22,7 +22,7 @@ export default function fluentiVue(options?: FluentiPluginOptions): Plugin[] {
   }
 
   return createFluentiPlugins(
-    { ...options, framework: 'vue' },
+    { ...(options?.config !== undefined ? { config: options.config } : {}), framework: 'vue' },
     [vueTemplatePlugin],
     vueRuntimeGenerator,
   )

@@ -1,5 +1,5 @@
 import { existsSync } from 'node:fs'
-import { resolve } from 'node:path'
+import { resolve, dirname, relative, isAbsolute } from 'node:path'
 import type { FluentiConfig } from './types'
 
 const defaultConfig: FluentiConfig = {
@@ -8,20 +8,53 @@ const defaultConfig: FluentiConfig = {
   catalogDir: './locales',
   format: 'po',
   include: ['./src/**/*.{vue,tsx,jsx,ts,js}'],
+  exclude: ['**/*.test.*', '**/*.spec.*', '**/__tests__/**', '**/*.d.ts'],
   compileOutDir: './src/locales/compiled',
+  devAutoCompile: true,
+  buildAutoCompile: true,
+  devAutoCompileDelay: 500,
+  parallelCompile: false,
+  catalogExtension: '.js',
+}
+
+const MAX_EXTENDS_DEPTH = 10
+const PATH_FIELDS = ['catalogDir', 'compileOutDir'] as const
+const GLOB_FIELDS = ['include', 'exclude'] as const
+
+/**
+ * Rebase a relative path from one directory context to another.
+ */
+function rebase(relativePath: string, fromDir: string, toDir: string): string {
+  const abs = resolve(fromDir, relativePath)
+  return relative(toDir, abs) || '.'
 }
 
 /**
- * Load Fluenti config from `fluenti.config.ts` (or `.js` / `.mjs`).
- *
- * When `cwd` is provided, config paths are resolved relative to it.
- * Returns a fully merged config with defaults applied.
- *
- * @param configPath - Explicit path to config file (optional)
- * @param cwd - Working directory for auto-discovery (defaults to `process.cwd()`)
+ * Rebase path-semantic fields in a config from parent directory to child directory.
  */
-export async function loadConfig(configPath?: string, cwd?: string): Promise<FluentiConfig> {
-  const base = cwd ?? process.cwd()
+function rebasePaths(
+  config: Partial<FluentiConfig>,
+  fromDir: string,
+  toDir: string,
+): Partial<FluentiConfig> {
+  const result = { ...config }
+  for (const field of PATH_FIELDS) {
+    if (result[field] && !isAbsolute(result[field]!)) {
+      result[field] = rebase(result[field]!, fromDir, toDir)
+    }
+  }
+  for (const field of GLOB_FIELDS) {
+    if (result[field]) {
+      result[field] = result[field]!.map(p => isAbsolute(p) ? p : rebase(p, fromDir, toDir))
+    }
+  }
+  return result
+}
+
+/**
+ * Find a config file path from candidates.
+ */
+function findConfigFile(configPath: string | undefined, base: string): string | undefined {
   const paths = configPath
     ? [resolve(base, configPath)]
     : [
@@ -31,16 +64,78 @@ export async function loadConfig(configPath?: string, cwd?: string): Promise<Flu
       ]
 
   for (const p of paths) {
-    if (existsSync(p)) {
-      const { createJiti } = await import('jiti')
-      const jiti = createJiti(import.meta.url)
-      const mod = await jiti.import(p) as { default?: Partial<FluentiConfig> }
-      const userConfig = mod.default ?? mod as unknown as Partial<FluentiConfig>
-      return { ...defaultConfig, ...userConfig }
-    }
+    if (existsSync(p)) return p
+  }
+  return undefined
+}
+
+/**
+ * Load Fluenti config from `fluenti.config.ts` (or `.js` / `.mjs`).
+ *
+ * When `cwd` is provided, config paths are resolved relative to it.
+ * Supports `extends` to inherit from a parent config file.
+ * Returns a fully merged config with defaults applied.
+ *
+ * @param configPath - Explicit path to config file (optional)
+ * @param cwd - Working directory for auto-discovery (defaults to `process.cwd()`)
+ */
+export async function loadConfig(configPath?: string, cwd?: string): Promise<FluentiConfig> {
+  const base = cwd ?? process.cwd()
+  const configFilePath = findConfigFile(configPath, base)
+
+  if (!configFilePath) return { ...defaultConfig }
+
+  const { createJiti } = await import('jiti')
+  const jiti = createJiti(import.meta.url)
+
+  return resolveConfigChain(configFilePath, jiti, new Set())
+}
+
+async function resolveConfigChain(
+  configFilePath: string,
+  jiti: { import: (path: string) => Promise<unknown> },
+  visited: Set<string>,
+): Promise<FluentiConfig> {
+  const absolutePath = resolve(configFilePath)
+
+  if (visited.has(absolutePath)) {
+    const chain = [...visited, absolutePath].join(' → ')
+    throw new Error(`Circular extends detected: ${chain}`)
+  }
+  if (visited.size >= MAX_EXTENDS_DEPTH) {
+    throw new Error(`Config extends chain exceeds maximum depth of ${MAX_EXTENDS_DEPTH}`)
   }
 
-  return defaultConfig
+  visited.add(absolutePath)
+
+  const mod = await jiti.import(absolutePath) as { default?: Partial<FluentiConfig> }
+  const userConfig = mod.default ?? mod as unknown as Partial<FluentiConfig>
+
+  if (!userConfig.extends) {
+    const { extends: _extends, ...rest } = userConfig
+    return { ...defaultConfig, ...rest }
+  }
+
+  const configDir = dirname(absolutePath)
+  const parentPath = resolve(configDir, userConfig.extends)
+
+  if (!existsSync(parentPath)) {
+    throw new Error(`Config extends "${userConfig.extends}" but file not found: ${parentPath}`)
+  }
+
+  const parentConfig = await resolveConfigChain(parentPath, jiti, new Set(visited))
+
+  const parentDir = dirname(parentPath)
+  const childDir = configDir
+
+  // Rebase parent paths to be relative to child config directory
+  const rebasedParent = rebasePaths(parentConfig, parentDir, childDir)
+
+  // Child overrides parent; remove extends from result
+  const { extends: _extends, ...childRest } = userConfig
+  const merged = { ...defaultConfig, ...rebasedParent, ...childRest }
+
+  return merged
 }
 
 /**
@@ -54,41 +149,75 @@ export async function loadConfig(configPath?: string, cwd?: string): Promise<Flu
  */
 export function loadConfigSync(configPath?: string, cwd?: string): FluentiConfig {
   const base = cwd ?? process.cwd()
-  const paths = configPath
-    ? [resolve(base, configPath)]
-    : [
-        resolve(base, 'fluenti.config.ts'),
-        resolve(base, 'fluenti.config.js'),
-        resolve(base, 'fluenti.config.mjs'),
-      ]
+  const configFilePath = findConfigFile(configPath, base)
 
-  for (const p of paths) {
-    if (existsSync(p)) {
-      try {
-        // eslint-disable-next-line @typescript-eslint/no-require-imports
-        const { createJiti } = require('jiti') as {
-          createJiti: (
-            url: string,
-            options?: { moduleCache?: boolean; interopDefault?: boolean },
-          ) => (path: string) => unknown
-        }
-        const jiti = createJiti(p, {
-          moduleCache: false,
-          interopDefault: true,
-        })
-        const mod = jiti(p) as FluentiConfig | { default?: FluentiConfig }
-        const userConfig = typeof mod === 'object' && mod !== null && 'default' in mod
-          ? (mod.default ?? {}) as Partial<FluentiConfig>
-          : mod as Partial<FluentiConfig>
-        return { ...defaultConfig, ...userConfig }
-      } catch {
-        // Config file exists but couldn't be loaded — return defaults
-        return defaultConfig
-      }
+  if (!configFilePath) return { ...defaultConfig }
+
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { createJiti } = require('jiti') as {
+      createJiti: (
+        url: string,
+        options?: { moduleCache?: boolean; interopDefault?: boolean },
+      ) => (path: string) => unknown
     }
+
+    return resolveConfigChainSync(configFilePath, createJiti, new Set())
+  } catch {
+    return { ...defaultConfig }
+  }
+}
+
+function resolveConfigChainSync(
+  configFilePath: string,
+  createJiti: (
+    url: string,
+    options?: { moduleCache?: boolean; interopDefault?: boolean },
+  ) => (path: string) => unknown,
+  visited: Set<string>,
+): FluentiConfig {
+  const absolutePath = resolve(configFilePath)
+
+  if (visited.has(absolutePath)) {
+    const chain = [...visited, absolutePath].join(' → ')
+    throw new Error(`Circular extends detected: ${chain}`)
+  }
+  if (visited.size >= MAX_EXTENDS_DEPTH) {
+    throw new Error(`Config extends chain exceeds maximum depth of ${MAX_EXTENDS_DEPTH}`)
   }
 
-  return defaultConfig
+  visited.add(absolutePath)
+
+  const jiti = createJiti(absolutePath, {
+    moduleCache: false,
+    interopDefault: true,
+  })
+  const mod = jiti(absolutePath) as FluentiConfig | { default?: FluentiConfig }
+  const userConfig = typeof mod === 'object' && mod !== null && 'default' in mod
+    ? (mod.default ?? {}) as Partial<FluentiConfig>
+    : mod as Partial<FluentiConfig>
+
+  if (!userConfig.extends) {
+    const { extends: _extends, ...rest } = userConfig
+    return { ...defaultConfig, ...rest }
+  }
+
+  const configDir = dirname(absolutePath)
+  const parentPath = resolve(configDir, userConfig.extends)
+
+  if (!existsSync(parentPath)) {
+    throw new Error(`Config extends "${userConfig.extends}" but file not found: ${parentPath}`)
+  }
+
+  const parentConfig = resolveConfigChainSync(parentPath, createJiti, new Set(visited))
+
+  const parentDir = dirname(parentPath)
+  const childDir = configDir
+
+  const rebasedParent = rebasePaths(parentConfig, parentDir, childDir)
+
+  const { extends: _extends, ...childRest } = userConfig
+  return { ...defaultConfig, ...rebasedParent, ...childRest }
 }
 
 /** Default config values (exported for testing and reference) */

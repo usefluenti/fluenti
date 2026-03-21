@@ -421,3 +421,130 @@ describe('extendPages', () => {
     expect(pages.find((p) => p.path === '/ja-only' && p.name === 'ja-only')).toBeUndefined()
   })
 })
+
+describe('extendPages routeMode: opt-in', () => {
+  it('does not generate locale routes for pages without i18nRoute meta', () => {
+    const pages: PageRoute[] = [
+      { path: '/', name: 'index' },
+      { path: '/about', name: 'about' },
+    ]
+
+    extendPages(pages, {
+      locales: ['en', 'ja'],
+      defaultLocale: 'en',
+      strategy: 'prefix',
+      routeMode: 'opt-in',
+    })
+
+    // No pages have i18nRoute meta → none should be extended, originals removed by prefix strategy
+    expect(pages).toHaveLength(0)
+  })
+
+  it('generates locale routes only for pages with i18nRoute meta', () => {
+    const pages: PageRoute[] = [
+      { path: '/', name: 'index' },
+      { path: '/about', name: 'about', meta: { i18nRoute: { locales: ['en', 'ja'] } } },
+      { path: '/settings', name: 'settings' },
+    ]
+
+    extendPages(pages, {
+      locales: ['en', 'ja'],
+      defaultLocale: 'en',
+      strategy: 'prefix',
+      routeMode: 'opt-in',
+    })
+
+    // Only /about gets locale variants: 2 (en + ja)
+    expect(pages).toHaveLength(2)
+    expect(pages.find((p) => p.path === '/en/about')).toBeDefined()
+    expect(pages.find((p) => p.path === '/ja/about')).toBeDefined()
+    expect(pages.find((p) => p.path.includes('settings'))).toBeUndefined()
+    expect(pages.find((p) => p.path === '/en' && p.name === 'index___en')).toBeUndefined()
+  })
+
+  it('respects i18nRoute: false even in opt-in mode', () => {
+    const pages: PageRoute[] = [
+      { path: '/', name: 'index', meta: { i18nRoute: { locales: ['en', 'ja'] } } },
+      { path: '/admin', name: 'admin', meta: { i18nRoute: false } },
+    ]
+
+    extendPages(pages, {
+      locales: ['en', 'ja'],
+      defaultLocale: 'en',
+      strategy: 'prefix',
+      routeMode: 'opt-in',
+    })
+
+    expect(pages.find((p) => p.path === '/en')).toBeDefined()
+    expect(pages.find((p) => p.path === '/ja')).toBeDefined()
+    expect(pages.find((p) => p.path.includes('admin'))).toBeUndefined()
+  })
+
+  it('works with prefix_except_default strategy', () => {
+    const pages: PageRoute[] = [
+      { path: '/', name: 'index', meta: { i18nRoute: { locales: ['en', 'ja'] } } },
+      { path: '/plain', name: 'plain' },
+    ]
+
+    extendPages(pages, {
+      locales: ['en', 'ja'],
+      defaultLocale: 'en',
+      strategy: 'prefix_except_default',
+      routeMode: 'opt-in',
+    })
+
+    // / (original, default locale) + /ja (ja prefix)
+    // /plain has no i18nRoute in opt-in mode, so it's filtered out for default locale too
+    expect(pages.find((p) => p.path === '/' && p.name === 'index')).toBeDefined()
+    expect(pages.find((p) => p.path === '/ja' && p.name === 'index___ja')).toBeDefined()
+    expect(pages.find((p) => p.path === '/plain')).toBeUndefined()
+  })
+
+  it('default routeMode (all) behaves as before', () => {
+    const pages: PageRoute[] = [
+      { path: '/', name: 'index' },
+      { path: '/about', name: 'about' },
+    ]
+
+    extendPages(pages, {
+      locales: ['en', 'ja'],
+      defaultLocale: 'en',
+      strategy: 'prefix',
+      routeMode: 'all',
+    })
+
+    // All pages get locale routes: 2 pages × 2 locales = 4
+    expect(pages).toHaveLength(4)
+  })
+
+  it('omitting routeMode defaults to all', () => {
+    const pages: PageRoute[] = [
+      { path: '/', name: 'index' },
+    ]
+
+    extendPages(pages, {
+      locales: ['en', 'ja'],
+      defaultLocale: 'en',
+      strategy: 'prefix',
+    })
+
+    expect(pages).toHaveLength(2)
+  })
+
+  it('opt-in with locale restriction generates only specified locales', () => {
+    const pages: PageRoute[] = [
+      { path: '/landing', name: 'landing', meta: { i18nRoute: { locales: ['en'] } } },
+    ]
+
+    extendPages(pages, {
+      locales: ['en', 'ja', 'zh'],
+      defaultLocale: 'en',
+      strategy: 'prefix',
+      routeMode: 'opt-in',
+    })
+
+    // Only en variant
+    expect(pages).toHaveLength(1)
+    expect(pages[0]!.path).toBe('/en/landing')
+  })
+})

@@ -24,7 +24,7 @@ describe('fluentiReact', () => {
 
   describe('virtual modules with react runtime', () => {
     it('generates React runtime with plain objects when splitting is enabled', () => {
-      const plugins = fluentiReact({ splitting: 'dynamic', locales: ['en', 'fr'] })
+      const plugins = fluentiReact({ config: { splitting: 'dynamic', sourceLocale: 'en', locales: ['en', 'fr'], compileOutDir: 'compiled', catalogDir: './locales', format: 'po', include: ['./src/**/*.{tsx,jsx,ts,js}'] } })
       const virtual = plugins.find((p) => p.name === 'fluenti:virtual') as Plugin
 
       const resolved = callHook(virtual.resolveId, {}, 'virtual:fluenti/runtime')
@@ -41,7 +41,7 @@ describe('fluentiReact', () => {
     })
 
     it('generates React route runtime', () => {
-      const plugins = fluentiReact({ splitting: 'dynamic', locales: ['en', 'fr'] })
+      const plugins = fluentiReact({ config: { splitting: 'dynamic', sourceLocale: 'en', locales: ['en', 'fr'], compileOutDir: 'compiled', catalogDir: './locales', format: 'po', include: ['./src/**/*.{tsx,jsx,ts,js}'] } })
       const virtual = plugins.find((p) => p.name === 'fluenti:virtual') as Plugin
 
       const code = callHook(virtual.load, {}, '\0virtual:fluenti/route-runtime') as string

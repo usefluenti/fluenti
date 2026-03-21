@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { generateServerModule } from '../src/generate-server-module'
+import type { ResolvedFluentConfig } from '../src/types'
 
 // Track written files
 const writtenFiles: Record<string, string> = {}
@@ -20,10 +21,15 @@ describe('generateServerModule', () => {
     }
   })
 
-  const baseConfig = {
-    locales: ['en', 'ja'],
-    defaultLocale: 'en',
-    compiledDir: './src/locales/compiled',
+  const baseConfig: ResolvedFluentConfig = {
+    fluentiConfig: {
+      sourceLocale: 'en',
+      locales: ['en', 'ja'],
+      catalogDir: './locales',
+      format: 'po',
+      include: ['./src/**/*.{vue,tsx,jsx,ts,js}'],
+      compileOutDir: './src/locales/compiled',
+    },
     serverModule: null,
     serverModuleOutDir: 'node_modules/.fluenti',
     cookieName: 'locale',

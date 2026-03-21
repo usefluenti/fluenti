@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import type {
   Locale,
+  LocalizedString,
   Messages,
   AllMessages,
   MessageDescriptor,
@@ -16,15 +17,15 @@ export interface I18nContextValue {
   i18n: FluentInstanceExtended
   /** Translate a message by id with optional interpolation values */
   t: {
-    (id: string | MessageDescriptor, values?: Record<string, unknown>): string
-    (strings: TemplateStringsArray, ...exprs: unknown[]): string
+    (id: string | MessageDescriptor, values?: Record<string, unknown>): LocalizedString
+    (strings: TemplateStringsArray, ...exprs: unknown[]): LocalizedString
   }
   /** Format a date value for the current locale */
-  d: (value: Date | number, style?: string) => string
+  d: (value: Date | number, style?: string) => LocalizedString
   /** Format a number value for the current locale */
-  n: (value: number, style?: string) => string
+  n: (value: number, style?: string) => LocalizedString
   /** Format an ICU message string directly (no catalog lookup) */
-  format: (message: string, values?: Record<string, unknown>) => string
+  format: (message: string, values?: Record<string, unknown>) => LocalizedString
   /** Merge additional messages into a locale catalog at runtime */
   loadMessages: (locale: string, messages: Messages) => void
   /** Return all locale codes that have loaded messages */
@@ -64,6 +65,7 @@ export interface I18nProviderProps {
 
 export type {
   Locale,
+  LocalizedString,
   Messages,
   AllMessages,
   MessageDescriptor,

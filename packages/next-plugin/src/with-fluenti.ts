@@ -45,10 +45,8 @@ export function withFluenti(
 
 function isFluentConfig(obj: Record<string, unknown>): boolean {
   const fluentOnlyKeys = [
-    'locales', 'sourceLocale', 'defaultLocale', 'compiledDir', 'compileOutDir',
-    'serverModule', 'serverModuleOutDir', 'resolveLocale', 'cookieName',
-    'devAutoCompile', 'buildAutoCompile', 'devAutoCompileDelay',
-    'dateFormats', 'numberFormats', 'fallbackChain', 'loaderEnforce',
+    'config', 'serverModule', 'serverModuleOutDir', 'resolveLocale',
+    'cookieName', 'loaderEnforce',
   ]
   return fluentOnlyKeys.some((key) => key in obj)
 }
@@ -59,12 +57,14 @@ function applyFluenti(
 ): NextConfig {
   const projectRoot = process.cwd()
   const resolved = resolveConfig(projectRoot, fluentConfig)
+  const fluentiConfig = resolved.fluentiConfig
+  const compiledDir = fluentiConfig.compileOutDir
 
   // Warn if compiled catalogs directory doesn't exist yet
-  const compiledDir = resolve(projectRoot, resolved.compiledDir)
-  if (!existsSync(compiledDir)) {
+  const compiledDirAbs = resolve(projectRoot, compiledDir)
+  if (!existsSync(compiledDirAbs)) {
     console.warn(
-      `\n[fluenti] Compiled catalogs not found at ${resolved.compiledDir}.\n` +
+      `\n[fluenti] Compiled catalogs not found at ${compiledDir}.\n` +
       `Run: npx fluenti extract && npx fluenti compile\n`,
     )
   }
@@ -110,15 +110,17 @@ function applyFluenti(
   // ── Dev auto-compile via standalone watcher (works with both webpack & Turbopack) ──
   const isDev = process.env['NODE_ENV'] === 'development'
     || process.argv.some(a => a === 'dev')
-  const devAutoCompile = fluentConfig.devAutoCompile ?? true
+  const devAutoCompile = fluentiConfig.devAutoCompile ?? true
 
   if (isDev && devAutoCompile) {
     const watcherOpts: Parameters<typeof startDevWatcher>[0] = {
       cwd: projectRoot,
-      compiledDir: resolved.compiledDir,
-      delay: fluentConfig.devAutoCompileDelay ?? 1000,
+      compiledDir,
+      delay: fluentiConfig.devAutoCompileDelay ?? 1000,
     }
-    if (resolved.include) watcherOpts.include = resolved.include
+    if (fluentiConfig.parallelCompile) watcherOpts.parallelCompile = true
+    if (fluentiConfig.include) watcherOpts.include = fluentiConfig.include
+    if (fluentiConfig.exclude) watcherOpts.exclude = fluentiConfig.exclude
     startDevWatcher(watcherOpts)
   }
 
@@ -153,7 +155,7 @@ function applyFluenti(
       config.resolve.alias['@fluenti/next$'] = serverModulePath
 
       // Auto compile before production build via async beforeRun hook
-      const buildAutoCompile = fluentConfig.buildAutoCompile ?? true
+      const buildAutoCompile = fluentiConfig.buildAutoCompile ?? true
       if (!options.dev && buildAutoCompile) {
         config.plugins = config.plugins ?? []
         config.plugins.push({
@@ -164,7 +166,7 @@ function applyFluenti(
               try {
                 // @ts-expect-error — @fluenti/cli is an optional peer dependency
                 const { runCompile } = await import('@fluenti/cli')
-                await runCompile(projectRoot)
+                await runCompile(projectRoot, fluentiConfig.parallelCompile ? { parallel: true } : undefined)
               } catch {
                 // @fluenti/cli not available or compile failed — skip silently
               }

@@ -1,4 +1,5 @@
-import { loadConfigSync } from '@fluenti/core/config'
+import { loadConfigSync, DEFAULT_FLUENTI_CONFIG } from '@fluenti/core/config'
+import type { FluentiConfig } from '@fluenti/core'
 import type { WithFluentConfig, ResolvedFluentConfig } from './types'
 
 /**
@@ -10,44 +11,28 @@ export function resolveConfig(
   projectRoot: string,
   overrides?: WithFluentConfig,
 ): ResolvedFluentConfig {
-  const fileConfig = loadConfigSync(undefined, projectRoot)
+  let fluentiConfig: FluentiConfig
 
-  // Support both field names: sourceLocale (canonical) and defaultLocale (legacy)
-  const defaultLocale = overrides?.defaultLocale
-    ?? overrides?.sourceLocale
-    ?? fileConfig?.sourceLocale
-    ?? 'en'
-
-  const locales = overrides?.locales
-    ?? fileConfig?.locales
-    ?? [defaultLocale]
-
-  // Support both field names: compileOutDir (canonical) and compiledDir (legacy)
-  const compiledDir = overrides?.compiledDir
-    ?? overrides?.compileOutDir
-    ?? fileConfig?.compileOutDir
-    ?? './src/locales/compiled'
+  if (overrides?.config && typeof overrides.config === 'object') {
+    // Inline config — merge with defaults
+    fluentiConfig = { ...DEFAULT_FLUENTI_CONFIG, ...overrides.config }
+  } else {
+    // string path or auto-discover
+    fluentiConfig = loadConfigSync(
+      typeof overrides?.config === 'string' ? overrides.config : undefined,
+      projectRoot,
+    )
+  }
 
   const serverModuleOutDir = overrides?.serverModuleOutDir ?? '.fluenti'
-
   const cookieName = overrides?.cookieName ?? 'locale'
 
   const resolved: ResolvedFluentConfig = {
-    locales,
-    defaultLocale,
-    compiledDir,
+    fluentiConfig,
     serverModule: overrides?.serverModule ?? null,
     serverModuleOutDir,
     cookieName,
   }
-  const include = fileConfig?.include as string[] | undefined
-  if (include) resolved.include = include
   if (overrides?.resolveLocale) resolved.resolveLocale = overrides.resolveLocale
-  if (overrides?.dateFormats) resolved.dateFormats = overrides.dateFormats
-  if (overrides?.numberFormats) resolved.numberFormats = overrides.numberFormats
-  const fallbackChain = overrides?.fallbackChain ?? fileConfig?.fallbackChain
-  if (fallbackChain) {
-    resolved.fallbackChain = fallbackChain
-  }
   return resolved
 }

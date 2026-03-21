@@ -8,6 +8,7 @@ export default defineConfig({
         index: 'src/index.ts',
         cli: 'src/cli.ts',
         'vue-extractor': 'src/vue-extractor.ts',
+        'compile-worker': 'src/compile-worker.ts',
       },
       formats: ['es', 'cjs'],
     },

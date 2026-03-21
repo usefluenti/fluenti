@@ -8,6 +8,10 @@ export interface DevWatcherOptions {
   delay?: number
   /** Glob patterns from fluenti.config.ts `include` field */
   include?: string[]
+  /** Glob patterns from fluenti.config.ts `exclude` field */
+  exclude?: string[]
+  /** Enable parallel compilation across locales using worker threads */
+  parallelCompile?: boolean
 }
 
 let activeWatcher: (() => void) | null = null
@@ -52,9 +56,14 @@ export function startDevWatcher(options: DevWatcherOptions): () => void {
   // Prevent duplicate watchers (applyFluenti may be called multiple times)
   if (activeWatcher) return activeWatcher
 
-  const { cwd, compiledDir, delay = 1000, include } = options
+  const { cwd, compiledDir, delay = 1000, include, exclude, parallelCompile } = options
   const compiledDirResolved = resolve(cwd, compiledDir)
-  const debouncedRun = createDebouncedRunner({ cwd }, delay)
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const picomatch = require('picomatch') as (patterns: string[]) => (str: string) => boolean
+  const isExcluded = exclude?.length ? picomatch(exclude) : () => false
+  const runnerOpts: Parameters<typeof createDebouncedRunner>[0] = { cwd }
+  if (parallelCompile) runnerOpts.parallelCompile = true
+  const debouncedRun = createDebouncedRunner(runnerOpts, delay)
 
   // Initial run
   debouncedRun()
@@ -67,6 +76,7 @@ export function startDevWatcher(options: DevWatcherOptions): () => void {
       if (filename.includes('node_modules') || filename.includes('.next')) return
       const full = resolve(dir, filename)
       if (full.startsWith(compiledDirResolved)) return
+      if (isExcluded(filename)) return
       debouncedRun()
     }),
   )

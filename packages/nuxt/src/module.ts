@@ -1,15 +1,18 @@
 import { defineNuxtModule, addPlugin, addImports, addComponent, addRouteMiddleware, addServerHandler, createResolver } from '@nuxt/kit'
 import type { FluentNuxtOptions } from './types'
-import { resolveLocaleCodes, resolveLocaleProperties, resolveDomainConfigs } from './types'
+import { resolveLocaleProperties, resolveDomainConfigs } from './types'
+import { resolveLocaleCodes } from '@fluenti/core'
+import type { FluentiConfig } from '@fluenti/core'
 import { extendPages } from './runtime/page-extend'
 import { validateISRConfig } from './isr-validation'
 import { setupDevTools } from './devtools'
 import { createPageMetaTransform } from './page-meta-transform'
 
-export type { FluentNuxtOptions, Strategy, FluentNuxtRuntimeConfig, DetectBrowserLanguageOptions, LocaleDetectContext, LocaleDetectorFn, BuiltinDetector, ISROptions, IdGenerator, LocaleObject, LocaleDefinition, DomainConfig, I18nRouteConfig, I18nError, I18nErrorCode, I18nErrorHandler, MessageFallbackHandler } from './types'
+export type { FluentNuxtOptions, Strategy, FluentNuxtRuntimeConfig, DetectBrowserLanguageOptions, LocaleDetectContext, LocaleDetectorFn, BuiltinDetector, ISROptions, LocaleObject, LocaleDefinition, DomainConfig, I18nRouteConfig, I18nError, I18nErrorCode, I18nErrorHandler, MessageFallbackHandler } from './types'
 export { generateSitemapUrls, createSitemapHook } from './sitemap'
 export type { SitemapUrl } from './sitemap'
-export { resolveLocaleCodes, resolveLocaleProperties, resolveDomainConfigs } from './types'
+export { resolveLocaleProperties, resolveDomainConfigs } from './types'
+export { resolveLocaleCodes } from '@fluenti/core'
 export { localePath, extractLocaleFromPath, switchLocalePath } from './runtime/path-utils'
 export { extendPages } from './runtime/page-extend'
 export type { PageRoute, RouteNameTemplate, ExtendPagesOptions } from './runtime/page-extend'
@@ -21,6 +24,44 @@ export { defineI18nRoute } from './runtime/define-i18n-route'
 export const MODULE_NAME = '@fluenti/nuxt'
 export const CONFIG_KEY = 'fluenti'
 
+/**
+ * Resolve the FluentiConfig from the module options.
+ */
+function resolveFluentiConfig(configOption: string | FluentiConfig | undefined, rootDir: string): FluentiConfig {
+  if (typeof configOption === 'object') {
+    // Inline config — merge with defaults
+    try {
+      const { DEFAULT_FLUENTI_CONFIG } = require('@fluenti/core/config') as {
+        DEFAULT_FLUENTI_CONFIG: FluentiConfig
+      }
+      return { ...DEFAULT_FLUENTI_CONFIG, ...configOption }
+    } catch {
+      return configOption as FluentiConfig
+    }
+  }
+
+  // string → specified path; undefined → auto-discover
+  try {
+    const { loadConfigSync } = require('@fluenti/core/config') as {
+      loadConfigSync: (configPath?: string, cwd?: string) => FluentiConfig
+    }
+    return loadConfigSync(
+      typeof configOption === 'string' ? configOption : undefined,
+      rootDir,
+    )
+  } catch {
+    // @fluenti/core not available — return minimal defaults
+    return {
+      sourceLocale: 'en',
+      locales: ['en'],
+      catalogDir: './locales',
+      format: 'po',
+      include: ['./src/**/*.{vue,tsx,jsx,ts,js}'],
+      compileOutDir: './src/locales/compiled',
+    }
+  }
+}
+
 export default defineNuxtModule<FluentNuxtOptions>({
   meta: {
     name: MODULE_NAME,
@@ -28,53 +69,21 @@ export default defineNuxtModule<FluentNuxtOptions>({
     compatibility: { nuxt: '>=3.0.0' },
   },
   defaults: {
-    locales: [],
-    defaultLocale: 'en',
     strategy: 'prefix_except_default',
   },
   setup(options, nuxt) {
     const { resolve } = createResolver(import.meta.url)
 
-    // --- Load fluenti.config.ts and merge (file config is lowest priority) ---
-    try {
-      const { loadConfigSync } = require('@fluenti/core/config') as {
-        loadConfigSync: (configPath?: string, cwd?: string) => Record<string, unknown>
-      }
-      const rootDir = nuxt.options.rootDir ?? process.cwd()
-      const fileConfig = loadConfigSync(undefined, rootDir)
-      // Merge file config under module options (module options win)
-      if (fileConfig) {
-        if (!options.sourceLocale && fileConfig['sourceLocale']) {
-          options.sourceLocale = fileConfig['sourceLocale'] as string
-        }
-        if (options.locales.length === 0 && fileConfig['locales']) {
-          options.locales = fileConfig['locales'] as string[]
-        }
-        if (!options.catalogDir && fileConfig['compileOutDir']) {
-          options.catalogDir = fileConfig['compileOutDir'] as string
-        }
-        if (!options.include && fileConfig['include']) {
-          options.include = fileConfig['include'] as string[]
-        }
-        if (!options.fallbackChain && fileConfig['fallbackChain']) {
-          options.fallbackChain = fileConfig['fallbackChain'] as Record<string, string[]>
-        }
-        if (options.splitting === undefined && fileConfig['splitting'] !== undefined) {
-          options.splitting = fileConfig['splitting'] as 'dynamic' | 'static' | false
-        }
-        if (!options.defaultBuildLocale && fileConfig['defaultBuildLocale']) {
-          options.defaultBuildLocale = fileConfig['defaultBuildLocale'] as string
-        }
-      }
-    } catch {
-      // @fluenti/core not available or no config file — continue with module options only
-    }
+    // --- Resolve FluentiConfig from options.config ---
+    const rootDir = nuxt.options.rootDir ?? process.cwd()
+    const fluentiConfig = resolveFluentiConfig(options.config, rootDir)
 
     // --- Resolve locale codes and metadata ---
-    const localeCodes = resolveLocaleCodes(options.locales)
-    const localeProperties = resolveLocaleProperties(options.locales)
+    const localeCodes = resolveLocaleCodes(fluentiConfig.locales)
+    const localeProperties = resolveLocaleProperties(fluentiConfig.locales)
+    const defaultLocale = fluentiConfig.defaultLocale ?? fluentiConfig.sourceLocale
     const domainConfigs = options.strategy === 'domains'
-      ? resolveDomainConfigs(options.locales, options.domains)
+      ? resolveDomainConfigs(fluentiConfig.locales, options.domains)
       : undefined
 
     // --- Inject runtime config ---
@@ -85,7 +94,7 @@ export default defineNuxtModule<FluentNuxtOptions>({
     )
     nuxt.options.runtimeConfig.public['fluenti'] = {
       locales: localeCodes,
-      defaultLocale: options.defaultLocale,
+      defaultLocale,
       strategy: options.strategy ?? 'prefix_except_default',
       detectBrowserLanguage: options.detectBrowserLanguage,
       detectOrder,
@@ -97,19 +106,9 @@ export default defineNuxtModule<FluentNuxtOptions>({
 
     // --- Auto-register @fluenti/vue vite plugin (includes v-t transform + scope transform) ---
     if (options.autoVitePlugin !== false) {
+      // Pass the resolved fluentiConfig directly to the vite plugin
       const pluginOptions = {
-        locales: localeCodes,
-        sourceLocale: options.sourceLocale ?? options.defaultLocale,
-        catalogDir: options.catalogDir,
-        splitting: options.splitting,
-        defaultBuildLocale: options.defaultBuildLocale,
-        include: options.include,
-        devAutoCompile: options.devAutoCompile,
-        buildAutoCompile: options.buildAutoCompile,
-        catalogExtension: options.catalogExtension,
-        idGenerator: options.idGenerator,
-        onBeforeCompile: options.onBeforeCompile,
-        onAfterCompile: options.onAfterCompile,
+        config: fluentiConfig,
       }
       // Synchronously load @fluenti/vue/vite-plugin using createRequire
       // (resolves from the user's project root, not from the nuxt module's node_modules)
@@ -148,10 +147,11 @@ export default defineNuxtModule<FluentNuxtOptions>({
       nuxt.hook('pages:extend', (pages) => {
         extendPages(pages, {
           locales: localeCodes,
-          defaultLocale: options.defaultLocale,
+          defaultLocale,
           strategy,
           ...(options.routeNameTemplate ? { routeNameTemplate: options.routeNameTemplate } : {}),
           ...(options.routeOverrides ? { routeOverrides: options.routeOverrides } : {}),
+          ...(options.routeMode ? { routeMode: options.routeMode } : {}),
         })
       })
     }
@@ -209,7 +209,7 @@ export default defineNuxtModule<FluentNuxtOptions>({
       if (strategy === 'prefix') {
         const routes = (prerender['routes'] ?? ['/']) as string[]
         prerender['routes'] = routes.map((r) =>
-          r === '/' ? `/${options.defaultLocale}` : r,
+          r === '/' ? `/${defaultLocale}` : r,
         )
       }
 
@@ -221,7 +221,7 @@ export default defineNuxtModule<FluentNuxtOptions>({
         const routeRules = (nuxtOpts['routeRules'] ?? (nuxtOpts['routeRules'] = {})) as Record<string, Record<string, unknown>>
         const ttl = options.isr.ttl ?? 3600
         for (const locale of localeCodes) {
-          if (locale === options.defaultLocale && strategy === 'prefix_except_default') {
+          if (locale === defaultLocale && strategy === 'prefix_except_default') {
             routeRules['/**'] = { ...routeRules['/**'], isr: ttl }
           } else {
             routeRules[`/${locale}/**`] = { ...routeRules[`/${locale}/**`], isr: ttl }
@@ -232,7 +232,7 @@ export default defineNuxtModule<FluentNuxtOptions>({
 
     // --- Nuxt DevTools integration ---
     if (nuxt.options.dev) {
-      setupDevTools(nuxt, localeCodes, options.defaultLocale, strategy)
+      setupDevTools(nuxt, localeCodes, defaultLocale, strategy)
     }
 
     // --- Nitro server handler for locale redirect (T2-10) ---

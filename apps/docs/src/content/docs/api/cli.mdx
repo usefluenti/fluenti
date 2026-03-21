@@ -28,6 +28,7 @@ npx fluenti extract
 | `--config` | `string` | — | Path to config file |
 | `--clean` | `boolean` | `false` | Remove obsolete messages from catalogs |
 | `--no-fuzzy` | `boolean` | `false` | Skip fuzzy matching for similar messages |
+| `--no-cache` | `boolean` | `false` | Disable incremental extraction cache |
 
 Supports:
 - `t()` and `` t` ` `` calls
@@ -48,6 +49,9 @@ npx fluenti compile
 |------|------|---------|-------------|
 | `--config` | `string` | — | Path to config file |
 | `--skip-fuzzy` | `boolean` | `false` | Exclude fuzzy-marked translations from output |
+| `--no-cache` | `boolean` | `false` | Disable compilation cache |
+| `--parallel` | `boolean` | `false` | Enable parallel compilation using worker threads |
+| `--concurrency` | `number` | auto | Max number of worker threads |
 
 Input: JSON or PO catalog files.
 Output: ES modules with string literals and template functions. Also generates `messages.d.ts` with `MessageId` union type and `MessageValues` interface for type-safe `t()` calls.
@@ -78,6 +82,38 @@ npx fluenti translate --locale ja
 | `--provider` | `'claude' \| 'codex'` | `'claude'` | AI provider |
 | `--locale` | `string` | — | Target locale to translate |
 | `--batch-size` | `number` | `50` | Messages per AI request |
+| `--dry-run` | `boolean` | `false` | Preview translations without writing files |
+| `--context` | `string` | — | Project context description to improve quality |
+
+### `fluenti lint`
+
+Check translation quality — missing translations, inconsistent placeholders, fuzzy entries.
+
+```bash
+npx fluenti lint
+```
+
+| Flag | Type | Default | Description |
+|------|------|---------|-------------|
+| `--config` | `string` | — | Path to config file |
+| `--strict` | `boolean` | `false` | Treat warnings as errors |
+| `--locale` | `string` | — | Lint a specific locale only |
+
+### `fluenti check`
+
+Check translation coverage for CI.
+
+```bash
+npx fluenti check --min-coverage 90
+```
+
+| Flag | Type | Default | Description |
+|------|------|---------|-------------|
+| `--config` | `string` | — | Path to config file |
+| `--min-coverage` | `number` | `100` | Minimum coverage percentage (0–100) |
+| `--format` | `'text' \| 'json' \| 'github'` | `'text'` | Output format |
+| `--ci` | `boolean` | `false` | Alias for `--format github` |
+| `--locale` | `string` | — | Check a specific locale only |
 
 ### `fluenti migrate`
 
@@ -98,16 +134,16 @@ Supported: `vue-i18n`, `nuxt-i18n`, `react-i18next`, `next-intl`, `next-i18next`
 ## Programmatic API
 
 ```typescript
-import { extractFromVue } from '@fluenti/cli/vue-extractor'
 import { extractFromTsx } from '@fluenti/cli'
 import { updateCatalog, compileCatalog } from '@fluenti/cli'
 import { readJsonCatalog, writeJsonCatalog } from '@fluenti/cli'
 import { readPoCatalog, writePoCatalog } from '@fluenti/cli'
-import { translateCatalog } from '@fluenti/cli'
-import { runInit, runMigrate } from '@fluenti/cli'
+import { runExtract, runCompile, loadConfig } from '@fluenti/cli'
 ```
 
 ### `extractFromVue(code, filename)`
+
+> **Internal API** — available at `@fluenti/cli/vue-extractor` (not a public subpath export). Used internally by `runExtract`.
 
 Extract messages from a Vue SFC string. Returns an array of `ExtractedMessage` objects with `id`, `message`, `context`, and source location.
 
@@ -137,9 +173,13 @@ Returns `{ code: string, stats: { compiled: number, missing: string[] } }`.
 
 ### `compileTypeDeclaration(allIds, catalogs, sourceLocale)`
 
+> **Internal API** — not exported from the `@fluenti/cli` main entry point. Used internally by `runCompile`.
+
 Generate TypeScript declarations (`messages.d.ts`) with a `MessageId` union type and `MessageValues` interface mapping each message ID to its expected variables.
 
 ### `translateCatalog(options)`
+
+> **Internal API** — not exported from the `@fluenti/cli` main entry point. Used internally by the `fluenti translate` command.
 
 Translate untranslated messages in a catalog using AI.
 
@@ -155,6 +195,8 @@ Returns `Promise<{ catalog: CatalogData, translated: number }>`.
 
 ### `runInit(options)`
 
+> **Internal API** — not exported from the `@fluenti/cli` main entry point. Used internally by the `fluenti init` command.
+
 Run interactive project setup programmatically.
 
 | Parameter | Type | Description |
@@ -163,6 +205,8 @@ Run interactive project setup programmatically.
 
 ### `runMigrate(options)`
 
+> **Internal API** — not exported from the `@fluenti/cli` main entry point. Used internally by the `fluenti migrate` command.
+
 Run AI-assisted migration from another i18n library.
 
 | Parameter | Type | Description |
@@ -170,3 +214,27 @@ Run AI-assisted migration from another i18n library.
 | `options.from` | `string` | Source library name |
 | `options.provider` | `'claude' \| 'codex'` | AI provider |
 | `options.write` | `boolean` | Write changes to disk |
+
+### `runExtract(cwd, options?)`
+
+Run message extraction programmatically. Loads config from `cwd`.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `cwd` | `string` | Working directory (config is auto-loaded from here) |
+| `options.clean` | `boolean?` | Remove obsolete entries |
+| `options.stripFuzzy` | `boolean?` | Skip fuzzy matching |
+| `options.useCache` | `boolean?` | Enable incremental cache (default `true`) |
+
+### `runCompile(cwd, options?)`
+
+Run compilation programmatically. Loads config from `cwd`.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `cwd` | `string` | Working directory (config is auto-loaded from here) |
+| `options.parallel` | `boolean?` | Use worker threads |
+
+### `loadConfig(configPath?, cwd?)`
+
+Load and resolve `fluenti.config.ts` (including `extends` chain). Returns a fully merged `FluentiConfig`.

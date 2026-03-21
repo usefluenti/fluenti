@@ -5,6 +5,55 @@
 
 export type Locale = string
 
+// ---- Branded String Type ----
+
+declare const __localizedBrand: unique symbol
+
+/**
+ * Branded string type for compile-time i18n safety.
+ *
+ * Assignable to `string` (backward-compatible), but plain `string`
+ * cannot be assigned to `LocalizedString` without explicit cast.
+ *
+ * @example
+ * ```ts
+ * const msg: LocalizedString = t`Hello`   // ✅
+ * const str: string = t`Hello`            // ✅ brand → string is safe
+ * const div = <div>{t`Hello`}</div>       // ✅ JSX accepts string
+ *
+ * function setTitle(title: LocalizedString) { ... }
+ * setTitle('raw string')  // ❌ compile error — not translated
+ * setTitle(t`Hello`)      // ✅ translated
+ * ```
+ */
+export type LocalizedString = string & { readonly [__localizedBrand]: 'LocalizedString' }
+
+// ---- Type-level Configuration ----
+
+/**
+ * Module-augmentation interface for type-level customization.
+ *
+ * Override `localizedString` to `string` to disable the branded type:
+ * ```ts
+ * declare module '@fluenti/core' {
+ *   interface FluentiTypeConfig {
+ *     localizedString: string
+ *   }
+ * }
+ * ```
+ *
+ * After compilation, `messageIds` and `messageValues` are automatically
+ * narrowed via module augmentation in the generated `messages.d.ts`.
+ */
+export interface FluentiTypeConfig {
+  /** Override to `string` to disable branded type */
+  localizedString: LocalizedString
+  /** Narrowed by compiled messages.d.ts */
+  messageIds: string
+  /** Narrowed by compiled messages.d.ts */
+  messageValues: Record<string, Record<string, unknown>>
+}
+
 export interface MessageDescriptor {
   id?: string
   message?: string
@@ -42,7 +91,7 @@ export interface FluentInstance {
    * t({ message: "Hello {name}" }, { name: "World" })
    * t("greeting", { name: "World" })
    */
-  t(id: string | MessageDescriptor, values?: Record<string, unknown>): string
+  t(id: string | MessageDescriptor, values?: Record<string, unknown>): FluentiTypeConfig['localizedString']
   /**
    * Tagged template form — **compile-time sugar**.
    *
@@ -54,7 +103,7 @@ export interface FluentInstance {
    * build time. They still work at runtime for fallback interpolation, but
    * won't match compiled catalog entries without the Vite transform.
    */
-  t(strings: TemplateStringsArray, ...exprs: unknown[]): string
+  t(strings: TemplateStringsArray, ...exprs: unknown[]): FluentiTypeConfig['localizedString']
   setLocale(locale: Locale): void
   loadMessages(locale: Locale, messages: Messages): void
   getLocales(): Locale[]
@@ -100,6 +149,30 @@ export interface FunctionNode {
 export type ParseMessage = (message: string) => ASTNode[]
 export type CompileMessage = (ast: ASTNode[], locale?: Locale) => CompiledMessage
 
+// ---- Locale Metadata ----
+
+/** Locale metadata for i18n routing and SEO */
+export interface LocaleObject {
+  /** Locale code (e.g. 'en', 'ja', 'zh-CN') */
+  code: string
+  /** Human-readable display name (e.g. 'English', '日本語') */
+  name?: string
+  /** BCP 47 language tag for SEO (e.g. 'en-US', 'ja-JP') */
+  iso?: string
+  /** Text direction */
+  dir?: 'ltr' | 'rtl'
+  /** Domain for this locale (used with domain-based routing) */
+  domain?: string
+}
+
+/** A locale definition — either a plain code string or a metadata object */
+export type LocaleDefinition = string | LocaleObject
+
+/** Extract locale codes from a mixed LocaleDefinition[] array */
+export function resolveLocaleCodes(locales: LocaleDefinition[]): string[] {
+  return locales.map((l) => (typeof l === 'string' ? l : l.code))
+}
+
 // ---- CLI / Plugin ----
 
 export interface ExtractedMessage {
@@ -111,23 +184,55 @@ export interface ExtractedMessage {
 }
 
 export interface FluentiConfig {
+  /** Path to parent config to inherit from (relative to this config file's directory) */
+  extends?: string
   sourceLocale: Locale
-  locales: Locale[]
+  locales: LocaleDefinition[]
+  /** Default locale for routing/detection (defaults to sourceLocale) */
+  defaultLocale?: Locale
   catalogDir: string
   format: 'json' | 'po'
   include: string[]
   exclude?: string[]
   compileOutDir: string
-  devWarnings?: boolean
-  strictBuild?: boolean
-  namespaceMapping?: Record<string, string>
-  fallbackChain?: Record<string, Locale[]>
-  externalCatalogs?: Array<{ package: string; catalogDir: string }>
-  strictThreshold?: number
+
+  // Build options
   /** Code splitting strategy: 'dynamic' | 'static' | false */
   splitting?: 'dynamic' | 'static' | false
   /** Default locale for build-time static strategy */
   defaultBuildLocale?: Locale
+  /** File extension for compiled catalog files (default: '.js') */
+  catalogExtension?: string
+  /** Custom message ID generator */
+  idGenerator?: (message: string, context?: string) => string
+
+  // Dev options
+  /** Auto extract+compile in dev mode (default: true) */
+  devAutoCompile?: boolean
+  /** Auto extract+compile before production build (default: true) */
+  buildAutoCompile?: boolean
+  /** Debounce delay in ms for dev auto-compile (default: 500) */
+  devAutoCompileDelay?: number
+  /** Enable parallel compilation across locales using worker threads (default: false) */
+  parallelCompile?: boolean
+
+  // Compile lifecycle hooks
+  /** Called before auto-compile runs. Return false to skip compilation. */
+  onBeforeCompile?: () => boolean | void | Promise<boolean | void>
+  /** Called after auto-compile completes successfully */
+  onAfterCompile?: () => void | Promise<void>
+
+  // Runtime options
+  devWarnings?: boolean
+  fallbackChain?: Record<string, Locale[]>
+  dateFormats?: DateFormatOptions
+  numberFormats?: NumberFormatOptions
+  namespaceMapping?: Record<string, string>
+  externalCatalogs?: Array<{ package: string; catalogDir: string }>
+
+  // Legacy / strict build
+  strictBuild?: boolean
+  strictThreshold?: number
 }
 
 // ---- SSR Utilities ----
@@ -155,8 +260,13 @@ export type MsgTaggedTemplate = (
 export type MsgDescriptor = (descriptor: MessageDescriptor) => MessageDescriptor
 
 export interface CompileTimeT {
-  (descriptor: CompileTimeMessageDescriptor, values?: Record<string, unknown>): string
-  (strings: TemplateStringsArray, ...exprs: unknown[]): string
+  <K extends FluentiTypeConfig['messageIds']>(
+    descriptor: { id?: K; message: K } & Omit<CompileTimeMessageDescriptor, 'id' | 'message'>,
+    values?: FluentiTypeConfig['messageValues'] extends Record<string, Record<string, unknown>>
+      ? FluentiTypeConfig['messageValues'][K]
+      : Record<string, unknown>,
+  ): FluentiTypeConfig['localizedString']
+  (strings: TemplateStringsArray, ...exprs: unknown[]): FluentiTypeConfig['localizedString']
 }
 
 export interface TypedCompileTimeT<
@@ -166,8 +276,8 @@ export interface TypedCompileTimeT<
   <K extends IDs>(
     descriptor: { id?: K; message: K } & Omit<CompileTimeMessageDescriptor, 'id' | 'message'>,
     values?: Values[K],
-  ): string
-  (strings: TemplateStringsArray, ...exprs: unknown[]): string
+  ): FluentiTypeConfig['localizedString']
+  (strings: TemplateStringsArray, ...exprs: unknown[]): FluentiTypeConfig['localizedString']
 }
 
 // ---- Namespace ----
@@ -188,8 +298,8 @@ export interface NumberFormatOptions {
     | ((locale: Locale) => Intl.NumberFormatOptions)
 }
 
-export type FormatDateFn = (value: Date | number, style?: string) => string
-export type FormatNumberFn = (value: number, style?: string) => string
+export type FormatDateFn = (value: Date | number, style?: string) => FluentiTypeConfig['localizedString']
+export type FormatNumberFn = (value: number, style?: string) => FluentiTypeConfig['localizedString']
 
 // ---- Custom Formatter ----
 
@@ -249,5 +359,5 @@ export interface FluentInstanceExtended extends FluentInstance {
   d: FormatDateFn
   n: FormatNumberFn
   /** Format an ICU message string directly (no catalog lookup) */
-  format(message: string, values?: Record<string, unknown>): string
+  format(message: string, values?: Record<string, unknown>): FluentiTypeConfig['localizedString']
 }

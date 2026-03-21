@@ -217,8 +217,18 @@ function extractVtDirectives(template: string, filename: string, lineOffset: num
       const id = explicitId ?? hashMessage(message)
       results.push({ id, message, origin: { file: filename, line } })
     } else if (content) {
-      const id = explicitId ?? hashMessage(content)
-      results.push({ id, message: content, origin: { file: filename, line } })
+      // Convert Vue mustache {{ expr }} to ICU {varName}
+      const icuContent = content.replace(/\{\{\s*([^}]+?)\s*\}\}/g, (_m, expr: string) => {
+        const trimmed = expr.trim()
+        if (/^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(trimmed)) return `{${trimmed}}`
+        if (/^[a-zA-Z_$][a-zA-Z0-9_$.]*$/.test(trimmed) && !trimmed.endsWith('.')) {
+          const parts = trimmed.split('.')
+          return `{${parts[parts.length - 1]!}}`
+        }
+        return `{${trimmed}}`
+      })
+      const id = explicitId ?? hashMessage(icuContent)
+      results.push({ id, message: icuContent, origin: { file: filename, line } })
     }
   }
 
