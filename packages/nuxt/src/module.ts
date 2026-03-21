@@ -95,32 +95,39 @@ export default defineNuxtModule<FluentNuxtOptions>({
       localeProperties,
     }
 
-    // --- Auto-register @fluenti/vite-plugin ---
+    // --- Auto-register @fluenti/vue vite plugin (includes v-t transform + scope transform) ---
     if (options.autoVitePlugin !== false) {
+      const pluginOptions = {
+        locales: localeCodes,
+        sourceLocale: options.sourceLocale ?? options.defaultLocale,
+        catalogDir: options.catalogDir,
+        splitting: options.splitting,
+        defaultBuildLocale: options.defaultBuildLocale,
+        include: options.include,
+        devAutoCompile: options.devAutoCompile,
+        buildAutoCompile: options.buildAutoCompile,
+        catalogExtension: options.catalogExtension,
+        idGenerator: options.idGenerator,
+        onBeforeCompile: options.onBeforeCompile,
+        onAfterCompile: options.onAfterCompile,
+      }
+      // Synchronously load @fluenti/vue/vite-plugin using createRequire
+      // (resolves from the user's project root, not from the nuxt module's node_modules)
       try {
-        const vitePlugin = require('@fluenti/vite-plugin')
-        const plugin = vitePlugin.default ?? vitePlugin
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        const { createRequire } = require('node:module') as typeof import('node:module')
+        const projectRequire = createRequire(nuxt.options.rootDir + '/package.json')
+        const vuePluginPath = projectRequire.resolve('@fluenti/vue/vite-plugin')
+        const jitiMod = projectRequire('jiti') as { createJiti: (url: string, opts?: Record<string, unknown>) => (path: string) => unknown }
+        const jiti = jitiMod.createJiti(vuePluginPath, { interopDefault: true })
+        const fluentiVue = jiti(vuePluginPath) as Function
         nuxt.options.vite = nuxt.options.vite || {}
         nuxt.options.vite.plugins = nuxt.options.vite.plugins || []
         ;(nuxt.options.vite.plugins as unknown[]).push(
-          plugin({
-            framework: 'vue',
-            locales: localeCodes,
-            sourceLocale: options.sourceLocale ?? options.defaultLocale,
-            catalogDir: options.catalogDir,
-            splitting: options.splitting,
-            defaultBuildLocale: options.defaultBuildLocale,
-            include: options.include,
-            devAutoCompile: options.devAutoCompile,
-            buildAutoCompile: options.buildAutoCompile,
-            catalogExtension: options.catalogExtension,
-            idGenerator: options.idGenerator,
-            onBeforeCompile: options.onBeforeCompile,
-            onAfterCompile: options.onAfterCompile,
-          }),
+          ...fluentiVue(pluginOptions),
         )
       } catch {
-        // @fluenti/vite-plugin is an optional peer dependency
+        // @fluenti/vue or jiti not available — v-t and scope transforms won't run
       }
     }
 

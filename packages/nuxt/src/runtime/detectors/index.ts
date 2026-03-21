@@ -25,6 +25,8 @@ export async function runDetectors(
   customDetectors?: Map<string, LocaleDetectorFn>,
   hookFn?: (ctx: LocaleDetectContext) => void | Promise<void>,
   host?: string,
+  cookieValue?: string | null,
+  acceptLanguage?: string,
 ): Promise<string> {
   let resolved: string | null = null
   let stopped = false
@@ -45,6 +47,8 @@ export async function runDetectors(
     },
     isServer: import.meta.server ?? false,
     ...(host ? { host } : {}),
+    ...(cookieValue != null ? { cookieValue } : {}),
+    ...(acceptLanguage ? { acceptLanguage } : {}),
   }
 
   // Attach domains to context for domain detector

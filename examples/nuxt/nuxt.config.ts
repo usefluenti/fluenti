@@ -1,6 +1,11 @@
 export default defineNuxtConfig({
   compatibilityDate: '2025-01-01',
 
+  // Disable prerendering — locale detection requires live SSR
+  routeRules: {
+    '/**': { prerender: false },
+  },
+
   modules: ['@fluenti/nuxt'],
 
   fluenti: {
