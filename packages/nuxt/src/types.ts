@@ -90,6 +90,17 @@ export interface FluentNuxtOptions {
   /** fluenti.config.ts path or inline config */
   config?: string | FluentiConfig
 
+  // ---- Core overrides (take precedence over fluenti.config.ts) ----
+
+  /** Override locales from fluenti.config.ts */
+  locales?: FluentiConfig['locales']
+  /** Override defaultLocale from fluenti.config.ts */
+  defaultLocale?: string
+  /** Override sourceLocale from fluenti.config.ts */
+  sourceLocale?: string
+  /** Override catalogDir from fluenti.config.ts */
+  catalogDir?: string
+
   // ---- Nuxt-specific: routing, detection, components ----
 
   /** URL routing strategy */
