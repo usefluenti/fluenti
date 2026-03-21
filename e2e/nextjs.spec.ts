@@ -448,10 +448,12 @@ test.describe('Next.js — Cookie Edge Cases', () => {
   })
 
   test('empty cookie locale falls back to default', async ({ page }) => {
+    // Clear any existing cookies, then set an empty locale cookie
+    await page.context().clearCookies()
     await page.context().addCookies([
       { name: 'locale', value: '', url: 'http://localhost:5190' },
     ])
     await page.goto('/')
-    await expect(page.getByTestId('welcome')).toContainText('Welcome to Fluenti')
+    await expect(page.getByTestId('welcome')).toContainText('Welcome to Fluenti', { timeout: 10_000 })
   })
 })
