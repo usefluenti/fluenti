@@ -46,6 +46,9 @@ export interface LocaleDetectContext {
  */
 export type LocaleDetectorFn = (ctx: LocaleDetectContext) => void | Promise<void>
 
+/** Custom message ID generator function (re-exported from @fluenti/vite-plugin) */
+export type IdGenerator = (message: string, context?: string) => string
+
 /** @fluenti/nuxt module options (set in nuxt.config.ts under `fluenti` key) */
 export interface FluentNuxtOptions {
   /** List of supported locale codes */
@@ -58,6 +61,29 @@ export interface FluentNuxtOptions {
   sourceLocale?: string
   /** Directory for compiled message catalogs */
   catalogDir?: string
+  /**
+   * Code splitting strategy for compiled catalogs.
+   * - `'dynamic'`: reactive catalog loaded per-route
+   * - `'static'`: direct imports at build time
+   * - `false`: no splitting
+   */
+  splitting?: 'dynamic' | 'static' | false
+  /** Default locale for build-time static splitting strategy */
+  defaultBuildLocale?: string
+  /** Source file patterns for auto extract in dev (e.g. `['src/**\/*.vue']`) */
+  include?: string[]
+  /** Auto extract+compile in dev mode @default true */
+  devAutoCompile?: boolean
+  /** Auto extract+compile before production build @default true */
+  buildAutoCompile?: boolean
+  /** File extension for compiled catalog files @default '.js' */
+  catalogExtension?: string
+  /** Custom message ID generator */
+  idGenerator?: IdGenerator
+  /** Called before auto-compile runs (dev and build). Return false to skip compilation. */
+  onBeforeCompile?: () => boolean | void | Promise<boolean | void>
+  /** Called after auto-compile completes successfully */
+  onAfterCompile?: () => void | Promise<void>
   /** Browser language detection settings */
   detectBrowserLanguage?: DetectBrowserLanguageOptions
   /**
