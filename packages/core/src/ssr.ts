@@ -1,5 +1,5 @@
 import type { DetectLocaleOptions, Locale } from './types'
-import { negotiateLocale } from './locale'
+import { negotiateLocale, validateLocale } from './locale'
 
 /**
  * Detect the best locale from a server-side request context.
@@ -110,6 +110,11 @@ function parseAcceptLanguage(header: string): Locale[] {
  * // -> '<script>window.__FLUENTI_LOCALE__="zh-CN"</script>'
  */
 export function getSSRLocaleScript(locale: Locale): string {
+  if (locale.length > 255) {
+    throw new Error('Locale exceeds maximum length of 255')
+  }
+  validateLocale(locale, 'getSSRLocaleScript')
+
   const escaped = locale
     .replace(/\\/g, '\\\\')
     .replace(/"/g, '\\"')

@@ -786,6 +786,103 @@ describe('$vtRich XSS prevention', () => {
 
     expect(result).toBe('Click <a href="#">here</a>')
   })
+
+  it('handles self-closing <idx/> tags in translated message', () => {
+    const plugin = createFluentVue({
+      locale: 'en',
+      messages: {
+        en: {
+          'Hello <0/> world': 'Hello <0/> world',
+        },
+      },
+    })
+
+    const app = createApp({ render: () => h('div') })
+    app.use(plugin)
+    const vtRich = app.config.globalProperties['$vtRich']
+
+    const result = vtRich(
+      'Hello <0/> world',
+      [{ tag: 'br', rawAttrs: '' }],
+    )
+
+    expect(result).toContain('<br />')
+    expect(result).toContain('Hello')
+    expect(result).toContain('world')
+  })
+
+  it('handles mixed self-closing and paired tags', () => {
+    const plugin = createFluentVue({
+      locale: 'en',
+      messages: {
+        en: {
+          'Line<0/>Click <1>here</1>': 'Line<0/>Click <1>here</1>',
+        },
+      },
+    })
+
+    const app = createApp({ render: () => h('div') })
+    app.use(plugin)
+    const vtRich = app.config.globalProperties['$vtRich']
+
+    const result = vtRich(
+      'Line<0/>Click <1>here</1>',
+      [
+        { tag: 'br', rawAttrs: '' },
+        { tag: 'a', rawAttrs: 'href="#"' },
+      ],
+    )
+
+    expect(result).toContain('<br />')
+    expect(result).toContain('<a href="#">here</a>')
+  })
+
+  it('supports rawAttrs format from SFC transform', () => {
+    const plugin = createFluentVue({
+      locale: 'en',
+      messages: {
+        en: {
+          'Click <0>here</0>': 'Click <0>here</0>',
+        },
+      },
+    })
+
+    const app = createApp({ render: () => h('div') })
+    app.use(plugin)
+    const vtRich = app.config.globalProperties['$vtRich']
+
+    const result = vtRich(
+      'Click <0>here</0>',
+      [{ tag: 'a', rawAttrs: ':href="url" class="link"' }],
+    )
+
+    expect(result).toContain('<a :href="url" class="link">here</a>')
+  })
+
+  it('escapes HTML injection in rawAttrs values', () => {
+    const plugin = createFluentVue({
+      locale: 'en',
+      messages: {
+        en: {
+          'Click <0>here</0>': 'Click <0>here</0>',
+        },
+      },
+    })
+
+    const app = createApp({ render: () => h('div') })
+    app.use(plugin)
+    const vtRich = app.config.globalProperties['$vtRich']
+
+    // Simulate rawAttrs with HTML metacharacters in the value
+    const result = vtRich(
+      'Click <0>here</0>',
+      [{ tag: 'a', rawAttrs: 'title="<script>alert(1)</script>"' }],
+    )
+
+    // The <script> tag in the attribute value must be escaped
+    expect(result).not.toContain('<script>')
+    expect(result).toContain('&lt;script&gt;')
+  })
 })
 
 describe('edge cases - exhaustive', () => {

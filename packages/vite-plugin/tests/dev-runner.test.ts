@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { runExtractCompile, createDebouncedRunner, resolveCliBin } from '../src/dev-runner'
 
 vi.mock('node:child_process', () => ({
-  exec: vi.fn(),
+  execFile: vi.fn(),
 }))
 
 vi.mock('node:fs', async () => {
@@ -30,10 +30,10 @@ vi.mock('node:module', async () => {
   }
 })
 
-import { exec } from 'node:child_process'
+import { execFile } from 'node:child_process'
 import { existsSync } from 'node:fs'
 
-const mockExec = vi.mocked(exec)
+const mockExecFile = vi.mocked(execFile)
 const mockExistsSync = vi.mocked(existsSync)
 
 beforeEach(() => {
@@ -51,16 +51,16 @@ afterEach(() => {
   vi.useRealTimers()
 })
 
-function simulateExecSuccess(): void {
-  mockExec.mockImplementation((_cmd, _opts, cb) => {
+function simulateExecFileSuccess(): void {
+  mockExecFile.mockImplementation((_file, _args, _opts, cb) => {
     const callback = cb as (err: Error | null, stdout: string, stderr: string) => void
     callback(null, '', '')
     return undefined as never
   })
 }
 
-function simulateExecFailure(msg = 'compile error'): void {
-  mockExec.mockImplementation((_cmd, _opts, cb) => {
+function simulateExecFileFailure(msg = 'compile error'): void {
+  mockExecFile.mockImplementation((_file, _args, _opts, cb) => {
     const callback = cb as (err: Error | null, stdout: string, stderr: string) => void
     callback(new Error(msg), '', msg)
     return undefined as never
@@ -84,7 +84,7 @@ describe('runExtractCompile', () => {
       await runExtractCompile({ cwd: '/project', compileOnly: true })
 
       expect(mockRunCompile).toHaveBeenCalledWith('/project')
-      expect(mockExec).not.toHaveBeenCalled()
+      expect(mockExecFile).not.toHaveBeenCalled()
     })
 
     it('calls onSuccess when compile succeeds', async () => {
@@ -114,21 +114,28 @@ describe('runExtractCompile', () => {
     })
   })
 
-  describe('dev mode (shell-out)', () => {
-    it('calls exec with resolved bin path and cwd', async () => {
-      simulateExecSuccess()
+  describe('dev mode (execFile fallback)', () => {
+    it('calls execFile with resolved bin path, args array, and cwd', async () => {
+      simulateExecFileSuccess()
 
       await runExtractCompile({ cwd: '/project' })
 
-      expect(mockExec).toHaveBeenCalledWith(
-        expect.stringContaining('fluenti extract'),
+      expect(mockExecFile).toHaveBeenCalledWith(
+        expect.stringContaining('node_modules/.bin/fluenti'),
+        ['extract'],
+        { cwd: '/project' },
+        expect.any(Function),
+      )
+      expect(mockExecFile).toHaveBeenCalledWith(
+        expect.stringContaining('node_modules/.bin/fluenti'),
+        ['compile'],
         { cwd: '/project' },
         expect.any(Function),
       )
     })
 
     it('calls onSuccess when exec succeeds', async () => {
-      simulateExecSuccess()
+      simulateExecFileSuccess()
       const onSuccess = vi.fn()
 
       await runExtractCompile({ cwd: '/project', onSuccess })
@@ -137,7 +144,7 @@ describe('runExtractCompile', () => {
     })
 
     it('calls onError when exec fails', async () => {
-      simulateExecFailure('bad things')
+      simulateExecFileFailure('bad things')
       const onError = vi.fn()
 
       await runExtractCompile({ cwd: '/project', onError })
@@ -147,7 +154,7 @@ describe('runExtractCompile', () => {
     })
 
     it('rejects the promise when throwOnError is true', async () => {
-      simulateExecFailure('compile error')
+      simulateExecFileFailure('compile error')
 
       await expect(
         runExtractCompile({ cwd: '/project', throwOnError: true }),
@@ -155,7 +162,7 @@ describe('runExtractCompile', () => {
     })
 
     it('does not call onError or warn when throwOnError is true', async () => {
-      simulateExecFailure('compile error')
+      simulateExecFileFailure('compile error')
       const onError = vi.fn()
       const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
@@ -174,7 +181,7 @@ describe('runExtractCompile', () => {
 
       await runExtractCompile({ cwd: '/project' })
 
-      expect(mockExec).not.toHaveBeenCalled()
+      expect(mockExecFile).not.toHaveBeenCalled()
       expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('CLI not found'))
       warnSpy.mockRestore()
     })
@@ -183,7 +190,7 @@ describe('runExtractCompile', () => {
 
 describe('createDebouncedRunner', () => {
   it('debounces multiple rapid calls into one execution', async () => {
-    simulateExecSuccess()
+    simulateExecFileSuccess()
 
     const run = createDebouncedRunner({ cwd: '/project' }, 100)
     run()
@@ -191,18 +198,19 @@ describe('createDebouncedRunner', () => {
     run()
 
     // Not called yet — still in debounce window
-    expect(mockExec).not.toHaveBeenCalled()
+    expect(mockExecFile).not.toHaveBeenCalled()
 
     // Advance past debounce
     await vi.advanceTimersByTimeAsync(100)
 
-    expect(mockExec).toHaveBeenCalledOnce()
+    // execFile is called twice per run: extract then compile
+    expect(mockExecFile).toHaveBeenCalledTimes(2)
   })
 
   it('marks pendingRerun if called while running', async () => {
-    // Make exec async — resolve via captured callback
+    // Make execFile async — resolve via captured callback
     let resolveExec!: () => void
-    mockExec.mockImplementation((_cmd, _opts, cb) => {
+    mockExecFile.mockImplementation((_file, _args, _opts, cb) => {
       const callback = cb as (err: Error | null, stdout: string, stderr: string) => void
       resolveExec = () => callback(null, '', '')
       return undefined as never
@@ -213,21 +221,33 @@ describe('createDebouncedRunner', () => {
     // Trigger first run
     run()
     await vi.advanceTimersByTimeAsync(50)
-    expect(mockExec).toHaveBeenCalledOnce()
+    // First execFile call is for 'extract'
+    expect(mockExecFile).toHaveBeenCalledOnce()
 
-    // While first run is still going, trigger another
+    // While first run is still going (extract not yet resolved), trigger another
     run()
     await vi.advanceTimersByTimeAsync(50)
 
-    // Second exec hasn't happened yet because first is still running
-    expect(mockExec).toHaveBeenCalledOnce()
+    // Second run hasn't happened yet because first is still running
+    expect(mockExecFile).toHaveBeenCalledOnce()
 
-    // Complete first run — should trigger pending rerun
+    // Complete extract — triggers compile execFile call
+    resolveExec()
+    await vi.advanceTimersByTimeAsync(0) // let microtasks flush
+    expect(mockExecFile).toHaveBeenCalledTimes(2) // extract + compile
+
+    // Complete compile — finishes first run, triggers pending rerun
     resolveExec()
     await vi.advanceTimersByTimeAsync(0) // let microtasks flush
 
     // Now the rerun should be scheduled
     await vi.advanceTimersByTimeAsync(50)
-    expect(mockExec).toHaveBeenCalledTimes(2)
+    // 2 calls from first run (extract + compile) + 1 from second run (extract)
+    expect(mockExecFile).toHaveBeenCalledTimes(3)
+
+    // Complete second run's extract
+    resolveExec()
+    await vi.advanceTimersByTimeAsync(0)
+    expect(mockExecFile).toHaveBeenCalledTimes(4) // + compile from second run
   })
 })

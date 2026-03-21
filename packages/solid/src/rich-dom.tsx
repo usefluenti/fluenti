@@ -50,7 +50,11 @@ export function extractMessage(value: unknown): {
     const inner = extractMessage(Array.from(resolved.childNodes))
     components.push((resolved as Element).cloneNode(false))
     components.push(...inner.components)
-    message += `<${idx}>${offsetIndices(inner.message, idx + 1)}</${idx}>`
+    if (inner.message === '' && inner.components.length === 0) {
+      message += `<${idx}/>`
+    } else {
+      message += `<${idx}>${offsetIndices(inner.message, idx + 1)}</${idx}>`
+    }
   }
 
   visit(value)
@@ -77,31 +81,39 @@ export function reconstruct(
   translated: string,
   components: Node[],
 ): JSX.Element {
-  const tagRe = /<(\d+)>([\s\S]*?)<\/\1>/g
+  const combinedRe = /<(\d+)(?:\/>|(>)([\s\S]*?)<\/\1>)/g
   const result: unknown[] = []
   let lastIndex = 0
   let match: RegExpExecArray | null
 
-  tagRe.lastIndex = 0
-  match = tagRe.exec(translated)
+  combinedRe.lastIndex = 0
+  match = combinedRe.exec(translated)
   while (match !== null) {
     if (match.index > lastIndex) {
       result.push(translated.slice(lastIndex, match.index))
     }
 
     const idx = Number(match[1])
+    const isSelfClosing = match[2] === undefined
     const template = components[idx]
-    const inner = reconstruct(match[2]!, components)
-    if (template) {
-      const clone = template.cloneNode(false)
-      appendChild(clone, inner)
-      result.push(clone)
+
+    if (isSelfClosing) {
+      if (template) {
+        result.push(template.cloneNode(false))
+      }
     } else {
-      result.push(match[2]!)
+      const inner = reconstruct(match[2] !== undefined ? match[3]! : '', components)
+      if (template) {
+        const clone = template.cloneNode(false)
+        appendChild(clone, inner)
+        result.push(clone)
+      } else {
+        result.push(match[3] ?? '')
+      }
     }
 
-    lastIndex = tagRe.lastIndex
-    match = tagRe.exec(translated)
+    lastIndex = combinedRe.lastIndex
+    match = combinedRe.exec(translated)
   }
 
   if (lastIndex < translated.length) {

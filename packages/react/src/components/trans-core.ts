@@ -44,7 +44,11 @@ export function extractMessage(children: ReactNode): {
       const inner = extractMessage((child.props as { children?: ReactNode }).children)
       components.push(child)
       components.push(...inner.components)
-      message += `<${idx}>${offsetIndices(inner.message, idx + 1)}</${idx}>`
+      if (inner.message === '' && inner.components.length === 0) {
+        message += `<${idx}/>`
+      } else {
+        message += `<${idx}>${offsetIndices(inner.message, idx + 1)}</${idx}>`
+      }
     }
   })
 
@@ -69,13 +73,13 @@ export function reconstruct(
   translated: string,
   components: ReactElement[],
 ): ReactNode {
-  const TAG_RE = /<(\d+)>([\s\S]*?)<\/\1>/g
+  const COMBINED_RE = /<(\d+)(?:\/>|(>)([\s\S]*?)<\/\1>)/g
   const result: ReactNode[] = []
   let lastIndex = 0
   let match: RegExpExecArray | null
 
-  TAG_RE.lastIndex = 0
-  match = TAG_RE.exec(translated)
+  COMBINED_RE.lastIndex = 0
+  match = COMBINED_RE.exec(translated)
 
   while (match !== null) {
     if (match.index > lastIndex) {
@@ -83,21 +87,25 @@ export function reconstruct(
     }
 
     const idx = Number(match[1])
-    const innerText = match[2]!
+    const isSelfClosing = match[2] === undefined
+    const innerText = match[3] ?? ''
     const component = components[idx]
 
     if (component) {
-      // Recursively reconstruct inner content
-      const innerContent = reconstruct(innerText, components)
-      result.push(
-        cloneElement(component, { key: `trans-${idx}` }, innerContent),
-      )
+      if (isSelfClosing) {
+        result.push(cloneElement(component, { key: `trans-${idx}` }))
+      } else {
+        const innerContent = reconstruct(innerText, components)
+        result.push(
+          cloneElement(component, { key: `trans-${idx}` }, innerContent),
+        )
+      }
     } else {
       result.push(innerText)
     }
 
-    lastIndex = TAG_RE.lastIndex
-    match = TAG_RE.exec(translated)
+    lastIndex = COMBINED_RE.lastIndex
+    match = COMBINED_RE.exec(translated)
   }
 
   if (lastIndex < translated.length) {

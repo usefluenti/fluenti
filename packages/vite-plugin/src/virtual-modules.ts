@@ -11,6 +11,27 @@ import { resolve } from 'node:path'
 import { validateLocale } from '@fluenti/core'
 import type { RuntimeGenerator, RuntimeGeneratorOptions } from './types'
 
+/**
+ * Escapes a string value for safe embedding in generated JavaScript code.
+ * Returns a JSON-encoded string (with double quotes), preventing injection
+ * of quotes, backticks, template interpolation, and other special characters.
+ */
+function safeStringLiteral(value: string): string {
+  return JSON.stringify(value)
+}
+
+/**
+ * Validates that a catalog directory path does not contain characters
+ * that could enable code injection in generated template literals.
+ */
+function validateCatalogDir(catalogDir: string): void {
+  if (catalogDir.includes('`') || catalogDir.includes('$')) {
+    throw new Error(
+      `[fluenti] vite-plugin: catalogDir must not contain backticks or $ characters, got ${JSON.stringify(catalogDir)}`,
+    )
+  }
+}
+
 const VIRTUAL_RUNTIME = 'virtual:fluenti/runtime'
 const VIRTUAL_MESSAGES = 'virtual:fluenti/messages'
 const VIRTUAL_ROUTE_RUNTIME = 'virtual:fluenti/route-runtime'
@@ -53,7 +74,8 @@ export function loadVirtualSplitModule(
 }
 
 function generateRuntimeModule(options: VirtualModuleOptions): string {
-  const { locales, runtimeGenerator } = options
+  const { locales, runtimeGenerator, catalogDir } = options
+  validateCatalogDir(catalogDir)
   for (const locale of locales) {
     validateLocale(locale, 'vite-plugin')
   }
@@ -69,16 +91,19 @@ function generateRuntimeModule(options: VirtualModuleOptions): string {
 function generateStaticMessagesModule(options: VirtualModuleOptions): string {
   const { rootDir, catalogDir, catalogExtension, defaultBuildLocale, sourceLocale } = options
   const defaultLocale = defaultBuildLocale || sourceLocale
+  validateLocale(defaultLocale, 'vite-plugin')
+  validateCatalogDir(catalogDir)
   const absoluteCatalogDir = resolve(rootDir, catalogDir)
 
-  return `export * from '${absoluteCatalogDir}/${defaultLocale}${catalogExtension}'\n`
+  return `export * from ${safeStringLiteral(absoluteCatalogDir + '/' + defaultLocale + catalogExtension)}\n`
 }
 
 /**
  * Generate the route runtime module for per-route splitting.
  */
 export function generateRouteRuntimeModule(options: VirtualModuleOptions): string {
-  const { locales, runtimeGenerator } = options
+  const { locales, runtimeGenerator, catalogDir } = options
+  validateCatalogDir(catalogDir)
   for (const locale of locales) {
     validateLocale(locale, 'vite-plugin')
   }
@@ -105,19 +130,26 @@ function generateLegacyRuntimeModule(options: VirtualModuleOptions): string {
   const runtimeKey = `fluenti.runtime.${framework}.v1`
   const lazyLocales = locales.filter((locale) => locale !== defaultLocale)
 
+  const defaultImportPath = safeStringLiteral(absoluteCatalogDir + '/' + defaultLocale + catalogExtension)
+  const safeDefaultLocale = safeStringLiteral(defaultLocale)
+  const safeRuntimeKey = safeStringLiteral(runtimeKey)
+  const loadersBlock = lazyLocales
+    .map((l) => `  ${safeStringLiteral(l)}: () => import(${safeStringLiteral(absoluteCatalogDir + '/' + l + catalogExtension)}),`)
+    .join('\n')
+
   if (framework === 'react') {
     return `
-import __defaultMsgs from '${absoluteCatalogDir}/${defaultLocale}${catalogExtension}'
+import __defaultMsgs from ${defaultImportPath}
 
 const __catalog = { ...__defaultMsgs }
-let __currentLocale = '${defaultLocale}'
-const __loadedLocales = new Set(['${defaultLocale}'])
+let __currentLocale = ${safeDefaultLocale}
+const __loadedLocales = new Set([${safeDefaultLocale}])
 let __loading = false
 const __cache = new Map()
 const __normalizeMessages = (mod) => mod.default ?? mod
 
 const __loaders = {
-${lazyLocales.map((l) => `  '${l}': () => import('${absoluteCatalogDir}/${l}${catalogExtension}'),`).join('\n')}
+${loadersBlock}
 }
 
 async function __switchLocale(locale) {
@@ -147,7 +179,7 @@ async function __preloadLocale(locale) {
   } catch (e) { console.warn('[fluenti] preload failed:', locale, e) }
 }
 
-globalThis[Symbol.for('${runtimeKey}')] = { __switchLocale, __preloadLocale }
+globalThis[Symbol.for(${safeRuntimeKey})] = { __switchLocale, __preloadLocale }
 
 export { __catalog, __switchLocale, __preloadLocale, __currentLocale, __loading, __loadedLocales }
 `
@@ -156,17 +188,17 @@ export { __catalog, __switchLocale, __preloadLocale, __currentLocale, __loading,
   if (framework === 'vue') {
     return `
 import { shallowReactive, triggerRef, ref } from 'vue'
-import __defaultMsgs from '${absoluteCatalogDir}/${defaultLocale}${catalogExtension}'
+import __defaultMsgs from ${defaultImportPath}
 
 const __catalog = shallowReactive({ ...__defaultMsgs })
-const __currentLocale = ref('${defaultLocale}')
-const __loadedLocales = new Set(['${defaultLocale}'])
+const __currentLocale = ref(${safeDefaultLocale})
+const __loadedLocales = new Set([${safeDefaultLocale}])
 const __loading = ref(false)
 const __cache = new Map()
 const __normalizeMessages = (mod) => mod.default ?? mod
 
 const __loaders = {
-${lazyLocales.map((l) => `  '${l}': () => import('${absoluteCatalogDir}/${l}${catalogExtension}'),`).join('\n')}
+${loadersBlock}
 }
 
 async function __switchLocale(locale) {
@@ -196,7 +228,7 @@ async function __preloadLocale(locale) {
   } catch (e) { console.warn('[fluenti] preload failed:', locale, e) }
 }
 
-globalThis[Symbol.for('${runtimeKey}')] = { __switchLocale, __preloadLocale }
+globalThis[Symbol.for(${safeRuntimeKey})] = { __switchLocale, __preloadLocale }
 
 export { __catalog, __switchLocale, __preloadLocale, __currentLocale, __loading, __loadedLocales }
 `
@@ -206,17 +238,17 @@ export { __catalog, __switchLocale, __preloadLocale, __currentLocale, __loading,
   return `
 import { createSignal } from 'solid-js'
 import { createStore, reconcile } from 'solid-js/store'
-import __defaultMsgs from '${absoluteCatalogDir}/${defaultLocale}${catalogExtension}'
+import __defaultMsgs from ${defaultImportPath}
 
 const [__catalog, __setCatalog] = createStore({ ...__defaultMsgs })
-const [__currentLocale, __setCurrentLocale] = createSignal('${defaultLocale}')
-const __loadedLocales = new Set(['${defaultLocale}'])
+const [__currentLocale, __setCurrentLocale] = createSignal(${safeDefaultLocale})
+const __loadedLocales = new Set([${safeDefaultLocale}])
 const [__loading, __setLoading] = createSignal(false)
 const __cache = new Map()
 const __normalizeMessages = (mod) => mod.default ?? mod
 
 const __loaders = {
-${lazyLocales.map((l) => `  '${l}': () => import('${absoluteCatalogDir}/${l}${catalogExtension}'),`).join('\n')}
+${loadersBlock}
 }
 
 async function __switchLocale(locale) {
@@ -246,7 +278,7 @@ async function __preloadLocale(locale) {
   } catch (e) { console.warn('[fluenti] preload failed:', locale, e) }
 }
 
-globalThis[Symbol.for('${runtimeKey}')] = { __switchLocale, __preloadLocale }
+globalThis[Symbol.for(${safeRuntimeKey})] = { __switchLocale, __preloadLocale }
 
 export { __catalog, __switchLocale, __preloadLocale, __currentLocale, __loading, __loadedLocales }
 `
@@ -259,21 +291,28 @@ function generateLegacyRouteRuntimeModule(options: VirtualModuleOptions): string
   const runtimeKey = `fluenti.runtime.${framework}.v1`
   const lazyLocales = locales.filter((locale) => locale !== defaultLocale)
 
+  const defaultImportPath = safeStringLiteral(absoluteCatalogDir + '/' + defaultLocale + catalogExtension)
+  const safeDefaultLocale = safeStringLiteral(defaultLocale)
+  const safeRuntimeKey = safeStringLiteral(runtimeKey)
+  const loadersBlock = lazyLocales
+    .map((l) => `  ${safeStringLiteral(l)}: () => import(${safeStringLiteral(absoluteCatalogDir + '/' + l + catalogExtension)}),`)
+    .join('\n')
+
   if (framework === 'vue') {
     return `
 import { shallowReactive, ref } from 'vue'
-import __defaultMsgs from '${absoluteCatalogDir}/${defaultLocale}${catalogExtension}'
+import __defaultMsgs from ${defaultImportPath}
 
 const __catalog = shallowReactive({ ...__defaultMsgs })
-const __currentLocale = ref('${defaultLocale}')
-const __loadedLocales = new Set(['${defaultLocale}'])
+const __currentLocale = ref(${safeDefaultLocale})
+const __loadedLocales = new Set([${safeDefaultLocale}])
 const __loading = ref(false)
 const __cache = new Map()
 const __loadedRoutes = new Set()
 const __normalizeMessages = (mod) => mod.default ?? mod
 
 const __loaders = {
-${lazyLocales.map((l) => `  '${l}': () => import('${absoluteCatalogDir}/${l}${catalogExtension}'),`).join('\n')}
+${loadersBlock}
 }
 
 const __routeLoaders = {}
@@ -320,7 +359,7 @@ async function __preloadLocale(locale) {
   } catch (e) { console.warn('[fluenti] preload failed:', locale, e) }
 }
 
-globalThis[Symbol.for('${runtimeKey}')] = { __switchLocale, __preloadLocale }
+globalThis[Symbol.for(${safeRuntimeKey})] = { __switchLocale, __preloadLocale }
 
 export { __catalog, __switchLocale, __preloadLocale, __loadRoute, __registerRouteLoader, __currentLocale, __loading, __loadedLocales }
 `
@@ -330,18 +369,18 @@ export { __catalog, __switchLocale, __preloadLocale, __loadRoute, __registerRout
   return `
 import { createSignal } from 'solid-js'
 import { createStore, reconcile } from 'solid-js/store'
-import __defaultMsgs from '${absoluteCatalogDir}/${defaultLocale}${catalogExtension}'
+import __defaultMsgs from ${defaultImportPath}
 
 const [__catalog, __setCatalog] = createStore({ ...__defaultMsgs })
-const [__currentLocale, __setCurrentLocale] = createSignal('${defaultLocale}')
-const __loadedLocales = new Set(['${defaultLocale}'])
+const [__currentLocale, __setCurrentLocale] = createSignal(${safeDefaultLocale})
+const __loadedLocales = new Set([${safeDefaultLocale}])
 const [__loading, __setLoading] = createSignal(false)
 const __cache = new Map()
 const __loadedRoutes = new Set()
 const __normalizeMessages = (mod) => mod.default ?? mod
 
 const __loaders = {
-${lazyLocales.map((l) => `  '${l}': () => import('${absoluteCatalogDir}/${l}${catalogExtension}'),`).join('\n')}
+${loadersBlock}
 }
 
 const __routeLoaders = {}
@@ -388,7 +427,7 @@ async function __preloadLocale(locale) {
   } catch (e) { console.warn('[fluenti] preload failed:', locale, e) }
 }
 
-globalThis[Symbol.for('${runtimeKey}')] = { __switchLocale, __preloadLocale }
+globalThis[Symbol.for(${safeRuntimeKey})] = { __switchLocale, __preloadLocale }
 
 export { __catalog, __switchLocale, __preloadLocale, __loadRoute, __registerRouteLoader, __currentLocale, __loading, __loadedLocales }
 `

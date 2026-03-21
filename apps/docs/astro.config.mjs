@@ -36,6 +36,22 @@ export default defineConfig({
           tag: 'meta',
           attrs: { property: 'og:image', content: 'https://fluenti.dev/og-image.png' },
         },
+        {
+          tag: 'meta',
+          attrs: { property: 'og:image:width', content: '1200' },
+        },
+        {
+          tag: 'meta',
+          attrs: { property: 'og:image:height', content: '630' },
+        },
+        {
+          tag: 'meta',
+          attrs: { name: 'twitter:card', content: 'summary_large_image' },
+        },
+        {
+          tag: 'link',
+          attrs: { rel: 'dns-prefetch', href: 'https://github.com' },
+        },
       ],
       title: 'Fluenti',
       description: 'Compile-time i18n for modern frameworks',
@@ -132,6 +148,7 @@ export default defineConfig({
             { label: 'Scaling & Enterprise', slug: 'advanced/scaling' },
             { label: 'SSR & Hydration', slug: 'advanced/ssr-hydration' },
             { label: 'Fallback Chains', slug: 'advanced/fallback-chains' },
+            { label: 'Complex Languages', slug: 'advanced/complex-languages' },
             { label: 'Best Practices', slug: 'advanced/best-practices' },
             { label: 'Troubleshooting', slug: 'advanced/troubleshooting' },
           ],
@@ -156,6 +173,7 @@ export default defineConfig({
       ],
       customCss: ['./src/styles/custom.css'],
       components: {
+        Head: './src/components/Head.astro',
         Header: './src/components/Header.astro',
         Hero: './src/components/Hero.astro',
         Footer: './src/components/Footer.astro',

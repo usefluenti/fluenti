@@ -129,3 +129,62 @@ describe('reconstruct', () => {
     expect(result).toBeDefined()
   })
 })
+
+// ─── Bug fix: void/self-closing elements ──────────────────────────────────────
+
+describe('extractMessage — void elements', () => {
+  it('outputs <idx/> for childless elements like <br />', () => {
+    const br = createElement('br')
+    const { message, components } = extractMessage(['Hello ', br, ' world'])
+    expect(message).toBe('Hello <0/> world')
+    expect(components).toHaveLength(1)
+  })
+
+  it('outputs <idx/> for <hr />', () => {
+    const hr = createElement('hr')
+    const { message } = extractMessage(hr)
+    expect(message).toBe('<0/>')
+  })
+
+  it('outputs <idx/> for multiple void elements', () => {
+    const br = createElement('br')
+    const hr = createElement('hr')
+    const { message, components } = extractMessage([br, hr])
+    expect(message).toBe('<0/><1/>')
+    expect(components).toHaveLength(2)
+  })
+
+  it('mixes void and paired elements correctly', () => {
+    const br = createElement('br')
+    const b = createElement('b', null, 'bold')
+    const { message, components } = extractMessage(['Hello ', br, ' ', b])
+    expect(message).toBe('Hello <0/> <1>bold</1>')
+    expect(components).toHaveLength(2)
+  })
+})
+
+describe('reconstruct — void elements', () => {
+  it('reconstructs self-closing <0/> tags', () => {
+    const br = createElement('br') as ReactElement
+    const result = reconstruct('<0/>', [br])
+    const el = result as ReactElement
+    expect(el.type).toBe('br')
+    expect(el.key).toBe('trans-0')
+  })
+
+  it('reconstructs mixed void and paired tags', () => {
+    const br = createElement('br') as ReactElement
+    const b = createElement('b', null, 'placeholder') as ReactElement
+    const result = reconstruct('Hello <0/> <1>world</1>', [br, b])
+    expect(result).toBeDefined()
+    // Result should be a Fragment with text, br, text, b
+    const frag = result as ReactElement
+    expect(frag.type).toBeDefined()
+  })
+
+  it('falls back gracefully for out-of-bounds self-closing index', () => {
+    const result = reconstruct('<5/>', [])
+    // No component at index 5 — pushes innerText (empty string for self-closing)
+    expect(result).toBeDefined()
+  })
+})

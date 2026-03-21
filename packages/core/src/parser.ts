@@ -3,6 +3,7 @@ import type { ASTNode, FunctionNode, PluralNode, SelectNode, TextNode, VariableN
 const WS_REGEX = /\s/
 const IDENT_REGEX = /[a-zA-Z0-9_]/
 const DIGIT_REGEX = /[0-9]/
+const MAX_NESTING_DEPTH = 10
 
 /**
  * Error thrown when parsing an ICU MessageFormat string fails.
@@ -56,6 +57,13 @@ export function parse(message: string): ASTNode[] {
   }
 
   function parseNodes(depth: number): ASTNode[] {
+    if (depth > MAX_NESTING_DEPTH) {
+      throw new FluentParseError(
+        `Maximum nesting depth of ${MAX_NESTING_DEPTH} exceeded`,
+        pos,
+        message,
+      )
+    }
     const nodes: ASTNode[] = []
     let textStart = pos
 

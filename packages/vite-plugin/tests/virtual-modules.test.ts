@@ -52,9 +52,9 @@ describe('loadVirtualSplitModule', () => {
     it('includes only non-default locale loaders', () => {
       const code = loadVirtualSplitModule('\0virtual:fluenti/runtime', defaultOptions)!
 
-      expect(code).not.toContain("'en': () => import(")
-      expect(code).toContain("'fr': () => import(")
-      expect(code).toContain("'ja': () => import(")
+      expect(code).not.toContain('"en": () => import(')
+      expect(code).toContain('"fr": () => import(')
+      expect(code).toContain('"ja": () => import(')
     })
 
     it('exports switchLocale and preloadLocale functions', () => {
@@ -62,7 +62,7 @@ describe('loadVirtualSplitModule', () => {
 
       expect(code).toContain('__switchLocale')
       expect(code).toContain('__preloadLocale')
-      expect(code).toContain("globalThis[Symbol.for('fluenti.runtime.vue.v1')]")
+      expect(code).toContain('globalThis[Symbol.for("fluenti.runtime.vue.v1")]')
     })
 
     it('exports loading state', () => {
@@ -125,9 +125,9 @@ describe('loadVirtualSplitModule', () => {
     it('includes only non-default locale loaders', () => {
       const code = loadVirtualSplitModule('\0virtual:fluenti/route-runtime', defaultOptions)!
 
-      expect(code).not.toContain("'en': () => import(")
-      expect(code).toContain("'fr': () => import(")
-      expect(code).toContain("'ja': () => import(")
+      expect(code).not.toContain('"en": () => import(')
+      expect(code).toContain('"fr": () => import(')
+      expect(code).toContain('"ja": () => import(')
     })
   })
 
@@ -168,10 +168,10 @@ describe('loadVirtualSplitModule', () => {
         framework: 'react',
       })!
 
-      expect(code).not.toContain("'en': () => import(")
-      expect(code).toContain("'fr': () => import(")
-      expect(code).toContain("'ja': () => import(")
-      expect(code).toContain("globalThis[Symbol.for('fluenti.runtime.react.v1')]")
+      expect(code).not.toContain('"en": () => import(')
+      expect(code).toContain('"fr": () => import(')
+      expect(code).toContain('"ja": () => import(')
+      expect(code).toContain('globalThis[Symbol.for("fluenti.runtime.react.v1")]')
     })
   })
 
@@ -227,9 +227,9 @@ describe('loadVirtualSplitModule', () => {
         locales,
       })!
 
-      expect(code).not.toContain("'en': () => import(")
+      expect(code).not.toContain('"en": () => import(')
       for (const locale of locales.filter((locale) => locale !== 'en')) {
-        expect(code).toContain(`'${locale}': () => import(`)
+        expect(code).toContain(`"${locale}": () => import(`)
       }
     })
   })
@@ -267,5 +267,89 @@ describe('loadVirtualSplitModule', () => {
 
   it('returns undefined for unresolved IDs', () => {
     expect(loadVirtualSplitModule('unknown', defaultOptions)).toBeUndefined()
+  })
+
+  describe('path injection hardening', () => {
+    it('static messages module validates locale via validateLocale', () => {
+      expect(() =>
+        loadVirtualSplitModule('\0virtual:fluenti/messages', {
+          ...defaultOptions,
+          defaultBuildLocale: 'en"; console.log("pwned")//',
+        }),
+      ).toThrow()
+    })
+
+    it('locale containing single quotes does not break generated code', () => {
+      // validateLocale should reject this since it's not a valid BCP 47 tag
+      expect(() =>
+        loadVirtualSplitModule('\0virtual:fluenti/runtime', {
+          ...defaultOptions,
+          locales: ["en'DROP TABLE"],
+        }),
+      ).toThrow()
+    })
+
+    it('locale containing template interpolation does not execute in generated code', () => {
+      // validateLocale should reject this since it's not a valid BCP 47 tag
+      expect(() =>
+        loadVirtualSplitModule('\0virtual:fluenti/runtime', {
+          ...defaultOptions,
+          locales: ['${process.exit(1)}'],
+        }),
+      ).toThrow()
+    })
+
+    it('catalogDir containing backticks is rejected', () => {
+      expect(() =>
+        loadVirtualSplitModule('\0virtual:fluenti/runtime', {
+          ...defaultOptions,
+          catalogDir: 'locales/`; rm -rf /',
+        }),
+      ).toThrow(/catalogDir/)
+    })
+
+    it('catalogDir containing $ characters is rejected', () => {
+      expect(() =>
+        loadVirtualSplitModule('\0virtual:fluenti/runtime', {
+          ...defaultOptions,
+          catalogDir: 'locales/${process.exit(1)}',
+        }),
+      ).toThrow(/catalogDir/)
+    })
+
+    it('catalogDir validation applies to static messages module', () => {
+      expect(() =>
+        loadVirtualSplitModule('\0virtual:fluenti/messages', {
+          ...defaultOptions,
+          catalogDir: 'locales/`evil`',
+        }),
+      ).toThrow(/catalogDir/)
+    })
+
+    it('catalogDir validation applies to route runtime module', () => {
+      expect(() =>
+        loadVirtualSplitModule('\0virtual:fluenti/route-runtime', {
+          ...defaultOptions,
+          catalogDir: 'locales/$HOME',
+        }),
+      ).toThrow(/catalogDir/)
+    })
+
+    it('generated code uses safe string literals for paths', () => {
+      const code = loadVirtualSplitModule('\0virtual:fluenti/runtime', defaultOptions)!
+
+      // Import paths should use JSON-safe string literals (double quotes from JSON.stringify)
+      // Check that catalog paths are properly escaped
+      expect(code).toContain('import __defaultMsgs from')
+      expect(code).toContain('/en.js')
+    })
+
+    it('generated code uses safe string literals for locale values', () => {
+      const code = loadVirtualSplitModule('\0virtual:fluenti/runtime', defaultOptions)!
+
+      // The default locale value in the generated code should be safely escaped
+      // It should appear as a JSON.stringify'd value (double-quoted)
+      expect(code).toContain('"en"')
+    })
   })
 })

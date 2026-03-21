@@ -2,14 +2,13 @@
 import { createServerI18n } from '@fluenti/react/server'
 import { createElement } from 'react'
 
-const __locales = ["en","ja","ar"]
+const __locales = ["en","ja"]
 
 const serverI18n = createServerI18n({
   loadMessages: async (locale) => {
     switch (locale) {
       case 'en': return import('../src/locales/compiled/en')
       case 'ja': return import('../src/locales/compiled/ja')
-      case 'ar': return import('../src/locales/compiled/ar')
       default: return import('../src/locales/compiled/en')
     }
   },
@@ -75,7 +74,7 @@ export const NumberFormat = serverI18n.NumberFormat
  * Sets up both server-side (React.cache) and client-side (I18nProvider) i18n.
  */
 export async function I18nProvider({ locale, children }) {
-  const activeLocale = (locale && locale.trim()) ? locale : 'en'
+  const activeLocale = locale ?? 'en'
 
   // 1. Initialize server-side i18n (React.cache scoped)
   serverI18n.setLocale(activeLocale)
