@@ -3,7 +3,7 @@ import type { FluentNuxtOptions } from './types'
 import { extendPages } from './runtime/page-extend'
 import { validateISRConfig } from './isr-validation'
 
-export type { FluentNuxtOptions, Strategy, FluentNuxtRuntimeConfig, DetectBrowserLanguageOptions, LocaleDetectContext, LocaleDetectorFn, BuiltinDetector, ISROptions } from './types'
+export type { FluentNuxtOptions, Strategy, FluentNuxtRuntimeConfig, DetectBrowserLanguageOptions, LocaleDetectContext, LocaleDetectorFn, BuiltinDetector, ISROptions, IdGenerator } from './types'
 export { localePath, extractLocaleFromPath, switchLocalePath } from './runtime/path-utils'
 export { extendPages } from './runtime/page-extend'
 export type { PageRoute, RouteNameTemplate, ExtendPagesOptions } from './runtime/page-extend'
@@ -48,7 +48,21 @@ export default defineNuxtModule<FluentNuxtOptions>({
         nuxt.options.vite = nuxt.options.vite || {}
         nuxt.options.vite.plugins = nuxt.options.vite.plugins || []
         ;(nuxt.options.vite.plugins as unknown[]).push(
-          plugin({ framework: 'vue' }),
+          plugin({
+            framework: 'vue',
+            locales: options.locales,
+            sourceLocale: options.sourceLocale ?? options.defaultLocale,
+            catalogDir: options.catalogDir,
+            splitting: options.splitting,
+            defaultBuildLocale: options.defaultBuildLocale,
+            include: options.include,
+            devAutoCompile: options.devAutoCompile,
+            buildAutoCompile: options.buildAutoCompile,
+            catalogExtension: options.catalogExtension,
+            idGenerator: options.idGenerator,
+            onBeforeCompile: options.onBeforeCompile,
+            onAfterCompile: options.onAfterCompile,
+          }),
         )
       } catch {
         // @fluenti/vite-plugin is an optional peer dependency
