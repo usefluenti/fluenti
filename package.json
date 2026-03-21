@@ -43,6 +43,14 @@
     "bench": "vitest bench",
     "bench:core": "pnpm --filter @fluenti/core bench"
   },
+  "pnpm": {
+    "overrides": {
+      "h3@^1": ">=1.15.9",
+      "h3-v2": "npm:h3@2.0.1-rc.18",
+      "serialize-javascript": ">=7.0.3",
+      "next@>=9.5.0 <15.5.14": ">=15.5.14"
+    }
+  },
   "devDependencies": {
     "@playwright/test": "^1.58.2",
     "@types/node": "^22.19.15",
