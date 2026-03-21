@@ -1,5 +1,7 @@
+import type { Locale } from '@fluenti/core'
+
 /** Routing strategy for locale-prefixed URLs */
-export type Strategy = 'prefix' | 'prefix_except_default' | 'prefix_and_default' | 'no_prefix'
+export type Strategy = 'prefix' | 'prefix_except_default' | 'prefix_and_default' | 'no_prefix' | 'domains'
 
 /** Browser language detection options */
 export interface DetectBrowserLanguageOptions {
@@ -12,7 +14,39 @@ export interface DetectBrowserLanguageOptions {
 }
 
 /** Built-in detector names */
-export type BuiltinDetector = 'path' | 'cookie' | 'header' | 'query'
+export type BuiltinDetector = 'path' | 'cookie' | 'header' | 'query' | 'domain'
+
+/**
+ * Locale metadata object.
+ *
+ * Use this instead of plain strings when you need additional locale properties
+ * like display name, ISO tag, or text direction.
+ *
+ * @example
+ * ```ts
+ * { code: 'ja', name: '日本語', iso: 'ja-JP', dir: 'ltr' }
+ * { code: 'ar', name: 'العربية', iso: 'ar-SA', dir: 'rtl', domain: 'ar.example.com' }
+ * ```
+ */
+export interface LocaleObject {
+  /** Locale code (e.g. 'en', 'ja', 'zh-CN') */
+  code: string
+  /** Human-readable display name (e.g. 'English', '日本語') */
+  name?: string
+  /** BCP 47 language tag for SEO (e.g. 'en-US', 'ja-JP') */
+  iso?: string
+  /** Text direction */
+  dir?: 'ltr' | 'rtl'
+  /**
+   * Domain for this locale (used with `strategy: 'domains'`).
+   *
+   * @example 'ja.example.com' or 'example.jp'
+   */
+  domain?: string
+}
+
+/** A locale definition — either a plain code string or a metadata object */
+export type LocaleDefinition = string | LocaleObject
 
 /**
  * Context passed to locale detectors and the `fluenti:detect-locale` hook.
@@ -37,6 +71,8 @@ export interface LocaleDetectContext {
   setLocale: (locale: string) => void
   /** Whether we are running on the server */
   isServer: boolean
+  /** The request hostname (available when `strategy: 'domains'`) */
+  host?: string
 }
 
 /**
@@ -49,10 +85,42 @@ export type LocaleDetectorFn = (ctx: LocaleDetectContext) => void | Promise<void
 /** Custom message ID generator function (re-exported from @fluenti/vite-plugin) */
 export type IdGenerator = (message: string, context?: string) => string
 
+/**
+ * Per-page locale configuration.
+ *
+ * Restricts which locales a page supports. Routes will only be generated
+ * for the specified locales.
+ *
+ * @example
+ * ```ts
+ * // In a page component's <script setup>
+ * defineI18nRoute({ locales: ['en', 'ja'] }) // only en and ja for this page
+ * defineI18nRoute(false) // disable i18n for this page
+ * ```
+ */
+export type I18nRouteConfig = { locales: string[] } | false
+
+/** Domain-to-locale mapping for the `'domains'` strategy */
+export interface DomainConfig {
+  /** Domain hostname (e.g. 'example.jp', 'ja.example.com') */
+  domain: string
+  /** Locale code for this domain */
+  locale: string
+  /** Whether this is the default domain (used for x-default hreflang) */
+  defaultForLocale?: boolean
+}
+
 /** @fluenti/nuxt module options (set in nuxt.config.ts under `fluenti` key) */
 export interface FluentNuxtOptions {
-  /** List of supported locale codes */
-  locales: string[]
+  /**
+   * List of supported locales.
+   *
+   * Can be plain strings or locale metadata objects.
+   *
+   * @example ['en', 'ja', 'zh-CN']
+   * @example [{ code: 'en', name: 'English', iso: 'en-US' }, { code: 'ar', name: 'العربية', dir: 'rtl' }]
+   */
+  locales: LocaleDefinition[]
   /** Default locale code */
   defaultLocale: string
   /** URL routing strategy */
@@ -84,12 +152,37 @@ export interface FluentNuxtOptions {
   onBeforeCompile?: () => boolean | void | Promise<boolean | void>
   /** Called after auto-compile completes successfully */
   onAfterCompile?: () => void | Promise<void>
+  /**
+   * Fallback chain for message resolution.
+   *
+   * When a translation is missing for the current locale, the runtime will
+   * try each locale in the fallback chain before giving up.
+   *
+   * Use `'*'` as a wildcard key for a global fallback chain.
+   *
+   * @example { 'zh-TW': ['zh-CN', 'en'], '*': ['en'] }
+   */
+  fallbackChain?: Record<string, Locale[]>
+  /**
+   * Callback fired when a translation key is missing from the catalog.
+   *
+   * Useful for logging, error tracking, or providing dynamic fallbacks.
+   *
+   * @example
+   * ```ts
+   * onMissingTranslation: (locale, id) => {
+   *   console.warn(`Missing: ${id} [${locale}]`)
+   *   return undefined // use default behavior
+   * }
+   * ```
+   */
+  onMissingTranslation?: (locale: string, id: string) => string | undefined
   /** Browser language detection settings */
   detectBrowserLanguage?: DetectBrowserLanguageOptions
   /**
    * Ordered list of locale detectors.
    *
-   * Each entry is either a built-in detector name ('path', 'cookie', 'header', 'query')
+   * Each entry is either a built-in detector name ('path', 'cookie', 'header', 'query', 'domain')
    * or a file path to a custom detector module (e.g. '~/detectors/jwt-detector').
    *
    * Detectors run in order; the first one to call `ctx.setLocale()` wins.
@@ -98,11 +191,11 @@ export interface FluentNuxtOptions {
    */
   detectOrder?: Array<BuiltinDetector | string>
   /**
-   * Prefix for globally registered i18n components (Trans, Plural, Select).
+   * Prefix for globally registered i18n components (Trans, Plural, Select, DateTime, NumberFormat).
    *
    * Use this to avoid naming conflicts with other libraries.
    *
-   * @example 'I18n'  // → I18nTrans, I18nPlural, I18nSelect
+   * @example 'I18n'  // → I18nTrans, I18nPlural, I18nSelect, I18nDateTime, I18nNumberFormat
    * @default '' (no prefix)
    */
   componentPrefix?: string
@@ -187,6 +280,39 @@ export interface FluentNuxtOptions {
    * @example (name, locale) => `${locale}:${name}`
    */
   routeNameTemplate?: (name: string, locale: string) => string
+  /**
+   * Custom route paths per locale.
+   *
+   * Allows different URL slugs for different locales (e.g. `/about` in English
+   * becomes `/について` in Japanese).
+   *
+   * Keys are the original route paths; values are locale-to-path mappings.
+   *
+   * @example
+   * ```ts
+   * routeOverrides: {
+   *   '/about': { ja: '/について', 'zh-CN': '/关于' },
+   *   '/contact': { ja: '/お問い合わせ' },
+   * }
+   * ```
+   */
+  routeOverrides?: Record<string, Record<string, string>>
+  /**
+   * Domain-to-locale mappings for the `'domains'` strategy.
+   *
+   * Each entry maps a domain hostname to a locale. Required when `strategy` is `'domains'`.
+   *
+   * Can also be specified inline in locale objects via `{ code: 'ja', domain: 'example.jp' }`.
+   *
+   * @example
+   * ```ts
+   * domains: [
+   *   { domain: 'example.com', locale: 'en', defaultForLocale: true },
+   *   { domain: 'example.jp', locale: 'ja' },
+   * ]
+   * ```
+   */
+  domains?: DomainConfig[]
 }
 
 /** ISR configuration */
@@ -209,4 +335,43 @@ export interface FluentNuxtRuntimeConfig {
   queryParamKey: string
   /** Whether to inject $localePath onto globalProperties */
   injectGlobalProperties: boolean
+  /** Domain-to-locale mappings (when strategy is 'domains') */
+  domains?: DomainConfig[]
+  /** Locale metadata (iso tags, dir, names) — keyed by locale code */
+  localeProperties?: Record<string, LocaleObject>
+}
+
+// ---- Utility helpers ----
+
+/** Extract locale codes from a mixed LocaleDefinition[] array */
+export function resolveLocaleCodes(locales: LocaleDefinition[]): string[] {
+  return locales.map((l) => (typeof l === 'string' ? l : l.code))
+}
+
+/** Build a locale properties map from LocaleDefinition[] */
+export function resolveLocaleProperties(locales: LocaleDefinition[]): Record<string, LocaleObject> {
+  const map: Record<string, LocaleObject> = {}
+  for (const l of locales) {
+    if (typeof l === 'string') {
+      map[l] = { code: l }
+    } else {
+      map[l.code] = l
+    }
+  }
+  return map
+}
+
+/** Build domain configs from locale objects that have a `domain` field */
+export function resolveDomainConfigs(
+  locales: LocaleDefinition[],
+  explicit?: DomainConfig[],
+): DomainConfig[] {
+  if (explicit?.length) return explicit
+  const configs: DomainConfig[] = []
+  for (const l of locales) {
+    if (typeof l !== 'string' && l.domain) {
+      configs.push({ domain: l.domain, locale: l.code })
+    }
+  }
+  return configs
 }

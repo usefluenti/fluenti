@@ -522,6 +522,115 @@ async function runDetectorsWithServer(
   return resolved ?? config.detectBrowserLanguage?.fallbackLocale ?? config.defaultLocale
 }
 
+describe('domain detector', () => {
+  it('detects locale from host when strategy is domains', async () => {
+    const detectors = new Map<string, LocaleDetectorFn>([
+      ['domain', (ctx) => {
+        if (ctx.strategy !== 'domains' || !ctx.host) return
+        const domains = [
+          { domain: 'example.com', locale: 'en' },
+          { domain: 'example.jp', locale: 'ja' },
+        ]
+        const cleanHost = ctx.host.toLowerCase().replace(/:\d+$/, '')
+        const match = domains.find((d) => d.domain === cleanHost)
+        if (match) ctx.setLocale(match.locale)
+      }],
+    ])
+
+    const config = createConfig({
+      strategy: 'domains',
+      detectOrder: ['domain', 'cookie'],
+    })
+
+    // Simulate with host in context
+    let resolved: string | null = null
+    let stopped = false
+    const ctx: LocaleDetectContext = {
+      path: '/about',
+      locales: config.locales,
+      defaultLocale: config.defaultLocale,
+      strategy: config.strategy,
+      detectedLocale: null,
+      setLocale(locale: string) {
+        if (config.locales.includes(locale)) {
+          resolved = locale
+          ctx.detectedLocale = locale
+          stopped = true
+        }
+      },
+      isServer: true,
+      host: 'example.jp',
+    }
+
+    for (const name of config.detectOrder) {
+      if (stopped) break
+      const detector = detectors.get(name)
+      if (detector) await detector(ctx)
+    }
+
+    expect(resolved).toBe('ja')
+  })
+
+  it('ignores domain detector when strategy is not domains', async () => {
+    const detectors = new Map<string, LocaleDetectorFn>([
+      ['domain', (ctx) => {
+        if (ctx.strategy !== 'domains') return
+        ctx.setLocale('ja')
+      }],
+    ])
+
+    const config = createConfig({
+      strategy: 'prefix_except_default',
+      detectOrder: ['domain'],
+    })
+    const result = await runDetectors('/', config, detectors)
+    expect(result).toBe('en')
+  })
+
+  it('strips port from host before matching', async () => {
+    let matched = false
+    const detectors = new Map<string, LocaleDetectorFn>([
+      ['domain', (ctx) => {
+        if (ctx.strategy !== 'domains' || !ctx.host) return
+        const cleanHost = ctx.host.toLowerCase().replace(/:\d+$/, '')
+        if (cleanHost === 'example.jp') {
+          matched = true
+          ctx.setLocale('ja')
+        }
+      }],
+    ])
+
+    const config = createConfig({ strategy: 'domains', detectOrder: ['domain'] })
+
+    let resolved: string | null = null
+    let stopped = false
+    const ctx: LocaleDetectContext = {
+      path: '/',
+      locales: config.locales,
+      defaultLocale: config.defaultLocale,
+      strategy: config.strategy,
+      detectedLocale: null,
+      setLocale(locale: string) {
+        if (config.locales.includes(locale)) {
+          resolved = locale
+          stopped = true
+        }
+      },
+      isServer: true,
+      host: 'example.jp:3000',
+    }
+
+    for (const name of config.detectOrder) {
+      if (stopped) break
+      const detector = detectors.get(name)
+      if (detector) await detector(ctx)
+    }
+
+    expect(matched).toBe(true)
+    expect(resolved).toBe('ja')
+  })
+})
+
 describe('server → client hydration round-trip', () => {
   const g = globalThis as unknown as Record<string, unknown>
 

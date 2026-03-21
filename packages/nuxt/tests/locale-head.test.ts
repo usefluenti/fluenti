@@ -206,3 +206,111 @@ describe('buildLocaleHead edge cases', () => {
     expect(jaLink!.href).toBe('/ja/about')
   })
 })
+
+describe('buildLocaleHead with locale properties', () => {
+  it('uses iso tag from localeProperties for htmlAttrs.lang', () => {
+    const config: FluentNuxtRuntimeConfig = {
+      locales: ['en', 'ja'],
+      defaultLocale: 'en',
+      strategy: 'prefix_except_default',
+      detectOrder: ['path', 'cookie'],
+      queryParamKey: 'locale',
+      injectGlobalProperties: true,
+      localeProperties: {
+        en: { code: 'en', iso: 'en-US' },
+        ja: { code: 'ja', iso: 'ja-JP' },
+      },
+    }
+
+    const head = buildLocaleHead('en', '/about', config)
+    expect(head.htmlAttrs.lang).toBe('en-US')
+
+    const headJa = buildLocaleHead('ja', '/ja/about', config)
+    expect(headJa.htmlAttrs.lang).toBe('ja-JP')
+  })
+
+  it('sets dir attribute from localeProperties', () => {
+    const config: FluentNuxtRuntimeConfig = {
+      locales: ['en', 'ar'],
+      defaultLocale: 'en',
+      strategy: 'prefix_except_default',
+      detectOrder: ['path'],
+      queryParamKey: 'locale',
+      injectGlobalProperties: true,
+      localeProperties: {
+        en: { code: 'en', dir: 'ltr' },
+        ar: { code: 'ar', dir: 'rtl' },
+      },
+    }
+
+    const headAr = buildLocaleHead('ar', '/ar/about', config)
+    expect(headAr.htmlAttrs.dir).toBe('rtl')
+
+    const headEn = buildLocaleHead('en', '/about', config)
+    expect(headEn.htmlAttrs.dir).toBe('ltr')
+  })
+
+  it('uses iso tags in hreflang and og:locale when localeProperties provided', () => {
+    const config: FluentNuxtRuntimeConfig = {
+      locales: ['en', 'ja'],
+      defaultLocale: 'en',
+      strategy: 'prefix_except_default',
+      detectOrder: ['path'],
+      queryParamKey: 'locale',
+      injectGlobalProperties: true,
+      localeProperties: {
+        en: { code: 'en', iso: 'en-US' },
+        ja: { code: 'ja', iso: 'ja-JP' },
+      },
+    }
+
+    const head = buildLocaleHead('en', '/about', config, { addSeoAttributes: true })
+    expect(head.link.find((l) => l.hreflang === 'en-US')).toBeDefined()
+    expect(head.link.find((l) => l.hreflang === 'ja-JP')).toBeDefined()
+    expect(head.meta.find((m) => m.content === 'en-US' && m.property === 'og:locale')).toBeDefined()
+    expect(head.meta.find((m) => m.content === 'ja-JP' && m.property === 'og:locale:alternate')).toBeDefined()
+  })
+
+  it('omits dir when not specified', () => {
+    const config: FluentNuxtRuntimeConfig = {
+      locales: ['en'],
+      defaultLocale: 'en',
+      strategy: 'no_prefix',
+      detectOrder: [],
+      queryParamKey: 'locale',
+      injectGlobalProperties: true,
+      localeProperties: {
+        en: { code: 'en' },
+      },
+    }
+
+    const head = buildLocaleHead('en', '/', config)
+    expect(head.htmlAttrs.dir).toBeUndefined()
+  })
+})
+
+describe('buildLocaleHead with domains strategy', () => {
+  it('generates hreflang links using domain URLs', () => {
+    const config: FluentNuxtRuntimeConfig = {
+      locales: ['en', 'ja'],
+      defaultLocale: 'en',
+      strategy: 'domains',
+      detectOrder: ['domain'],
+      queryParamKey: 'locale',
+      injectGlobalProperties: true,
+      domains: [
+        { domain: 'example.com', locale: 'en' },
+        { domain: 'example.jp', locale: 'ja' },
+      ],
+    }
+
+    const head = buildLocaleHead('en', '/about', config, {
+      addSeoAttributes: true,
+      baseUrl: 'https://example.com',
+    })
+
+    expect(head.link.find((l) => l.hreflang === 'en')!.href).toBe('https://example.com/about')
+    expect(head.link.find((l) => l.hreflang === 'ja')!.href).toBe('https://example.jp/about')
+    expect(head.link.find((l) => l.hreflang === 'x-default')!.href).toBe('https://example.com/about')
+  })
+})

@@ -3,7 +3,7 @@ import type { FluentNuxtRuntimeConfig } from '../types'
 
 /** Head metadata for locale SEO */
 export interface LocaleHeadMeta {
-  htmlAttrs: { lang: string }
+  htmlAttrs: { lang: string; dir?: string }
   link: Array<{ rel: string; hreflang: string; href: string }>
   meta: Array<{ property: string; content: string }>
 }
@@ -27,8 +27,14 @@ export function buildLocaleHead(
   config: FluentNuxtRuntimeConfig,
   options?: LocaleHeadOptions,
 ): LocaleHeadMeta {
+  const props = config.localeProperties?.[locale]
+  const isoTag = props?.iso ?? locale
+
   const head: LocaleHeadMeta = {
-    htmlAttrs: { lang: locale },
+    htmlAttrs: {
+      lang: isoTag,
+      ...(props?.dir ? { dir: props.dir } : {}),
+    },
     link: [],
     meta: [],
   }
@@ -38,41 +44,73 @@ export function buildLocaleHead(
 
     // hreflang alternate links for each locale
     for (const loc of config.locales) {
-      const path = switchLocalePath(
+      const locProps = config.localeProperties?.[loc]
+      const locIso = locProps?.iso ?? loc
+
+      if (config.strategy === 'domains' && config.domains?.length) {
+        // For domain strategy, build absolute URLs using domain configs
+        const domainEntry = config.domains.find((d) => d.locale === loc)
+        if (domainEntry) {
+          const protocol = baseUrl.startsWith('https') ? 'https' : 'http'
+          head.link.push({
+            rel: 'alternate',
+            hreflang: locIso,
+            href: `${protocol}://${domainEntry.domain}${currentPath}`,
+          })
+        }
+      } else {
+        const path = switchLocalePath(
+          currentPath,
+          loc,
+          config.locales,
+          config.defaultLocale,
+          config.strategy,
+        )
+        head.link.push({
+          rel: 'alternate',
+          hreflang: locIso,
+          href: `${baseUrl}${path}`,
+        })
+      }
+    }
+
+    // x-default hreflang
+    if (config.strategy === 'domains' && config.domains?.length) {
+      const defaultDomain = config.domains.find((d) => d.locale === config.defaultLocale)
+      if (defaultDomain) {
+        const protocol = baseUrl.startsWith('https') ? 'https' : 'http'
+        head.link.push({
+          rel: 'alternate',
+          hreflang: 'x-default',
+          href: `${protocol}://${defaultDomain.domain}${currentPath}`,
+        })
+      }
+    } else {
+      const defaultPath = switchLocalePath(
         currentPath,
-        loc,
+        config.defaultLocale,
         config.locales,
         config.defaultLocale,
         config.strategy,
       )
       head.link.push({
         rel: 'alternate',
-        hreflang: loc,
-        href: `${baseUrl}${path}`,
+        hreflang: 'x-default',
+        href: `${baseUrl}${defaultPath}`,
       })
     }
 
-    // x-default hreflang
-    const defaultPath = switchLocalePath(
-      currentPath,
-      config.defaultLocale,
-      config.locales,
-      config.defaultLocale,
-      config.strategy,
-    )
-    head.link.push({
-      rel: 'alternate',
-      hreflang: 'x-default',
-      href: `${baseUrl}${defaultPath}`,
-    })
-
-    // og:locale
-    head.meta.push({ property: 'og:locale', content: locale })
+    // og:locale (use ISO tag if available)
+    head.meta.push({ property: 'og:locale', content: isoTag })
 
     // og:locale:alternate for other locales
     for (const loc of config.locales) {
       if (loc !== locale) {
-        head.meta.push({ property: 'og:locale:alternate', content: loc })
+        const locProps = config.localeProperties?.[loc]
+        head.meta.push({
+          property: 'og:locale:alternate',
+          content: locProps?.iso ?? loc,
+        })
       }
     }
   }

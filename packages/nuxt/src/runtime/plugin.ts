@@ -1,4 +1,4 @@
-import { defineNuxtPlugin, useRuntimeConfig, useRoute, useCookie } from '#imports'
+import { defineNuxtPlugin, useRuntimeConfig, useRoute, useCookie, useRequestHeaders } from '#imports'
 import { ref, watch } from 'vue'
 import { localePath, extractLocaleFromPath } from './path-utils'
 import { runDetectors } from './detectors'
@@ -22,6 +22,21 @@ export default defineNuxtPlugin(async (nuxtApp) => {
   const cookieKey = cookieCfg?.cookieKey ?? 'fluenti_locale'
   const localeCookie = cookieCfg ? useCookie(cookieKey) : null
 
+  // Resolve host for domain-based detection
+  let host: string | undefined
+  if (config.strategy === 'domains') {
+    try {
+      if (import.meta.server) {
+        const headers = useRequestHeaders(['host'])
+        host = headers['host']
+      } else {
+        host = window.location.host
+      }
+    } catch {
+      // host detection failed — domain detector will be skipped
+    }
+  }
+
   let detectedLocale: string
 
   if (import.meta.server) {
@@ -33,6 +48,7 @@ export default defineNuxtPlugin(async (nuxtApp) => {
       async (ctx: LocaleDetectContext) => {
         await (nuxtApp.callHook as Function)('fluenti:detect-locale', ctx)
       },
+      host,
     )
     // Store in payload — Nuxt serializes this to HTML automatically.
     // The client reads it back to ensure hydration uses the same locale.
@@ -42,22 +58,32 @@ export default defineNuxtPlugin(async (nuxtApp) => {
     detectedLocale = nuxtApp.payload['fluentiLocale'] as string
   } else {
     // --- Client (SPA mode / no payload): detect from path and cookie ---
-    const { locale: pathLocale } = extractLocaleFromPath(route.path, config.locales)
-    if (pathLocale) {
-      detectedLocale = pathLocale
-    } else if (localeCookie) {
-      detectedLocale = (localeCookie.value && config.locales.includes(localeCookie.value))
-        ? localeCookie.value
-        : config.defaultLocale
+    if (config.strategy === 'domains' && host && config.domains?.length) {
+      const cleanHost = host.toLowerCase().replace(/:\d+$/, '')
+      const domainMatch = config.domains.find((d) => d.domain.toLowerCase() === cleanHost)
+      if (domainMatch) {
+        detectedLocale = domainMatch.locale
+      } else {
+        detectedLocale = config.defaultLocale
+      }
     } else {
-      detectedLocale = config.defaultLocale
+      const { locale: pathLocale } = extractLocaleFromPath(route.path, config.locales)
+      if (pathLocale) {
+        detectedLocale = pathLocale
+      } else if (localeCookie) {
+        detectedLocale = (localeCookie.value && config.locales.includes(localeCookie.value))
+          ? localeCookie.value
+          : config.defaultLocale
+      } else {
+        detectedLocale = config.defaultLocale
+      }
     }
   }
 
   const currentLocale = ref(detectedLocale)
 
   // Sync locale when route changes (path-based detection)
-  if (config.strategy !== 'no_prefix') {
+  if (config.strategy !== 'no_prefix' && config.strategy !== 'domains') {
     watch(() => route.path, (newPath) => {
       const { locale } = extractLocaleFromPath(newPath, config.locales)
       if (locale) {

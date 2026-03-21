@@ -3,6 +3,7 @@ import detectPath from './path'
 import detectCookie from './cookie'
 import detectHeader from './header'
 import detectQuery from './query'
+import detectDomain from './domain'
 
 /** Map of built-in detector names to their implementations */
 const builtinDetectors: Record<string, LocaleDetectorFn> = {
@@ -10,6 +11,7 @@ const builtinDetectors: Record<string, LocaleDetectorFn> = {
   cookie: detectCookie,
   header: detectHeader,
   query: detectQuery,
+  domain: detectDomain,
 }
 
 /**
@@ -22,6 +24,7 @@ export async function runDetectors(
   config: FluentNuxtRuntimeConfig,
   customDetectors?: Map<string, LocaleDetectorFn>,
   hookFn?: (ctx: LocaleDetectContext) => void | Promise<void>,
+  host?: string,
 ): Promise<string> {
   let resolved: string | null = null
   let stopped = false
@@ -41,6 +44,12 @@ export async function runDetectors(
       }
     },
     isServer: import.meta.server ?? false,
+    ...(host ? { host } : {}),
+  }
+
+  // Attach domains to context for domain detector
+  if (config.domains) {
+    Object.assign(ctx, { domains: config.domains })
   }
 
   // 1. Run detectors in order
