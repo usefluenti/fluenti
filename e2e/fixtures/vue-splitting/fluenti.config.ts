@@ -7,4 +7,5 @@ export default defineConfig({
   format: 'po',
   include: ['./src/**/*.{vue,ts}'],
   compileOutDir: './src/locales/compiled',
+  splitting: 'dynamic',
 })
