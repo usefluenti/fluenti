@@ -1,22 +1,16 @@
-import type { DateFormatOptions, NumberFormatOptions, Locale } from '@fluenti/core'
+import type { FluentiConfig } from '@fluenti/core'
 
 /**
  * Configuration for `withFluenti()`.
  *
- * Reads defaults from `fluenti.config.ts` in the project root.
- * All options here override the config file values.
+ * All i18n config (locales, sourceLocale, splitting, etc.) lives in `fluenti.config.ts`.
+ * Only Next.js-specific options are set here.
  */
 export interface WithFluentConfig {
-  /** Override `fluenti.config.ts` locales */
-  locales?: string[]
-  /** Override `fluenti.config.ts` sourceLocale (used as defaultLocale) */
-  defaultLocale?: string
-  /** Override sourceLocale — canonical name (alias for defaultLocale) */
-  sourceLocale?: string
-  /** Override `fluenti.config.ts` compileOutDir */
-  compiledDir?: string
-  /** Override compileOutDir — canonical name (alias for compiledDir) */
-  compileOutDir?: string
+  /** fluenti.config.ts path or inline config */
+  config?: string | FluentiConfig
+
+  // ---- Next.js-specific ----
 
   /** Custom serverModule path (skip auto-generation) */
   serverModule?: string
@@ -38,18 +32,6 @@ export interface WithFluentConfig {
   /** Cookie name used for locale detection (default: 'locale') */
   cookieName?: string
 
-  /** Custom date format styles */
-  dateFormats?: DateFormatOptions
-  /** Custom number format styles */
-  numberFormats?: NumberFormatOptions
-  /** Fallback chain per locale */
-  fallbackChain?: Record<string, Locale[]>
-  /** Auto extract+compile in dev mode (default: true) */
-  devAutoCompile?: boolean
-  /** Debounce delay in ms for dev auto-compile (default: 1000). Increase if you see excessive recompilation. */
-  devAutoCompileDelay?: number
-  /** Auto extract+compile before production build (default: true) */
-  buildAutoCompile?: boolean
   /**
    * Webpack loader enforce mode (default: 'pre').
    *
@@ -63,18 +45,12 @@ export interface WithFluentConfig {
  * Resolved config after merging fluenti.config.ts + withFluenti() overrides.
  */
 export interface ResolvedFluentConfig {
-  locales: string[]
-  defaultLocale: string
-  compiledDir: string
+  /** The fully resolved FluentiConfig */
+  fluentiConfig: FluentiConfig
   serverModule: string | null
   serverModuleOutDir: string
   resolveLocale?: string
   cookieName: string
-  dateFormats?: DateFormatOptions
-  numberFormats?: NumberFormatOptions
-  fallbackChain?: Record<string, Locale[]>
-  /** Glob patterns for source files (from fluenti.config.ts `include`) */
-  include?: string[]
 }
 
 /**

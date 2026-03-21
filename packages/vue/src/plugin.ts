@@ -1,5 +1,5 @@
 import { type App, type InjectionKey, type Ref, ref, shallowReactive } from 'vue'
-import type { AllMessages, Locale, Messages, CompiledMessage, MessageDescriptor } from '@fluenti/core'
+import type { AllMessages, Locale, LocalizedString, Messages, CompiledMessage, MessageDescriptor } from '@fluenti/core'
 import { interpolate, formatDate, formatNumber, buildICUMessage, resolveDescriptorId } from '@fluenti/core'
 import { Trans } from './components/Trans'
 import { Plural } from './components/Plural'
@@ -42,9 +42,9 @@ function resolveChunkMessages(
 /** Context object returned by `useI18n()` and available as `$t` etc. on globalProperties */
 export interface FluentVueContext {
   /** Translate a message by id or MessageDescriptor, with optional interpolation values */
-  t(id: string | MessageDescriptor, values?: Record<string, unknown>): string
+  t(id: string | MessageDescriptor, values?: Record<string, unknown>): LocalizedString
   /** Tagged template form: t`Hello ${name}` */
-  t(strings: TemplateStringsArray, ...exprs: unknown[]): string
+  t(strings: TemplateStringsArray, ...exprs: unknown[]): LocalizedString
   /** Reactive ref for current locale */
   locale: Readonly<Ref<Locale>>
   /** Change the active locale (async when lazy locale loading is enabled) */
@@ -54,11 +54,11 @@ export interface FluentVueContext {
   /** Get all locales that have loaded messages */
   getLocales(): Locale[]
   /** Format a date value according to locale */
-  d(value: Date | number, style?: string): string
+  d(value: Date | number, style?: string): LocalizedString
   /** Format a number according to locale */
-  n(value: number, style?: string): string
+  n(value: number, style?: string): LocalizedString
   /** Format an ICU message string directly (no catalog lookup) */
-  format(message: string, values?: Record<string, unknown>): string
+  format(message: string, values?: Record<string, unknown>): LocalizedString
   /** Whether a locale chunk is currently being loaded */
   isLoading: Readonly<Ref<boolean>>
   /** Set of locales whose messages have been loaded */
@@ -130,12 +130,12 @@ function resolveMessage(
   compiled: CompiledMessage,
   values?: Record<string, unknown>,
   locale?: string,
-): string {
+): LocalizedString {
   if (typeof compiled === 'function') {
-    return compiled(values)
+    return compiled(values) as LocalizedString
   }
   // Use core interpolate for ICU message parsing (handles plural, select, etc.)
-  return interpolate(compiled, values, locale)
+  return interpolate(compiled, values, locale) as LocalizedString
 }
 
 /** Extract the attribute name from v-t modifiers (e.g., v-t.alt → 'alt') */
@@ -170,9 +170,9 @@ export function createFluentVue(options: FluentVueOptions): FluentVuePlugin {
     return msgs[id]
   }
 
-  function t(strings: TemplateStringsArray, ...exprs: unknown[]): string
-  function t(id: string | MessageDescriptor, values?: Record<string, unknown>): string
-  function t(idOrStrings: string | MessageDescriptor | TemplateStringsArray, ...rest: unknown[]): string {
+  function t(strings: TemplateStringsArray, ...exprs: unknown[]): LocalizedString
+  function t(id: string | MessageDescriptor, values?: Record<string, unknown>): LocalizedString
+  function t(idOrStrings: string | MessageDescriptor | TemplateStringsArray, ...rest: unknown[]): LocalizedString {
     // Tagged template form: t`Hello ${name}`
     if (Array.isArray(idOrStrings) && 'raw' in idOrStrings) {
       const strings = idOrStrings as TemplateStringsArray
@@ -230,20 +230,20 @@ export function createFluentVue(options: FluentVueOptions): FluentVuePlugin {
     // Try the missing handler
     if (options.missing) {
       const result = options.missing(currentLocale, messageId)
-      if (result !== undefined) return result
+      if (result !== undefined) return result as LocalizedString
     }
 
     // If we have a fallback message from a MessageDescriptor, interpolate it
     if (fallbackMessage) {
-      return interpolate(fallbackMessage, values, currentLocale)
+      return interpolate(fallbackMessage, values, currentLocale) as LocalizedString
     }
 
     // Final fallback — if the id looks like an ICU message, interpolate it
     // (compile-time transforms like <Plural> emit inline ICU as t() arguments)
     if (messageId.includes('{')) {
-      return interpolate(messageId, values, currentLocale)
+      return interpolate(messageId, values, currentLocale) as LocalizedString
     }
-    return messageId
+    return messageId as LocalizedString
   }
 
   async function setLocale(newLocale: Locale): Promise<void> {
@@ -308,17 +308,17 @@ export function createFluentVue(options: FluentVueOptions): FluentVuePlugin {
     return Object.keys(catalogs)
   }
 
-  function d(value: Date | number, style?: string): string {
+  function d(value: Date | number, style?: string): LocalizedString {
     const currentLocale = locale.value
-    return formatDate(value, currentLocale, style, options.dateFormats)
+    return formatDate(value, currentLocale, style, options.dateFormats) as LocalizedString
   }
 
-  function n(value: number, style?: string): string {
+  function n(value: number, style?: string): LocalizedString {
     const currentLocale = locale.value
-    return formatNumber(value, currentLocale, style, options.numberFormats)
+    return formatNumber(value, currentLocale, style, options.numberFormats) as LocalizedString
   }
 
-  function format(message: string, values?: Record<string, unknown>): string {
+  function format(message: string, values?: Record<string, unknown>): LocalizedString {
     return resolveMessage(message, values, locale.value)
   }
 

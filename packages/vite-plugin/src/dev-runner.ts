@@ -11,6 +11,8 @@ export interface DevRunnerOptions {
   throwOnError?: boolean
   /** Run only compile (skip extract). Useful for production builds where source is unchanged. */
   compileOnly?: boolean
+  /** Enable parallel compilation across locales using worker threads */
+  parallelCompile?: boolean
   /** Called before compile runs. Return false to skip compilation. */
   onBeforeCompile?: () => boolean | void | Promise<boolean | void>
   /** Called after compile completes successfully */
@@ -65,7 +67,20 @@ export async function runExtractCompile(options: DevRunnerOptions): Promise<void
     }
   }
 
-  // Dev mode: shell out for extract + compile
+  // Dev mode: in-process extract + compile (avoids shell-out overhead)
+  try {
+    const projectRequire = createRequire(join(options.cwd, 'package.json'))
+    const { runExtract, runCompile } = projectRequire('@fluenti/cli')
+    await runExtract(options.cwd)
+    await runCompile(options.cwd, { parallel: options.parallelCompile })
+    console.log('[fluenti] Extracting and compiling... done')
+    if (options.onAfterCompile) await options.onAfterCompile()
+    options.onSuccess?.()
+    return
+  } catch {
+    // In-process failed — fall back to shell-out
+  }
+
   const bin = resolveCliBin(options.cwd)
   if (!bin) {
     const msg = '[fluenti] CLI not found — skipping auto-compile. Install @fluenti/cli as a devDependency.'
@@ -76,7 +91,8 @@ export async function runExtractCompile(options: DevRunnerOptions): Promise<void
     return Promise.resolve()
   }
 
-  const command = `${bin} extract && ${bin} compile`
+  const parallelFlag = options.parallelCompile ? ' --parallel' : ''
+  const command = `${bin} extract && ${bin} compile${parallelFlag}`
   return new Promise<void>((resolve, reject) => {
     exec(
       command,

@@ -28,7 +28,7 @@ export default defineNuxtConfig({
 | `sourceLocale` | `string?` | — | Source locale for extraction |
 | `catalogDir` | `string?` | — | Directory for compiled catalogs |
 | `detectBrowserLanguage` | `DetectBrowserLanguageOptions?` | — | Browser language detection |
-| `detectOrder` | `Array<string>` | `['path', 'cookie', 'header']` | Ordered list of locale detectors |
+| `detectOrder` | `Array<string>` | `['path', 'cookie', 'header']` | Ordered list of locale detectors. When `strategy` is `'domains'`, defaults to `['domain', 'cookie', 'header']` |
 | `componentPrefix` | `string?` | `''` | Prefix for global components (`'I18n'` → `I18nNuxtLinkLocale`) |
 | `autoVitePlugin` | `boolean?` | `true` | Auto-register `@fluenti/vite-plugin` in Vite config |
 | `isr` | `ISROptions?` | — | ISR route rules configuration |
@@ -36,6 +36,13 @@ export default defineNuxtConfig({
 | `autoImports` | `boolean?` | `true` | Auto-import composables (`useLocalePath`, `useSwitchLocalePath`, `useLocaleHead`, `useI18n`). Set to `false` to avoid naming collisions with other i18n libraries |
 | `queryParamKey` | `string?` | `'locale'` | Query parameter name for locale detection (e.g. set to `'lang'` for `?lang=ja`) |
 | `injectGlobalProperties` | `boolean?` | `true` | Inject `$localePath` onto `app.config.globalProperties`. Set to `false` if another plugin already provides it |
+| `extendRoutes` | `boolean?` | `true` | Whether to extend routes with locale-prefixed variants. Set to `false` to handle locale routing yourself |
+| `routeMode` | `'all' \| 'opt-in'?` | `'all'` | Route generation mode. `'all'`: all pages get locale variants unless opted out. `'opt-in'`: only pages with explicit `definePageMeta({ i18n: { locales: [...] } })` get variants |
+| `routeNameTemplate` | `(name: string, locale: string) => string` | `` `${name}___${locale}` `` | Custom template for locale-specific route names |
+| `routeOverrides` | `Record<string, Record<string, string>>?` | — | Custom route paths per locale (e.g. `/about` → `/について` for `ja`) |
+| `registerNuxtLinkLocale` | `boolean?` | `true` | Whether to register the `NuxtLinkLocale` component globally |
+| `domains` | `DomainConfig[]?` | — | Domain-to-locale mappings for the `'domains'` strategy |
+| `onMissingTranslation` | `(locale: string, id: string) => string \| undefined` | — | Callback fired when a translation key is missing from the catalog |
 | `globalMiddleware` | `boolean?` | `true` | Register the locale redirect middleware globally. Set to `false` to use it as a named middleware (`fluenti-locale-redirect`) on specific pages. Only relevant when `strategy` is `'prefix'` |
 
 ### `Strategy`

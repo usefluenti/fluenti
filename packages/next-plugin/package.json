@@ -78,7 +78,8 @@
   "dependencies": {
     "@fluenti/core": "workspace:*",
     "@fluenti/react": "workspace:*",
-    "jiti": "^2"
+    "jiti": "^2",
+    "picomatch": "^4"
   },
   "devDependencies": {
     "@types/node": "^22",

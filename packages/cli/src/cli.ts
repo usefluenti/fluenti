@@ -10,14 +10,24 @@ import type { CatalogData } from './catalog'
 import { readJsonCatalog, writeJsonCatalog } from './json-format'
 import { readPoCatalog, writePoCatalog } from './po-format'
 import { compileCatalog, compileIndex, collectAllIds, compileTypeDeclaration } from './compile'
+import { parallelCompile } from './parallel-compile'
 import { formatStatsRow } from './stats-format'
 import { lintCatalogs, formatDiagnostics } from './lint'
+import { checkCoverage, formatCheckText, formatCheckGitHub, formatCheckJson } from './check'
+import { ExtractCache } from './extract-cache'
+import { CompileCache } from './compile-cache'
 import { translateCatalog } from './translate'
 import type { AIProvider } from './translate'
 import { runMigrate } from './migrate'
 import { runInit } from './init'
 import { loadConfig } from './config-loader'
+import { createHash } from 'node:crypto'
 import type { ExtractedMessage } from '@fluenti/core'
+import { resolveLocaleCodes } from '@fluenti/core'
+
+function deriveProjectId(cwd: string): string {
+  return createHash('md5').update(cwd).digest('hex').slice(0, 8)
+}
 
 function readCatalog(filePath: string, format: 'json' | 'po'): CatalogData {
   if (!existsSync(filePath)) return {}
@@ -53,27 +63,56 @@ const extract = defineCommand({
     config: { type: 'string', description: 'Path to config file' },
     clean: { type: 'boolean', description: 'Remove obsolete entries instead of marking them', default: false },
     'no-fuzzy': { type: 'boolean', description: 'Strip fuzzy flags from all entries', default: false },
+    'no-cache': { type: 'boolean', description: 'Disable incremental extraction cache', default: false },
   },
   async run({ args }) {
     const config = await loadConfig(args.config)
+    const localeCodes = resolveLocaleCodes(config.locales)
     consola.info(`Extracting messages from ${config.include.join(', ')}`)
 
-    const files = await fg(config.include)
+    const files = await fg(config.include, { ignore: config.exclude ?? [] })
     const allMessages: ExtractedMessage[] = []
+    const useCache = !(args['no-cache'] ?? false)
+    const cache = useCache ? new ExtractCache(config.catalogDir, deriveProjectId(process.cwd())) : null
+
+    let cacheHits = 0
 
     for (const file of files) {
+      if (cache) {
+        const cached = cache.get(file)
+        if (cached) {
+          allMessages.push(...cached)
+          cacheHits++
+          continue
+        }
+      }
+
       const code = readFileSync(file, 'utf-8')
       const messages = await extractFromFile(file, code)
       allMessages.push(...messages)
+
+      if (cache) {
+        cache.set(file, messages)
+      }
     }
 
-    consola.info(`Found ${allMessages.length} messages in ${files.length} files`)
+    // Prune cache entries for deleted files
+    if (cache) {
+      cache.prune(new Set(files))
+      cache.save()
+    }
+
+    if (cacheHits > 0) {
+      consola.info(`Found ${allMessages.length} messages in ${files.length} files (${cacheHits} cached)`)
+    } else {
+      consola.info(`Found ${allMessages.length} messages in ${files.length} files`)
+    }
 
     const ext = config.format === 'json' ? '.json' : '.po'
     const clean = args.clean ?? false
     const stripFuzzy = args['no-fuzzy'] ?? false
 
-    for (const locale of config.locales) {
+    for (const locale of localeCodes) {
       const catalogPath = resolve(config.catalogDir, `${locale}${ext}`)
       const existing = readCatalog(catalogPath, config.format)
       const { catalog, result } = updateCatalog(existing, allMessages, { stripFuzzy })
@@ -99,59 +138,153 @@ const compile = defineCommand({
   args: {
     config: { type: 'string', description: 'Path to config file' },
     'skip-fuzzy': { type: 'boolean', description: 'Exclude fuzzy entries from compilation', default: false },
+    'no-cache': { type: 'boolean', description: 'Disable compilation cache', default: false },
+    parallel: { type: 'boolean', description: 'Enable parallel compilation using worker threads', default: false },
+    concurrency: { type: 'string', description: 'Max number of worker threads (default: auto)' },
   },
   async run({ args }) {
     const config = await loadConfig(args.config)
+    const localeCodes = resolveLocaleCodes(config.locales)
     const ext = config.format === 'json' ? '.json' : '.po'
 
     mkdirSync(config.compileOutDir, { recursive: true })
 
     // Collect all catalogs and build union of IDs
     const allCatalogs: Record<string, CatalogData> = {}
-    for (const locale of config.locales) {
+    const catalogContents: Record<string, string> = {}
+    for (const locale of localeCodes) {
       const catalogPath = resolve(config.catalogDir, `${locale}${ext}`)
-      allCatalogs[locale] = readCatalog(catalogPath, config.format)
-    }
-
-    const allIds = collectAllIds(allCatalogs)
-    consola.info(`Compiling ${allIds.length} messages across ${config.locales.length} locales`)
-
-    const skipFuzzy = args['skip-fuzzy'] ?? false
-
-    for (const locale of config.locales) {
-      const { code, stats } = compileCatalog(
-        allCatalogs[locale]!,
-        locale,
-        allIds,
-        config.sourceLocale,
-        { skipFuzzy },
-      )
-      const outPath = resolve(config.compileOutDir, `${locale}.js`)
-      writeFileSync(outPath, code, 'utf-8')
-
-      if (stats.missing.length > 0) {
-        consola.warn(
-          `${locale}: ${stats.compiled} compiled, ${stats.missing.length} missing translations`,
-        )
-        for (const id of stats.missing) {
-          consola.warn(`  ⤷ ${id}`)
-        }
+      if (existsSync(catalogPath)) {
+        const content = readFileSync(catalogPath, 'utf-8')
+        catalogContents[locale] = content
+        allCatalogs[locale] = config.format === 'json'
+          ? readJsonCatalog(content)
+          : readPoCatalog(content)
       } else {
-        consola.success(`Compiled ${locale}: ${stats.compiled} messages → ${outPath}`)
+        catalogContents[locale] = ''
+        allCatalogs[locale] = {}
       }
     }
 
-    // Generate index.js with locale list and lazy loaders
-    const indexCode = compileIndex(config.locales, config.compileOutDir)
-    const indexPath = resolve(config.compileOutDir, 'index.js')
-    writeFileSync(indexPath, indexCode, 'utf-8')
-    consola.success(`Generated index → ${indexPath}`)
+    const allIds = collectAllIds(allCatalogs)
+    consola.info(`Compiling ${allIds.length} messages across ${localeCodes.length} locales`)
 
-    // Generate type declarations
-    const typesCode = compileTypeDeclaration(allIds, allCatalogs, config.sourceLocale)
+    const skipFuzzy = args['skip-fuzzy'] ?? false
+    const useCache = !(args['no-cache'] ?? false)
+    const cache = useCache ? new CompileCache(config.catalogDir, deriveProjectId(process.cwd())) : null
+    const useParallel = args.parallel ?? false
+    const concurrency = args.concurrency ? parseInt(args.concurrency, 10) : undefined
+
+    if (concurrency !== undefined && (isNaN(concurrency) || concurrency < 1)) {
+      consola.error('Invalid --concurrency. Must be a positive integer.')
+      process.exitCode = 1
+      return
+    }
+
+    let skipped = 0
+    let needsRegenIndex = false
+
+    // Filter locales that need compilation (cache check)
+    const localesToCompile: string[] = []
+    for (const locale of localeCodes) {
+      if (cache && cache.isUpToDate(locale, catalogContents[locale]!)) {
+        const outPath = resolve(config.compileOutDir, `${locale}.js`)
+        if (existsSync(outPath)) {
+          skipped++
+          continue
+        }
+      }
+      localesToCompile.push(locale)
+    }
+
+    if (localesToCompile.length > 0) {
+      needsRegenIndex = true
+    }
+
+    if (useParallel && localesToCompile.length > 1) {
+      // Parallel compilation via worker threads
+      const tasks = localesToCompile.map((locale) => ({
+        locale,
+        catalog: allCatalogs[locale]!,
+        allIds,
+        sourceLocale: config.sourceLocale,
+        options: { skipFuzzy },
+      }))
+
+      const results = await parallelCompile(tasks, concurrency)
+
+      for (const result of results) {
+        const outPath = resolve(config.compileOutDir, `${result.locale}.js`)
+        writeFileSync(outPath, result.code, 'utf-8')
+
+        if (cache) {
+          cache.set(result.locale, catalogContents[result.locale]!)
+        }
+
+        if (result.stats.missing.length > 0) {
+          consola.warn(
+            `${result.locale}: ${result.stats.compiled} compiled, ${result.stats.missing.length} missing translations`,
+          )
+          for (const id of result.stats.missing) {
+            consola.warn(`  ⤷ ${id}`)
+          }
+        } else {
+          consola.success(`Compiled ${result.locale}: ${result.stats.compiled} messages → ${outPath}`)
+        }
+      }
+    } else {
+      // Serial compilation
+      for (const locale of localesToCompile) {
+        const { code, stats } = compileCatalog(
+          allCatalogs[locale]!,
+          locale,
+          allIds,
+          config.sourceLocale,
+          { skipFuzzy },
+        )
+        const outPath = resolve(config.compileOutDir, `${locale}.js`)
+        writeFileSync(outPath, code, 'utf-8')
+
+        if (cache) {
+          cache.set(locale, catalogContents[locale]!)
+        }
+
+        if (stats.missing.length > 0) {
+          consola.warn(
+            `${locale}: ${stats.compiled} compiled, ${stats.missing.length} missing translations`,
+          )
+          for (const id of stats.missing) {
+            consola.warn(`  ⤷ ${id}`)
+          }
+        } else {
+          consola.success(`Compiled ${locale}: ${stats.compiled} messages → ${outPath}`)
+        }
+      }
+    }
+
+    if (skipped > 0) {
+      consola.info(`${skipped} locale(s) unchanged — skipped`)
+    }
+
+    if (cache) {
+      cache.save()
+    }
+
+    // Generate index.js and types when any locale changed or outputs don't exist
+    const indexPath = resolve(config.compileOutDir, 'index.js')
     const typesPath = resolve(config.compileOutDir, 'messages.d.ts')
-    writeFileSync(typesPath, typesCode, 'utf-8')
-    consola.success(`Generated types → ${typesPath}`)
+
+    if (needsRegenIndex || !existsSync(indexPath)) {
+      const indexCode = compileIndex(localeCodes, config.compileOutDir)
+      writeFileSync(indexPath, indexCode, 'utf-8')
+      consola.success(`Generated index → ${indexPath}`)
+    }
+
+    if (needsRegenIndex || !existsSync(typesPath)) {
+      const typesCode = compileTypeDeclaration(allIds, allCatalogs, config.sourceLocale)
+      writeFileSync(typesPath, typesCode, 'utf-8')
+      consola.success(`Generated types → ${typesPath}`)
+    }
   },
 })
 
@@ -162,11 +295,12 @@ const stats = defineCommand({
   },
   async run({ args }) {
     const config = await loadConfig(args.config)
+    const localeCodes = resolveLocaleCodes(config.locales)
     const ext = config.format === 'json' ? '.json' : '.po'
 
     const rows: Array<{ locale: string; total: number; translated: number; pct: string }> = []
 
-    for (const locale of config.locales) {
+    for (const locale of localeCodes) {
       const catalogPath = resolve(config.catalogDir, `${locale}${ext}`)
       const catalog = readCatalog(catalogPath, config.format)
       const entries = Object.values(catalog).filter((e) => !e.obsolete)
@@ -195,10 +329,11 @@ const lint = defineCommand({
   },
   async run({ args }) {
     const config = await loadConfig(args.config)
+    const localeCodes = resolveLocaleCodes(config.locales)
     const ext = config.format === 'json' ? '.json' : '.po'
 
     const allCatalogs: Record<string, CatalogData> = {}
-    for (const locale of config.locales) {
+    for (const locale of localeCodes) {
       const catalogPath = resolve(config.catalogDir, `${locale}${ext}`)
       allCatalogs[locale] = readCatalog(catalogPath, config.format)
     }
@@ -231,6 +366,64 @@ const lint = defineCommand({
   },
 })
 
+const check = defineCommand({
+  meta: { name: 'check', description: 'Check translation coverage for CI' },
+  args: {
+    config: { type: 'string', description: 'Path to config file' },
+    ci: { type: 'boolean', description: 'Alias for --format github', default: false },
+    'min-coverage': { type: 'string', description: 'Minimum coverage percentage (0-100)', default: '100' },
+    format: { type: 'string', description: 'Output format: text | json | github' },
+    locale: { type: 'string', description: 'Check a specific locale only' },
+  },
+  async run({ args }) {
+    const config = await loadConfig(args.config)
+    const localeCodes = resolveLocaleCodes(config.locales)
+    const ext = config.format === 'json' ? '.json' : '.po'
+
+    const allCatalogs: Record<string, CatalogData> = {}
+    for (const locale of localeCodes) {
+      const catalogPath = resolve(config.catalogDir, `${locale}${ext}`)
+      allCatalogs[locale] = readCatalog(catalogPath, config.format)
+    }
+
+    const minCoverage = parseFloat(args['min-coverage'] ?? '100')
+    if (isNaN(minCoverage) || minCoverage < 0 || minCoverage > 100) {
+      consola.error('Invalid --min-coverage. Must be a number between 0 and 100.')
+      process.exitCode = 1
+      return
+    }
+
+    const outputFormat = args.format ?? (args.ci ? 'github' : 'text')
+
+    const checkOpts: Parameters<typeof checkCoverage>[1] = {
+      sourceLocale: config.sourceLocale,
+      minCoverage,
+      format: outputFormat as 'text' | 'json' | 'github',
+    }
+    if (args.locale) checkOpts.locale = args.locale
+
+    const output = checkCoverage(allCatalogs, checkOpts)
+
+    switch (outputFormat) {
+      case 'json':
+        consola.log(formatCheckJson(output))
+        break
+      case 'github':
+        consola.log(formatCheckGitHub(output, config.catalogDir, config.format))
+        break
+      default:
+        consola.log('')
+        consola.log(formatCheckText(output))
+        consola.log('')
+        break
+    }
+
+    if (!output.passed) {
+      process.exitCode = 1
+    }
+  },
+})
+
 const translate = defineCommand({
   meta: { name: 'translate', description: 'Translate messages using AI (Claude Code or Codex CLI)' },
   args: {
@@ -243,6 +436,7 @@ const translate = defineCommand({
   },
   async run({ args }) {
     const config = await loadConfig(args.config)
+    const localeCodes = resolveLocaleCodes(config.locales)
     const provider = args.provider as AIProvider
 
     if (provider !== 'claude' && provider !== 'codex') {
@@ -258,7 +452,7 @@ const translate = defineCommand({
 
     const targetLocales = args.locale
       ? [args.locale]
-      : config.locales.filter((l: string) => l !== config.sourceLocale)
+      : localeCodes.filter((l: string) => l !== config.sourceLocale)
 
     if (targetLocales.length === 0) {
       consola.warn('No target locales to translate.')
@@ -343,7 +537,7 @@ const main = defineCommand({
     version: '0.0.1',
     description: 'Compile-time i18n for modern frameworks',
   },
-  subCommands: { init, extract, compile, stats, lint, translate, migrate },
+  subCommands: { init, extract, compile, stats, lint, check, translate, migrate },
 })
 
 runMain(main)

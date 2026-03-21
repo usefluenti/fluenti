@@ -1,6 +1,6 @@
 ---
 title: CLI Usage
-description: Using the fluenti CLI — extract, compile, stats, and translate commands
+description: Using the fluenti CLI — extract, compile, check, lint, stats, and translate commands
 ---
 
 import { Aside } from '@astrojs/starlight/components'
@@ -31,6 +31,7 @@ The command reads `fluenti.config.ts` for `include`, `exclude`, `catalogDir`, an
 | `--config` | `string` | — | Path to config file |
 | `--clean` | `boolean` | `false` | Remove obsolete messages from catalogs |
 | `--no-fuzzy` | `boolean` | `false` | Skip fuzzy matching for similar messages |
+| `--no-cache` | `boolean` | `false` | Disable incremental extraction cache |
 
 ## `fluenti compile`
 
@@ -52,6 +53,9 @@ npx fluenti compile
 |------|------|---------|-------------|
 | `--config` | `string` | — | Path to config file |
 | `--skip-fuzzy` | `boolean` | `false` | Exclude fuzzy-marked translations from output |
+| `--no-cache` | `boolean` | `false` | Disable compilation cache |
+| `--parallel` | `boolean` | `false` | Enable parallel compilation using worker threads |
+| `--concurrency` | `number` | auto | Max number of worker threads |
 
 ## `fluenti stats`
 
@@ -76,6 +80,51 @@ export default defineConfig({
   strictThreshold: 90, // fail if any locale is below 90%
 })
 ```
+
+## `fluenti lint`
+
+Check translation quality — missing translations, inconsistent placeholders, fuzzy entries:
+
+```bash
+npx fluenti lint
+npx fluenti lint --strict          # Treat warnings as errors
+npx fluenti lint --locale ja       # Lint a single locale
+```
+
+### Flags
+
+| Flag | Type | Default | Description |
+|------|------|---------|-------------|
+| `--config` | `string` | — | Path to config file |
+| `--strict` | `boolean` | `false` | Treat warnings as errors (non-zero exit code) |
+| `--locale` | `string` | — | Lint a specific locale only |
+
+## `fluenti check`
+
+Check translation coverage — designed for CI pipelines:
+
+```bash
+npx fluenti check --min-coverage 90
+npx fluenti check --ci                 # GitHub Actions annotations
+npx fluenti check --format json        # Machine-readable output
+npx fluenti check --locale ja          # Check a single locale
+```
+
+### Flags
+
+| Flag | Type | Default | Description |
+|------|------|---------|-------------|
+| `--config` | `string` | — | Path to config file |
+| `--min-coverage` | `number` | `100` | Minimum coverage percentage (0–100) |
+| `--format` | `'text' \| 'json' \| 'github'` | `'text'` | Output format |
+| `--ci` | `boolean` | `false` | Alias for `--format github` |
+| `--locale` | `string` | — | Check a specific locale only |
+
+The `github` format outputs `::error` and `::warning` annotations that GitHub Actions renders inline on PRs.
+
+<Aside type="tip">
+Use `fluenti check` in CI to gate deployments on translation completeness. See [Scaling & Enterprise](/advanced/scaling/#cicd-integration) for a full GitHub Actions workflow.
+</Aside>
 
 ## `fluenti init`
 
@@ -111,6 +160,8 @@ npx fluenti translate --locale zh-CN --provider codex --batch-size 100
 | `--provider` | `'claude' \| 'codex'` | `'claude'` | AI provider to use |
 | `--locale` | `string` | — | Target locale to translate |
 | `--batch-size` | `number` | `50` | Messages per AI request |
+| `--dry-run` | `boolean` | `false` | Preview translations without writing files |
+| `--context` | `string` | — | Project context description to improve translation quality |
 | `--config` | `string` | — | Path to config file |
 
 The command batches untranslated messages from your catalogs and sends them to the AI provider. Existing translations are preserved.
@@ -145,14 +196,17 @@ The command scans your project for the existing library's config files, locale f
 │  0. fluenti init                        │
 │     Set up config and scripts           │
 │                                         │
-│  1. fluenti extract                     │
+│  1. fluenti extract [--no-cache]        │
 │     Scan source → update PO/JSON files  │
 │                                         │
 │  2. Translate                           │
 │     Translators edit PO files           │
 │     (or use fluenti translate for AI)   │
 │                                         │
-│  3. fluenti compile                     │
+│  3. fluenti check                       │
+│     Verify coverage meets threshold     │
+│                                         │
+│  4. fluenti compile [--parallel]        │
 │     PO → optimised JS modules           │
 └─────────────────────────────────────────┘
 ```
@@ -172,6 +226,7 @@ import { updateCatalog, compileCatalog } from '@fluenti/cli'
 import { readPoCatalog, writePoCatalog } from '@fluenti/cli'
 import { translateCatalog } from '@fluenti/cli'
 import { runInit, runMigrate } from '@fluenti/cli'
+import { runExtract, runCompile, loadConfig } from '@fluenti/cli'
 ```
 
 For the full programmatic API reference, see [@fluenti/cli API](/api/cli/).

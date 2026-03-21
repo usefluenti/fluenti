@@ -32,7 +32,7 @@ export default defineConfig({
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `sourceLocale` | `string` | `'en'` | The locale used in source code |
-| `locales` | `string[]` | `['en']` | All target locales |
+| `locales` | `LocaleDefinition[]` | `['en']` | All target locales. Each entry can be a string (`'en'`) or an object (`{ code: 'en', name: 'English' }`) |
 | `catalogDir` | `string` | `'./locales'` | Directory for translation catalogs |
 | `format` | `'json' \| 'po'` | `'po'` | Catalog file format. PO is recommended — compatible with Poedit, Weblate, Crowdin and other translation tools |
 | `include` | `string[]` | `['./src/**/*.vue', './src/**/*.tsx', './src/**/*.jsx']` | Glob patterns for source files |
@@ -46,6 +46,16 @@ export default defineConfig({
 | `namespaceMapping` | `Record<string, string>?` | — | Map namespace prefixes to catalog subdirectories |
 | `externalCatalogs` | `Array<{ package: string; catalogDir: string }>?` | — | Load catalogs from external npm packages |
 | `strictThreshold` | `number?` | — | Minimum translation percentage required (used by `fluenti stats`) |
+| `extends` | `string?` | — | Path to parent config file for [monorepo inheritance](/advanced/scaling/#monorepo-configuration) |
+| `defaultLocale` | `string?` | — | Default locale for routing/detection (defaults to `sourceLocale`) |
+| `parallelCompile` | `boolean?` | `false` | Enable [parallel compilation](/advanced/scaling/#parallel-compilation) using worker threads |
+| `idGenerator` | `(message: string, context?: string) => string` | — | Custom message ID hash function |
+| `catalogExtension` | `string?` | `'.js'` | File extension for compiled catalog output files |
+| `devAutoCompile` | `boolean?` | `true` | Auto extract+compile in dev mode |
+| `buildAutoCompile` | `boolean?` | `true` | Auto extract+compile before production build |
+| `devAutoCompileDelay` | `number?` | `500` | Debounce delay in ms for dev auto-compile |
+| `onBeforeCompile` | `() => boolean \| void \| Promise<...>` | — | [Lifecycle hook](/advanced/scaling/#build-lifecycle-hooks) called before auto-compile |
+| `onAfterCompile` | `() => void \| Promise<void>` | — | [Lifecycle hook](/advanced/scaling/#build-lifecycle-hooks) called after auto-compile |
 
 ## PO vs JSON
 
@@ -66,6 +76,56 @@ locales/compiled/
 ```
 
 For the full API reference, see [@fluenti/cli](/api/cli/) and [@fluenti/vite-plugin](/api/vite-plugin/).
+
+## Monorepo Configuration
+
+Use the `extends` option to inherit from a shared base config:
+
+```typescript
+// packages/app-web/fluenti.config.ts
+export default defineConfig({
+  extends: '../../fluenti.config.ts',
+  include: ['./src/**/*.tsx', './src/**/*.ts'],
+  splitting: 'dynamic',
+})
+```
+
+Child configs inherit all options from the parent and can override any field. Relative paths in the parent are automatically rebased to the child's directory.
+
+See [Scaling & Enterprise](/advanced/scaling/#monorepo-configuration) for a full monorepo setup guide.
+
+## Performance Options
+
+Enable parallel compilation and incremental caching for large projects:
+
+```typescript
+export default defineConfig({
+  // ...
+  parallelCompile: true,         // Worker threads for 5+ locales
+  devAutoCompileDelay: 1000,     // Increase debounce for large codebases
+})
+```
+
+Use `--no-cache` flags on `extract` and `compile` to force full rebuilds when needed. See [Scaling & Enterprise](/advanced/scaling/#incremental-caching) for details.
+
+## Lifecycle Hooks
+
+Hook into the auto-compile process for custom build integration:
+
+```typescript
+export default defineConfig({
+  // ...
+  onBeforeCompile: () => {
+    // Return false to skip compilation
+    console.log('Compiling translations...')
+  },
+  onAfterCompile: async () => {
+    // Post-compile: notifications, uploads, validation
+  },
+})
+```
+
+See [Scaling & Enterprise](/advanced/scaling/#build-lifecycle-hooks) for details.
 
 ## Common Configurations
 

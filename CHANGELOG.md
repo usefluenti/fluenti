@@ -2,6 +2,38 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.0] - 2026-03-21
+
+Enterprise & scaling release — monorepo configuration inheritance, incremental caching, parallel compilation, CI translation coverage gating, and compile-time type safety.
+
+### Added
+
+- **Monorepo `extends` config** (`@fluenti/core`) — inherit from a parent `fluenti.config.ts` with automatic path rebasing, circular reference detection, and a 10-level depth limit
+- **Incremental extraction cache** (`@fluenti/cli`) — file-level mtime+size tracking skips unchanged files during `fluenti extract`. Disable with `--no-cache`
+- **Compilation cache** (`@fluenti/cli`) — per-locale content hashing skips unchanged locales during `fluenti compile`. Disable with `--no-cache`
+- **Parallel compilation** (`@fluenti/cli`) — `--parallel` flag compiles locales across worker threads. `--concurrency N` controls max workers
+- **`fluenti check` command** (`@fluenti/cli`) — CI-oriented translation coverage gating with `--min-coverage`, `--format` (`text` | `json` | `github`), `--ci`, and `--locale` flags
+- **Branded `LocalizedString` type** (`@fluenti/core`) — `t()` returns a branded string type; opt-out via `FluentiTypeConfig` module augmentation
+- **`LocaleObject` metadata** (`@fluenti/core`) — rich locale definitions with `name`, `iso`, `dir` (RTL), and `domain` fields
+- **`idGenerator` option** (`@fluenti/core`) — custom message ID hash function
+- **`onBeforeCompile` / `onAfterCompile` hooks** (`@fluenti/core`) — lifecycle hooks for build pipeline integration
+- **`devAutoCompileDelay` option** (`@fluenti/core`) — configurable debounce delay for dev auto-compile (default: 500ms)
+- **`catalogExtension` option** (`@fluenti/core`) — custom file extension for compiled output (default: `.js`)
+- **`defaultLocale` option** (`@fluenti/core`) — explicit default locale for routing/detection
+- **`devAutoCompile` / `buildAutoCompile` options** (`@fluenti/core`) — toggle auto-compile independently for dev and build
+- **Next.js middleware & navigation helpers** (`@fluenti/next`) — App Router i18n routing support
+- **Generated `messages.d.ts`** (`@fluenti/cli`) — narrowed type declarations for IDE autocompletion of message IDs
+
+### Changed
+
+- `locales` config field now accepts `LocaleDefinition[]` (mixed `string | LocaleObject`) instead of `string[]` only
+- Compilation generates `messages.d.ts` alongside compiled catalogs for type-safe message keys
+
+### Fixed
+
+- Nuxt SSR locale detection improvements
+- Resolved CI typecheck and E2E test failures
+
 ## [0.2.0] - 2026-03-20
 
 ### Added

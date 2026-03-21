@@ -1,5 +1,6 @@
 export type {
   Locale,
+  LocalizedString,
   MessageDescriptor,
   CompiledMessage,
   Messages,
@@ -17,6 +18,8 @@ export type {
   FunctionNode,
   ExtractedMessage,
   FluentiConfig,
+  LocaleObject,
+  LocaleDefinition,
   DetectLocaleOptions,
   DateFormatOptions,
   NumberFormatOptions,
@@ -26,7 +29,10 @@ export type {
   CompileTimeMessageDescriptor,
   CompileTimeT,
   TypedCompileTimeT,
+  FluentiTypeConfig,
 } from './types'
+
+export { resolveLocaleCodes } from './types'
 
 export { parse, FluentParseError } from './parser'
 export { compile } from './compile'
@@ -48,6 +54,7 @@ export { defineConfig } from './define-config'
 import type {
   FluentConfigExtended,
   FluentInstanceExtended,
+  LocalizedString,
   Locale,
   Messages,
   MessageDescriptor,
@@ -94,14 +101,14 @@ export function createFluent(config: FluentConfigExtended): FluentInstanceExtend
     return interpolate(message, values, locale, customFormatters)
   }
 
-  function applyTransform(result: string, id: string): string {
+  function applyTransform(result: string, id: string): LocalizedString {
     if (config.transform) {
-      return config.transform(result, id, currentLocale)
+      return config.transform(result, id, currentLocale) as LocalizedString
     }
-    return result
+    return result as LocalizedString
   }
 
-  function lookupCatalog(id: string, values?: Record<string, unknown>): string | undefined {
+  function lookupCatalog(id: string, values?: Record<string, unknown>): LocalizedString | undefined {
     // Try current locale
     const msg = catalog.get(currentLocale, id)
     if (msg !== undefined) {
@@ -139,13 +146,13 @@ export function createFluent(config: FluentConfigExtended): FluentInstanceExtend
     return undefined
   }
 
-  function resolveMissing(id: string): string | undefined {
+  function resolveMissing(id: string): LocalizedString | undefined {
     if (!config.missing) return undefined
 
     try {
-      const result = config.missing(currentLocale, id)
-      if (result !== undefined) {
-        return applyTransform(result, id)
+      const missingResult = config.missing(currentLocale, id)
+      if (missingResult !== undefined) {
+        return applyTransform(missingResult, id)
       }
     } catch {
       // Missing handler threw — fall through to next resolution path
@@ -161,7 +168,7 @@ export function createFluent(config: FluentConfigExtended): FluentInstanceExtend
     console.warn(`[fluenti] Missing translation for "${id}" in locale "${currentLocale}"`)
   }
 
-  function resolveMessage(id: string, values?: Record<string, unknown>): string {
+  function resolveMessage(id: string, values?: Record<string, unknown>): LocalizedString {
     const catalogResult = lookupCatalog(id, values)
     if (catalogResult !== undefined) {
       return catalogResult
@@ -179,7 +186,7 @@ export function createFluent(config: FluentConfigExtended): FluentInstanceExtend
     }
 
     warnMissing(id)
-    return devWarningsEnabled ? `[!] ${id}` : id
+    return (devWarningsEnabled ? `[!] ${id}` : id) as LocalizedString
   }
 
   const instance: FluentInstanceExtended = {
@@ -195,7 +202,7 @@ export function createFluent(config: FluentConfigExtended): FluentInstanceExtend
       }
     },
 
-    t(idOrStrings: string | MessageDescriptor | TemplateStringsArray, ...rest: unknown[]): string {
+    t(idOrStrings: string | MessageDescriptor | TemplateStringsArray, ...rest: unknown[]): LocalizedString {
       // Tagged template form: t`Hello ${name}`
       if (Array.isArray(idOrStrings) && 'raw' in idOrStrings) {
         const strings = idOrStrings as TemplateStringsArray
@@ -236,7 +243,7 @@ export function createFluent(config: FluentConfigExtended): FluentInstanceExtend
           return applyTransform(interp(descriptor.message, values, currentLocale), fallbackId)
         }
 
-        return messageId
+        return messageId as LocalizedString
       }
 
       return resolveMessage(id, values)
@@ -259,16 +266,16 @@ export function createFluent(config: FluentConfigExtended): FluentInstanceExtend
       return catalog.getLocales()
     },
 
-    d(value: Date | number, style?: string): string {
-      return formatDate(value, currentLocale, style, config.dateFormats)
+    d(value: Date | number, style?: string): LocalizedString {
+      return formatDate(value, currentLocale, style, config.dateFormats) as LocalizedString
     },
 
-    n(value: number, style?: string): string {
-      return formatNumber(value, currentLocale, style, config.numberFormats)
+    n(value: number, style?: string): LocalizedString {
+      return formatNumber(value, currentLocale, style, config.numberFormats) as LocalizedString
     },
 
-    format(message: string, values?: Record<string, unknown>): string {
-      return interp(message, values, currentLocale)
+    format(message: string, values?: Record<string, unknown>): LocalizedString {
+      return interp(message, values, currentLocale) as LocalizedString
     },
   }
 

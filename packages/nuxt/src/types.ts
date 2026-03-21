@@ -1,4 +1,10 @@
-import type { Locale } from '@fluenti/core'
+import type { FluentiConfig } from '@fluenti/core'
+// Re-export core types for backwards compatibility
+export type { LocaleObject, LocaleDefinition } from '@fluenti/core'
+export { resolveLocaleCodes } from '@fluenti/core'
+
+// Import core types needed locally
+import type { LocaleDefinition, LocaleObject } from '@fluenti/core'
 
 /** Routing strategy for locale-prefixed URLs */
 export type Strategy = 'prefix' | 'prefix_except_default' | 'prefix_and_default' | 'no_prefix' | 'domains'
@@ -15,38 +21,6 @@ export interface DetectBrowserLanguageOptions {
 
 /** Built-in detector names */
 export type BuiltinDetector = 'path' | 'cookie' | 'header' | 'query' | 'domain'
-
-/**
- * Locale metadata object.
- *
- * Use this instead of plain strings when you need additional locale properties
- * like display name, ISO tag, or text direction.
- *
- * @example
- * ```ts
- * { code: 'ja', name: '日本語', iso: 'ja-JP', dir: 'ltr' }
- * { code: 'ar', name: 'العربية', iso: 'ar-SA', dir: 'rtl', domain: 'ar.example.com' }
- * ```
- */
-export interface LocaleObject {
-  /** Locale code (e.g. 'en', 'ja', 'zh-CN') */
-  code: string
-  /** Human-readable display name (e.g. 'English', '日本語') */
-  name?: string
-  /** BCP 47 language tag for SEO (e.g. 'en-US', 'ja-JP') */
-  iso?: string
-  /** Text direction */
-  dir?: 'ltr' | 'rtl'
-  /**
-   * Domain for this locale (used with `strategy: 'domains'`).
-   *
-   * @example 'ja.example.com' or 'example.jp'
-   */
-  domain?: string
-}
-
-/** A locale definition — either a plain code string or a metadata object */
-export type LocaleDefinition = string | LocaleObject
 
 /**
  * Context passed to locale detectors and the `fluenti:detect-locale` hook.
@@ -86,9 +60,6 @@ export interface LocaleDetectContext {
  */
 export type LocaleDetectorFn = (ctx: LocaleDetectContext) => void | Promise<void>
 
-/** Custom message ID generator function (re-exported from @fluenti/vite-plugin) */
-export type IdGenerator = (message: string, context?: string) => string
-
 /**
  * Per-page locale configuration.
  *
@@ -116,101 +87,13 @@ export interface DomainConfig {
 
 /** @fluenti/nuxt module options (set in nuxt.config.ts under `fluenti` key) */
 export interface FluentNuxtOptions {
-  /**
-   * List of supported locales.
-   *
-   * Can be plain strings or locale metadata objects.
-   *
-   * @example ['en', 'ja', 'zh-CN']
-   * @example [{ code: 'en', name: 'English', iso: 'en-US' }, { code: 'ar', name: 'العربية', dir: 'rtl' }]
-   */
-  locales: LocaleDefinition[]
-  /** Default locale code */
-  defaultLocale: string
+  /** fluenti.config.ts path or inline config */
+  config?: string | FluentiConfig
+
+  // ---- Nuxt-specific: routing, detection, components ----
+
   /** URL routing strategy */
   strategy?: Strategy
-  /** Source locale for message extraction */
-  sourceLocale?: string
-  /** Directory for compiled message catalogs */
-  catalogDir?: string
-  /**
-   * Code splitting strategy for compiled catalogs.
-   * - `'dynamic'`: reactive catalog loaded per-route
-   * - `'static'`: direct imports at build time
-   * - `false`: no splitting
-   */
-  splitting?: 'dynamic' | 'static' | false
-  /** Default locale for build-time static splitting strategy */
-  defaultBuildLocale?: string
-  /** Source file patterns for auto extract in dev (e.g. `['src/**\/*.vue']`) */
-  include?: string[]
-  /** Auto extract+compile in dev mode @default true */
-  devAutoCompile?: boolean
-  /** Auto extract+compile before production build @default true */
-  buildAutoCompile?: boolean
-  /** File extension for compiled catalog files @default '.js' */
-  catalogExtension?: string
-  /** Custom message ID generator */
-  idGenerator?: IdGenerator
-  /** Called before auto-compile runs (dev and build). Return false to skip compilation. */
-  onBeforeCompile?: () => boolean | void | Promise<boolean | void>
-  /** Called after auto-compile completes successfully */
-  onAfterCompile?: () => void | Promise<void>
-  /**
-   * Fallback chain for message resolution.
-   *
-   * When a translation is missing for the current locale, the runtime will
-   * try each locale in the fallback chain before giving up.
-   *
-   * Use `'*'` as a wildcard key for a global fallback chain.
-   *
-   * @example { 'zh-TW': ['zh-CN', 'en'], '*': ['en'] }
-   */
-  fallbackChain?: Record<string, Locale[]>
-  /**
-   * Callback fired when a translation key is missing from the catalog.
-   *
-   * Useful for logging, error tracking, or providing dynamic fallbacks.
-   *
-   * @example
-   * ```ts
-   * onMissingTranslation: (locale, id) => {
-   *   console.warn(`Missing: ${id} [${locale}]`)
-   *   return undefined // use default behavior
-   * }
-   * ```
-   */
-  onMissingTranslation?: (locale: string, id: string) => string | undefined
-  /**
-   * Structured error handler for i18n errors.
-   *
-   * Called when translations are missing, locale loading fails, or message
-   * formatting errors occur. Provides more context than `onMissingTranslation`.
-   *
-   * @example
-   * ```ts
-   * onError: (error) => {
-   *   if (error.code === 'MISSING_MESSAGE') {
-   *     console.warn(`[i18n] Missing: ${error.key} [${error.locale}]`)
-   *   }
-   * }
-   * ```
-   */
-  onError?: I18nErrorHandler
-  /**
-   * Generate fallback text when a translation is missing or errors.
-   *
-   * Return a string to use as the fallback, or `undefined` for default behavior.
-   *
-   * @example
-   * ```ts
-   * getMessageFallback: (error) => {
-   *   if (error.code === 'MISSING_MESSAGE') return `⚠️ ${error.key}`
-   *   return undefined
-   * }
-   * ```
-   */
-  getMessageFallback?: MessageFallbackHandler
   /** Browser language detection settings */
   detectBrowserLanguage?: DetectBrowserLanguageOptions
   /**
@@ -224,6 +107,12 @@ export interface FluentNuxtOptions {
    * @default ['path', 'cookie', 'header']
    */
   detectOrder?: Array<BuiltinDetector | string>
+  /**
+   * Query parameter name for locale detection (e.g. `?lang=ja`).
+   *
+   * @default 'locale'
+   */
+  queryParamKey?: string
   /**
    * Prefix for globally registered i18n components (Trans, Plural, Select, DateTime, NumberFormat).
    *
@@ -242,15 +131,6 @@ export interface FluentNuxtOptions {
    */
   autoVitePlugin?: boolean
   /**
-   * Incremental Static Regeneration (ISR) settings.
-   *
-   * When enabled, the module automatically generates `routeRules` with
-   * ISR caching for all locale route patterns.
-   */
-  isr?: ISROptions
-  /** Enable @fluenti/vue-i18n-compat bridge mode */
-  compat?: boolean
-  /**
    * Whether to auto-import composables (useLocalePath, useSwitchLocalePath, useLocaleHead, useI18n).
    *
    * Set to `false` to disable all auto-imports. Useful when migrating from `@nuxtjs/i18n`
@@ -259,41 +139,6 @@ export interface FluentNuxtOptions {
    * @default true
    */
   autoImports?: boolean
-  /**
-   * Query parameter name for locale detection (e.g. `?lang=ja`).
-   *
-   * @default 'locale'
-   */
-  queryParamKey?: string
-  /**
-   * Whether to inject `$localePath` onto `app.config.globalProperties`.
-   *
-   * Set to `false` if another plugin (e.g. `@nuxtjs/i18n`) already provides `$localePath`,
-   * or when using composition API exclusively.
-   *
-   * @default true
-   */
-  injectGlobalProperties?: boolean
-  /**
-   * Whether the locale redirect middleware should be registered globally.
-   *
-   * Set to `false` to register it as a named middleware instead, so you can
-   * apply it only to specific pages via `definePageMeta({ middleware: ['fluenti-locale-redirect'] })`.
-   *
-   * Only relevant when `strategy` is `'prefix'`.
-   *
-   * @default true
-   */
-  globalMiddleware?: boolean
-  /**
-   * Whether to register the `NuxtLinkLocale` component globally.
-   *
-   * Set to `false` to disable registration. You can still import it manually
-   * from `@fluenti/nuxt/runtime/components/NuxtLinkLocale`.
-   *
-   * @default true
-   */
-  registerNuxtLinkLocale?: boolean
   /**
    * Whether to extend routes with locale-prefixed variants.
    *
@@ -304,6 +149,19 @@ export interface FluentNuxtOptions {
    * @default true
    */
   extendRoutes?: boolean
+  /**
+   * Route generation mode for locale variants.
+   *
+   * - `'all'` (default): All pages get locale route variants unless explicitly
+   *   opted out via `definePageMeta({ i18n: false })`.
+   * - `'opt-in'`: Only pages that explicitly declare `definePageMeta({ i18n: { locales: [...] } })`
+   *   get locale route variants. Pages without an `i18n` meta field are left untouched.
+   *
+   * Use `'opt-in'` for large projects where only a subset of pages need i18n routing.
+   *
+   * @default 'all'
+   */
+  routeMode?: 'all' | 'opt-in'
   /**
    * Template for generating locale-specific route names.
    *
@@ -332,6 +190,26 @@ export interface FluentNuxtOptions {
    */
   routeOverrides?: Record<string, Record<string, string>>
   /**
+   * Whether the locale redirect middleware should be registered globally.
+   *
+   * Set to `false` to register it as a named middleware instead, so you can
+   * apply it only to specific pages via `definePageMeta({ middleware: ['fluenti-locale-redirect'] })`.
+   *
+   * Only relevant when `strategy` is `'prefix'`.
+   *
+   * @default true
+   */
+  globalMiddleware?: boolean
+  /**
+   * Whether to register the `NuxtLinkLocale` component globally.
+   *
+   * Set to `false` to disable registration. You can still import it manually
+   * from `@fluenti/nuxt/runtime/components/NuxtLinkLocale`.
+   *
+   * @default true
+   */
+  registerNuxtLinkLocale?: boolean
+  /**
    * Domain-to-locale mappings for the `'domains'` strategy.
    *
    * Each entry maps a domain hostname to a locale. Required when `strategy` is `'domains'`.
@@ -347,6 +225,38 @@ export interface FluentNuxtOptions {
    * ```
    */
   domains?: DomainConfig[]
+  /**
+   * Incremental Static Regeneration (ISR) settings.
+   *
+   * When enabled, the module automatically generates `routeRules` with
+   * ISR caching for all locale route patterns.
+   */
+  isr?: ISROptions
+  /** Enable @fluenti/vue-i18n-compat bridge mode */
+  compat?: boolean
+  /**
+   * Whether to inject `$localePath` onto `app.config.globalProperties`.
+   *
+   * Set to `false` if another plugin (e.g. `@nuxtjs/i18n`) already provides `$localePath`,
+   * or when using composition API exclusively.
+   *
+   * @default true
+   */
+  injectGlobalProperties?: boolean
+  /**
+   * Callback fired when a translation key is missing from the catalog.
+   *
+   * Useful for logging, error tracking, or providing dynamic fallbacks.
+   */
+  onMissingTranslation?: (locale: string, id: string) => string | undefined
+  /**
+   * Structured error handler for i18n errors.
+   */
+  onError?: I18nErrorHandler
+  /**
+   * Generate fallback text when a translation is missing or errors.
+   */
+  getMessageFallback?: MessageFallbackHandler
 }
 
 /** Structured i18n error types */
@@ -404,11 +314,6 @@ export interface FluentNuxtRuntimeConfig {
 }
 
 // ---- Utility helpers ----
-
-/** Extract locale codes from a mixed LocaleDefinition[] array */
-export function resolveLocaleCodes(locales: LocaleDefinition[]): string[] {
-  return locales.map((l) => (typeof l === 'string' ? l : l.code))
-}
 
 /** Build a locale properties map from LocaleDefinition[] */
 export function resolveLocaleProperties(locales: LocaleDefinition[]): Record<string, LocaleObject> {

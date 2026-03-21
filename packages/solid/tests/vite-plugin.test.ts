@@ -24,7 +24,7 @@ describe('fluentiSolid', () => {
 
   describe('virtual modules with solid runtime', () => {
     it('generates Solid runtime with createStore when splitting is enabled', () => {
-      const plugins = fluentiSolid({ splitting: 'dynamic', locales: ['en', 'fr'] })
+      const plugins = fluentiSolid({ config: { splitting: 'dynamic', sourceLocale: 'en', locales: ['en', 'fr'], compileOutDir: 'compiled', catalogDir: './locales', format: 'po', include: ['./src/**/*.{tsx,jsx,ts,js}'] } })
       const virtual = plugins.find((p) => p.name === 'fluenti:virtual') as Plugin
 
       const resolved = callHook(virtual.resolveId, {}, 'virtual:fluenti/runtime')
@@ -38,7 +38,7 @@ describe('fluentiSolid', () => {
     })
 
     it('generates Solid route runtime', () => {
-      const plugins = fluentiSolid({ splitting: 'dynamic', locales: ['en', 'fr'] })
+      const plugins = fluentiSolid({ config: { splitting: 'dynamic', sourceLocale: 'en', locales: ['en', 'fr'], compileOutDir: 'compiled', catalogDir: './locales', format: 'po', include: ['./src/**/*.{tsx,jsx,ts,js}'] } })
       const virtual = plugins.find((p) => p.name === 'fluenti:virtual') as Plugin
 
       const code = callHook(virtual.load, {}, '\0virtual:fluenti/route-runtime') as string

@@ -157,6 +157,8 @@ Use project agents proactively based on the task:
 | Run/debug E2E tests | `e2e-runner` | After playground or fixture changes |
 | Review examples for parity/quality | `examples-reviewer` | Yes — after bulk changes to examples/* |
 | CI/CD pipeline issues | `ci-pipeline` | On workflow file changes or CI failures |
+| Audit API docs vs source code | `docs-reviewer` | Before docs release or after bulk API changes |
+| Fix doc issues from audit report | `docs-fixer` | After `docs-reviewer` produces a FAIL (score < 90) |
 
 **Parallel dispatch**: When a task spans multiple scopes, dispatch agents in parallel (e.g., `npm-package-dev` + `playground-dev`).
 

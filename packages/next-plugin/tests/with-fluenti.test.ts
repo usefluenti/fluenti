@@ -10,11 +10,17 @@ vi.mock('../src/generate-server-module', () => ({
 // Mock read-config
 vi.mock('../src/read-config', () => ({
   resolveConfig: vi.fn(() => ({
-    locales: ['en', 'ja'],
-    defaultLocale: 'en',
-    compiledDir: './src/locales/compiled',
+    fluentiConfig: {
+      sourceLocale: 'en',
+      locales: ['en', 'ja'],
+      catalogDir: './locales',
+      format: 'po',
+      include: ['./src/**/*.{vue,tsx,jsx,ts,js}'],
+      compileOutDir: './src/locales/compiled',
+    },
     serverModule: null,
     serverModuleOutDir: '.fluenti',
+    cookieName: 'locale',
   })),
 }))
 
@@ -117,7 +123,7 @@ describe('withFluenti', () => {
 
   it('returns a function when called with fluent-only config (no next keys)', () => {
     // An object with Fluenti-specific keys should be treated as fluent config
-    const result = withFluenti({ locales: ['en', 'fr'] } as never)
+    const result = withFluenti({ config: { sourceLocale: 'en', locales: ['en', 'fr'], catalogDir: './locales', format: 'po', include: ['./src/**/*.tsx'], compileOutDir: './src/locales/compiled' } })
     expect(typeof result).toBe('function')
     const config = result({})
     expect(config).toHaveProperty('webpack')
@@ -131,9 +137,9 @@ describe('withFluenti', () => {
     expect(typeof config['webpack']).toBe('function')
   })
 
-  it('treats { env: {}, locales: ["en"] } as FluentConfig (has fluent key)', () => {
-    // env is a Next.js key, but locales is a Fluenti key — should be treated as FluentConfig
-    const result = withFluenti({ locales: ['en'] } as never)
+  it('treats { env: {}, config: {...} } as FluentConfig (has fluent key)', () => {
+    // config is a Fluenti key — should be treated as FluentConfig
+    const result = withFluenti({ config: { sourceLocale: 'en', locales: ['en'], catalogDir: './locales', format: 'po', include: ['./src/**/*.tsx'], compileOutDir: './src/locales/compiled' } })
     expect(typeof result).toBe('function')
   })
 
@@ -281,8 +287,24 @@ describe('withFluenti', () => {
     expect(result['plugins']).toBeUndefined()
   })
 
-  it('does not inject plugins when buildAutoCompile is false', () => {
-    const wrapper = withFluenti({ buildAutoCompile: false } as never)
+  it('does not inject plugins when buildAutoCompile is false', async () => {
+    // Mock resolveConfig to return buildAutoCompile: false
+    const { resolveConfig } = await import('../src/read-config')
+    vi.mocked(resolveConfig).mockReturnValueOnce({
+      fluentiConfig: {
+        sourceLocale: 'en',
+        locales: ['en', 'ja'],
+        catalogDir: './locales',
+        format: 'po',
+        include: ['./src/**/*.{vue,tsx,jsx,ts,js}'],
+        compileOutDir: './src/locales/compiled',
+        buildAutoCompile: false,
+      },
+      serverModule: null,
+      serverModuleOutDir: '.fluenti',
+      cookieName: 'locale',
+    })
+    const wrapper = withFluenti()
     const config = wrapper({})
     const webpackFn = config['webpack'] as (cfg: unknown, opts: unknown) => unknown
 

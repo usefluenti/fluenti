@@ -49,7 +49,7 @@ describe('fluentiVue', () => {
 
   describe('virtual modules with vue runtime', () => {
     it('generates Vue runtime with shallowReactive when splitting is enabled', () => {
-      const plugins = fluentiVue({ splitting: 'dynamic', locales: ['en', 'fr'] })
+      const plugins = fluentiVue({ config: { splitting: 'dynamic', sourceLocale: 'en', locales: ['en', 'fr'], compileOutDir: 'compiled', catalogDir: './locales', format: 'po', include: ['./src/**/*.{vue,tsx,jsx,ts,js}'] } })
       const virtual = plugins.find((p) => p.name === 'fluenti:virtual') as Plugin
 
       // Simulate resolveId

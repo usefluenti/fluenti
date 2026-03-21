@@ -129,6 +129,7 @@ export default defineConfig({
           collapsed: true,
           items: [
             { label: 'Code Splitting', slug: 'advanced/code-splitting' },
+            { label: 'Scaling & Enterprise', slug: 'advanced/scaling' },
             { label: 'SSR & Hydration', slug: 'advanced/ssr-hydration' },
             { label: 'Fallback Chains', slug: 'advanced/fallback-chains' },
             { label: 'Best Practices', slug: 'advanced/best-practices' },

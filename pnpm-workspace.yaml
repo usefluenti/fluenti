@@ -3,3 +3,4 @@ packages:
   - 'apps/*'
   - 'examples/*'
   - 'e2e/fixtures/*'
+  - 'e2e/fixtures/monorepo-extends/packages/*'

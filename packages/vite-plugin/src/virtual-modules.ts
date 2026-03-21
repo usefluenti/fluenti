@@ -19,6 +19,7 @@ const RESOLVED_MESSAGES = '\0virtual:fluenti/messages'
 const RESOLVED_ROUTE_RUNTIME = '\0virtual:fluenti/route-runtime'
 
 export interface VirtualModuleOptions {
+  rootDir: string
   catalogDir: string
   catalogExtension: string
   locales: string[]
@@ -66,9 +67,9 @@ function generateRuntimeModule(options: VirtualModuleOptions): string {
 }
 
 function generateStaticMessagesModule(options: VirtualModuleOptions): string {
-  const { catalogDir, catalogExtension, defaultBuildLocale, sourceLocale } = options
+  const { rootDir, catalogDir, catalogExtension, defaultBuildLocale, sourceLocale } = options
   const defaultLocale = defaultBuildLocale || sourceLocale
-  const absoluteCatalogDir = resolve(process.cwd(), catalogDir)
+  const absoluteCatalogDir = resolve(rootDir, catalogDir)
 
   return `export * from '${absoluteCatalogDir}/${defaultLocale}${catalogExtension}'\n`
 }
@@ -91,16 +92,16 @@ export function generateRouteRuntimeModule(options: VirtualModuleOptions): strin
 }
 
 function toRuntimeGeneratorOptions(options: VirtualModuleOptions): RuntimeGeneratorOptions {
-  const { catalogDir, catalogExtension, locales, sourceLocale, defaultBuildLocale } = options
-  return { catalogDir, catalogExtension, locales, sourceLocale, defaultBuildLocale }
+  const { rootDir, catalogDir, catalogExtension, locales, sourceLocale, defaultBuildLocale } = options
+  return { rootDir, catalogDir, catalogExtension, locales, sourceLocale, defaultBuildLocale }
 }
 
 // ─── Legacy inline runtime generators (used when no RuntimeGenerator is provided) ──
 
 function generateLegacyRuntimeModule(options: VirtualModuleOptions): string {
-  const { catalogDir, catalogExtension, locales, sourceLocale, defaultBuildLocale, framework } = options
+  const { rootDir, catalogDir, catalogExtension, locales, sourceLocale, defaultBuildLocale, framework } = options
   const defaultLocale = defaultBuildLocale || sourceLocale
-  const absoluteCatalogDir = resolve(process.cwd(), catalogDir)
+  const absoluteCatalogDir = resolve(rootDir, catalogDir)
   const runtimeKey = `fluenti.runtime.${framework}.v1`
   const lazyLocales = locales.filter((locale) => locale !== defaultLocale)
 
@@ -252,9 +253,9 @@ export { __catalog, __switchLocale, __preloadLocale, __currentLocale, __loading,
 }
 
 function generateLegacyRouteRuntimeModule(options: VirtualModuleOptions): string {
-  const { catalogDir, catalogExtension, locales, sourceLocale, defaultBuildLocale, framework } = options
+  const { rootDir, catalogDir, catalogExtension, locales, sourceLocale, defaultBuildLocale, framework } = options
   const defaultLocale = defaultBuildLocale || sourceLocale
-  const absoluteCatalogDir = resolve(process.cwd(), catalogDir)
+  const absoluteCatalogDir = resolve(rootDir, catalogDir)
   const runtimeKey = `fluenti.runtime.${framework}.v1`
   const lazyLocales = locales.filter((locale) => locale !== defaultLocale)
 

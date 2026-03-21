@@ -137,13 +137,11 @@ const ast = parse('{count, plural, one {# item} other {# items}}')
 **Returns:** `ASTNode[]` — an array of AST nodes.
 
 Node types:
-- **`text`** — Static text segment
-- **`argument`** — Simple `{variable}` placeholder
-- **`plural`** — `{var, plural, ...}` with `one`, `other`, etc. branches
-- **`select`** — `{var, select, ...}` with named branches
-- **`selectordinal`** — `{var, selectordinal, ...}` for ordinal plurals
-- **`function`** — `{var, functionName, style}` for number/date/custom formatters
-- **`octothorpe`** — The `#` placeholder inside plural/selectordinal branches
+- **`text`** — Static text (`TextNode`)
+- **`variable`** — `{variable}` placeholder (`VariableNode`)
+- **`plural`** — `{var, plural, ...}` plural branches (`PluralNode`). Ordinal plurals use `ordinal: true` on the same node type
+- **`select`** — `{var, select, ...}` selection branches (`SelectNode`)
+- **`function`** — `{var, functionName, style}` formatting function (`FunctionNode`)
 
 ## `compile(ast, locale?)`
 
@@ -405,33 +403,3 @@ Resolve a plural branch from a set of options using `Intl.PluralRules`. Checks f
 
 Same as `resolvePlural`, but returns the matched category key (e.g. `'one'`, `'other'`) rather than the branch value.
 
-## Dev Runner
-
-Programmatic API for running the extract + compile pipeline. Useful for dev-mode file watchers.
-
-### `runExtractCompile(options)`
-
-Run `fluenti extract && fluenti compile` as a child process.
-
-```typescript
-import { runExtractCompile } from '@fluenti/core'
-
-await runExtractCompile({
-  cwd: '/path/to/project',
-  onSuccess: () => console.log('Done!'),
-  onError: (err) => console.error(err),
-})
-```
-
-### `createDebouncedRunner(options, delay?)`
-
-Create a debounced runner that collapses rapid calls. Never runs concurrently — if called while running, schedules a rerun after completion.
-
-```typescript
-import { createDebouncedRunner } from '@fluenti/core'
-
-const run = createDebouncedRunner({ cwd: process.cwd() }, 300)
-// Call run() on file changes — rapid calls are debounced
-```
-
-**`DevRunnerOptions`:** `{ cwd: string, onSuccess?: () => void, onError?: (err: Error) => void }`

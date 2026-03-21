@@ -1,6 +1,6 @@
 import { createSignal, createRoot, type Accessor } from 'solid-js'
 import { formatDate, formatNumber, interpolate as coreInterpolate, buildICUMessage, resolveDescriptorId } from '@fluenti/core'
-import type { FluentConfig, Locale, Messages, CompiledMessage, MessageDescriptor, DateFormatOptions, NumberFormatOptions } from '@fluenti/core'
+import type { FluentConfig, Locale, LocalizedString, Messages, CompiledMessage, MessageDescriptor, DateFormatOptions, NumberFormatOptions } from '@fluenti/core'
 
 /** Chunk loader for lazy locale loading */
 export type ChunkLoader = (
@@ -50,19 +50,19 @@ export interface I18nContext {
   /** Set the active locale (async when lazy locale loading is enabled) */
   setLocale(locale: Locale): Promise<void>
   /** Translate a message by id with optional interpolation values */
-  t(id: string | MessageDescriptor, values?: Record<string, unknown>): string
+  t(id: string | MessageDescriptor, values?: Record<string, unknown>): LocalizedString
   /** Tagged template form: t`Hello ${name}` */
-  t(strings: TemplateStringsArray, ...exprs: unknown[]): string
+  t(strings: TemplateStringsArray, ...exprs: unknown[]): LocalizedString
   /** Merge additional messages into a locale catalog at runtime */
   loadMessages(locale: Locale, messages: Messages): void
   /** Return all locale codes that have loaded messages */
   getLocales(): Locale[]
   /** Format a date value for the current locale */
-  d(value: Date | number, style?: string): string
+  d(value: Date | number, style?: string): LocalizedString
   /** Format a number value for the current locale */
-  n(value: number, style?: string): string
+  n(value: number, style?: string): LocalizedString
   /** Format an ICU message string directly (no catalog lookup) */
-  format(message: string, values?: Record<string, unknown>): string
+  format(message: string, values?: Record<string, unknown>): LocalizedString
   /** Whether a locale chunk is currently being loaded */
   isLoading: Accessor<boolean>
   /** Set of locales whose messages have been loaded */
@@ -92,7 +92,7 @@ export function createI18nContext(config: FluentConfig | I18nConfig): I18nContex
     id: string,
     loc: Locale,
     values?: Record<string, unknown>,
-  ): string | undefined {
+  ): LocalizedString | undefined {
     const catalog = messages[loc]
     if (!catalog) {
       return undefined
@@ -104,21 +104,21 @@ export function createI18nContext(config: FluentConfig | I18nConfig): I18nContex
     }
 
     if (typeof msg === 'function') {
-      return msg(values)
+      return msg(values) as LocalizedString
     }
 
     if (typeof msg === 'string' && values) {
-      return coreInterpolate(msg, values, loc)
+      return coreInterpolate(msg, values, loc) as LocalizedString
     }
 
-    return String(msg)
+    return String(msg) as LocalizedString
   }
 
   function lookupWithFallbacks(
     id: string,
     loc: Locale,
     values?: Record<string, unknown>,
-  ): string | undefined {
+  ): LocalizedString | undefined {
     const localesToTry: Locale[] = [loc]
     const seen = new Set(localesToTry)
 
@@ -150,14 +150,14 @@ export function createI18nContext(config: FluentConfig | I18nConfig): I18nContex
   function resolveMissing(
     id: string,
     loc: Locale,
-  ): string | undefined {
+  ): LocalizedString | undefined {
     if (!config.missing) {
       return undefined
     }
 
     const result = config.missing(loc, id)
     if (result !== undefined) {
-      return result
+      return result as LocalizedString
     }
     return undefined
   }
@@ -166,7 +166,7 @@ export function createI18nContext(config: FluentConfig | I18nConfig): I18nContex
     id: string,
     loc: Locale,
     values?: Record<string, unknown>,
-  ): string {
+  ): LocalizedString {
     const catalogResult = lookupWithFallbacks(id, loc, values)
     if (catalogResult !== undefined) {
       return catalogResult
@@ -178,15 +178,15 @@ export function createI18nContext(config: FluentConfig | I18nConfig): I18nContex
     }
 
     if (id.includes('{')) {
-      return coreInterpolate(id, values, loc)
+      return coreInterpolate(id, values, loc) as LocalizedString
     }
 
-    return id
+    return id as LocalizedString
   }
 
-  function t(strings: TemplateStringsArray, ...exprs: unknown[]): string
-  function t(id: string | MessageDescriptor, values?: Record<string, unknown>): string
-  function t(idOrStrings: string | MessageDescriptor | TemplateStringsArray, ...rest: unknown[]): string {
+  function t(strings: TemplateStringsArray, ...exprs: unknown[]): LocalizedString
+  function t(id: string | MessageDescriptor, values?: Record<string, unknown>): LocalizedString
+  function t(idOrStrings: string | MessageDescriptor | TemplateStringsArray, ...rest: unknown[]): LocalizedString {
     // Tagged template form: t`Hello ${name}`
     if (Array.isArray(idOrStrings) && 'raw' in idOrStrings) {
       const strings = idOrStrings as TemplateStringsArray
@@ -213,10 +213,10 @@ export function createI18nContext(config: FluentConfig | I18nConfig): I18nContex
       }
 
       if (id.message !== undefined) {
-        return coreInterpolate(id.message, values, currentLocale)
+        return coreInterpolate(id.message, values, currentLocale) as LocalizedString
       }
 
-      return messageId ?? ''
+      return (messageId ?? '') as LocalizedString
     }
 
     return resolveMessage(id, currentLocale, values)
@@ -280,14 +280,14 @@ export function createI18nContext(config: FluentConfig | I18nConfig): I18nContex
 
   const getLocales = (): Locale[] => Object.keys(messages)
 
-  const d = (value: Date | number, style?: string): string =>
-    formatDate(value, locale(), style, i18nConfig.dateFormats)
+  const d = (value: Date | number, style?: string): LocalizedString =>
+    formatDate(value, locale(), style, i18nConfig.dateFormats) as LocalizedString
 
-  const n = (value: number, style?: string): string =>
-    formatNumber(value, locale(), style, i18nConfig.numberFormats)
+  const n = (value: number, style?: string): LocalizedString =>
+    formatNumber(value, locale(), style, i18nConfig.numberFormats) as LocalizedString
 
-  const format = (message: string, values?: Record<string, unknown>): string => {
-    return coreInterpolate(message, values, locale())
+  const format = (message: string, values?: Record<string, unknown>): LocalizedString => {
+    return coreInterpolate(message, values, locale()) as LocalizedString
   }
 
   return { locale, setLocale, t, loadMessages, getLocales, d, n, format, isLoading, loadedLocales, preloadLocale }

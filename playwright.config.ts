@@ -30,6 +30,8 @@ const serverMap: Record<string, { command: string; port: number; timeout?: numbe
   'nuxt-isr':        { command: 'cd e2e/fixtures/nuxt-isr && pnpm build && pnpm preview --port 5199', port: 5199, timeout: 120_000 },
   'nuxt-multi-layout': { command: 'cd e2e/fixtures/nuxt-multi-layout && pnpm build && pnpm preview --port 5200', port: 5200, timeout: 120_000 },
   'nextjs-multi-layout': { command: 'cd e2e/fixtures/nextjs-multi-layout && pnpm build && pnpm start -p 5201', port: 5201, timeout: 120_000 },
+  'monorepo-a': { command: 'cd e2e/fixtures/monorepo-extends/packages/app-a && pnpm build && pnpm preview --port 5202', port: 5202, timeout: 120_000 },
+  'monorepo-b': { command: 'cd e2e/fixtures/monorepo-extends/packages/app-b && pnpm build && pnpm preview --port 5203', port: 5203, timeout: 120_000 },
 }
 
 // Filter webServers to only those needed by the selected projects.
@@ -82,6 +84,8 @@ export default defineConfig({
     { name: 'nuxt-isr', use: { baseURL: 'http://localhost:5199' }, testMatch: '**/nuxt-isr.spec.ts' },
     { name: 'nuxt-multi-layout', use: { baseURL: 'http://localhost:5200' }, testMatch: '**/nuxt-multi-layout.spec.ts' },
     { name: 'nextjs-multi-layout', use: { baseURL: 'http://localhost:5201' }, testMatch: '**/nextjs-multi-layout.spec.ts' },
+    { name: 'monorepo-a', use: { baseURL: 'http://localhost:5202' }, testMatch: '**/monorepo-a.spec.ts' },
+    { name: 'monorepo-b', use: { baseURL: 'http://localhost:5203' }, testMatch: '**/monorepo-b.spec.ts' },
   ],
   webServer,
 })

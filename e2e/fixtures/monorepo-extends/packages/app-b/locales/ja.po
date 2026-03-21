@@ -1,0 +1,6 @@
+msgid ""
+msgstr "Content-Type: text/plain; charset=utf-8\n"
+
+#: ./src/App.tsx:8
+msgid "Hello from App B"
+msgstr "App Bからこんにちは"

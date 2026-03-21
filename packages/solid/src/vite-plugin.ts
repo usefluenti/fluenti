@@ -7,7 +7,7 @@ export type { FluentiPluginOptions as FluentiSolidOptions } from '@fluenti/vite-
 
 export default function fluentiSolid(options?: FluentiPluginOptions): Plugin[] {
   return createFluentiPlugins(
-    { ...options, framework: 'solid' },
+    { ...(options?.config !== undefined ? { config: options.config } : {}), framework: 'solid' },
     [],
     solidRuntimeGenerator,
   )

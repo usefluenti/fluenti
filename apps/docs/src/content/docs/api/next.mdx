@@ -100,13 +100,14 @@ This module is primarily the Next runtime/integration surface. For ordinary tran
 |--------|------|-------------|
 | `I18nProvider` | async server component | Sets server locale + wraps children in `ClientI18nProvider` |
 | `setLocale` | `(locale: string) => void` | Set locale for the current request (`React.cache()` scoped) |
-| `getI18n` | `() => Promise<FluentInstanceExtended>` | Get the i18n instance for the current request |
+| `getI18n` | `() => Promise<FluentInstanceExtended & { locale: string }>` | Get the i18n instance for the current request |
 | `t` | `CompileTimeT` | Compile-time translation API for tagged templates and descriptor calls |
 | `Trans` | async server component | Rich text translation |
 | `Plural` | async server component | Locale-aware pluralization |
 | `Select` | async server component | Locale-aware categorical selection |
 | `DateTime` | async server component | Date formatting |
 | `NumberFormat` | async server component | Number formatting |
+| `withLocale` | `(locale: string, fn: () => T) => Promise<T>` | Temporarily switch request-scoped locale for a subtree render |
 
 ### `I18nProvider` (server)
 
@@ -168,6 +169,104 @@ export default async function Page() {
   return <div>{jaContent}</div>
 }
 ```
+
+## Middleware — `@fluenti/next/middleware`
+
+Built-in i18n middleware for Next.js App Router. Handles locale detection from URL path, cookie, and `Accept-Language` header, then passes the resolved locale to server components via the `x-fluenti-locale` request header.
+
+### `createI18nMiddleware(config)`
+
+Create a middleware function for locale-prefixed routing:
+
+```typescript
+// src/middleware.ts
+import { NextResponse } from 'next/server'
+import { createI18nMiddleware } from '@fluenti/next/middleware'
+
+export default createI18nMiddleware({ NextResponse })
+
+export const config = {
+  matcher: ['/((?!_next|api|favicon).*)'],
+}
+```
+
+### Config
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `NextResponse` | `NextResponseStatic` | — | **Required.** Pass `NextResponse` from `next/server` |
+| `locales` | `string[]?` | `['en']` | Available locales (reads from `fluenti.config.ts` if omitted) |
+| `sourceLocale` | `string?` | `'en'` | Default/source locale |
+| `cookieName` | `string?` | `'locale'` | Cookie name for reading user locale preference |
+| `localePrefix` | `'always' \| 'as-needed'` | `'as-needed'` | URL prefix strategy |
+
+**Locale prefix strategies:**
+- `'always'` — all locales get a URL prefix (e.g. `/en/about`, `/fr/about`)
+- `'as-needed'` — source locale has no prefix, others do (e.g. `/about`, `/fr/about`)
+
+### Composing with other middleware
+
+```typescript
+import { NextResponse } from 'next/server'
+import { clerkMiddleware } from '@clerk/nextjs/server'
+import { createI18nMiddleware } from '@fluenti/next/middleware'
+
+const i18nMiddleware = createI18nMiddleware({ NextResponse })
+
+export default clerkMiddleware(async (auth, req) => {
+  await auth.protect()
+  return i18nMiddleware(req)
+})
+```
+
+## Navigation — `@fluenti/next/navigation`
+
+Client-side navigation utilities for locale-aware routing.
+
+### `useLocaleSwitcher(options?)`
+
+Hook for switching locales in Next.js App Router. Sets a cookie, updates React context, navigates to the new locale path, and refreshes server components:
+
+```tsx
+'use client'
+import { useLocaleSwitcher } from '@fluenti/next/navigation'
+
+function LanguagePicker() {
+  const { switchLocale, currentLocale, locales } = useLocaleSwitcher()
+  return (
+    <select value={currentLocale} onChange={(e) => switchLocale(e.target.value)}>
+      {locales.map((l) => <option key={l} value={l}>{l}</option>)}
+    </select>
+  )
+}
+```
+
+Returns:
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `switchLocale` | `(locale: string) => void` | Navigate to the given locale |
+| `currentLocale` | `string` | Current active locale |
+| `locales` | `string[]` | All available locales |
+| `sourceLocale` | `string` | Source/default locale |
+
+### `getLocalePath(pathname, locale, options?)`
+
+Pure function — get the locale-prefixed path for a given pathname and locale:
+
+```typescript
+import { getLocalePath } from '@fluenti/next/navigation'
+
+getLocalePath('/about', 'fr')       // → '/fr/about'
+getLocalePath('/about', 'en')       // → '/about' (source locale, no prefix)
+getLocalePath('/fr/about', 'ja')    // → '/ja/about'
+```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `pathname` | `string` | Current pathname |
+| `locale` | `string` | Target locale |
+| `options.sourceLocale` | `string?` | Source locale (default: `'en'`) |
 
 ## Usage
 

@@ -7,8 +7,9 @@ describe('resolveConfig', () => {
     const projectRoot = resolve(process.cwd(), 'tests/fixtures')
     const config = resolveConfig(projectRoot)
 
-    expect(config.defaultLocale).toBe('en')
-    expect(config.locales).toEqual(['en', 'zh-CN', 'ja'])
-    expect(config.compiledDir).toBe('./src/locales/compiled')
+    const defaultLocale = config.fluentiConfig.defaultLocale ?? config.fluentiConfig.sourceLocale
+    expect(defaultLocale).toBe('en')
+    expect(config.fluentiConfig.locales).toEqual(['en', 'zh-CN', 'ja'])
+    expect(config.fluentiConfig.compileOutDir).toBe('./src/locales/compiled')
   })
 })

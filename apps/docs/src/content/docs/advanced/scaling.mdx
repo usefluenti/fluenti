@@ -1,0 +1,318 @@
+---
+title: Scaling & Enterprise
+description: Monorepo configuration, parallel compilation, incremental caching, CI integration, and type safety for large-scale internationalization.
+---
+
+import { Aside, Tabs, TabItem } from '@astrojs/starlight/components'
+
+Fluenti's compile-time architecture makes it uniquely suited for large codebases. Zero-runtime overhead at any scale, incremental caching for fast CI, and configuration inheritance for monorepo DRY.
+
+## Why Fluenti Scales
+
+- **Compile-time architecture** — messages are compiled to plain strings and tiny functions at build time. Runtime cost is zero regardless of how many messages or locales you have.
+- **Configuration-driven** — non-invasive integration via `fluenti.config.ts`. No framework lock-in, no runtime dependencies in your components beyond a thin `t()` call.
+- **Incremental caching** — only changed files are re-extracted and only changed locales are re-compiled. Fewer file changes = fewer git conflicts.
+
+## Monorepo Configuration
+
+Use the `extends` option to share a base configuration across packages in a monorepo. Child configs inherit all options from the parent and can override any field.
+
+### Three-layer pattern
+
+```
+my-monorepo/
+├── fluenti.config.ts          # Root: shared locales, format, sourceLocale
+├── packages/
+│   ├── shared/
+│   │   └── fluenti.config.ts  # Shared lib: extends root
+│   ├── app-web/
+│   │   └── fluenti.config.ts  # Web app: extends root, custom include/splitting
+│   └── app-mobile/
+│       └── fluenti.config.ts  # Mobile app: extends root, custom catalogDir
+```
+
+**Root config** — shared defaults:
+
+```typescript
+// fluenti.config.ts (monorepo root)
+export default {
+  sourceLocale: 'en',
+  locales: ['en', 'ja', 'zh-CN', 'ko', 'de', 'fr'],
+  format: 'po',
+  catalogDir: './locales',
+  compileOutDir: './src/locales/compiled',
+}
+```
+
+**App config** — extends root, overrides what's different:
+
+```typescript
+// packages/app-web/fluenti.config.ts
+export default {
+  extends: '../../fluenti.config.ts',
+  include: ['./src/**/*.tsx', './src/**/*.ts'],
+  splitting: 'dynamic',
+  catalogDir: './locales',        // app-specific catalogs
+  compileOutDir: './src/i18n/compiled',
+}
+```
+
+<Aside type="tip">
+Relative paths in the parent config (`catalogDir`, `compileOutDir`, `include`, `exclude`) are automatically rebased to the child config's directory. You don't need to adjust them manually.
+</Aside>
+
+### How inheritance works
+
+1. Fluenti resolves the `extends` path relative to the current config file's directory
+2. The parent config is loaded recursively (parents can also extend)
+3. Path fields are rebased from the parent's directory to the child's directory
+4. Child values override parent values — shallow merge, not deep merge
+5. Circular references and chains deeper than 10 levels are detected and rejected
+
+### Shared vs independent catalogs
+
+| Pattern | When to use |
+|---------|------------|
+| **Shared catalogs** — all apps use the same `catalogDir` at the monorepo root | Small monorepo, shared translation team, consistent terminology |
+| **Independent catalogs** — each app has its own `catalogDir` | Large monorepo, separate translation workflows, different release cycles |
+| **Hybrid** — shared base + app-specific overrides via `externalCatalogs` | Shared UI library with app-specific strings |
+
+## Incremental Caching
+
+Fluenti caches extraction and compilation results to skip unchanged work.
+
+### Extraction cache
+
+The `fluenti extract` command tracks each source file by **mtime + size**. On subsequent runs, files that haven't changed are skipped entirely:
+
+```bash
+$ fluenti extract
+# First run: Found 847 messages in 312 files
+# Second run: Found 847 messages in 312 files (310 cached)
+```
+
+### Compilation cache
+
+The `fluenti compile` command hashes each locale's catalog content. If the hash hasn't changed since the last compilation, the locale is skipped:
+
+```bash
+$ fluenti compile
+# Compiled en: 847 messages → src/locales/compiled/en.js
+# Compiled ja: 847 messages → src/locales/compiled/ja.js
+# 4 locale(s) unchanged — skipped
+```
+
+### Cache location
+
+Cache files are stored in `<catalogDir>/.cache/` alongside your catalogs. Add this to `.gitignore`:
+
+```txt
+locales/.cache/
+```
+
+### Forcing a full rebuild
+
+Use `--no-cache` to bypass all caches:
+
+```bash
+fluenti extract --no-cache
+fluenti compile --no-cache
+```
+
+## Parallel Compilation
+
+For projects with many locales, compilation can be parallelized across worker threads.
+
+### Usage
+
+```bash
+# Auto-detect available parallelism
+fluenti compile --parallel
+
+# Limit to 4 workers
+fluenti compile --parallel --concurrency 4
+```
+
+### How it works
+
+- Single locale: compiled in-process (no worker overhead)
+- Multiple locales: spawns `min(locales, availableParallelism())` worker threads
+- Each worker compiles one locale independently
+- Results are collected and written to disk by the main thread
+
+### Config-level opt-in
+
+You can enable parallel compilation by default in your config:
+
+```typescript
+export default {
+  // ...
+  parallelCompile: true,
+}
+```
+
+The `--parallel` CLI flag overrides this setting.
+
+<Aside type="note">
+Worker threads have a startup cost. Parallel compilation is most effective with 5+ locales. For 1–3 locales, serial compilation is typically faster.
+</Aside>
+
+## CI/CD Integration
+
+### Translation coverage gating
+
+Use `fluenti check` to enforce minimum translation coverage in CI:
+
+```bash
+# Fail if any locale is below 90%
+fluenti check --min-coverage 90
+
+# GitHub Actions annotation format
+fluenti check --min-coverage 90 --ci
+
+# JSON output for custom dashboards
+fluenti check --min-coverage 90 --format json
+
+# Check a specific locale only
+fluenti check --locale ja --min-coverage 95
+```
+
+The `--ci` flag is an alias for `--format github`, which outputs `::error` and `::warning` annotations that GitHub Actions renders inline on the PR.
+
+### GitHub Actions workflow
+
+```yaml
+name: i18n
+on: [push, pull_request]
+jobs:
+  i18n:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      - name: Extract messages
+        run: pnpm fluenti extract
+
+      - name: Check translation coverage
+        run: pnpm fluenti check --min-coverage 90 --ci
+
+      - name: Compile catalogs
+        run: pnpm fluenti compile --parallel
+
+      - name: Build
+        run: pnpm build
+```
+
+### JSON output
+
+The `--format json` output includes per-locale results:
+
+```json
+{
+  "results": [
+    { "locale": "ja", "total": 847, "translated": 820, "missing": 27, "fuzzy": 3, "coverage": 96.8 },
+    { "locale": "zh-CN", "total": 847, "translated": 847, "missing": 0, "fuzzy": 0, "coverage": 100.0 }
+  ],
+  "passed": true,
+  "minCoverage": 90,
+  "actualCoverage": 98.4
+}
+```
+
+## Type Safety at Scale
+
+### Branded `LocalizedString` type
+
+Fluenti's `t()` function returns a branded `LocalizedString` type — not a plain `string`. This enables the compiler to catch untranslated strings at build time:
+
+```typescript
+import type { LocalizedString } from '@fluenti/core'
+
+function setPageTitle(title: LocalizedString) { /* ... */ }
+
+setPageTitle(t`Welcome`)     // ✅ Translated string
+setPageTitle('raw string')   // ❌ Compile error — not translated
+```
+
+`LocalizedString` is assignable to `string` (backward-compatible), but `string` cannot be assigned to `LocalizedString` without an explicit cast. This means existing code that accepts `string` continues to work, while new code can opt into strict type checking.
+
+### Disabling the branded type
+
+If the branded type is too strict for your codebase, you can disable it via module augmentation:
+
+```typescript
+// src/fluenti.d.ts
+declare module '@fluenti/core' {
+  interface FluentiTypeConfig {
+    localizedString: string  // disables branded type
+  }
+}
+```
+
+### Generated type declarations
+
+When you run `fluenti compile`, a `messages.d.ts` file is generated alongside your compiled catalogs. This file narrows `FluentiTypeConfig['messageIds']` and `FluentiTypeConfig['messageValues']` to the actual message IDs and value shapes in your project, enabling IDE autocompletion for message keys.
+
+## Build Lifecycle Hooks
+
+Integrate Fluenti compilation into custom build pipelines with lifecycle hooks:
+
+```typescript
+export default {
+  sourceLocale: 'en',
+  locales: ['en', 'ja', 'zh-CN'],
+  // ...
+
+  onBeforeCompile: () => {
+    console.log('Starting i18n compilation...')
+    // Return false to skip compilation
+  },
+
+  onAfterCompile: async () => {
+    console.log('i18n compilation complete!')
+    // Post-compile tasks: notifications, uploads, etc.
+  },
+}
+```
+
+| Hook | Signature | Description |
+|------|-----------|-------------|
+| `onBeforeCompile` | `() => boolean \| void \| Promise<boolean \| void>` | Called before auto-compile. Return `false` to skip. |
+| `onAfterCompile` | `() => void \| Promise<void>` | Called after auto-compile completes successfully. |
+
+These hooks run during dev-mode auto-compile and build-time auto-compile. They do not run when you invoke `fluenti compile` from the CLI directly.
+
+## Locale Metadata
+
+For complex routing, SEO, or RTL support, use `LocaleObject` instead of plain locale strings:
+
+```typescript
+export default {
+  sourceLocale: 'en',
+  locales: [
+    { code: 'en', name: 'English', iso: 'en-US', dir: 'ltr' },
+    { code: 'ar', name: 'العربية', iso: 'ar-SA', dir: 'rtl' },
+    { code: 'ja', name: '日本語', iso: 'ja-JP', dir: 'ltr' },
+    { code: 'de', name: 'Deutsch', iso: 'de-DE', dir: 'ltr', domain: 'de.example.com' },
+  ],
+  // ...
+}
+```
+
+`LocaleObject` fields:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `code` | `string` | Locale code (required) — e.g. `'en'`, `'ja'`, `'zh-CN'` |
+| `name` | `string?` | Human-readable display name |
+| `iso` | `string?` | BCP 47 language tag for SEO `hreflang` |
+| `dir` | `'ltr' \| 'rtl'` | Text direction |
+| `domain` | `string?` | Domain for domain-based routing |
+
+Plain locale strings and `LocaleObject` values can be mixed in the `locales` array. Fluenti resolves locale codes automatically via `resolveLocaleCodes()`.

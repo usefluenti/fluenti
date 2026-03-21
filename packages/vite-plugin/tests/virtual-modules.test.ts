@@ -3,6 +3,7 @@ import { resolveVirtualSplitId, loadVirtualSplitModule } from '../src/virtual-mo
 import type { VirtualModuleOptions } from '../src/virtual-modules'
 
 const defaultOptions: VirtualModuleOptions = {
+  rootDir: '/test/project',
   catalogDir: 'src/locales/compiled',
   catalogExtension: '.js',
   locales: ['en', 'fr', 'ja'],
@@ -230,6 +231,37 @@ describe('loadVirtualSplitModule', () => {
       for (const locale of locales.filter((locale) => locale !== 'en')) {
         expect(code).toContain(`'${locale}': () => import(`)
       }
+    })
+  })
+
+  describe('rootDir resolution', () => {
+    it('uses rootDir instead of process.cwd() for catalog paths', () => {
+      const code = loadVirtualSplitModule('\0virtual:fluenti/runtime', {
+        ...defaultOptions,
+        rootDir: '/custom/monorepo/packages/app',
+      })!
+
+      expect(code).toContain('/custom/monorepo/packages/app/src/locales/compiled')
+      expect(code).not.toContain(process.cwd())
+    })
+
+    it('static messages module uses rootDir for path resolution', () => {
+      const code = loadVirtualSplitModule('\0virtual:fluenti/messages', {
+        ...defaultOptions,
+        rootDir: '/workspace/my-app',
+      })!
+
+      expect(code).toContain('/workspace/my-app/src/locales/compiled/en.js')
+    })
+
+    it('route runtime module uses rootDir for catalog paths', () => {
+      const code = loadVirtualSplitModule('\0virtual:fluenti/route-runtime', {
+        ...defaultOptions,
+        rootDir: '/monorepo/packages/web',
+      })!
+
+      expect(code).toContain('/monorepo/packages/web/src/locales/compiled')
+      expect(code).not.toContain(process.cwd())
     })
   })
 

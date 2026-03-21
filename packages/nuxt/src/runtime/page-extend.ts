@@ -24,6 +24,12 @@ export interface ExtendPagesOptions {
    * Keys are original route paths; values map locale → custom path.
    */
   routeOverrides?: Record<string, Record<string, string>>
+  /**
+   * Route generation mode.
+   * - `'all'` (default): All pages get locale variants unless opted out via `i18nRoute: false`.
+   * - `'opt-in'`: Only pages with explicit `i18nRoute` meta get locale variants.
+   */
+  routeMode?: 'all' | 'opt-in'
 }
 
 /**
@@ -37,6 +43,7 @@ export function extendPages(
   options: ExtendPagesOptions,
 ): void {
   const { locales, defaultLocale, strategy, routeOverrides } = options
+  const routeMode = options.routeMode ?? 'all'
   if (strategy === 'no_prefix' || strategy === 'domains') return
 
   const nameTemplate = options.routeNameTemplate ?? DEFAULT_ROUTE_NAME_TEMPLATE
@@ -45,6 +52,10 @@ export function extendPages(
   // Filter out pages that have i18nRoute === false in their meta
   const isPageEnabled = (page: PageRoute, locale: string): boolean => {
     const i18nRoute = page.meta?.['i18nRoute'] as { locales?: string[] } | false | undefined
+
+    // opt-in mode: pages without any i18nRoute meta are not extended
+    if (routeMode === 'opt-in' && i18nRoute === undefined) return false
+
     if (i18nRoute === false) return false
     if (i18nRoute && i18nRoute.locales) {
       return i18nRoute.locales.includes(locale)

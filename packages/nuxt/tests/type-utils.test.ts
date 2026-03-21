@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
-import { resolveLocaleCodes, resolveLocaleProperties, resolveDomainConfigs } from '../src/types'
-import type { LocaleDefinition } from '../src/types'
+import { resolveLocaleCodes } from '@fluenti/core'
+import { resolveLocaleProperties, resolveDomainConfigs } from '../src/types'
+import type { LocaleDefinition } from '@fluenti/core'
 
 describe('resolveLocaleCodes', () => {
   it('extracts codes from plain strings', () => {

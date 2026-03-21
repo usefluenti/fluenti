@@ -3,9 +3,9 @@ import type { RuntimeGenerator, RuntimeGeneratorOptions } from '@fluenti/vite-pl
 
 export const vueRuntimeGenerator: RuntimeGenerator = {
   generateRuntime(options: RuntimeGeneratorOptions): string {
-    const { catalogDir, catalogExtension, locales, sourceLocale, defaultBuildLocale } = options
+    const { rootDir, catalogDir, catalogExtension, locales, sourceLocale, defaultBuildLocale } = options
     const defaultLocale = defaultBuildLocale || sourceLocale
-    const absoluteCatalogDir = resolve(process.cwd(), catalogDir)
+    const absoluteCatalogDir = resolve(rootDir, catalogDir)
     const ext = catalogExtension || '.js'
     const runtimeKey = 'fluenti.runtime.vue.v1'
     const lazyLocales = locales.filter((locale) => locale !== defaultLocale)
@@ -59,9 +59,9 @@ export { __catalog, __switchLocale, __preloadLocale, __currentLocale, __loading,
   },
 
   generateRouteRuntime(options: RuntimeGeneratorOptions): string {
-    const { catalogDir, catalogExtension, locales, sourceLocale, defaultBuildLocale } = options
+    const { rootDir, catalogDir, catalogExtension, locales, sourceLocale, defaultBuildLocale } = options
     const defaultLocale = defaultBuildLocale || sourceLocale
-    const absoluteCatalogDir = resolve(process.cwd(), catalogDir)
+    const absoluteCatalogDir = resolve(rootDir, catalogDir)
     const ext = catalogExtension || '.js'
     const runtimeKey = 'fluenti.runtime.vue.v1'
     const lazyLocales = locales.filter((locale) => locale !== defaultLocale)
