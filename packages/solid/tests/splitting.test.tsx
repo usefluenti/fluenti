@@ -1,9 +1,9 @@
 import { describe, it, expect, vi } from 'vitest'
-import { createFluenti } from '../src/context'
+import { createFluentiContext } from '../src/context'
 import type { FluentiConfig } from '../src/context'
 
 function createSplitContext(chunkLoader: (locale: string) => Promise<Record<string, any>>) {
-  return createFluenti({
+  return createFluentiContext({
     locale: 'en',
     messages: { en: { hello: 'Hello', bye: 'Goodbye' } },
     lazyLocaleLoading: true,
@@ -119,7 +119,7 @@ describe('splitting mode', () => {
   })
 
   it('without splitting, setLocale is synchronous', async () => {
-    const ctx = createFluenti({
+    const ctx = createFluentiContext({
       locale: 'en',
       messages: { en: { hello: 'Hello' }, fr: { hello: 'Bonjour' } },
     })

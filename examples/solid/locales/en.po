@@ -1,149 +1,149 @@
 msgid ""
 msgstr "Content-Type: text/plain; charset=utf-8\n"
 
-#: ./src/App.tsx:118
+#: /Users/ins/Code/fluenti/examples/solid/src/App.tsx:118
 msgid "Welcome to Fluenti"
 msgstr ""
 
-#: ./src/App.tsx:119
+#: /Users/ins/Code/fluenti/examples/solid/src/App.tsx:119
 msgid "A type-safe i18n library for Solid"
 msgstr ""
 
-#: ./src/App.tsx:122
+#: /Users/ins/Code/fluenti/examples/solid/src/App.tsx:122
 msgid "Hello, {developer}!"
 msgstr ""
 
-#: ./src/App.tsx:123
+#: /Users/ins/Code/fluenti/examples/solid/src/App.tsx:123
 msgid "This playground demonstrates the features of @fluenti/solid."
 msgstr ""
 
-#: ./src/App.tsx:189
+#: /Users/ins/Code/fluenti/examples/solid/src/App.tsx:189
 #, fuzzy
 msgid "Current locale: {locale}"
 msgstr ""
 
-#: ./src/App.tsx:134
+#: /Users/ins/Code/fluenti/examples/solid/src/App.tsx:134
 msgid "Username"
 msgstr ""
 
-#: ./src/App.tsx:138
+#: /Users/ins/Code/fluenti/examples/solid/src/App.tsx:138
 msgid "Email"
 msgstr ""
 
-#: ./src/App.tsx:142
+#: /Users/ins/Code/fluenti/examples/solid/src/App.tsx:142
 msgid "Password"
 msgstr ""
 
-#: ./src/App.tsx:144
+#: /Users/ins/Code/fluenti/examples/solid/src/App.tsx:144
 msgid "This field is required"
 msgstr ""
 
-#: ./src/App.tsx:146
+#: /Users/ins/Code/fluenti/examples/solid/src/App.tsx:146
 msgid "Submit"
 msgstr ""
 
-#: ./src/App.tsx:147
+#: /Users/ins/Code/fluenti/examples/solid/src/App.tsx:147
 msgid "Cancel"
 msgstr ""
 
-#: ./src/App.tsx:157
+#: /Users/ins/Code/fluenti/examples/solid/src/App.tsx:157
 msgid "Compile-Time Transforms"
 msgstr ""
 
-#: ./src/App.tsx:159
+#: /Users/ins/Code/fluenti/examples/solid/src/App.tsx:159
 msgid ""
 "These demos showcase compile-time features: function calls and tagged "
 "templates — all transformed at build time by the Vite plugin."
 msgstr ""
 
-#: ./src/App.tsx:207
+#: /Users/ins/Code/fluenti/examples/solid/src/App.tsx:207
 #, fuzzy
 msgid "Hello, {name}!"
 msgstr ""
 
-#: ./src/App.tsx:182
+#: /Users/ins/Code/fluenti/examples/solid/src/App.tsx:182
 msgid "You have {compileCount} items."
 msgstr ""
 
-#: ./src/App.tsx:224
+#: /Users/ins/Code/fluenti/examples/solid/src/App.tsx:224
 msgid "You have {compileCount} items in your cart."
 msgstr ""
 
-#: ./src/App.tsx:238
+#: /Users/ins/Code/fluenti/examples/solid/src/App.tsx:238
 msgid "Total: {formattedPrice}"
 msgstr ""
 
-#: ./src/App.tsx:247
+#: /Users/ins/Code/fluenti/examples/solid/src/App.tsx:247
 msgid "Rich Text"
 msgstr ""
 
-#: ./src/App.tsx:257
+#: /Users/ins/Code/fluenti/examples/solid/src/App.tsx:257
 msgid "Welcome to <bold>Fluenti</bold> for <italic>SolidJS</italic>!"
 msgstr ""
 
-#: ./src/App.tsx:267
+#: /Users/ins/Code/fluenti/examples/solid/src/App.tsx:267
 msgid "Supports <bold>bold</bold>, <italic>italic</italic>, and <link>links</link>."
 msgstr ""
 
-#: ./src/App.tsx:277
+#: /Users/ins/Code/fluenti/examples/solid/src/App.tsx:277
 msgid ""
 "You can even <bold>nest <italic>components</italic> inside</bold> each "
 "other."
 msgstr ""
 
-#: ./src/App.tsx:289
+#: /Users/ins/Code/fluenti/examples/solid/src/App.tsx:289
 msgid "Plurals"
 msgstr ""
 
-#: ./src/App.tsx:307
+#: /Users/ins/Code/fluenti/examples/solid/src/App.tsx:307
 msgid "Your cart is empty."
 msgstr ""
 
-#: ./src/App.tsx:308
+#: /Users/ins/Code/fluenti/examples/solid/src/App.tsx:308
 msgid "You have # item in your cart."
 msgstr ""
 
-#: ./src/App.tsx:309
+#: /Users/ins/Code/fluenti/examples/solid/src/App.tsx:309
 msgid "You have # items in your cart."
 msgstr ""
 
-#: ./src/App.tsx:376
+#: /Users/ins/Code/fluenti/examples/solid/src/App.tsx:376
 msgid "Reset"
 msgstr ""
 
-#: ./src/App.tsx:358
+#: /Users/ins/Code/fluenti/examples/solid/src/App.tsx:358
 msgid "Reactivity Demo"
 msgstr ""
 
-#: ./src/App.tsx:360
+#: /Users/ins/Code/fluenti/examples/solid/src/App.tsx:360
 msgid "In SolidJS, the component body runs only once. Text nodes update reactively."
 msgstr ""
 
-#: ./src/App.tsx:366
+#: /Users/ins/Code/fluenti/examples/solid/src/App.tsx:366
 msgid "Counter value: {reactivityCount}"
 msgstr ""
 
-#: ./src/App.tsx:370
+#: /Users/ins/Code/fluenti/examples/solid/src/App.tsx:370
 msgid "Decrement"
 msgstr ""
 
-#: ./src/App.tsx:373
+#: /Users/ins/Code/fluenti/examples/solid/src/App.tsx:373
 msgid "Increment"
 msgstr ""
 
-#: ./src/App.tsx:404
+#: /Users/ins/Code/fluenti/examples/solid/src/App.tsx:404
 msgid "Formatting Showcase"
 msgstr ""
 
-#: ./src/App.tsx:499
+#: /Users/ins/Code/fluenti/examples/solid/src/App.tsx:525
 msgid "He liked this"
 msgstr ""
 
-#: ./src/App.tsx:500
+#: /Users/ins/Code/fluenti/examples/solid/src/App.tsx:526
 msgid "She liked this"
 msgstr ""
 
-#: ./src/App.tsx:502
+#: /Users/ins/Code/fluenti/examples/solid/src/App.tsx:528
 msgid "They liked this"
 msgstr ""
 

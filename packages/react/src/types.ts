@@ -9,12 +9,12 @@ import type {
   CompileTimeT,
   DateFormatOptions,
   NumberFormatOptions,
-  FluentInstanceExtended,
+  FluentiCoreInstanceFull,
 } from '@fluenti/core'
 
 export interface FluentiContext {
   /** The underlying Fluent instance (escape hatch for advanced use) */
-  i18n: FluentInstanceExtended
+  i18n: FluentiCoreInstanceFull
   /** Translate a message by id with optional interpolation values */
   t: {
     (id: string | MessageDescriptor, values?: Record<string, unknown>): LocalizedString
@@ -76,5 +76,5 @@ export type {
   CompileTimeT,
   DateFormatOptions,
   NumberFormatOptions,
-  FluentInstanceExtended,
+  FluentiCoreInstanceFull,
 }

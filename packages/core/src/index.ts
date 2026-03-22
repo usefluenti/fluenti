@@ -5,10 +5,10 @@ export type {
   CompiledMessage,
   Messages,
   AllMessages,
-  FluentConfig,
-  FluentInstance,
-  FluentInstanceExtended,
-  FluentConfigExtended,
+  FluentiCoreConfig,
+  FluentiCoreInstance,
+  FluentiCoreInstanceFull,
+  FluentiCoreConfigFull,
   CustomFormatter,
   ASTNode,
   TextNode,
@@ -35,55 +35,25 @@ export type {
 export { resolveLocaleCodes } from './types'
 
 export { parse, FluentParseError } from './parser'
-export { compile, clearCompileCache } from './compile'
-export { interpolate, clearInterpolationCache, setMessageCacheSize, DEFAULT_MESSAGE_CACHE_SIZE } from './interpolate'
-export { resolvePlural, resolvePluralCategory, clearPluralCache } from './plural'
+export { compile } from './compile'
+export { interpolate } from './interpolate'
+export { resolvePlural, resolvePluralCategory } from './plural'
 export { Catalog } from './catalog'
 export { negotiateLocale, parseLocale, isRTL, getDirection, validateLocale } from './locale'
 export type { ParsedLocale } from './locale'
 export { msg, buildICUMessage } from './msg'
 export { resolveDescriptorId, hashMessage } from './identity'
 export { detectLocale, getSSRLocaleScript, getHydratedLocale } from './ssr'
-export { formatNumber, DEFAULT_NUMBER_FORMATS, LOCALE_CURRENCY_MAP, clearNumberFormatCache } from './formatters/number'
-export { formatDate, DEFAULT_DATE_FORMATS, clearDateFormatCache } from './formatters/date'
-export { formatRelativeTime, clearRelativeTimeFormatCache } from './formatters/relative'
-export { createLocaleLoader } from './locale-loader'
-export type { LocaleLoaderOptions, LocaleLoaderState } from './locale-loader'
-export {
-  PLURAL_CATEGORIES,
-  buildICUPluralMessage,
-  buildICUSelectMessage,
-  normalizeSelectForms,
-  offsetIndices,
-} from './icu-builders'
-export type { PluralCategory } from './icu-builders'
+export { formatNumber, DEFAULT_NUMBER_FORMATS, LOCALE_CURRENCY_MAP } from './formatters/number'
+export { formatDate, DEFAULT_DATE_FORMATS } from './formatters/date'
+export { formatRelativeTime } from './formatters/relative'
 // Config loading (loadConfig, loadConfigSync) is exported from '@fluenti/core/config'
 // subpath to avoid pulling jiti + node:* modules into client bundles.
 export { defineConfig } from './define-config'
 
-import { clearCompileCache } from './compile'
-import { clearInterpolationCache } from './interpolate'
-import { clearPluralCache } from './plural'
-import { clearNumberFormatCache } from './formatters/number'
-import { clearDateFormatCache } from './formatters/date'
-import { clearRelativeTimeFormatCache } from './formatters/relative'
-
-/**
- * Clear all internal caches (interpolation, compile, plural, number, date, relative time).
- * Useful for long-running Node.js servers to reclaim memory.
- */
-export function clearAllCaches(): void {
-  clearInterpolationCache()
-  clearCompileCache()
-  clearPluralCache()
-  clearNumberFormatCache()
-  clearDateFormatCache()
-  clearRelativeTimeFormatCache()
-}
-
 import type {
-  FluentConfigExtended,
-  FluentInstanceExtended,
+  FluentiCoreConfigFull,
+  FluentiCoreInstanceFull,
   LocalizedString,
   Locale,
   Messages,
@@ -101,7 +71,7 @@ import { validateLocale } from './locale'
  * Create a Fluenti instance with full i18n support.
  *
  * @param config - Configuration including locale, messages, and optional formatters
- * @returns A fully configured `FluentInstanceExtended`
+ * @returns A fully configured `FluentiCoreInstanceFull`
  *
  * @example
  * ```ts
@@ -115,7 +85,7 @@ import { validateLocale } from './locale'
  * i18n.t('greeting', { name: 'World' }) // 'Hello World!'
  * ```
  */
-export function createFluentiCore(config: FluentConfigExtended): FluentInstanceExtended {
+export function createFluentiCore(config: FluentiCoreConfigFull): FluentiCoreInstanceFull {
   validateLocale(config.locale, 'createFluentiCore')
   let currentLocale: Locale = config.locale
   const catalog = new Catalog()
@@ -219,7 +189,7 @@ export function createFluentiCore(config: FluentConfigExtended): FluentInstanceE
     return (devWarningsEnabled ? `[!] ${id}` : id) as LocalizedString
   }
 
-  const instance: FluentInstanceExtended = {
+  const instance: FluentiCoreInstanceFull = {
     get locale() {
       return currentLocale
     },
@@ -311,6 +281,3 @@ export function createFluentiCore(config: FluentConfigExtended): FluentInstanceE
 
   return instance
 }
-
-/** @deprecated Use `createFluentiCore` instead */
-export const createFluent = createFluentiCore

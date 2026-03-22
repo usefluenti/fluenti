@@ -109,8 +109,6 @@ export interface FluentiCoreInstance {
   getLocales(): Locale[]
 }
 
-export type CreateFluentiCore = (config: FluentiCoreConfig) => FluentiCoreInstance
-
 // ---- ICU Parser AST ----
 
 export type ASTNode = TextNode | VariableNode | PluralNode | SelectNode | FunctionNode
@@ -196,6 +194,16 @@ export interface FluentiConfig {
   exclude?: string[]
   compileOutDir: string
 
+  // Build options
+  /** Code splitting strategy: 'dynamic' | 'static' | false */
+  splitting?: 'dynamic' | 'static' | false
+  /** Default locale for build-time static strategy */
+  defaultBuildLocale?: Locale
+  /** File extension for compiled catalog files (default: '.js') */
+  catalogExtension?: string
+  /** Custom message ID generator */
+  idGenerator?: (message: string, context?: string) => string
+
   // Dev options
   /** Auto extract+compile in dev mode (default: true) */
   devAutoCompile?: boolean
@@ -203,8 +211,12 @@ export interface FluentiConfig {
   buildAutoCompile?: boolean
   /** Debounce delay in ms for dev auto-compile (default: 500) */
   devAutoCompileDelay?: number
+  /** Enable parallel compilation across locales using worker threads (default: false) */
+  parallelCompile?: boolean
 
   // Compile lifecycle hooks
+  /** Called before auto-compile runs. Return false to skip compilation. */
+  onBeforeCompile?: () => boolean | void | Promise<boolean | void>
   /** Called after auto-compile completes successfully */
   onAfterCompile?: () => void | Promise<void>
 
@@ -347,48 +359,3 @@ export interface FluentiCoreInstanceFull extends FluentiCoreInstance {
   /** Format an ICU message string directly (no catalog lookup) */
   format(message: string, values?: Record<string, unknown>): FluentiTypeConfig['localizedString']
 }
-
-// ---- Split Runtime ----
-
-/** Module shape for code-splitting runtime integration */
-export interface SplitRuntimeModule {
-  __switchLocale?: (locale: string) => Promise<void>
-  __preloadLocale?: (locale: string) => Promise<void>
-}
-
-// ---- SSR Options ----
-
-/** Options for getSSRLocaleScript */
-export interface SSRLocaleScriptOptions {
-  /** Custom window variable key (default: '__FLUENTI_LOCALE__') */
-  key?: string
-}
-
-/** Options for getHydratedLocale */
-export interface HydratedLocaleOptions {
-  /** Custom window variable key (default: '__FLUENTI_LOCALE__') */
-  key?: string
-}
-
-// ---- Build Config Alias ----
-
-/** Alias for FluentiConfig used by config-loader and build tooling */
-export type FluentiBuildConfig = FluentiConfig
-
-/**
- * Normalize a config object (identity function — ensures type safety at call sites).
- */
-export function normalizeConfig(config: FluentiBuildConfig): FluentiBuildConfig {
-  return config
-}
-
-// ---- Legacy Type Aliases ----
-
-/** @deprecated Use `FluentiCoreConfig` */
-export type FluentConfig = FluentiCoreConfig
-/** @deprecated Use `FluentiCoreConfig` */
-export type FluentInstance = FluentiCoreInstance
-/** @deprecated Use `FluentiCoreInstanceFull` */
-export type FluentInstanceExtended = FluentiCoreInstanceFull
-/** @deprecated Use `FluentiCoreConfigFull` */
-export type FluentConfigExtended = FluentiCoreConfigFull

@@ -1,10 +1,7 @@
 import { memo, useContext } from 'react'
 import { I18nContext } from '../context'
 
-/** @deprecated Use `FluentiNumberProps` instead */
-export type NumberProps = FluentiNumberProps
-
-export interface FluentiNumberProps {
+export interface NumberFormatProps {
   /** Number value to format */
   value: number
   /** Named format style */
@@ -19,10 +16,10 @@ export interface FluentiNumberProps {
  * <Number value={1234.56} style="currency" />
  * ```
  */
-export const NumberFormat = memo(function NumberFormat({ value, style }: FluentiNumberProps) {
+export const NumberFormat = memo(function NumberFormat({ value, style }: NumberFormatProps) {
   const ctx = useContext(I18nContext)
   if (!ctx) {
     throw new Error('[fluenti] <Number> must be used within an <I18nProvider>')
   }
-  return <>{ctx.n(value, style)}</>
+  return <>{ctx.i18n.n(value, style)}</>
 })

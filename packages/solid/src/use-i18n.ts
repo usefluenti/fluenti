@@ -1,6 +1,6 @@
 import { useContext } from 'solid-js'
 import { I18nCtx } from './provider'
-import { getGlobalFluentiContext } from './context'
+import { getGlobalI18nContext } from './context'
 import type { FluentiContext } from './context'
 
 /**
@@ -18,7 +18,7 @@ export function useI18n(): FluentiContext {
     return ctx
   }
 
-  const global = getGlobalFluentiContext()
+  const global = getGlobalI18nContext()
   if (global) {
     return global
   }

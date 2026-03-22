@@ -1,6 +1,6 @@
 import { createSignal, createRoot, type Accessor } from 'solid-js'
 import { formatDate, formatNumber, interpolate as coreInterpolate, buildICUMessage, resolveDescriptorId } from '@fluenti/core'
-import type { FluentConfig, Locale, LocalizedString, Messages, CompiledMessage, MessageDescriptor, DateFormatOptions, NumberFormatOptions } from '@fluenti/core'
+import type { FluentiCoreConfig, Locale, LocalizedString, Messages, CompiledMessage, MessageDescriptor, DateFormatOptions, NumberFormatOptions } from '@fluenti/core'
 
 /** Chunk loader for lazy locale loading */
 export type ChunkLoader = (
@@ -30,7 +30,7 @@ function resolveChunkMessages(
 }
 
 /** Extended config with lazy locale loading support */
-export interface FluentiConfig extends FluentConfig {
+export interface FluentiConfig extends FluentiCoreConfig {
   /** Async chunk loader for lazy locale loading */
   chunkLoader?: ChunkLoader
   /** Enable lazy locale loading through chunkLoader */
@@ -77,14 +77,16 @@ export interface FluentiContext {
  * The returned `t()` reads the internal `locale()` signal, so any
  * Solid computation that calls `t()` will re-run when the locale changes.
  */
-export function createFluenti(config: FluentConfig | FluentiConfig): FluentiContext {
+export function createFluentiContext(config: FluentiCoreConfig | FluentiConfig): FluentiContext {
   const [locale, setLocaleSignal] = createSignal<Locale>(config.locale)
   const [isLoading, setIsLoading] = createSignal(false)
   const loadedLocalesSet = new Set<string>([config.locale])
   const [loadedLocales, setLoadedLocales] = createSignal(new Set(loadedLocalesSet))
   const messages: Record<string, Messages> = { ...config.messages }
   const i18nConfig = config as FluentiConfig
-  const lazyLocaleLoading = i18nConfig.lazyLocaleLoading ?? false
+  const lazyLocaleLoading = i18nConfig.lazyLocaleLoading
+    ?? (config as FluentiConfig & { splitting?: boolean }).splitting
+    ?? false
 
   function lookupCatalog(
     id: string,
@@ -303,8 +305,8 @@ let globalCtx: FluentiContext | undefined
  *
  * Returns the context for convenience, but `useI18n()` will also find it.
  */
-export function createI18n(config: FluentConfig | FluentiConfig): FluentiContext {
-  const ctx = createRoot(() => createFluenti(config))
+export function createFluenti(config: FluentiCoreConfig | FluentiConfig): FluentiContext {
+  const ctx = createRoot(() => createFluentiContext(config))
 
   // Only set global singleton in browser (client-side).
   // In SSR, each request should use <I18nProvider> for per-request isolation.
@@ -312,7 +314,7 @@ export function createI18n(config: FluentConfig | FluentiConfig): FluentiContext
     globalCtx = ctx
   } else {
     console.warn(
-      '[fluenti] createI18n() detected SSR environment. ' +
+      '[fluenti] createFluenti() detected SSR environment. ' +
       'Use <I18nProvider> for per-request isolation in SSR.',
     )
   }
@@ -321,25 +323,16 @@ export function createI18n(config: FluentConfig | FluentiConfig): FluentiContext
 }
 
 /** @internal — used by useI18n and I18nProvider */
-export function getGlobalFluentiContext(): FluentiContext | undefined {
+export function getGlobalI18nContext(): FluentiContext | undefined {
   return globalCtx
 }
 
 /** @internal — used by I18nProvider to set context without createRoot wrapper */
-export function setGlobalFluentiContext(ctx: FluentiContext): void {
+export function setGlobalI18nContext(ctx: FluentiContext): void {
   globalCtx = ctx
 }
 
 /** @internal — reset the global singleton (for testing only) */
-export function resetGlobalFluentiContext(): void {
+export function resetGlobalI18nContext(): void {
   globalCtx = undefined
 }
-
-/** @deprecated Use `createFluenti` instead */
-export const createI18nContext = createFluenti
-
-/** @deprecated Use `FluentiContext` instead */
-export type I18nContext = FluentiContext
-
-/** @deprecated Use `FluentiConfig` instead */
-export type I18nConfig = FluentiConfig

@@ -1,6 +1,6 @@
 import { bench, describe } from 'vitest'
 import { createRoot } from 'solid-js'
-import { createFluenti } from '../src/index'
+import { createFluentiContext } from '../src/index'
 import type { AllMessages, Messages } from '@fluenti/core'
 
 // ── Message corpus ──
@@ -57,10 +57,10 @@ const messages: AllMessages = {
 
 // ── Create context inside a reactive root ──
 
-let ctx: ReturnType<typeof createFluenti>
+let ctx: ReturnType<typeof createFluentiContext>
 
 createRoot((dispose) => {
-  ctx = createFluenti({
+  ctx = createFluentiContext({
     locale: 'en',
     fallbackLocale: 'en',
     messages,
@@ -75,9 +75,9 @@ createRoot((dispose) => {
 // ── Benchmarks ──
 
 describe('solid — instance creation', () => {
-  bench('createFluenti()', () => {
+  bench('createFluentiContext()', () => {
     createRoot((dispose) => {
-      createFluenti({
+      createFluentiContext({
         locale: 'en',
         messages: { en: { hello: 'Hello' } },
       })
@@ -117,9 +117,9 @@ describe('solid — t() lookup', () => {
 })
 
 describe('solid — t() fallback', () => {
-  let fbCtx: ReturnType<typeof createFluenti>
+  let fbCtx: ReturnType<typeof createFluentiContext>
   createRoot((dispose) => {
-    fbCtx = createFluenti({
+    fbCtx = createFluentiContext({
       locale: 'fr',
       fallbackLocale: 'en',
       messages,
@@ -137,9 +137,9 @@ describe('solid — t() fallback', () => {
   })
 
   bench('missing → handler', () => {
-    let mCtx: ReturnType<typeof createFluenti>
+    let mCtx: ReturnType<typeof createFluentiContext>
     createRoot((dispose) => {
-      mCtx = createFluenti({
+      mCtx = createFluentiContext({
         locale: 'fr',
         fallbackLocale: 'en',
         messages,
@@ -163,9 +163,9 @@ describe('solid — formatters', () => {
 
 describe('solid — catalog scaling', () => {
   for (const size of [10, 100, 1000]) {
-    let scaleCtx: ReturnType<typeof createFluenti>
+    let scaleCtx: ReturnType<typeof createFluentiContext>
     createRoot((dispose) => {
-      scaleCtx = createFluenti({
+      scaleCtx = createFluentiContext({
         locale: 'en',
         messages: { en: generateCatalog(size) },
       })
