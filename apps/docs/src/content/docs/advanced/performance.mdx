@@ -1,0 +1,263 @@
+---
+title: Performance
+description: "Optimize Fluenti for production — bundle size, cache tuning, lazy loading, SSR performance, and large catalog strategies."
+---
+
+import { Aside } from '@astrojs/starlight/components'
+
+## Compile-Time Advantage
+
+Fluenti's core performance advantage is **compile-time message transformation**. Unlike runtime-interpreted i18n libraries that parse ICU MessageFormat strings on every render, Fluenti compiles messages to JavaScript functions during the build step.
+
+| | Compile-time (Fluenti) | Runtime (traditional) |
+|---|---|---|
+| **Parse ICU syntax** | Once, at build time | Every render cycle |
+| **Bundle content** | Pre-compiled functions | Raw message strings + parser |
+| **Parser in bundle** | No | Yes (~5-15 KB gzipped) |
+| **First render** | Instant — function call | Parse → compile → execute |
+
+This means Fluenti has **zero runtime parsing overhead** and ships a smaller bundle (no parser needed in production).
+
+## Bundle Size
+
+### Measuring your bundle
+
+Use `fluenti stats` to see translation coverage and catalog sizes:
+
+```bash
+fluenti stats
+```
+
+For detailed bundle analysis, use your bundler's built-in tools:
+
+```bash
+# Vite
+npx vite-bundle-visualizer
+
+# Next.js
+ANALYZE=true next build  # with @next/bundle-analyzer
+```
+
+### What Fluenti adds to your bundle
+
+| Component | Size (gzipped) |
+|-----------|----------------|
+| Core runtime (`@fluenti/core`) | ~3 KB |
+| Framework adapter (vue/react/solid) | ~1-2 KB |
+| Per-locale compiled messages | Varies by content |
+
+The per-locale message size depends on your catalog. Compiled messages are typically **30-50% smaller** than raw ICU strings because static messages compile to plain strings (no function wrapper needed).
+
+## Code Splitting Strategies
+
+Choose the right strategy based on your app's needs:
+
+| Strategy | Bundle behavior | Best for |
+|----------|----------------|----------|
+| `false` (default) | All locales bundled together | Small apps, ≤ 3 locales |
+| `'static'` | Each locale in its own chunk, all loaded upfront | Medium apps, fast locale switching |
+| `'dynamic'` | Locales loaded on demand per route | Large apps, many locales |
+
+```typescript
+// fluenti.config.ts
+export default defineConfig({
+  splitting: 'dynamic',  // Only load the active locale
+})
+```
+
+For a deep dive into splitting mechanics, see [Code Splitting](/advanced/code-splitting/).
+
+## Cache Tuning
+
+Fluenti maintains several LRU caches for `Intl.*` formatter instances and compiled messages. The defaults work well for most applications.
+
+### Compiled message cache
+
+The compiled-message cache stores the result of parsing + compiling ICU messages. Default size: **500 entries**.
+
+```typescript
+import { setMessageCacheSize } from '@fluenti/core'
+
+// Increase for apps with many unique messages
+setMessageCacheSize(2000)
+
+// Decrease for memory-constrained environments
+setMessageCacheSize(100)
+```
+
+<Aside type="caution">
+Changing the cache size **clears all existing entries**. Do this during app initialization, not at runtime.
+</Aside>
+
+### Formatter caches
+
+Each `Intl.*` formatter type has its own unbounded cache (keyed by `locale:options`). In practice these stay small — most apps use a handful of locales and format styles.
+
+For long-running servers, clear caches periodically to bound memory:
+
+```typescript
+import { clearAllCaches } from '@fluenti/core'
+
+// Every 4 hours
+setInterval(() => clearAllCaches(), 4 * 60 * 60 * 1000)
+```
+
+For fine-grained control, clear individual caches:
+
+```typescript
+import {
+  clearInterpolationCache,
+  clearNumberFormatCache,
+  clearDateFormatCache,
+  clearPluralCache,
+  clearRelativeTimeFormatCache,
+  clearCompileCache,
+} from '@fluenti/core'
+```
+
+See the [Cache Management](/api/core/#cache-management) API reference for details.
+
+### Test isolation
+
+Clear caches between tests for deterministic behavior:
+
+```typescript
+import { clearAllCaches } from '@fluenti/core'
+
+afterEach(() => clearAllCaches())
+```
+
+## Lazy Loading
+
+### Preloading adjacent locales
+
+Reduce perceived latency by preloading locales the user is likely to switch to:
+
+```typescript
+const { preloadLocale } = useI18n()
+
+// Preload on hover over language switcher
+function onLanguageHover(locale: string) {
+  preloadLocale(locale)
+}
+```
+
+`preloadLocale()` loads messages in the background without switching the active locale. It silently ignores errors and skips already-loaded locales.
+
+### Chunk loader vs loadMessages
+
+| API | Purpose | When to use |
+|-----|---------|-------------|
+| `chunkLoader` (config) | Async function for build-time code splitting | Standard lazy loading with `splitting: 'dynamic'` |
+| `loadMessages()` | Synchronous merge of messages into a locale | Runtime message injection (user-contributed, API-fetched) |
+
+```typescript
+// Config-based chunk loader (recommended)
+<I18nProvider
+  locale="en"
+  messages={{ en }}
+  lazyLocaleLoading
+  chunkLoader={(locale) => import(`./locales/compiled/${locale}.js`)}
+>
+```
+
+## SSR Performance
+
+### Share compiled catalogs across requests
+
+Import compiled catalogs at module level, not per-request:
+
+```typescript
+// ✅ Module-level import — shared across requests
+import en from './locales/compiled/en'
+import ja from './locales/compiled/ja'
+
+export function handleRequest(req: Request) {
+  const locale = detectLocale(req)
+  const i18n = createFluentiRuntime({ locale, messages: { en, ja } })
+  // ...
+}
+```
+
+```typescript
+// ❌ Per-request import — unnecessary overhead
+export async function handleRequest(req: Request) {
+  const messages = await import(`./locales/compiled/${locale}.js`)
+  // This re-evaluates the module on every request
+}
+```
+
+### Avoid shared global state
+
+Never use a singleton i18n instance in SSR — concurrent requests with different locales will interfere with each other:
+
+```typescript
+// ❌ Shared global — locale race conditions in SSR
+const i18n = createFluentiRuntime({ locale: 'en', messages })
+
+// ✅ Per-request instance
+function handleRequest(req: Request) {
+  const i18n = createFluentiRuntime({ locale: detectLocale(req), messages })
+}
+```
+
+## Large Catalogs
+
+### Parallel compilation
+
+For projects with 5+ target locales, enable worker-thread compilation:
+
+```typescript
+// fluenti.config.ts
+export default defineConfig({
+  parallelCompile: true,
+})
+```
+
+This uses Node.js worker threads to compile multiple locales simultaneously. The overhead of spawning workers is only worthwhile for 5+ locales.
+
+### Incremental caching
+
+Fluenti caches extraction and compilation results. On subsequent runs, only changed files are re-processed:
+
+```bash
+# Normal run (uses cache)
+fluenti extract && fluenti compile
+
+# Force full rebuild (bypass cache)
+fluenti extract --no-cache && fluenti compile --no-cache
+```
+
+Cache files are stored alongside your catalog directory. They are safe to delete and will be regenerated on the next run.
+
+### Namespace splitting
+
+For very large codebases, split catalogs by feature area:
+
+```typescript
+export default defineConfig({
+  namespaceMapping: {
+    'src/features/auth/**': 'auth',
+    'src/features/billing/**': 'billing',
+    'src/features/dashboard/**': 'dashboard',
+  },
+})
+```
+
+Each namespace produces separate catalog files, enabling targeted extraction and independent translation workflows.
+
+## Monitoring
+
+Track these metrics to ensure i18n doesn't regress performance:
+
+- **Largest Contentful Paint (LCP)** — should not increase after adding i18n
+- **Total bundle size** — compare before/after with `fluenti stats`
+- **Time to Interactive (TTI)** — watch for impact from lazy locale loading
+- **Missing translation rate** — use `fluenti check --json` in CI to track coverage
+
+```bash
+# CI coverage gate — fail if any locale is below 95%
+fluenti check --threshold 95
+```
+
+See [Scaling & Enterprise](/advanced/scaling/) for CI/CD integration patterns.

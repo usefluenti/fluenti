@@ -12,3 +12,4 @@
  */
 export { loadConfig, loadConfigSync, DEFAULT_FLUENTI_CONFIG } from './config-loader'
 export { defineConfig } from './define-config'
+export { normalizeConfig } from './types'

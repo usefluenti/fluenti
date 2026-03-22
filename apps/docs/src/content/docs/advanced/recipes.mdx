@@ -1,0 +1,373 @@
+---
+title: Recipes
+description: "Practical patterns for common i18n scenarios — enum translation, form validation, API errors, RTL handling, dynamic keys, and conditional rendering."
+---
+
+import { Tabs, TabItem, Aside } from '@astrojs/starlight/components'
+
+Practical patterns for real-world internationalization challenges.
+
+## Translating Enum Values
+
+Use `msg` to define translatable constants outside component lifecycle, then resolve them at render time:
+
+<Tabs>
+<TabItem label="Vue">
+```vue
+<script setup>
+import { msg } from '@fluenti/vue'
+import { useI18n } from '@fluenti/vue'
+
+const STATUS = {
+  pending: msg`Pending`,
+  active: msg`Active`,
+  archived: msg`Archived`,
+} as const
+
+const { t } = useI18n()
+const props = defineProps<{ status: keyof typeof STATUS }>()
+</script>
+
+<template>
+  <span>{{ t(STATUS[props.status]) }}</span>
+</template>
+```
+</TabItem>
+
+<TabItem label="React">
+```tsx
+import { msg } from '@fluenti/react'
+import { useI18n } from '@fluenti/react'
+
+const STATUS = {
+  pending: msg`Pending`,
+  active: msg`Active`,
+  archived: msg`Archived`,
+} as const
+
+function StatusBadge({ status }: { status: keyof typeof STATUS }) {
+  const { t } = useI18n()
+  return <span>{t(STATUS[status])}</span>
+}
+```
+</TabItem>
+
+<TabItem label="Solid">
+```tsx
+import { msg } from '@fluenti/solid'
+import { useI18n } from '@fluenti/solid'
+
+const STATUS = {
+  pending: msg`Pending`,
+  active: msg`Active`,
+  archived: msg`Archived`,
+} as const
+
+function StatusBadge(props: { status: keyof typeof STATUS }) {
+  const { t } = useI18n()
+  return <span>{t(STATUS[props.status])}</span>
+}
+```
+</TabItem>
+</Tabs>
+
+`msg` creates a lazy descriptor (with an auto-generated hash ID) that is only resolved when passed to `t()`. This ensures the message is extractable by `fluenti extract` while remaining outside the reactive component tree.
+
+## Form Validation Messages
+
+Translate validation error messages from schema libraries like Zod:
+
+<Tabs>
+<TabItem label="React">
+```tsx
+import { msg } from '@fluenti/react'
+import { useI18n } from '@fluenti/react'
+import { z } from 'zod'
+
+const errors = {
+  required: msg`This field is required`,
+  tooShort: msg`Must be at least {min} characters`,
+  invalidEmail: msg`Please enter a valid email address`,
+} as const
+
+const schema = z.object({
+  email: z.string().min(1, 'required').email('invalidEmail'),
+  name: z.string().min(2, 'tooShort'),
+})
+
+function FormErrors({ issues }: { issues: z.ZodIssue[] }) {
+  const { t } = useI18n()
+  return (
+    <ul>
+      {issues.map((issue, i) => (
+        <li key={i}>
+          {t(errors[issue.message as keyof typeof errors] ?? msg`Unknown error`)}
+        </li>
+      ))}
+    </ul>
+  )
+}
+```
+</TabItem>
+
+<TabItem label="Vue">
+```vue
+<script setup>
+import { msg } from '@fluenti/vue'
+import { useI18n } from '@fluenti/vue'
+
+const errors = {
+  required: msg`This field is required`,
+  tooShort: msg`Must be at least {min} characters`,
+  invalidEmail: msg`Please enter a valid email address`,
+} as const
+
+const { t } = useI18n()
+
+function translateError(code: string) {
+  const descriptor = errors[code as keyof typeof errors]
+  return descriptor ? t(descriptor) : code
+}
+</script>
+
+<template>
+  <p v-for="error in validationErrors" class="error">
+    {{ translateError(error.code) }}
+  </p>
+</template>
+```
+</TabItem>
+</Tabs>
+
+<Aside type="tip">
+Use error codes (not translated strings) as Zod custom error messages. Map codes to `msg` descriptors to keep validation logic language-independent.
+</Aside>
+
+## API Error Translation
+
+Map server error codes to translated user-facing messages. Use `te()` to gracefully handle unknown codes:
+
+<Tabs>
+<TabItem label="React">
+```tsx
+import { msg } from '@fluenti/react'
+import { useI18n } from '@fluenti/react'
+
+const API_ERRORS: Record<string, ReturnType<typeof msg>> = {
+  AUTH_EXPIRED: msg`Your session has expired. Please sign in again.`,
+  RATE_LIMITED: msg`Too many requests. Please wait a moment.`,
+  NOT_FOUND: msg`The requested resource was not found.`,
+  FORBIDDEN: msg`You don't have permission to perform this action.`,
+}
+
+function useApiError() {
+  const { t } = useI18n()
+
+  return (code: string) => {
+    const descriptor = API_ERRORS[code]
+    return descriptor ? t(descriptor) : t(API_ERRORS.NOT_FOUND)
+  }
+}
+```
+</TabItem>
+
+<TabItem label="Vue">
+```vue
+<script setup>
+import { msg } from '@fluenti/vue'
+import { useI18n } from '@fluenti/vue'
+
+const API_ERRORS: Record<string, ReturnType<typeof msg>> = {
+  AUTH_EXPIRED: msg`Your session has expired. Please sign in again.`,
+  RATE_LIMITED: msg`Too many requests. Please wait a moment.`,
+  NOT_FOUND: msg`The requested resource was not found.`,
+  FORBIDDEN: msg`You don't have permission to perform this action.`,
+}
+
+const { t } = useI18n()
+
+function translateApiError(code: string) {
+  const descriptor = API_ERRORS[code]
+  return descriptor ? t(descriptor) : t(API_ERRORS.NOT_FOUND)
+}
+</script>
+```
+</TabItem>
+</Tabs>
+
+## RTL Layout Handling
+
+Fluenti provides `isRTL()` and `getDirection()` utilities for right-to-left language support:
+
+```typescript
+import { isRTL, getDirection } from '@fluenti/core'
+
+isRTL('ar')          // true
+isRTL('en')          // false
+getDirection('he')   // 'rtl'
+getDirection('ja')   // 'ltr'
+```
+
+### Setting document direction
+
+Set `dir` and `lang` on the `<html>` element when the locale changes:
+
+<Tabs>
+<TabItem label="React">
+```tsx
+import { useI18n } from '@fluenti/react'
+import { getDirection } from '@fluenti/core'
+import { useEffect } from 'react'
+
+function App() {
+  const { locale } = useI18n()
+
+  useEffect(() => {
+    document.documentElement.lang = locale
+    document.documentElement.dir = getDirection(locale)
+  }, [locale])
+
+  return <main>...</main>
+}
+```
+</TabItem>
+
+<TabItem label="Vue">
+```vue
+<script setup>
+import { useI18n } from '@fluenti/vue'
+import { getDirection } from '@fluenti/core'
+import { watchEffect } from 'vue'
+
+const { locale } = useI18n()
+
+watchEffect(() => {
+  document.documentElement.lang = locale.value
+  document.documentElement.dir = getDirection(locale.value)
+})
+</script>
+```
+</TabItem>
+</Tabs>
+
+### CSS logical properties
+
+Use CSS logical properties instead of physical directions for automatic RTL support:
+
+```css
+/* ❌ Physical properties — break in RTL */
+.sidebar { margin-left: 1rem; padding-right: 2rem; text-align: left; }
+
+/* ✅ Logical properties — work in both LTR and RTL */
+.sidebar { margin-inline-start: 1rem; padding-inline-end: 2rem; text-align: start; }
+```
+
+| Physical | Logical |
+|----------|---------|
+| `margin-left` / `margin-right` | `margin-inline-start` / `margin-inline-end` |
+| `padding-left` / `padding-right` | `padding-inline-start` / `padding-inline-end` |
+| `text-align: left` / `right` | `text-align: start` / `end` |
+| `border-left` / `border-right` | `border-inline-start` / `border-inline-end` |
+| `left` / `right` (positioning) | `inset-inline-start` / `inset-inline-end` |
+
+## Dynamic Message Keys
+
+When the message ID is determined at runtime (e.g., from an API or database), use `useI18n().t()` with a string key:
+
+```typescript
+const { t } = useI18n()
+
+// Runtime key lookup
+const translatedLabel = t(dynamicKey)
+```
+
+<Aside type="caution">
+Dynamic keys bypass compile-time extraction. Messages referenced only by dynamic keys must be extracted through other means — either by also referencing them statically somewhere, or by manually adding them to your catalog.
+</Aside>
+
+### Validating dynamic keys
+
+Use `te()` to check if a dynamic key exists before rendering:
+
+<Tabs>
+<TabItem label="React">
+```tsx
+function DynamicLabel({ messageKey, fallback }: { messageKey: string; fallback: string }) {
+  const { te, t } = useI18n()
+  return <span>{te(messageKey) ? t(messageKey) : fallback}</span>
+}
+```
+</TabItem>
+
+<TabItem label="Vue">
+```vue
+<script setup>
+import { useI18n } from '@fluenti/vue'
+const { te, t } = useI18n()
+const props = defineProps<{ messageKey: string; fallback: string }>()
+</script>
+
+<template>
+  <span>{{ te(props.messageKey) ? t(props.messageKey) : props.fallback }}</span>
+</template>
+```
+</TabItem>
+</Tabs>
+
+## Conditional Translation
+
+Render translated content only when a translation exists, with graceful fallback:
+
+<Tabs>
+<TabItem label="React">
+```tsx
+import { useI18n } from '@fluenti/react'
+
+function FeatureDescription({ feature }: { feature: string }) {
+  const { te, t } = useI18n()
+  const descKey = `feature.${feature}.description`
+
+  if (!te(descKey)) {
+    return null // Don't render if no translation exists
+  }
+
+  return <p>{t(descKey)}</p>
+}
+```
+</TabItem>
+
+<TabItem label="Vue">
+```vue
+<script setup>
+import { useI18n } from '@fluenti/vue'
+const { te, t } = useI18n()
+const props = defineProps<{ feature: string }>()
+const descKey = `feature.${props.feature}.description`
+</script>
+
+<template>
+  <p v-if="te(descKey)">{{ t(descKey) }}</p>
+</template>
+```
+</TabItem>
+
+<TabItem label="Solid">
+```tsx
+import { useI18n } from '@fluenti/solid'
+import { Show } from 'solid-js'
+
+function FeatureDescription(props: { feature: string }) {
+  const { te, t } = useI18n()
+  const descKey = () => `feature.${props.feature}.description`
+
+  return (
+    <Show when={te(descKey())}>
+      <p>{t(descKey())}</p>
+    </Show>
+  )
+}
+```
+</TabItem>
+</Tabs>
+
+This pattern is useful for optional content like feature descriptions, promotional banners, or region-specific notices that may not be translated for all locales.

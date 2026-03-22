@@ -21,6 +21,12 @@ export type {
   FluentiPlugin,
   PluginExtractContext,
   PluginCompileContext,
+  FluentiBuildConfigLegacy,
+  FluentiSourceConfig,
+  FluentiBuildOptions,
+  FluentiDevOptions,
+  FluentiRuntimeOptions,
+  FluentiHooksConfig,
   LocaleObject,
   LocaleDefinition,
   DetectLocaleOptions,
@@ -30,7 +36,6 @@ export type {
   NumberFormatOptions,
   FormatDateFn,
   FormatNumberFn,
-  NamespaceMapping,
   CompileTimeMessageDescriptor,
   CompileTimeT,
   TypedCompileTimeT,
@@ -47,7 +52,7 @@ export type {
   FluentiConfig,
 } from './types'
 
-export { resolveLocaleCodes } from './types'
+export { resolveLocaleCodes, normalizeConfig } from './types'
 
 export { parse, FluentParseError } from './parser'
 export { compile, clearCompileCache } from './compile'
