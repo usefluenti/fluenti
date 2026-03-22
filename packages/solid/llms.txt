@@ -17,7 +17,7 @@ pnpm add @fluenti/core @fluenti/solid @fluenti/vite-plugin
 ## Main Exports
 
 - `createI18n(config)` — app-level singleton bootstrap
-- `createI18nContext(config)` — explicit context factory
+- `createFluenti(config)` — explicit context factory
 - `I18nProvider` — provider component
 - `useI18n()` — access the nearest provider or fallback singleton
 - `t` — compile-time-only authoring API

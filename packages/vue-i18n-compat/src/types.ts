@@ -1,5 +1,5 @@
 import type { ComputedRef, Ref } from 'vue'
-import type { FluentVuePlugin, FluentVueContext } from '@fluenti/vue'
+import type { FluentiPlugin, FluentiContext } from '@fluenti/vue'
 
 /** Lookup priority when resolving translations across both libraries */
 export type BridgePriority = 'fluenti-first' | 'vue-i18n-first'
@@ -8,8 +8,8 @@ export type BridgePriority = 'fluenti-first' | 'vue-i18n-first'
 export interface BridgeOptions {
   /** The vue-i18n instance (from createI18n()) */
   vueI18n: VueI18nInstance
-  /** The fluenti Vue plugin (from createFluentVue()) */
-  fluenti: FluentVuePlugin
+  /** The fluenti Vue plugin (from createFluenti()) */
+  fluenti: FluentiPlugin
   /** Which library to check first when resolving translations (default: 'fluenti-first') */
   priority?: BridgePriority
 }
@@ -60,7 +60,7 @@ export interface BridgeContext {
   /** Whether fluenti is loading a locale chunk */
   isLoading: Readonly<Ref<boolean>>
   /** Access the underlying fluenti context */
-  fluenti: FluentVueContext
+  fluenti: FluentiContext
   /** Access the underlying vue-i18n global composer */
   vueI18n: VueI18nGlobal
 }

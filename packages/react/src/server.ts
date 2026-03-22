@@ -1,5 +1,5 @@
 import { cache } from 'react'
-import { createFluent, hashMessage as hashSyntheticMessage } from '@fluenti/core'
+import { createFluentiCore, hashMessage as hashSyntheticMessage } from '@fluenti/core'
 import type {
   FluentInstanceExtended,
   FluentConfigExtended,
@@ -347,7 +347,7 @@ export function createServerI18n(config: ServerI18nConfig): ServerI18n {
     if (config.numberFormats !== undefined) fluentConfig.numberFormats = config.numberFormats
     if (config.missing !== undefined) fluentConfig.missing = config.missing
 
-    store.instance = createFluent(fluentConfig)
+    store.instance = createFluentiCore(fluentConfig)
     _lastInstance = store.instance
     _lastRequestId = _requestId
     return store.instance
@@ -514,7 +514,7 @@ export function createServerI18n(config: ServerI18nConfig): ServerI18n {
     if (config.numberFormats !== undefined) fluentConfig.numberFormats = config.numberFormats
     if (config.missing !== undefined) fluentConfig.missing = config.missing
 
-    store.instance = createFluent(fluentConfig)
+    store.instance = createFluentiCore(fluentConfig)
     return store.instance
   }
 

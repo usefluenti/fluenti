@@ -1,5 +1,5 @@
 import { createApp } from 'vue'
-import { createFluentVue } from '@fluenti/vue'
+import { createFluenti } from '@fluenti/vue'
 import App from './App.vue'
 import router from './router'
 import en from './locales/compiled/en.js'
@@ -15,7 +15,7 @@ function loadLocaleMessages(locale: string) {
 }
 
 const app = createApp(App)
-app.use(createFluentVue({
+app.use(createFluenti({
   locale: 'en',
   fallbackLocale: 'en',
   messages: { en },

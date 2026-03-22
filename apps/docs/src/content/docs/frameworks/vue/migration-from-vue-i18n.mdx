@@ -28,8 +28,8 @@ const i18n = createI18n({ locale: 'en', messages: { en, zhCN } })
 app.use(i18n)
 
 // After (Fluenti)
-import { createFluentVue } from '@fluenti/vue'
-const i18n = createFluentVue({ locale: 'en', messages: { en, 'zh-CN': zhCN } })
+import { createFluenti } from '@fluenti/vue'
+const i18n = createFluenti({ locale: 'en', messages: { en, 'zh-CN': zhCN } })
 app.use(i18n)
 ```
 

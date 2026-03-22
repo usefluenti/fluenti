@@ -154,7 +154,7 @@ Cookies are visible to both server and client on the first request. `localStorag
 
 When you call `setLocale()`:
 - **Vue:** `v-t` output and `useI18n().t()` expressions update as `locale.value` changes. Direct-import `t` does not create a `ComputedRef` wrapper by itself.
-- **React:** The provider creates a new `createFluent()` instance, triggering re-renders for all children consuming the context.
+- **React:** The provider creates a new `createFluentiCore()` instance, triggering re-renders for all children consuming the context.
 - **Solid:** JSX expressions that call `t` or `useI18n().t()` re-run inside Solid's reactive scopes. Direct-import `t` does not create a `createMemo` wrapper.
 
 Every `$d()` and `$n()` call also updates automatically.

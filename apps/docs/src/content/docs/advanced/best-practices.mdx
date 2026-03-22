@@ -264,9 +264,9 @@ For framework-specific SSR setup, see:
 <TabItem label="Vue">
 ```ts
 import { mount } from '@vue/test-utils'
-import { createFluentVue } from '@fluenti/vue'
+import { createFluenti } from '@fluenti/vue'
 
-const i18n = createFluentVue({
+const i18n = createFluenti({
   locale: 'en',
   messages: {
     en: { greeting: 'Hello {name}' },

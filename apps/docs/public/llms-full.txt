@@ -76,11 +76,11 @@ export default {
 ```ts
 // main.ts
 import { createApp } from 'vue'
-import { createFluentVue } from '@fluenti/vue'
+import { createFluenti } from '@fluenti/vue'
 import en from './locales/compiled/en'
 import App from './App.vue'
 
-const fluent = createFluentVue({
+const fluent = createFluenti({
   locale: 'en',
   fallbackLocale: 'en',
   messages: { en },
@@ -292,7 +292,7 @@ Currency is auto-detected from locale: `en` → USD, `ja` → JPY, `zh-CN` → C
 ### Custom Format Styles
 
 ```ts
-createFluentVue({
+createFluenti({
   locale: 'en',
   messages: { en },
   dateFormats: {
@@ -607,7 +607,7 @@ export default { splitting: 'dynamic', locales: ['en', 'ja', 'zh-CN'] }
 
 ```ts
 // Vue setup with lazy loading
-createFluentVue({
+createFluenti({
   locale: 'en',
   messages: { en },
   lazyLocaleLoading: true,
@@ -639,7 +639,7 @@ Tagged template for lazy message descriptors with auto-generated FNV-1a hash IDs
 
 Compile-time tagged template — the primary authoring API. Write natural language: t\`Hello {name}\` — compiled to direct catalog lookups at build time.
 
-### createFluent(config)
+### createFluentiCore(config)
 
 Create a full i18n instance with `t()`, `d()`, `n()`, `format()`, locale switching.
 

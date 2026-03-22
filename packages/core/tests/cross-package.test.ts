@@ -5,7 +5,7 @@
  * when used together (e.g., hash IDs match, compiled catalogs are consumable).
  */
 import { describe, it, expect } from 'vitest'
-import { msg, parse, compile, interpolate, createFluent, detectLocale, hashMessage, getDirection } from '../src/index'
+import { msg, parse, compile, interpolate, createFluentiCore, detectLocale, hashMessage, getDirection } from '../src/index'
 
 describe('cross-package: hash consistency', () => {
   it('core msg() ID matches cli hashMessage()', () => {
@@ -36,7 +36,7 @@ describe('cross-package: compiled catalog consumed by core createFluent', () => 
       farewell: 'Goodbye',
     }
 
-    const fluent = createFluent({ locale: 'en', messages: { en: messages } })
+    const fluent = createFluentiCore({ locale: 'en', messages: { en: messages } })
 
     expect(fluent.t('greeting', { name: 'World' })).toBe('Hello World!')
     expect(fluent.t('farewell')).toBe('Goodbye')
@@ -100,7 +100,7 @@ describe('cross-package: SSR locale detection feeds into createFluent', () => {
 
     expect(detected).toBe('ja')
 
-    const fluent = createFluent({
+    const fluent = createFluentiCore({
       locale: detected,
       messages: {
         en: { greeting: 'Hello' },
@@ -122,7 +122,7 @@ describe('cross-package: SSR locale detection feeds into createFluent', () => {
     // de is not available, so should fall back to 'en'
     expect(detected).toBe('en')
 
-    const fluent = createFluent({
+    const fluent = createFluentiCore({
       locale: detected,
       messages: {
         en: { greeting: 'Hello' },
@@ -185,7 +185,7 @@ describe('complex languages: end-to-end', () => {
       const arAst = parse(arTranslation)
       const arCompiled = compile(arAst, 'ar')
 
-      const fluent = createFluent({
+      const fluent = createFluentiCore({
         locale: 'ar',
         fallbackLocale: 'en',
         messages: {
@@ -251,7 +251,7 @@ describe('complex languages: end-to-end', () => {
       const ruAst = parse(ruTranslation)
       const ruCompiled = compile(ruAst, 'ru')
 
-      const fluent = createFluent({
+      const fluent = createFluentiCore({
         locale: 'ru',
         fallbackLocale: 'en',
         messages: {
@@ -288,7 +288,7 @@ describe('complex languages: end-to-end', () => {
       const jaCompiled = (v: any) =>
         `${v.name}さんが写真を${v.count}枚共有しました`
 
-      const fluent = createFluent({
+      const fluent = createFluentiCore({
         locale: 'ja',
         fallbackLocale: 'en',
         messages: {
@@ -405,7 +405,7 @@ describe('complex languages: end-to-end', () => {
         'other {{name} поделился # фото с вами}}'
       )
 
-      const fluent = createFluent({
+      const fluent = createFluentiCore({
         locale: 'en',
         messages: {
           en: { [msgId]: compile(enAst, 'en') },

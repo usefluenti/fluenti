@@ -1,4 +1,4 @@
-import { createFluentVue } from '@fluenti/vue'
+import { createFluenti } from '@fluenti/vue'
 
 const messages = {
   en: {
@@ -28,7 +28,7 @@ const messages = {
 }
 
 export default defineNuxtPlugin((nuxtApp) => {
-  const fluenti = createFluentVue({
+  const fluenti = createFluenti({
     locale: nuxtApp.$fluentiLocale?.value ?? 'en',
     messages,
   })

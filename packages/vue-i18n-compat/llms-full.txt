@@ -16,7 +16,7 @@ pnpm add @fluenti/vue-i18n-compat @fluenti/core @fluenti/vue
 
 ```ts
 import { createI18n } from 'vue-i18n'
-import { createFluentVue } from '@fluenti/vue'
+import { createFluenti } from '@fluenti/vue'
 import { createFluentBridge } from '@fluenti/vue-i18n-compat'
 
 // Existing vue-i18n setup
@@ -27,7 +27,7 @@ const i18n = createI18n({
 })
 
 // New Fluenti setup
-const fluent = createFluentVue({
+const fluent = createFluenti({
   locale: 'en',
   messages: { en: compiledMessages },
 })
@@ -52,7 +52,7 @@ Factory function that creates a Vue plugin connecting vue-i18n and Fluenti.
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `vueI18n` | `VueI18nInstance` | — | The vue-i18n instance from `createI18n()` (required) |
-| `fluenti` | `FluentVuePlugin` | — | The Fluenti plugin from `createFluentVue()` (required) |
+| `fluenti` | `FluentiPlugin` | — | The Fluenti plugin from `createFluenti()` (required) |
 | `priority` | `BridgePriority` | `'fluenti-first'` | Which library to check first for translations |
 
 **Returns:** `BridgePlugin` — object with `install(app)` method and `global` context.
@@ -162,7 +162,7 @@ format('{count, plural, one {# item} other {# items}}', { count: 5 })
 
 #### `fluenti`
 
-Direct access to the Fluenti context (`FluentVueContext`).
+Direct access to the Fluenti context (`FluentiContext`).
 
 #### `vueI18n`
 

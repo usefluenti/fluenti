@@ -22,6 +22,7 @@ export { msg } from './msg'
 
 // Types
 export type {
+  FluentiContext,
   I18nContextValue,
   I18nProviderProps,
   Messages,

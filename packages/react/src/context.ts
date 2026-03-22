@@ -1,4 +1,4 @@
 import { createContext } from 'react'
-import type { I18nContextValue } from './types'
+import type { FluentiContext } from './types'
 
-export const I18nContext = createContext<I18nContextValue | null>(null)
+export const I18nContext = createContext<FluentiContext | null>(null)

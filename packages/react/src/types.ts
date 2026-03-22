@@ -12,7 +12,7 @@ import type {
   FluentInstanceExtended,
 } from '@fluenti/core'
 
-export interface I18nContextValue {
+export interface FluentiContext {
   /** The underlying Fluent instance (escape hatch for advanced use) */
   i18n: FluentInstanceExtended
   /** Translate a message by id with optional interpolation values */
@@ -62,6 +62,9 @@ export interface I18nProviderProps {
   /** App content */
   children: ReactNode
 }
+
+/** @deprecated Use `FluentiContext` instead */
+export type I18nContextValue = FluentiContext
 
 export type {
   Locale,

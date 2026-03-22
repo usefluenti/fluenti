@@ -1,7 +1,7 @@
 import { describe, it, expect, afterEach } from 'vitest'
 import { render } from '@solidjs/testing-library'
 import { I18nProvider, useI18n } from '../src'
-import { resetGlobalI18nContext } from '../src/context'
+import { resetGlobalFluentiContext } from '../src/context'
 
 const messages = {
   en: { hello: 'Hello', greeting: 'Hi {name}' },
@@ -10,7 +10,7 @@ const messages = {
 
 describe('I18nProvider', () => {
   afterEach(() => {
-    resetGlobalI18nContext()
+    resetGlobalFluentiContext()
   })
 
   it('provides context to children', () => {
@@ -184,11 +184,11 @@ describe('I18nProvider', () => {
 
 describe('useI18n outside provider', () => {
   afterEach(() => {
-    resetGlobalI18nContext()
+    resetGlobalFluentiContext()
   })
 
   it('throws when used without provider or createI18n', () => {
-    resetGlobalI18nContext()
+    resetGlobalFluentiContext()
 
     function BadChild() {
       const { t } = useI18n()

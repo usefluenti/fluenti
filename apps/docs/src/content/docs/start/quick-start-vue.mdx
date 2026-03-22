@@ -110,12 +110,12 @@ import { Steps } from '@astrojs/starlight/components'
    ```typescript
    // src/main.ts
    import { createApp } from 'vue'
-   import { createFluentVue } from '@fluenti/vue'
+   import { createFluenti } from '@fluenti/vue'
    import App from './App.vue'
    import en from './locales/compiled/en'
    import zhCN from './locales/compiled/zh-CN'
 
-   const i18n = createFluentVue({
+   const i18n = createFluenti({
      locale: 'en',
      fallbackLocale: 'en',
      messages: { en, 'zh-CN': zhCN },

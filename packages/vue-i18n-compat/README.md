@@ -53,7 +53,7 @@ app.mount('#app')
 ```ts
 import { createApp } from 'vue'
 import { createI18n } from 'vue-i18n'
-import { createFluentVue } from '@fluenti/vue'
+import { createFluenti } from '@fluenti/vue'
 import { createFluentBridge } from '@fluenti/vue-i18n-compat'
 
 // Your existing vue-i18n setup -- nothing changes here
@@ -67,7 +67,7 @@ const i18n = createI18n({
 })
 
 // Fluenti setup (empty for now -- you will add messages here over time)
-const fluenti = createFluentVue({
+const fluenti = createFluenti({
   locale: 'en',
   fallbackLocale: 'en',
   messages: { en: {}, ja: {} },
@@ -115,7 +115,7 @@ Once a key is in Fluenti, delete it from the vue-i18n messages object. When ever
 
 ```diff
 - import { createFluentBridge } from '@fluenti/vue-i18n-compat'
-+ import { createFluentVue } from '@fluenti/vue'
++ import { createFluenti } from '@fluenti/vue'
 
 - app.use(bridge)
 + app.use(fluenti)
@@ -177,7 +177,7 @@ Creates the bridge plugin. Call `app.use(bridge)` instead of `app.use(i18n)`.
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `vueI18n` | `VueI18nInstance` | **required** | vue-i18n instance from `createI18n()` |
-| `fluenti` | `FluentVuePlugin` | **required** | Fluenti plugin from `createFluentVue()` |
+| `fluenti` | `FluentiPlugin` | **required** | Fluenti plugin from `createFluenti()` |
 | `priority` | `'fluenti-first' \| 'vue-i18n-first'` | `'fluenti-first'` | Which library to check first for translations |
 
 ### `useI18n()`
@@ -199,7 +199,7 @@ Returns the `BridgeContext`. Must be called inside a component where the bridge 
 | `setLocale(locale)` | `Promise<void>` | Change locale (syncs to both libraries) |
 | `availableLocales` | `ComputedRef<string[]>` | Merged locales from both libraries |
 | `isLoading` | `Ref<boolean>` | Whether Fluenti is loading a locale chunk |
-| `fluenti` | `FluentVueContext` | Access the underlying Fluenti context |
+| `fluenti` | `FluentiContext` | Access the underlying Fluenti context |
 | `vueI18n` | `VueI18nGlobal` | Access the underlying vue-i18n global composer |
 
 ## Compatibility Matrix

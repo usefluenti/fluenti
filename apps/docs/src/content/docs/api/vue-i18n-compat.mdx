@@ -11,11 +11,11 @@ Create a bridge plugin that installs both vue-i18n and Fluenti, syncs locale sta
 
 ```typescript
 import { createI18n } from 'vue-i18n'
-import { createFluentVue } from '@fluenti/vue'
+import { createFluenti } from '@fluenti/vue'
 import { createFluentBridge } from '@fluenti/vue-i18n-compat'
 
 const vueI18n = createI18n({ legacy: false, locale: 'en', messages: legacyMessages })
-const fluenti = createFluentVue({ locale: 'en', messages: newMessages })
+const fluenti = createFluenti({ locale: 'en', messages: newMessages })
 
 const bridge = createFluentBridge({
   vueI18n,
@@ -31,7 +31,7 @@ app.use(bridge)
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
 | `vueI18n` | `VueI18nInstance` | required | vue-i18n instance from `createI18n()` |
-| `fluenti` | `FluentVuePlugin` | required | Fluenti plugin from `createFluentVue()` |
+| `fluenti` | `FluentiPlugin` | required | Fluenti plugin from `createFluenti()` |
 | `priority` | `BridgePriority` | `'fluenti-first'` | Which library to check first |
 
 ### `BridgePriority`
@@ -84,7 +84,7 @@ The context object available via `useI18n()` or `bridge.global`.
 
 | Property | Type | Description |
 |----------|------|-------------|
-| `fluenti` | `FluentVueContext` | Direct access to the Fluenti context |
+| `fluenti` | `FluentiContext` | Direct access to the Fluenti context |
 | `vueI18n` | `VueI18nGlobal` | Direct access to the vue-i18n global composer |
 
 ## `useI18n()`

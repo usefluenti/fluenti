@@ -1,5 +1,5 @@
 import { useI18n } from '../use-i18n'
-import type { FluentVueContext } from '../plugin'
+import type { FluentiContext } from '../plugin'
 
 /**
  * Internal hook used by the Vite plugin's compiled output.
@@ -10,6 +10,6 @@ import type { FluentVueContext } from '../plugin'
  *
  * @internal
  */
-export function __useI18n(): FluentVueContext {
+export function __useI18n(): FluentiContext {
   return useI18n()
 }

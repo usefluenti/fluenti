@@ -1,4 +1,4 @@
-import { createFluent } from '@fluenti/core'
+import { createFluentiCore } from '@fluenti/core'
 import type {
   FluentInstanceExtended,
   FluentConfigExtended,
@@ -153,7 +153,7 @@ export function createServerI18n(config: ServerI18nConfig): ServerI18n {
     if (config.numberFormats !== undefined) fluentConfig.numberFormats = config.numberFormats
     if (config.missing !== undefined) fluentConfig.missing = config.missing
 
-    cachedInstance = createFluent(fluentConfig)
+    cachedInstance = createFluentiCore(fluentConfig)
     return cachedInstance
   }
 

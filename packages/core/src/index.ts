@@ -75,7 +75,7 @@ import { validateLocale } from './locale'
  *
  * @example
  * ```ts
- * const i18n = createFluent({
+ * const i18n = createFluentiCore({
  *   locale: 'en',
  *   messages: {
  *     en: { greeting: 'Hello {name}!' },
@@ -85,8 +85,8 @@ import { validateLocale } from './locale'
  * i18n.t('greeting', { name: 'World' }) // 'Hello World!'
  * ```
  */
-export function createFluent(config: FluentConfigExtended): FluentInstanceExtended {
-  validateLocale(config.locale, 'createFluent')
+export function createFluentiCore(config: FluentConfigExtended): FluentInstanceExtended {
+  validateLocale(config.locale, 'createFluentiCore')
   let currentLocale: Locale = config.locale
   const catalog = new Catalog()
 
@@ -281,3 +281,6 @@ export function createFluent(config: FluentConfigExtended): FluentInstanceExtend
 
   return instance
 }
+
+/** @deprecated Use `createFluentiCore` instead */
+export const createFluent = createFluentiCore

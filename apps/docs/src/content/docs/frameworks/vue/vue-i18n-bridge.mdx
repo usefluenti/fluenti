@@ -34,7 +34,7 @@ The `@fluenti/vue-i18n-compat` package lets you run **vue-i18n** and **Fluenti**
    ```typescript
    import { createApp } from 'vue'
    import { createI18n } from 'vue-i18n'
-   import { createFluentVue } from '@fluenti/vue'
+   import { createFluenti } from '@fluenti/vue'
    import { createFluentBridge } from '@fluenti/vue-i18n-compat'
    import App from './App.vue'
 
@@ -57,7 +57,7 @@ The `@fluenti/vue-i18n-compat` package lets you run **vue-i18n** and **Fluenti**
    })
 
    // New Fluenti instance (migrated messages)
-   const fluenti = createFluentVue({
+   const fluenti = createFluenti({
      locale: 'en',
      messages: {
        en: { welcome: 'Welcome to our new system!' },

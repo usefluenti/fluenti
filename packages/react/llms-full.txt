@@ -33,7 +33,7 @@ pnpm add -D @fluenti/cli @fluenti/vite-plugin
 
 Types:
 
-- `I18nContextValue`
+- `FluentiContext`
 - `I18nProviderProps`
 - `TransProps`
 - `PluralProps`

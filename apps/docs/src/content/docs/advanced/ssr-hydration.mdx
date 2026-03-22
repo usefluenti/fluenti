@@ -83,7 +83,7 @@ See [Nuxt SSR](/frameworks/nuxt/ssr-ssg-isr/).
 ```typescript
 // server
 import { detectLocale, getSSRLocaleScript } from '@fluenti/core'
-import { createFluentVue } from '@fluenti/vue'
+import { createFluenti } from '@fluenti/vue'
 
 const locale = detectLocale({
   cookie: getCookie(event, 'lang'),
@@ -91,7 +91,7 @@ const locale = detectLocale({
   available: ['en', 'zh-CN', 'ja'],
   fallback: 'en',
 })
-const i18n = createFluentVue({ locale, messages: allMessages })
+const i18n = createFluenti({ locale, messages: allMessages })
 app.use(i18n)
 
 const script = getSSRLocaleScript(locale)
@@ -102,7 +102,7 @@ const script = getSSRLocaleScript(locale)
 import { getHydratedLocale } from '@fluenti/core'
 
 const locale = getHydratedLocale('en')
-const i18n = createFluentVue({ locale, messages: allMessages })
+const i18n = createFluenti({ locale, messages: allMessages })
 app.use(i18n)
 ```
 

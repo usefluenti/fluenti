@@ -18,7 +18,7 @@ pnpm add @fluenti/core @fluenti/solid @fluenti/vite-plugin
 ## Public Exports
 
 - `createI18n`
-- `createI18nContext`
+- `createFluenti`
 - `I18nProvider`
 - `I18nCtx`
 - `useI18n`
@@ -44,7 +44,7 @@ Types:
 
 Creates an app-level singleton context, intended for SPA startup code.
 
-### `createI18nContext(config)`
+### `createFluenti(config)`
 
 Creates an isolated reactive context without registering a global singleton.
 

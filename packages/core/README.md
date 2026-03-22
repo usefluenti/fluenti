@@ -53,9 +53,9 @@ pnpm add @fluenti/core
 ### Create an instance
 
 ```ts
-import { createFluent } from '@fluenti/core'
+import { createFluentiCore } from '@fluenti/core'
 
-const i18n = createFluent({
+const i18n = createFluentiCore({
   locale: 'en',
   fallbackLocale: 'en',
   messages: {
@@ -74,10 +74,10 @@ i18n.t('greeting', { name: 'World' }) // "Hello World!"
 
 ### Advanced configuration
 
-`createFluent()` accepts additional options on `FluentConfigExtended`:
+`createFluentiCore()` accepts additional options on `FluentConfigExtended`:
 
 ```ts
-const i18n = createFluent({
+const i18n = createFluentiCore({
   locale: 'en',
   fallbackLocale: 'en',
   messages: { en },

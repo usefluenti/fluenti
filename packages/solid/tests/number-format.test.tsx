@@ -1,12 +1,12 @@
 import { describe, it, expect, afterEach } from 'vitest'
 import { render, cleanup } from '@solidjs/testing-library'
 import { NumberFormat, I18nProvider } from '../src'
-import { resetGlobalI18nContext } from '../src/context'
+import { resetGlobalFluentiContext } from '../src/context'
 
 describe('NumberFormat', () => {
   afterEach(() => {
     cleanup()
-    resetGlobalI18nContext()
+    resetGlobalFluentiContext()
   })
 
   it('formats an integer with grouping separators', () => {
