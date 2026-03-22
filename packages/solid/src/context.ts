@@ -1,6 +1,6 @@
 import { createSignal, createRoot, type Accessor } from 'solid-js'
 import { formatDate, formatNumber, interpolate as coreInterpolate, buildICUMessage, resolveDescriptorId } from '@fluenti/core'
-import type { Locale, LocalizedString, Messages, CompiledMessage, MessageDescriptor, DateFormatOptions, NumberFormatOptions, ChunkLoader, SplitRuntimeModule, DiagnosticsConfig } from '@fluenti/core'
+import type { Locale, LocalizedString, Messages, CompiledMessage, MessageDescriptor, MissingKeyEvent, DateFormatOptions, NumberFormatOptions, ChunkLoader, SplitRuntimeModule, DiagnosticsConfig } from '@fluenti/core'
 
 const SPLIT_RUNTIME_KEY = Symbol.for('fluenti.runtime.solid.v1')
 
@@ -41,6 +41,11 @@ export interface I18nConfig extends FluentRuntimeConfig {
   numberFormats?: NumberFormatOptions
   /** Runtime diagnostics configuration (forwarded to core) */
   diagnostics?: DiagnosticsConfig
+  /**
+   * Unified missing key handler. Called when a translation is missing or a fallback locale is used.
+   * Returning a string uses it as the translation. Returning undefined/void uses default behavior.
+   */
+  onMissingKey?: (event: MissingKeyEvent) => string | undefined | void
 }
 
 /** Reactive i18n context holding locale signal and translation utilities */
@@ -119,11 +124,16 @@ export function createI18nContext(config: FluentRuntimeConfig | I18nConfig): I18
     return String(msg) as LocalizedString
   }
 
+  interface LookupResult {
+    text: LocalizedString
+    resolvedLocale: Locale
+  }
+
   function lookupWithFallbacks(
     id: string,
     loc: Locale,
     values?: Record<string, unknown>,
-  ): LocalizedString | undefined {
+  ): LookupResult | undefined {
     const localesToTry: Locale[] = [loc]
     const seen = new Set(localesToTry)
 
@@ -145,10 +155,25 @@ export function createI18nContext(config: FluentRuntimeConfig | I18nConfig): I18
     for (const targetLocale of localesToTry) {
       const result = lookupCatalog(id, targetLocale, values)
       if (result !== undefined) {
-        return result
+        return { text: result, resolvedLocale: targetLocale }
       }
     }
 
+    return undefined
+  }
+
+  /** Fire `onMissingKey` and return a fallback string if provided. */
+  function fireOnMissingKey(id: string, loc: Locale, fallbackUsed?: Locale): string | undefined {
+    if (!i18nConfig.onMissingKey) return undefined
+    try {
+      const event: MissingKeyEvent = fallbackUsed !== undefined
+        ? { locale: loc, id, fallbackUsed }
+        : { locale: loc, id }
+      const result = i18nConfig.onMissingKey(event)
+      if (typeof result === 'string') return result
+    } catch {
+      // Handler threw — fall through
+    }
     return undefined
   }
 
@@ -156,14 +181,20 @@ export function createI18nContext(config: FluentRuntimeConfig | I18nConfig): I18
     id: string,
     loc: Locale,
   ): LocalizedString | undefined {
-    if (!config.missing) {
-      return undefined
+    // Legacy handler (deprecated)
+    if (config.missing) {
+      const result = config.missing(loc, id)
+      if (result !== undefined) {
+        return result as LocalizedString
+      }
     }
 
-    const result = config.missing(loc, id)
-    if (result !== undefined) {
-      return result as LocalizedString
+    // Unified handler
+    const onMissingResult = fireOnMissingKey(id, loc)
+    if (onMissingResult !== undefined) {
+      return onMissingResult as LocalizedString
     }
+
     return undefined
   }
 
@@ -172,9 +203,16 @@ export function createI18nContext(config: FluentRuntimeConfig | I18nConfig): I18
     loc: Locale,
     values?: Record<string, unknown>,
   ): LocalizedString {
-    const catalogResult = lookupWithFallbacks(id, loc, values)
-    if (catalogResult !== undefined) {
-      return catalogResult
+    const lookupResult = lookupWithFallbacks(id, loc, values)
+    if (lookupResult !== undefined) {
+      // If resolved from a fallback locale, fire onMissingKey with fallbackUsed
+      if (lookupResult.resolvedLocale !== loc) {
+        const override = fireOnMissingKey(id, loc, lookupResult.resolvedLocale)
+        if (override !== undefined) {
+          return override as LocalizedString
+        }
+      }
+      return lookupResult.text
     }
 
     const missingResult = resolveMissing(id, loc)
@@ -206,9 +244,15 @@ export function createI18nContext(config: FluentRuntimeConfig | I18nConfig): I18
     if (typeof id === 'object' && id !== null) {
       const messageId = resolveDescriptorId(id)
       if (messageId) {
-        const catalogResult = lookupWithFallbacks(messageId, currentLocale, values)
-        if (catalogResult !== undefined) {
-          return catalogResult
+        const lookupResult = lookupWithFallbacks(messageId, currentLocale, values)
+        if (lookupResult !== undefined) {
+          if (lookupResult.resolvedLocale !== currentLocale) {
+            const override = fireOnMissingKey(messageId, currentLocale, lookupResult.resolvedLocale)
+            if (override !== undefined) {
+              return override as LocalizedString
+            }
+          }
+          return lookupResult.text
         }
 
         const missingResult = resolveMissing(messageId, currentLocale)

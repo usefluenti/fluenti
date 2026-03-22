@@ -764,4 +764,156 @@ describe('createFluentiRuntime', () => {
       expect(result.length).toBeGreaterThan(0)
     })
   })
+
+  // ─── onMissingKey unified handler ────────────────────────────────────
+
+  describe('onMissingKey', () => {
+    it('calls onMissingKey with correct event when key is missing', () => {
+      const events: Array<{ locale: string; id: string; fallbackUsed?: string }> = []
+      const i18n = createFluentiRuntime({
+        locale: 'fr',
+        messages: { fr: {} },
+        onMissingKey: (event) => {
+          events.push(event)
+        },
+      })
+      i18n.t('greeting')
+      expect(events).toEqual([{ locale: 'fr', id: 'greeting' }])
+    })
+
+    it('uses returned string as translation', () => {
+      const i18n = createFluentiRuntime({
+        locale: 'en',
+        messages: { en: {} },
+        onMissingKey: () => 'FALLBACK',
+      })
+      expect(i18n.t('unknown')).toBe('FALLBACK')
+    })
+
+    it('returns undefined/void falls through to default behavior', () => {
+      const i18n = createFluentiRuntime({
+        locale: 'en',
+        messages: { en: {} },
+        onMissingKey: () => undefined,
+      })
+      expect(i18n.t('unknown')).toBe('unknown')
+    })
+
+    it('sets fallbackUsed when fallback locale provides translation', () => {
+      const events: Array<{ locale: string; id: string; fallbackUsed?: string }> = []
+      const i18n = createFluentiRuntime({
+        locale: 'fr',
+        fallbackLocale: 'en',
+        messages: {
+          fr: {},
+          en: { greeting: 'Hello' },
+        },
+        onMissingKey: (event) => {
+          events.push(event)
+        },
+      })
+      expect(i18n.t('greeting')).toBe('Hello')
+      expect(events).toEqual([
+        { locale: 'fr', id: 'greeting', fallbackUsed: 'en' },
+      ])
+    })
+
+    it('sets fallbackUsed when fallbackChain locale provides translation', () => {
+      const events: Array<{ locale: string; id: string; fallbackUsed?: string }> = []
+      const i18n = createFluentiRuntime({
+        locale: 'de',
+        messages: {
+          de: {},
+          'zh-CN': { greeting: 'Hello from zh-CN' },
+        },
+        fallbackChain: { de: ['zh-CN'] },
+        onMissingKey: (event) => {
+          events.push(event)
+        },
+      })
+      expect(i18n.t('greeting')).toBe('Hello from zh-CN')
+      expect(events).toEqual([
+        { locale: 'de', id: 'greeting', fallbackUsed: 'zh-CN' },
+      ])
+    })
+
+    it('onMissingKey can override fallback translation', () => {
+      const i18n = createFluentiRuntime({
+        locale: 'fr',
+        fallbackLocale: 'en',
+        messages: {
+          fr: {},
+          en: { greeting: 'Hello' },
+        },
+        onMissingKey: (event) => {
+          if (event.fallbackUsed) {
+            return `[${event.locale}] ${event.id}`
+          }
+        },
+      })
+      expect(i18n.t('greeting')).toBe('[fr] greeting')
+    })
+
+    it('does NOT call onMissingKey when key is found in current locale', () => {
+      const handler = vi.fn()
+      const i18n = createFluentiRuntime({
+        locale: 'en',
+        messages: { en: { greeting: 'Hello' } },
+        onMissingKey: handler,
+      })
+      expect(i18n.t('greeting')).toBe('Hello')
+      expect(handler).not.toHaveBeenCalled()
+    })
+
+    it('onMissingKey handler that throws does not crash', () => {
+      const i18n = createFluentiRuntime({
+        locale: 'en',
+        messages: { en: {} },
+        onMissingKey: () => { throw new Error('handler boom') },
+      })
+      expect(i18n.t('unknown')).toBe('unknown')
+    })
+
+    it('legacy missing and onMissingKey can coexist (legacy first)', () => {
+      const legacyMissing = vi.fn().mockReturnValue('LEGACY')
+      const onMissingKey = vi.fn()
+      const i18n = createFluentiRuntime({
+        locale: 'en',
+        messages: { en: {} },
+        missing: legacyMissing,
+        onMissingKey,
+      })
+      expect(i18n.t('unknown')).toBe('LEGACY')
+      expect(legacyMissing).toHaveBeenCalledWith('en', 'unknown')
+      // onMissingKey should NOT be called since legacy handler resolved it
+      expect(onMissingKey).not.toHaveBeenCalled()
+    })
+
+    it('onMissingKey fires when legacy missing returns undefined', () => {
+      const onMissingKey = vi.fn().mockReturnValue('UNIFIED')
+      const i18n = createFluentiRuntime({
+        locale: 'en',
+        messages: { en: {} },
+        missing: () => undefined,
+        onMissingKey,
+      })
+      expect(i18n.t('unknown')).toBe('UNIFIED')
+      expect(onMissingKey).toHaveBeenCalledWith({ locale: 'en', id: 'unknown' })
+    })
+
+    it('works with MessageDescriptor path', () => {
+      const events: Array<{ locale: string; id: string }> = []
+      const i18n = createFluentiRuntime({
+        locale: 'en',
+        messages: { en: {} },
+        onMissingKey: (event) => {
+          events.push({ locale: event.locale, id: event.id })
+          return 'DESCRIPTOR_FALLBACK'
+        },
+      })
+      const desc = { id: 'nav.home', message: 'Home' }
+      expect(i18n.t(desc)).toBe('DESCRIPTOR_FALLBACK')
+      expect(events[0]).toEqual({ locale: 'en', id: 'nav.home' })
+    })
+  })
 })

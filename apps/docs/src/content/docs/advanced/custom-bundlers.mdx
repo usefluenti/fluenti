@@ -1,0 +1,386 @@
+---
+title: Custom Bundlers
+description: "Use Fluenti with webpack, rspack, Parcel, esbuild, or any bundler via the @fluenti/core/transform API."
+---
+
+import { Tabs, TabItem, Aside } from '@astrojs/starlight/components'
+
+Fluenti ships first-class plugins for Vite (via `@fluenti/vite-plugin`) and Next.js (via `@fluenti/next`). For other bundlers — webpack, rspack, Parcel, esbuild, Rollup — use the `@fluenti/core/transform` API to build your own integration.
+
+<Aside type="tip">
+Without a build plugin, Fluenti still works. The `useI18n().t()` function, `Trans`, `Plural`, `Select`, `DateTime`, and `NumberFormat` components all run correctly at runtime. The build plugin only adds compile-time optimizations for `` t`…` `` tagged templates and `Trans` component extraction.
+</Aside>
+
+## What the Build Plugin Does
+
+A Fluenti build plugin handles three responsibilities:
+
+1. **Transform** — Rewrite `` t`Hello ${name}` `` tagged templates into descriptor calls with hash-based IDs
+2. **Compile** — Run `fluenti extract` + `fluenti compile` before the build to generate per-locale message bundles
+3. **Resolve** — Alias virtual module imports (e.g., `@fluenti/messages/en`) to compiled catalog files
+
+Without a plugin, you handle steps 2 and 3 manually (CLI commands + import paths), and step 1 is skipped (use `useI18n().t()` instead of `import { t }`).
+
+## Minimal Setup (No Plugin)
+
+If you don't need compile-time `t\`\`` transforms, you can use Fluenti with **any** bundler with zero plugin setup:
+
+### 1. Install and configure
+
+```bash
+pnpm add @fluenti/core @fluenti/react  # or @fluenti/vue / @fluenti/solid
+pnpm add -D @fluenti/cli
+```
+
+```typescript
+// fluenti.config.ts
+import { defineConfig } from '@fluenti/cli'
+
+export default defineConfig({
+  sourceLocale: 'en',
+  locales: ['en', 'ja', 'zh-CN'],
+  catalogDir: './locales',
+  format: 'po',
+  include: ['./src/**/*.tsx', './src/**/*.ts'],
+  compileOutDir: './src/locales/compiled',
+})
+```
+
+### 2. Extract and compile messages
+
+```bash
+fluenti extract    # Scan source → create/update PO catalogs
+fluenti compile    # Compile PO → JS bundles
+```
+
+### 3. Import compiled catalogs directly
+
+<Tabs>
+<TabItem label="React">
+```tsx
+import { I18nProvider, useI18n } from '@fluenti/react'
+import en from './locales/compiled/en'
+import ja from './locales/compiled/ja'
+
+function App() {
+  return (
+    <I18nProvider locale="en" messages={{ en, ja }}>
+      <Greeting name="World" />
+    </I18nProvider>
+  )
+}
+
+function Greeting({ name }: { name: string }) {
+  const { t } = useI18n()
+  return <h1>{t('Hello {name}!', { name })}</h1>
+}
+```
+</TabItem>
+
+<TabItem label="Vue">
+```vue
+<script setup>
+import { useI18n } from '@fluenti/vue'
+const { t } = useI18n()
+</script>
+
+<template>
+  <h1>{{ t('Hello {name}!', { name: 'World' }) }}</h1>
+</template>
+```
+</TabItem>
+
+<TabItem label="Solid">
+```tsx
+import { I18nProvider, useI18n } from '@fluenti/solid'
+import en from './locales/compiled/en'
+import ja from './locales/compiled/ja'
+
+function App() {
+  return (
+    <I18nProvider locale="en" messages={{ en, ja }}>
+      <Greeting name="World" />
+    </I18nProvider>
+  )
+}
+
+function Greeting(props: { name: string }) {
+  const { t } = useI18n()
+  return <h1>{t('Hello {name}!', { name: props.name })}</h1>
+}
+```
+</TabItem>
+</Tabs>
+
+### 4. Add build scripts
+
+```json
+{
+  "scripts": {
+    "i18n": "fluenti extract && fluenti compile",
+    "prebuild": "pnpm i18n",
+    "build": "webpack"
+  }
+}
+```
+
+This approach works with any bundler. The trade-off: you use `useI18n().t()` instead of the direct-import `` t`…` `` syntax, and `Trans` components do their extraction at runtime instead of build time.
+
+## Full Plugin Integration
+
+For compile-time `` t`…` `` transforms and `Trans` optimization, build a loader/plugin using `@fluenti/core/transform`.
+
+### webpack / rspack
+
+webpack and rspack share the same loader API, so this works for both:
+
+```typescript
+// fluenti-loader.ts
+import {
+  createTransformPipeline,
+  hasScopeTransformCandidate,
+} from '@fluenti/core/transform'
+
+const pipeline = createTransformPipeline({ framework: 'react' }) // or 'vue', 'solid'
+
+export default function fluentLoader(source: string): string {
+  const resourcePath: string = (this as any).resourcePath
+
+  // Only process source files
+  if (!/\.[jt]sx?$/.test(resourcePath)) return source
+  if (/node_modules/.test(resourcePath)) return source
+
+  // Quick regex check — skip files without Fluenti patterns
+  if (!hasScopeTransformCandidate(source)) return source
+
+  const result = pipeline.transform(source, resourcePath)
+  return result.transformed ? result.code : source
+}
+```
+
+```typescript
+// webpack.config.ts (or rspack.config.ts)
+import { resolve } from 'node:path'
+
+export default {
+  module: {
+    rules: [
+      {
+        test: /\.[jt]sx?$/,
+        exclude: /node_modules/,
+        enforce: 'pre' as const,
+        use: [{ loader: resolve(__dirname, './fluenti-loader.ts') }],
+      },
+      // ... your other loaders (babel, ts-loader, etc.)
+    ],
+  },
+  resolve: {
+    alias: {
+      // Point virtual imports to compiled catalogs
+      '@fluenti/messages/en': resolve(__dirname, 'src/locales/compiled/en.js'),
+      '@fluenti/messages/ja': resolve(__dirname, 'src/locales/compiled/ja.js'),
+    },
+  },
+}
+```
+
+<Aside type="note">
+Use `enforce: 'pre'` so the Fluenti transform runs before other loaders (Babel, TypeScript). This ensures the transformed code is valid JS/TS that downstream loaders can process.
+</Aside>
+
+### Parcel
+
+Parcel uses [Transformer plugins](https://parceljs.org/plugin-system/transformer/). Create a custom transformer:
+
+```typescript
+// parcel-transformer-fluenti/index.ts
+import { Transformer } from '@parcel/plugin'
+import {
+  createTransformPipeline,
+  hasScopeTransformCandidate,
+} from '@fluenti/core/transform'
+
+const pipeline = createTransformPipeline({ framework: 'react' })
+
+export default new Transformer({
+  async transform({ asset }) {
+    if (!asset.type.match(/^(js|ts|jsx|tsx)$/)) return [asset]
+
+    const source = await asset.getCode()
+    if (!hasScopeTransformCandidate(source)) return [asset]
+
+    const result = pipeline.transform(source, asset.filePath)
+    if (result.transformed) {
+      asset.setCode(result.code)
+    }
+    return [asset]
+  },
+})
+```
+
+Register it in `.parcelrc`:
+
+```json
+{
+  "extends": "@parcel/config-default",
+  "transformers": {
+    "*.{ts,tsx,js,jsx}": ["parcel-transformer-fluenti", "..."]
+  }
+}
+```
+
+### esbuild
+
+esbuild uses [plugins](https://esbuild.github.io/plugins/) with an `onLoad` callback:
+
+```typescript
+// esbuild-plugin-fluenti.ts
+import { readFile } from 'node:fs/promises'
+import type { Plugin } from 'esbuild'
+import {
+  createTransformPipeline,
+  hasScopeTransformCandidate,
+} from '@fluenti/core/transform'
+
+const pipeline = createTransformPipeline({ framework: 'react' })
+
+export function fluentPlugin(): Plugin {
+  return {
+    name: 'fluenti',
+    setup(build) {
+      build.onLoad({ filter: /\.[jt]sx?$/ }, async (args) => {
+        if (args.path.includes('node_modules')) return undefined
+
+        const source = await readFile(args.path, 'utf-8')
+        if (!hasScopeTransformCandidate(source)) return undefined
+
+        const result = pipeline.transform(source, args.path)
+        if (!result.transformed) return undefined
+
+        return {
+          contents: result.code,
+          loader: args.path.endsWith('x') ? 'tsx' : 'ts',
+        }
+      })
+    },
+  }
+}
+```
+
+```typescript
+// esbuild.config.ts
+import { fluentPlugin } from './esbuild-plugin-fluenti'
+
+await esbuild.build({
+  entryPoints: ['src/index.tsx'],
+  bundle: true,
+  plugins: [fluentPlugin()],
+})
+```
+
+### Rollup
+
+Rollup uses a `transform` hook:
+
+```typescript
+// rollup-plugin-fluenti.ts
+import type { Plugin } from 'rollup'
+import {
+  createTransformPipeline,
+  hasScopeTransformCandidate,
+} from '@fluenti/core/transform'
+
+const pipeline = createTransformPipeline({ framework: 'react' })
+
+export function fluentPlugin(): Plugin {
+  return {
+    name: 'fluenti',
+    transform(source, id) {
+      if (!/\.[jt]sx?$/.test(id)) return null
+      if (id.includes('node_modules')) return null
+      if (!hasScopeTransformCandidate(source)) return null
+
+      const result = pipeline.transform(source, id)
+      return result.transformed ? { code: result.code, map: null } : null
+    },
+  }
+}
+```
+
+## Auto-Compile Integration
+
+To run `fluenti extract` + `fluenti compile` automatically before each build, hook into your bundler's lifecycle:
+
+<Tabs>
+<TabItem label="webpack / rspack">
+```typescript
+import { execSync } from 'node:child_process'
+
+class FluentCompilePlugin {
+  apply(compiler: any) {
+    compiler.hooks.beforeCompile.tapPromise('fluenti', async () => {
+      execSync('fluenti extract && fluenti compile', { stdio: 'inherit' })
+    })
+  }
+}
+
+// In webpack.config.ts:
+export default {
+  plugins: [new FluentCompilePlugin()],
+}
+```
+</TabItem>
+
+<TabItem label="esbuild">
+```typescript
+import { execSync } from 'node:child_process'
+
+// Run before esbuild.build()
+execSync('fluenti extract && fluenti compile', { stdio: 'inherit' })
+
+await esbuild.build({ /* ... */ })
+```
+</TabItem>
+
+<TabItem label="npm scripts">
+```json
+{
+  "scripts": {
+    "i18n": "fluenti extract && fluenti compile",
+    "prebuild": "pnpm i18n",
+    "build": "your-bundler build"
+  }
+}
+```
+</TabItem>
+</Tabs>
+
+## Lazy Locale Loading
+
+With any bundler that supports dynamic `import()`, you can lazy-load locales:
+
+```tsx
+<I18nProvider
+  locale="en"
+  messages={{ en }}
+  lazyLocaleLoading
+  chunkLoader={(locale) => import(`./locales/compiled/${locale}.js`)}
+>
+  <App />
+</I18nProvider>
+```
+
+For webpack/rspack, this creates split chunks automatically. For esbuild, you may need `splitting: true` in the build config. For Parcel, dynamic imports work out of the box.
+
+## Comparison
+
+| Feature | No plugin | With custom plugin |
+|---------|-----------|-------------------|
+| `useI18n().t()` | ✅ Works | ✅ Works |
+| `Trans`, `Plural`, `Select` | ✅ Runtime | ✅ Optimized at build time |
+| `import { t }` + `t\`\`` | ❌ Not available | ✅ Compile-time transform |
+| Lazy locale loading | ✅ Via `chunkLoader` | ✅ Via `chunkLoader` |
+| Auto extract + compile | Manual (`prebuild` script) | Can hook into bundler lifecycle |
+| Setup effort | Minimal | Moderate (write loader/plugin) |
+
+For the full transform API reference, see [`@fluenti/core/transform`](/api/transform/).

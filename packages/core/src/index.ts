@@ -2,6 +2,7 @@ export type {
   Locale,
   LocalizedString,
   MessageDescriptor,
+  MissingKeyEvent,
   CompiledMessage,
   Messages,
   AllMessages,
@@ -192,6 +193,12 @@ export function createFluentiRuntime(config: FluentiRuntimeConfigFull): FluentiI
 
   // ── Catalog resolution ───────────────────────────────────────────────────
 
+  /** Result of a catalog lookup, including which locale provided the translation. */
+  interface CatalogLookupResult {
+    text: LocalizedString
+    resolvedLocale: Locale
+  }
+
   /**
    * Build the ordered list of locales to try for a given lookup.
    * Order: current → fallbackLocale → fallbackChain[current] → fallbackChain['*']
@@ -219,30 +226,56 @@ export function createFluentiRuntime(config: FluentiRuntimeConfigFull): FluentiI
   }
 
   /** Look up a message ID across the current locale and all fallbacks. */
-  function lookupCatalog(id: string, values?: Record<string, unknown>): LocalizedString | undefined {
+  function lookupCatalog(id: string, values?: Record<string, unknown>): CatalogLookupResult | undefined {
     for (const locale of buildFallbackChain()) {
       const msg = catalog.get(locale, id)
       if (msg !== undefined) {
+        const text = executeMessage(msg, id, values, locale)
+        if (text === undefined) continue // compiled function returned undefined — treat as missing
         if (DEV_FLAG && diagnostics && locale !== currentLocale) {
           diagnostics.fallbackUsed(currentLocale, locale, id)
         }
-        return executeMessage(msg, id, values, locale)
+        return { text, resolvedLocale: locale }
       }
     }
     return undefined
   }
 
-  /** Try the user-provided missing-translation handler. */
-  function resolveMissing(id: string): LocalizedString | undefined {
-    if (!config.missing) return undefined
+  /** Fire `onMissingKey` (unified handler) and return a fallback string if provided. */
+  function fireOnMissingKey(id: string, fallbackUsed?: Locale): string | undefined {
+    if (!config.onMissingKey) return undefined
     try {
-      const result = config.missing(currentLocale, id)
-      if (result !== undefined) {
-        return applyTransform(result, id)
-      }
+      const event: import('./types').MissingKeyEvent = fallbackUsed !== undefined
+        ? { locale: currentLocale, id, fallbackUsed }
+        : { locale: currentLocale, id }
+      const result = config.onMissingKey(event)
+      if (typeof result === 'string') return result
     } catch {
-      // Missing handler threw — fall through to next resolution path
+      // Handler threw — fall through
     }
+    return undefined
+  }
+
+  /** Try legacy missing handler, then unified onMissingKey handler. */
+  function resolveMissing(id: string): LocalizedString | undefined {
+    // Try the legacy `missing` handler first (deprecated, but not removed)
+    if (config.missing) {
+      try {
+        const missingResult = config.missing(currentLocale, id)
+        if (missingResult !== undefined) {
+          return applyTransform(missingResult, id)
+        }
+      } catch {
+        // Missing handler threw — fall through
+      }
+    }
+
+    // Try the unified `onMissingKey` handler
+    const onMissingResult = fireOnMissingKey(id)
+    if (onMissingResult !== undefined) {
+      return applyTransform(onMissingResult, id)
+    }
+
     return undefined
   }
 
@@ -256,8 +289,17 @@ export function createFluentiRuntime(config: FluentiRuntimeConfigFull): FluentiI
    * 4. Dev warning + placeholder
    */
   function resolveMessage(id: string, values?: Record<string, unknown>): LocalizedString {
-    const catalogResult = lookupCatalog(id, values)
-    if (catalogResult !== undefined) return catalogResult
+    const lookupResult = lookupCatalog(id, values)
+    if (lookupResult !== undefined) {
+      // If a fallback locale was used, notify via onMissingKey
+      if (lookupResult.resolvedLocale !== currentLocale) {
+        const override = fireOnMissingKey(id, lookupResult.resolvedLocale)
+        if (override !== undefined) {
+          return applyTransform(override, id)
+        }
+      }
+      return lookupResult.text
+    }
 
     const missingResult = resolveMissing(id)
     if (missingResult !== undefined) return missingResult
@@ -281,8 +323,16 @@ export function createFluentiRuntime(config: FluentiRuntimeConfigFull): FluentiI
   function resolveDescriptor(descriptor: MessageDescriptor, values?: Record<string, unknown>): LocalizedString {
     const messageId = resolveDescriptorId(descriptor)
     if (messageId) {
-      const catalogResult = lookupCatalog(messageId, values)
-      if (catalogResult !== undefined) return catalogResult
+      const lookupResult = lookupCatalog(messageId, values)
+      if (lookupResult !== undefined) {
+        if (lookupResult.resolvedLocale !== currentLocale) {
+          const override = fireOnMissingKey(messageId, lookupResult.resolvedLocale)
+          if (override !== undefined) {
+            return applyTransform(override, messageId)
+          }
+        }
+        return lookupResult.text
+      }
 
       const missingResult = resolveMissing(messageId)
       if (missingResult !== undefined) return missingResult
@@ -303,8 +353,16 @@ export function createFluentiRuntime(config: FluentiRuntimeConfigFull): FluentiI
 
     // Look up by hash-based ID first (matches compiled catalogs)
     const hashId = createMessageId(icu)
-    const catalogResult = lookupCatalog(hashId, values)
-    if (catalogResult !== undefined) return catalogResult
+    const lookupResult = lookupCatalog(hashId, values)
+    if (lookupResult !== undefined) {
+      if (lookupResult.resolvedLocale !== currentLocale) {
+        const override = fireOnMissingKey(hashId, lookupResult.resolvedLocale)
+        if (override !== undefined) {
+          return applyTransform(override, hashId)
+        }
+      }
+      return lookupResult.text
+    }
 
     // Fallback: resolve as raw ICU message
     return resolveMessage(icu, values)

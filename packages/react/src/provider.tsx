@@ -33,6 +33,7 @@ export function I18nProvider({
   numberFormats,
   missing,
   diagnostics,
+  onMissingKey,
   children,
 }: I18nProviderProps) {
   const [currentLocale, setCurrentLocale] = useState(locale)
@@ -63,8 +64,9 @@ export function I18nProvider({
     if (numberFormats !== undefined) config.numberFormats = numberFormats
     if (missing !== undefined) config.missing = missing
     if (diagnostics !== undefined) config.diagnostics = diagnostics
+    if (onMissingKey !== undefined) config.onMissingKey = onMissingKey
     return createFluentiRuntime(config)
-  }, [currentLocale, loadedMessages, fallbackLocale, fallbackChain, dateFormats, numberFormats, missing, diagnostics])
+  }, [currentLocale, loadedMessages, fallbackLocale, fallbackChain, dateFormats, numberFormats, missing, diagnostics, onMissingKey])
 
   // Sync external locale prop changes
   useEffect(() => {

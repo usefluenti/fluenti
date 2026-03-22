@@ -85,11 +85,32 @@ export interface SplitRuntimeModule {
   __preloadLocale?: (locale: string) => Promise<void>
 }
 
+/** Event payload passed to `onMissingKey` when a translation is not found or a fallback is used. */
+export interface MissingKeyEvent {
+  /** The locale that was requested */
+  locale: Locale
+  /** The message ID that was looked up */
+  id: string
+  /** The message context (if using contextualized messages) */
+  context?: string
+  /** Set when a fallback locale provided the translation instead of the requested locale */
+  fallbackUsed?: Locale
+}
+
 export interface FluentiRuntimeConfig {
   locale: Locale
   fallbackLocale?: Locale
   messages: AllMessages
+  /** @deprecated Use `onMissingKey` instead. Will be removed in a future major version. */
   missing?: (locale: Locale, id: string) => string | undefined
+  /**
+   * Called when a translation key is missing from the requested locale,
+   * or when a fallback locale is used instead.
+   *
+   * - Returning a `string` uses it as the translation.
+   * - Returning `undefined` or `void` falls through to default behavior (message ID as placeholder).
+   */
+  onMissingKey?: (event: MissingKeyEvent) => string | undefined | void
 }
 
 export interface FluentiInstance {
