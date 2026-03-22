@@ -333,8 +333,8 @@ describe('loadVirtualSplitModule', () => {
 
     it('uses runtimeGenerator when provided instead of legacy fallback', () => {
       const mockGenerator = {
-        generateRuntime: (opts: unknown) => '/* custom runtime */',
-        generateRouteRuntime: (opts: unknown) => '/* custom route runtime */',
+        generateRuntime: (_opts: unknown) => '/* custom runtime */',
+        generateRouteRuntime: (_opts: unknown) => '/* custom route runtime */',
       }
       const code = loadVirtualSplitModule('\0virtual:fluenti/runtime', {
         ...defaultOptions,

@@ -115,14 +115,11 @@ function createEvent(
   fallbackLocale?: string,
   error?: Error,
 ): DiagnosticEvent {
-  return Object.freeze({
-    type,
-    locale,
-    messageId,
-    fallbackLocale,
-    error,
-    timestamp: Date.now(),
-  })
+  const event: Record<string, unknown> = { type, locale, timestamp: Date.now() }
+  if (messageId !== undefined) event['messageId'] = messageId
+  if (fallbackLocale !== undefined) event['fallbackLocale'] = fallbackLocale
+  if (error !== undefined) event['error'] = error
+  return Object.freeze(event) as unknown as DiagnosticEvent
 }
 
 /**

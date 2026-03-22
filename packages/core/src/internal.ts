@@ -51,6 +51,7 @@ export type {
 // Plugin system
 export { createPluginRunner } from './plugin'
 export type { PluginRunner, ExtractedMessages } from './plugin'
+export type { FluentiPlugin, PluginExtractContext, PluginCompileContext } from './types'
 
 // Diagnostics
 export { createDiagnostics } from './diagnostics'

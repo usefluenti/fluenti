@@ -4,8 +4,8 @@
  */
 
 import { parse } from '@fluenti/core'
-import type { ASTNode, PluralNode, SelectNode } from '@fluenti/core'
-import { hashMessage } from '@fluenti/core'
+import type { ASTNode, PluralNode, SelectNode } from '@fluenti/core/internal'
+import { hashMessage } from '@fluenti/core/internal'
 import type { CatalogData } from './catalog'
 
 const ICU_VAR_REGEX = /\{(\w+)\}/g

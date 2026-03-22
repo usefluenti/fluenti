@@ -225,6 +225,9 @@ export interface FluentiConfig {
   fallbackChain?: Record<string, Locale[]>
   dateFormats?: DateFormatOptions
   numberFormats?: NumberFormatOptions
+
+  /** Plugins that hook into the extract and compile pipelines */
+  plugins?: readonly FluentiPlugin[]
 }
 
 // ---- SSR Utilities ----
@@ -366,6 +369,34 @@ export interface SSRLocaleScriptOptions {
 export interface HydratedLocaleOptions {
   /** Custom window variable key (default: '__FLUENTI_LOCALE__') */
   key?: string
+}
+
+// ---- Plugin System ----
+
+/** Context passed to plugin extract hooks */
+export interface PluginExtractContext {
+  readonly messages: Map<string, ExtractedMessage> | Record<string, string>
+  readonly sourceLocale: string
+  readonly targetLocales: readonly string[]
+  readonly config?: FluentiConfig
+}
+
+/** Context passed to plugin compile hooks */
+export interface PluginCompileContext {
+  readonly locale: string
+  readonly messages: Record<string, CompiledMessage>
+  readonly outDir: string
+  readonly config?: FluentiConfig
+}
+
+/** Plugin interface for extending the Fluenti build pipeline */
+export interface FluentiPlugin {
+  readonly name: string
+  onAfterExtract?(context: PluginExtractContext): void | Promise<void>
+  onBeforeCompile?(context: PluginCompileContext): void | Promise<void>
+  onAfterCompile?(context: PluginCompileContext): void | Promise<void>
+  transformMessages?(messages: Record<string, string>, locale: string): Record<string, string> | Promise<Record<string, string>>
+  formatters?: Record<string, CustomFormatter>
 }
 
 // ---- Build Config Alias ----
