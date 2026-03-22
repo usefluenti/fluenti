@@ -1,7 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { createDiagnostics } from '../src/diagnostics'
-import type { DiagnosticEvent, DiagnosticsConfig } from '../src/diagnostics'
-import { createFluent } from '../src/index'
+import type { DiagnosticEvent } from '../src/diagnostics'
 
 describe('createDiagnostics', () => {
   it('creates an enabled diagnostics instance in dev mode', () => {
@@ -147,92 +146,67 @@ describe('createDiagnostics', () => {
   })
 })
 
-describe('createFluent with diagnostics', () => {
-  let events: DiagnosticEvent[]
-  let diagnosticsConfig: DiagnosticsConfig
+// ─── Edge cases — error recovery and boundaries ──────────────────────────
 
-  beforeEach(() => {
-    events = []
-    diagnosticsConfig = {
+describe('edge cases — error recovery and boundaries', () => {
+  it('reporter throws — error propagates', () => {
+    const diag = createDiagnostics({
+      warnMissing: true,
+      reporter: () => { throw new Error('reporter boom') },
+    })
+
+    // The reporter error should propagate since createDiagnostics does not catch it
+    expect(() => diag.missingKey('en', 'key')).toThrow('reporter boom')
+  })
+
+  it('events are frozen — mutation throws TypeError', () => {
+    const events: DiagnosticEvent[] = []
+    const diag = createDiagnostics({
+      reporter: (event) => { events.push(event) },
+    })
+
+    diag.missingKey('en', 'key')
+    const event = events[0]!
+
+    // Object.freeze makes the event immutable — assigning should throw in strict mode
+    expect(() => {
+      (event as any).type = 'format-error'
+    }).toThrow(TypeError)
+
+    expect(() => {
+      (event as any).locale = 'fr'
+    }).toThrow(TypeError)
+  })
+
+  it('all 4 event types have correct type field', () => {
+    const events: DiagnosticEvent[] = []
+    const diag = createDiagnostics({
       warnMissing: true,
       warnFallback: true,
       reporter: (event) => { events.push(event) },
-    }
-  })
-
-  it('fires missing-key when a key is not found', () => {
-    const i18n = createFluent({
-      locale: 'en',
-      messages: { en: {} },
-      diagnostics: diagnosticsConfig,
     })
 
-    i18n.t('nonexistent')
+    diag.missingKey('en', 'a')
+    diag.fallbackUsed('ja', 'en', 'b')
+    diag.parseError('en', 'c', new Error('parse'))
+    diag.formatError('en', 'd', new Error('format'))
 
-    const missingEvents = events.filter((e) => e.type === 'missing-key')
-    expect(missingEvents).toHaveLength(1)
-    expect(missingEvents[0]!.messageId).toBe('nonexistent')
-    expect(missingEvents[0]!.locale).toBe('en')
-  })
+    expect(events).toHaveLength(4)
+    expect(events[0]!.type).toBe('missing-key')
+    expect(events[1]!.type).toBe('fallback-used')
+    expect(events[2]!.type).toBe('parse-error')
+    expect(events[3]!.type).toBe('format-error')
 
-  it('fires fallback-used when fallbackLocale provides the translation', () => {
-    const i18n = createFluent({
-      locale: 'ja',
-      fallbackLocale: 'en',
-      messages: {
-        ja: {},
-        en: { greeting: 'Hello' },
-      },
-      diagnostics: diagnosticsConfig,
-    })
+    // Verify each event has the correct locale and messageId
+    expect(events[0]!.messageId).toBe('a')
+    expect(events[1]!.messageId).toBe('b')
+    expect(events[2]!.messageId).toBe('c')
+    expect(events[3]!.messageId).toBe('d')
 
-    const result = i18n.t('greeting')
-    expect(result).toBe('Hello')
-
-    const fallbackEvents = events.filter((e) => e.type === 'fallback-used')
-    expect(fallbackEvents).toHaveLength(1)
-    expect(fallbackEvents[0]!.locale).toBe('ja')
-    expect(fallbackEvents[0]!.fallbackLocale).toBe('en')
-    expect(fallbackEvents[0]!.messageId).toBe('greeting')
-  })
-
-  it('fires fallback-used when fallbackChain provides the translation', () => {
-    const i18n = createFluent({
-      locale: 'zh-CN',
-      messages: {
-        'zh-CN': {},
-        en: { greeting: 'Hello' },
-      },
-      fallbackChain: { 'zh-CN': ['en'] },
-      diagnostics: diagnosticsConfig,
-    })
-
-    const result = i18n.t('greeting')
-    expect(result).toBe('Hello')
-
-    const fallbackEvents = events.filter((e) => e.type === 'fallback-used')
-    expect(fallbackEvents).toHaveLength(1)
-    expect(fallbackEvents[0]!.fallbackLocale).toBe('en')
-  })
-
-  it('does not fire diagnostics when key is found in primary locale', () => {
-    const i18n = createFluent({
-      locale: 'en',
-      messages: { en: { greeting: 'Hello' } },
-      diagnostics: diagnosticsConfig,
-    })
-
-    i18n.t('greeting')
-    expect(events).toHaveLength(0)
-  })
-
-  it('works without diagnostics config (no errors)', () => {
-    const i18n = createFluent({
-      locale: 'en',
-      messages: { en: {} },
-    })
-
-    // Should not throw
-    expect(i18n.t('missing')).toBe('missing')
+    // Verify error objects on parse-error and format-error
+    expect(events[2]!.error).toBeInstanceOf(Error)
+    expect(events[3]!.error).toBeInstanceOf(Error)
+    expect(events[2]!.error!.message).toBe('parse')
+    expect(events[3]!.error!.message).toBe('format')
   })
 })

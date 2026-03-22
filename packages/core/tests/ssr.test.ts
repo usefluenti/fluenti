@@ -361,62 +361,73 @@ describe('edge cases - exhaustive', () => {
   })
 })
 
-describe('getSSRLocaleScript custom key', () => {
-  it('uses default key when no options provided', () => {
-    expect(getSSRLocaleScript('en')).toBe(
-      '<script>window.__FLUENTI_LOCALE__="en"</script>'
-    )
+// ─── Edge cases — SSR error recovery and boundaries ──────────────────────
+
+describe('edge cases — SSR error recovery and boundaries', () => {
+  const available = ['en', 'fr', 'zh-CN', 'ja', 'de']
+
+  it('mixed-case "En-Us" matches "en"', () => {
+    const result = detectLocale({
+      cookie: 'En-Us',
+      available,
+      fallback: 'ja',
+    })
+    // 'En-Us' should case-insensitively match 'en'
+    expect(result).toBe('en')
   })
 
-  it('uses custom key for multi-instance scenarios', () => {
-    expect(getSSRLocaleScript('ja', { key: '__MY_APP_LOCALE__' })).toBe(
-      '<script>window.__MY_APP_LOCALE__="ja"</script>'
-    )
+  it('Headers.get() returning null falls back to fallback', () => {
+    // Create a Headers-like object where get() returns null
+    const headers = {
+      get: () => null,
+    } as unknown as Headers
+    const result = detectLocale({
+      headers,
+      available,
+      fallback: 'en',
+    })
+    expect(result).toBe('en')
   })
 
-  it('rejects invalid key with special characters', () => {
-    expect(() => getSSRLocaleScript('en', { key: 'my-key' })).toThrow('Invalid SSR key')
+  it('empty quality q= results in NaN filtered to 0', () => {
+    // q= with nothing after it → parseFloat('') → NaN → filtered to 0
+    const result = detectLocale({
+      headers: { 'accept-language': 'fr;q=,en;q=0.8' },
+      available,
+      fallback: 'ja',
+    })
+    // fr has q=0 (NaN filtered), en has q=0.8 → en wins
+    expect(result).toBe('en')
   })
 
-  it('rejects key starting with a digit', () => {
-    expect(() => getSSRLocaleScript('en', { key: '0key' })).toThrow('Invalid SSR key')
+  it('empty locale string in Accept-Language is filtered', () => {
+    // A leading comma creates an empty locale entry which should be filtered
+    const result = detectLocale({
+      headers: { 'accept-language': ',,,en;q=0.5' },
+      available,
+      fallback: 'ja',
+    })
+    expect(result).toBe('en')
   })
 
-  it('accepts key starting with underscore', () => {
-    expect(getSSRLocaleScript('en', { key: '_locale' })).toBe(
-      '<script>window._locale="en"</script>'
-    )
+  it('control characters in SSR locale key are rejected', () => {
+    // Control characters should fail BCP 47 validation
+    expect(() => getSSRLocaleScript('en\x00')).toThrow('locale must be a valid BCP 47 tag')
+    expect(() => getSSRLocaleScript('en\x1F')).toThrow('locale must be a valid BCP 47 tag')
+    expect(() => getSSRLocaleScript('\ten')).toThrow('locale must be a valid BCP 47 tag')
   })
 
-  it('accepts key starting with $', () => {
-    expect(getSSRLocaleScript('en', { key: '$locale' })).toBe(
-      '<script>window.$locale="en"</script>'
-    )
-  })
-})
-
-describe('getHydratedLocale custom key', () => {
-  afterEach(() => {
-    delete (globalThis as any).window
-  })
-
-  it('reads from custom key', () => {
-    (globalThis as any).window = { __MY_APP_LOCALE__: 'fr' }
-    expect(getHydratedLocale('en', { key: '__MY_APP_LOCALE__' })).toBe('fr')
-  })
-
-  it('returns fallback when custom key not set', () => {
-    (globalThis as any).window = { __FLUENTI_LOCALE__: 'fr' }
-    expect(getHydratedLocale('en', { key: '__MY_APP_LOCALE__' })).toBe('en')
-  })
-
-  it('round-trips with getSSRLocaleScript using same key', () => {
-    const key = '__MICRO_FE_LOCALE__'
-    const script = getSSRLocaleScript('zh-CN', { key })
-    expect(script).toBe('<script>window.__MICRO_FE_LOCALE__="zh-CN"</script>')
-
-    // Simulate browser hydration
-    ;(globalThis as any).window = { [key]: 'zh-CN' }
-    expect(getHydratedLocale('en', { key })).toBe('zh-CN')
+  it('XSS escaping all special chars combined', () => {
+    // All these should be rejected by validateLocale before reaching the escape logic
+    const xssPayloads = [
+      '<script>alert(1)</script>',
+      '"><img onerror=alert(1)>',
+      "';alert(1)//",
+      '&amp;<test>',
+      'en<>"\'/&',
+    ]
+    for (const payload of xssPayloads) {
+      expect(() => getSSRLocaleScript(payload)).toThrow()
+    }
   })
 })

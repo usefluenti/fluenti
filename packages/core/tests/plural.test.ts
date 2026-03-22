@@ -165,3 +165,39 @@ describe('edge cases - exhaustive', () => {
     expect(resolvePlural(-0, opts, 'en')).toBe('=0')
   })
 })
+
+// ─── Edge cases — float, ordinal, cache ──────────────────────────────────
+
+describe('edge cases — float, ordinal, cache', () => {
+  it('float 1.0 vs integer 1 both resolve to one', () => {
+    const opts = { 'one': 'singular', 'other': 'plural' }
+    // Both 1.0 and 1 should resolve to CLDR 'one' in English
+    expect(resolvePlural(1.0, opts, 'en')).toBe('one')
+    expect(resolvePlural(1, opts, 'en')).toBe('one')
+    // Verify they resolve to the same category
+    expect(resolvePluralCategory(1.0, opts, 'en')).toBe(resolvePluralCategory(1, opts, 'en'))
+  })
+
+  it('undefined ordinal defaults to cardinal', () => {
+    const opts = { 'one': '1st', 'two': '2nd', 'few': '3rd', 'other': 'th' }
+    // Without ordinal flag, English treats 2 as 'other' (cardinal)
+    expect(resolvePluralCategory(2, opts, 'en')).toBe('other')
+    // With ordinal flag, English treats 2 as 'two' (ordinal)
+    expect(resolvePluralCategory(2, opts, 'en', true)).toBe('two')
+  })
+
+  it('cache reuse verification — repeated calls produce consistent results', () => {
+    const opts = { 'one': 'x', 'other': 'y' }
+    // Call many times to exercise the cache
+    for (let i = 0; i < 100; i++) {
+      expect(resolvePlural(1, opts, 'en')).toBe('one')
+      expect(resolvePlural(5, opts, 'en')).toBe('other')
+    }
+    // Also verify ordinal cache is separate
+    const ordOpts = { 'one': '1st', 'two': '2nd', 'few': '3rd', 'other': 'th' }
+    expect(resolvePlural(1, ordOpts, 'en', true)).toBe('one')
+    expect(resolvePlural(2, ordOpts, 'en', true)).toBe('two')
+    // Cardinal 2 is still 'other'
+    expect(resolvePlural(2, opts, 'en')).toBe('other')
+  })
+})

@@ -533,3 +533,144 @@ describe('extends field removed from result', () => {
     expect('extends' in config).toBe(false)
   })
 })
+
+// ---------------------------------------------------------------------------
+// 11. Edge cases — circular extends and boundaries
+// ---------------------------------------------------------------------------
+
+describe('edge cases — circular extends and boundaries', () => {
+  it('indirect circular A→B→C→A throws', async () => {
+    const dir = join(tmpRoot, 'indirect-circ')
+    mkdirSync(dir)
+
+    const configA = join(dir, 'a.mjs')
+    const configB = join(dir, 'b.mjs')
+    const configC = join(dir, 'c.mjs')
+
+    writeMjs(configA, configSource({ extends: './b.mjs', sourceLocale: 'en', locales: ['en'], format: 'po' }))
+    writeMjs(configB, configSource({ extends: './c.mjs', sourceLocale: 'en', locales: ['en'], format: 'po' }))
+    writeMjs(configC, configSource({ extends: './a.mjs', sourceLocale: 'en', locales: ['en'], format: 'po' }))
+
+    await expect(loadConfig(configA)).rejects.toThrow(/Circular extends detected/)
+  })
+
+  it('self-referencing config throws', async () => {
+    const dir = join(tmpRoot, 'self-ref')
+    mkdirSync(dir)
+
+    const configPath = join(dir, 'fluenti.config.mjs')
+    writeMjs(configPath, configSource({ extends: './fluenti.config.mjs', sourceLocale: 'en', locales: ['en'], format: 'po' }))
+
+    await expect(loadConfig(configPath)).rejects.toThrow(/Circular extends detected/)
+  })
+
+  it('deep extends hitting max depth throws', async () => {
+    // Build a chain of 12 config files (exceeds MAX_EXTENDS_DEPTH=10)
+    const configs: string[] = []
+    for (let i = 0; i <= 11; i++) {
+      configs.push(join(tmpRoot, `deep-${i}.mjs`))
+    }
+
+    // Write leaf (no extends)
+    writeMjs(
+      configs[11]!,
+      configSource({ sourceLocale: 'en', locales: ['en'], catalogDir: './locales', compileOutDir: './compiled', format: 'po' }),
+    )
+
+    // Write 0..10 each extending the next
+    for (let i = 10; i >= 0; i--) {
+      writeMjs(
+        configs[i]!,
+        configSource({ extends: `./deep-${i + 1}.mjs`, sourceLocale: 'en', locales: ['en'], format: 'po' }),
+      )
+    }
+
+    await expect(loadConfig(configs[0]!)).rejects.toThrow(/exceeds maximum depth/)
+  })
+
+  it('missing parent in extends throws with path info', async () => {
+    const dir = join(tmpRoot, 'missing-parent-info')
+    mkdirSync(dir)
+
+    writeMjs(
+      join(dir, 'fluenti.config.mjs'),
+      configSource({
+        extends: '../nonexistent/parent.config.mjs',
+        sourceLocale: 'en',
+        locales: ['en'],
+        format: 'po',
+      }),
+    )
+
+    await expect(loadConfig(join(dir, 'fluenti.config.mjs'))).rejects.toThrow(/file not found/)
+  })
+
+  it('relative paths with .. resolve correctly', async () => {
+    const parentDir = join(tmpRoot, 'nested', 'deep', 'parent')
+    const childDir = join(tmpRoot, 'nested', 'child')
+    mkdirSync(parentDir, { recursive: true })
+    mkdirSync(childDir, { recursive: true })
+
+    writeMjs(
+      join(parentDir, 'fluenti.config.mjs'),
+      configSource({
+        sourceLocale: 'en',
+        locales: ['en'],
+        catalogDir: './locales',
+        compileOutDir: './compiled',
+        format: 'po',
+      }),
+    )
+
+    writeMjs(
+      join(childDir, 'fluenti.config.mjs'),
+      configSource({
+        extends: '../deep/parent/fluenti.config.mjs',
+      }),
+    )
+
+    const config = await loadConfig(join(childDir, 'fluenti.config.mjs'))
+
+    // Parent's ./locales relative to parentDir, rebased to childDir
+    expect(config.catalogDir).toBe('../deep/parent/locales')
+    expect(config.sourceLocale).toBe('en')
+  })
+
+  it('empty/null config export uses defaults', async () => {
+    const dir = join(tmpRoot, 'empty-export')
+    mkdirSync(dir)
+
+    writeMjs(
+      join(dir, 'fluenti.config.mjs'),
+      'export default {}\n',
+    )
+
+    const config = await loadConfig(join(dir, 'fluenti.config.mjs'))
+
+    expect(config.sourceLocale).toBe('en')
+    expect(config.locales).toEqual(['en'])
+    expect(config.catalogDir).toBe('./locales')
+    expect(config.format).toBe('po')
+  })
+
+  it('duplicate locales in array are preserved as-is', async () => {
+    const dir = join(tmpRoot, 'dup-locales')
+    mkdirSync(dir)
+
+    writeMjs(
+      join(dir, 'fluenti.config.mjs'),
+      configSource({
+        sourceLocale: 'en',
+        locales: ['en', 'fr', 'en', 'fr'],
+        catalogDir: './locales',
+        compileOutDir: './compiled',
+        format: 'po',
+      }),
+    )
+
+    const config = await loadConfig(join(dir, 'fluenti.config.mjs'))
+
+    // Duplicates are not deduplicated — behavior is preserved as-is
+    expect(config.locales).toEqual(['en', 'fr', 'en', 'fr'])
+  })
+})
