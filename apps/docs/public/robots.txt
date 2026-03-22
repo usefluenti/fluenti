@@ -3,3 +3,6 @@ Allow: /
 Disallow: /404
 
 Sitemap: https://fluenti.dev/sitemap-index.xml
+
+# AI assistant context
+Sitemap: https://fluenti.dev/llms.txt

@@ -8,17 +8,17 @@
 
 ## Packages
 
-| Package | Description | llms.txt |
-|---------|-------------|----------|
-| `@fluenti/core` | Framework-agnostic core: ICU parser, compiler, interpolation, CLDR plurals, formatters, SSR | [llms.txt](https://github.com/usefluenti/fluenti/blob/main/packages/core/llms.txt) |
-| `@fluenti/vue` | Vue 3 integration: `<Trans>`, `<Plural>`, `<Select>`, `useI18n()`, `v-t` directive | [llms.txt](https://github.com/usefluenti/fluenti/blob/main/packages/vue/llms.txt) |
-| `@fluenti/react` | React integration: `<Trans>`, `<Plural>`, `<Select>`, `useI18n()`, server helpers | [llms.txt](https://github.com/usefluenti/fluenti/blob/main/packages/react/llms.txt) |
-| `@fluenti/solid` | SolidJS integration: `<Trans>`, `<Plural>`, `<Select>`, `useI18n()`, signal-based | [llms.txt](https://github.com/usefluenti/fluenti/blob/main/packages/solid/llms.txt) |
-| `@fluenti/cli` | CLI: message extraction, catalog compilation, translation stats, AI translation | [llms.txt](https://github.com/usefluenti/fluenti/blob/main/packages/cli/llms.txt) |
-| `@fluenti/vite-plugin` | Vite plugin: compile-time transforms, virtual modules, code splitting | [llms.txt](https://github.com/usefluenti/fluenti/blob/main/packages/vite-plugin/llms.txt) |
-| `@fluenti/next` | Next.js plugin: `withFluenti()`, webpack loader, RSC support | [llms.txt](https://github.com/usefluenti/fluenti/blob/main/packages/next-plugin/llms.txt) |
-| `@fluenti/nuxt` | Nuxt 3 module: locale-prefixed routing, detection chain, SEO helpers | [llms.txt](https://github.com/usefluenti/fluenti/blob/main/packages/nuxt/llms.txt) |
-| `@fluenti/vue-i18n-compat` | Progressive migration bridge between vue-i18n and Fluenti | [llms.txt](https://github.com/usefluenti/fluenti/blob/main/packages/vue-i18n-compat/llms.txt) |
+| Package | Description | llms.txt | llms-full.txt |
+|---------|-------------|----------|---------------|
+| `@fluenti/core` | Framework-agnostic core: ICU parser, compiler, interpolation, CLDR plurals, formatters, SSR | [llms.txt](https://github.com/usefluenti/fluenti/blob/main/packages/core/llms.txt) | [llms-full.txt](https://github.com/usefluenti/fluenti/blob/main/packages/core/llms-full.txt) |
+| `@fluenti/vue` | Vue 3 integration: `<Trans>`, `<Plural>`, `<Select>`, `useI18n()`, `v-t` directive | [llms.txt](https://github.com/usefluenti/fluenti/blob/main/packages/vue/llms.txt) | [llms-full.txt](https://github.com/usefluenti/fluenti/blob/main/packages/vue/llms-full.txt) |
+| `@fluenti/react` | React integration: `<Trans>`, `<Plural>`, `<Select>`, `useI18n()`, server helpers | [llms.txt](https://github.com/usefluenti/fluenti/blob/main/packages/react/llms.txt) | [llms-full.txt](https://github.com/usefluenti/fluenti/blob/main/packages/react/llms-full.txt) |
+| `@fluenti/solid` | SolidJS integration: `<Trans>`, `<Plural>`, `<Select>`, `useI18n()`, signal-based | [llms.txt](https://github.com/usefluenti/fluenti/blob/main/packages/solid/llms.txt) | [llms-full.txt](https://github.com/usefluenti/fluenti/blob/main/packages/solid/llms-full.txt) |
+| `@fluenti/cli` | CLI: message extraction, catalog compilation, translation stats, AI translation | [llms.txt](https://github.com/usefluenti/fluenti/blob/main/packages/cli/llms.txt) | [llms-full.txt](https://github.com/usefluenti/fluenti/blob/main/packages/cli/llms-full.txt) |
+| `@fluenti/vite-plugin` | Vite plugin: compile-time transforms, virtual modules, code splitting | [llms.txt](https://github.com/usefluenti/fluenti/blob/main/packages/vite-plugin/llms.txt) | [llms-full.txt](https://github.com/usefluenti/fluenti/blob/main/packages/vite-plugin/llms-full.txt) |
+| `@fluenti/next` | Next.js plugin: `withFluenti()`, webpack loader, RSC support | [llms.txt](https://github.com/usefluenti/fluenti/blob/main/packages/next-plugin/llms.txt) | [llms-full.txt](https://github.com/usefluenti/fluenti/blob/main/packages/next-plugin/llms-full.txt) |
+| `@fluenti/nuxt` | Nuxt 3 module: locale-prefixed routing, detection chain, SEO helpers | [llms.txt](https://github.com/usefluenti/fluenti/blob/main/packages/nuxt/llms.txt) | [llms-full.txt](https://github.com/usefluenti/fluenti/blob/main/packages/nuxt/llms-full.txt) |
+| `@fluenti/vue-i18n-compat` | Progressive migration bridge between vue-i18n and Fluenti | [llms.txt](https://github.com/usefluenti/fluenti/blob/main/packages/vue-i18n-compat/llms.txt) | [llms-full.txt](https://github.com/usefluenti/fluenti/blob/main/packages/vue-i18n-compat/llms-full.txt) |
 
 ## Workflow
 

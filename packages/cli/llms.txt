@@ -56,6 +56,30 @@ fluenti compile          # 3. Compile to tree-shakeable ES modules
 fluenti stats            # 4. Check translation progress
 ```
 
+## Programmatic API
+
+All CLI commands are also available as importable functions from `@fluenti/cli`:
+
+- `extractFromTsx(code, options?)`: Extract translatable messages from TSX/JSX source code
+- `updateCatalog(catalog, extracted, options?)`: Merge extracted messages into an existing catalog, returning added/unchanged/obsolete counts
+- `readJsonCatalog(path)` / `writeJsonCatalog(path, catalog)`: Read/write JSON format catalogs
+- `readPoCatalog(path)` / `writePoCatalog(path, catalog)`: Read/write PO (gettext) format catalogs
+- `compileCatalog(catalog, locale)`: Compile a catalog into an optimized ES module string
+- `compileIndex(locales)`: Generate the `index.js` barrel with locale list and lazy loaders
+- `collectAllIds(catalogs)`: Collect all unique message IDs across multiple catalogs
+- `runExtract(options)`: Programmatic equivalent of `fluenti extract`
+- `runCompile(options)`: Programmatic equivalent of `fluenti compile`
+- `defineConfig(config)`: Type-safe config helper (identity function)
+- `loadConfig(configPath?)`: Load and resolve `fluenti.config.ts` (uses jiti)
+- `hashMessage(message, context?)`: Re-export of FNV-1a hash from `@fluenti/core`
+
+### Key Types
+
+- `CatalogData`, `CatalogEntry`, `UpdateResult` — catalog data structures
+- `CompileStats` — compilation statistics
+- `RunCompileOptions`, `RunExtractOptions` — options for programmatic runners
+- `FluentiConfig` — re-exported from `@fluenti/core`
+
 ## Documentation
 
 - Full docs: [fluenti.dev](https://fluenti.dev)
