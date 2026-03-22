@@ -230,9 +230,67 @@ export interface FluentiConfig {
   namespaceMapping?: Record<string, string>
   externalCatalogs?: Array<{ package: string; catalogDir: string }>
 
+  // Plugin system
+  /** Plugins that hook into the extract and compile pipelines */
+  plugins?: readonly FluentiPlugin[]
+
   // Legacy / strict build
   strictBuild?: boolean
   strictThreshold?: number
+}
+
+// ---- Plugin System ----
+
+/**
+ * A Fluenti plugin can hook into the extract and compile pipelines.
+ *
+ * Plugins are called in registration order. Each hook receives an
+ * immutable snapshot of the current state.
+ *
+ * @example
+ * ```ts
+ * const myPlugin: FluentiPlugin = {
+ *   name: 'my-plugin',
+ *   onAfterExtract(ctx) {
+ *     console.log(`Extracted ${ctx.messages.size} messages`)
+ *   },
+ * }
+ * ```
+ */
+export interface FluentiPlugin {
+  /** Unique plugin name (used for logging) */
+  readonly name: string
+  /** Called after messages are extracted from source files */
+  onAfterExtract?: (context: PluginExtractContext) => void | Promise<void>
+  /** Called before messages are compiled to JS modules */
+  onBeforeCompile?: (context: PluginCompileContext) => void | Promise<void>
+  /** Called after compilation completes */
+  onAfterCompile?: (context: PluginCompileContext) => void | Promise<void>
+  /** Transform extracted messages for a given locale. Returns a new object. */
+  transformMessages?: (
+    messages: Readonly<Record<string, string>>,
+    locale: string,
+  ) => Record<string, string> | Promise<Record<string, string>>
+  /** Custom ICU formatters to register at runtime */
+  formatters?: Readonly<Record<string, CustomFormatter>>
+  /** Config namespace for plugin-specific options */
+  configKey?: string
+}
+
+/** Context passed to plugin extract hooks */
+export interface PluginExtractContext {
+  readonly messages: Map<string, ExtractedMessage>
+  readonly sourceLocale: string
+  readonly targetLocales: readonly string[]
+  readonly config: Readonly<FluentiConfig>
+}
+
+/** Context passed to plugin compile hooks */
+export interface PluginCompileContext {
+  readonly locale: string
+  readonly messages: Readonly<Record<string, string>>
+  readonly outDir: string
+  readonly config: Readonly<FluentiConfig>
 }
 
 // ---- SSR Utilities ----

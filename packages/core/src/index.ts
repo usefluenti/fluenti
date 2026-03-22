@@ -18,6 +18,9 @@ export type {
   FunctionNode,
   ExtractedMessage,
   FluentiConfig,
+  FluentiPlugin,
+  PluginExtractContext,
+  PluginCompileContext,
   LocaleObject,
   LocaleDefinition,
   DetectLocaleOptions,
@@ -50,6 +53,10 @@ export { formatRelativeTime } from './formatters/relative'
 // Config loading (loadConfig, loadConfigSync) is exported from '@fluenti/core/config'
 // subpath to avoid pulling jiti + node:* modules into client bundles.
 export { defineConfig } from './define-config'
+export { createPluginRunner } from './plugin'
+export type { PluginRunner, ExtractedMessages } from './plugin'
+export { pseudoLocalePlugin, pseudoLocalize } from './plugins/pseudo-locale'
+export { messageValidatorPlugin } from './plugins/message-validator'
 
 import type {
   FluentConfigExtended,
