@@ -1,6 +1,7 @@
 import { cache } from 'react'
 import { createFluent, hashMessage as hashSyntheticMessage } from '@fluenti/core'
 import type {
+  CompiledMessage,
   FluentInstanceExtended,
   FluentRuntimeConfigFull,
   Locale,
@@ -214,6 +215,26 @@ export interface ServerI18n {
   NumberFormat: ServerNumberComponent
 
   /**
+   * Check if a translation key exists in the catalog for the current (or specified) locale.
+   *
+   * @example
+   * ```tsx
+   * if (await te('welcome')) { ... }
+   * ```
+   */
+  te: (key: string, locale?: string) => Promise<boolean>
+
+  /**
+   * Get the raw compiled message without interpolation.
+   *
+   * @example
+   * ```tsx
+   * const msg = await tm('welcome')
+   * ```
+   */
+  tm: (key: string, locale?: string) => Promise<CompiledMessage | undefined>
+
+  /**
    * Synchronous accessor for the cached i18n instance.
    * Used internally by @fluenti/next webpack loader.
    * @internal
@@ -351,6 +372,20 @@ export function createServerI18n(config: ServerI18nConfig): ServerI18n {
     _lastInstance = store.instance
     _lastRequestId = _requestId
     return store.instance
+  }
+
+  async function te(key: string, locale?: string): Promise<boolean> {
+    const i18n = await getI18n()
+    const targetLocale = locale ?? i18n.locale
+    const msgs = await loadLocaleMessages(targetLocale)
+    return key in msgs
+  }
+
+  async function tm(key: string, locale?: string): Promise<CompiledMessage | undefined> {
+    const i18n = await getI18n()
+    const targetLocale = locale ?? i18n.locale
+    const msgs = await loadLocaleMessages(targetLocale)
+    return msgs[key]
   }
 
   // ─── Async Server Components ─────────────────────────────────────────────
@@ -518,5 +553,5 @@ export function createServerI18n(config: ServerI18nConfig): ServerI18n {
     return store.instance
   }
 
-  return { setLocale, getI18n, __getSyncInstance, Trans, Plural, Select, DateTime, NumberFormat }
+  return { setLocale, getI18n, te, tm, __getSyncInstance, Trans, Plural, Select, DateTime, NumberFormat }
 }

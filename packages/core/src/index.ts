@@ -52,7 +52,7 @@ export { resolveDescriptorId, hashMessage } from './identity'
 export { detectLocale, getSSRLocaleScript, getHydratedLocale } from './ssr'
 export { formatNumber, DEFAULT_NUMBER_FORMATS, LOCALE_CURRENCY_MAP, clearNumberFormatCache } from './formatters/number'
 export { formatDate, DEFAULT_DATE_FORMATS, clearDateFormatCache } from './formatters/date'
-export { formatRelativeTime } from './formatters/relative'
+export { formatRelativeTime, clearRelativeTimeFormatCache } from './formatters/relative'
 // Config loading (loadConfig, loadConfigSync) is exported from '@fluenti/core/config'
 // subpath to avoid pulling jiti + node:* modules into client bundles.
 export { defineConfig } from './define-config'
@@ -79,6 +79,7 @@ import { clearCompileCache } from './compile'
 import { clearPluralCache } from './plural'
 import { clearNumberFormatCache } from './formatters/number'
 import { clearDateFormatCache } from './formatters/date'
+import { clearRelativeTimeFormatCache } from './formatters/relative'
 import { formatNumber } from './formatters/number'
 import { formatDate } from './formatters/date'
 import { buildICUMessage } from './msg'
@@ -96,6 +97,7 @@ import { validateLocale } from './locale'
  * - Intl.NumberFormat / DateTimeFormat caches (`compile`)
  * - Intl.PluralRules cache (`plural`)
  * - `formatNumber()` and `formatDate()` formatter caches
+ * - `formatRelativeTime()` Intl.RelativeTimeFormat cache
  */
 export function clearAllCaches(): void {
   clearInterpolationCache()
@@ -103,6 +105,7 @@ export function clearAllCaches(): void {
   clearPluralCache()
   clearNumberFormatCache()
   clearDateFormatCache()
+  clearRelativeTimeFormatCache()
 }
 
 /**

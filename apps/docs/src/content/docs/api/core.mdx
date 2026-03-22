@@ -401,6 +401,61 @@ try {
 }
 ```
 
+## Cache Management
+
+Fluenti caches `Intl.*` formatter instances and compiled messages internally for performance. For long-running servers or test isolation, use these APIs to control memory.
+
+### `clearAllCaches()`
+
+Clear **all** internal caches in one call. Covers compiled messages (LRU), `Intl.NumberFormat`, `Intl.DateTimeFormat`, `Intl.PluralRules`, `Intl.RelativeTimeFormat`, and standalone formatter caches.
+
+```typescript
+import { clearAllCaches } from '@fluenti/core'
+
+// Periodically reclaim memory in a long-running server
+setInterval(() => clearAllCaches(), 4 * 60 * 60 * 1000) // every 4 hours
+
+// Or in tests for deterministic state
+afterEach(() => clearAllCaches())
+```
+
+### `setMessageCacheSize(maxSize)`
+
+Resize the compiled-message LRU cache. Default: `500`. Clears existing entries when the size changes.
+
+```typescript
+import { setMessageCacheSize } from '@fluenti/core'
+
+setMessageCacheSize(1000) // increase for apps with many messages
+setMessageCacheSize(0)    // disable caching entirely
+```
+
+### `clearInterpolationCache()`
+
+Clear only the compiled-message LRU cache (the cache used by `interpolate()`).
+
+### Individual formatter cache clears
+
+For fine-grained control, each formatter has its own clear function:
+
+| Function | Cache cleared |
+|----------|--------------|
+| `clearCompileCache()` | `Intl.NumberFormat` + `Intl.DateTimeFormat` instances used during ICU compilation |
+| `clearPluralCache()` | `Intl.PluralRules` instances |
+| `clearNumberFormatCache()` | `formatNumber()` formatter instances |
+| `clearDateFormatCache()` | `formatDate()` formatter instances |
+| `clearRelativeTimeFormatCache()` | `formatRelativeTime()` formatter instances |
+
+### `DEFAULT_MESSAGE_CACHE_SIZE`
+
+Exported constant (`500`). The default LRU cache capacity for compiled messages.
+
+### Design notes
+
+- The compiled-message cache uses an **LRU** (Least Recently Used) eviction strategy backed by `Map` insertion order, providing O(1) get/set/evict operations.
+- All `Intl.*` caches are **unbounded** `Map`s keyed by `locale:options`. In practice they stay small because most apps use a handful of locales and format styles. For long-running servers, call `clearAllCaches()` periodically to bound memory.
+- `clearAllCaches()` is safe to call at any time — all formatters and interpolation will re-create their cached instances transparently on the next call.
+
 ## Plural Resolution
 
 ### `resolvePlural(count, options, locale, ordinal?)`

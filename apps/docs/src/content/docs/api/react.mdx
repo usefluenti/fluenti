@@ -76,6 +76,8 @@ function MyComponent() {
 | `isLoading` | `boolean` | Whether a locale is being loaded |
 | `loadedLocales` | `string[]` | Array of loaded locale codes |
 | `preloadLocale` | `(locale) => Promise<void>` | Preload a locale without switching |
+| `te` | `(key, locale?) => boolean` | Check if a translation key exists in the catalog |
+| `tm` | `(key, locale?) => CompiledMessage \| undefined` | Get the raw compiled message without interpolation |
 
 ## `t` (compile-time import)
 
@@ -309,6 +311,8 @@ export const { setLocale, getI18n, Trans, Plural, Select, DateTime, NumberFormat
 | `Select` | async component | Locale-aware categorical selection |
 | `DateTime` | async component | Date formatting |
 | `NumberFormat` | async component | Number formatting |
+| `te` | `(key, locale?) => Promise<boolean>` | Check if a translation key exists (async) |
+| `tm` | `(key, locale?) => Promise<CompiledMessage \| undefined>` | Get raw compiled message (async) |
 
 ### `setLocale(locale)`
 
