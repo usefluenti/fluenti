@@ -1,5 +1,5 @@
 import { type App, type InjectionKey, type Ref, ref, shallowReactive } from 'vue'
-import type { AllMessages, Locale, LocalizedString, Messages, CompiledMessage, MessageDescriptor } from '@fluenti/core'
+import type { AllMessages, Locale, LocalizedString, Messages, CompiledMessage, MessageDescriptor, MissingKeyEvent } from '@fluenti/core'
 import { interpolate, formatDate, formatNumber, buildICUMessage, resolveDescriptorId } from '@fluenti/core'
 import { Trans } from './components/Trans'
 import { Plural } from './components/Plural'
@@ -79,7 +79,13 @@ export interface FluentVueOptions {
   locale: string
   fallbackLocale?: string
   messages: AllMessages
+  /** @deprecated Use `onMissingKey` instead. Will be removed in a future major version. */
   missing?: (locale: string, id: string) => string | undefined
+  /**
+   * Unified missing key handler. Called when a translation is missing or a fallback locale is used.
+   * Returning a string uses it as the translation. Returning undefined/void uses default behavior.
+   */
+  onMissingKey?: (event: MissingKeyEvent) => string | undefined | void
   dateFormats?: Record<string, Intl.DateTimeFormatOptions | 'relative'>
   numberFormats?: Record<string, Intl.NumberFormatOptions | ((locale: string) => Intl.NumberFormatOptions)>
   fallbackChain?: Record<string, string[]>
@@ -223,14 +229,33 @@ export function createFluentVue(options: FluentVueOptions): FluentVuePlugin {
     for (const loc of chain) {
       const compiled = lookup(loc, messageId)
       if (compiled !== undefined) {
+        // If resolved from a fallback locale, fire onMissingKey with fallbackUsed
+        if (loc !== currentLocale && options.onMissingKey) {
+          try {
+            const override = options.onMissingKey({ locale: currentLocale, id: messageId, fallbackUsed: loc })
+            if (typeof override === 'string') return override as LocalizedString
+          } catch {
+            // Handler threw — use fallback translation
+          }
+        }
         return resolveMessage(compiled, values, loc)
       }
     }
 
-    // Try the missing handler
+    // Try the legacy missing handler (deprecated)
     if (options.missing) {
       const result = options.missing(currentLocale, messageId)
       if (result !== undefined) return result as LocalizedString
+    }
+
+    // Try the unified onMissingKey handler (completely missing key)
+    if (options.onMissingKey) {
+      try {
+        const result = options.onMissingKey({ locale: currentLocale, id: messageId })
+        if (typeof result === 'string') return result as LocalizedString
+      } catch {
+        // Handler threw — fall through
+      }
     }
 
     // If we have a fallback message from a MessageDescriptor, interpolate it

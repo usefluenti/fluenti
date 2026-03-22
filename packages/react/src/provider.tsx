@@ -37,6 +37,7 @@ export function I18nProvider({
   dateFormats,
   numberFormats,
   missing,
+  onMissingKey,
   children,
 }: I18nProviderProps) {
   const [currentLocale, setCurrentLocale] = useState(locale)
@@ -65,8 +66,9 @@ export function I18nProvider({
     if (dateFormats !== undefined) config.dateFormats = dateFormats
     if (numberFormats !== undefined) config.numberFormats = numberFormats
     if (missing !== undefined) config.missing = missing
+    if (onMissingKey !== undefined) config.onMissingKey = onMissingKey
     return createFluent(config)
-  }, [currentLocale, loadedMessages, fallbackLocale, fallbackChain, dateFormats, numberFormats, missing])
+  }, [currentLocale, loadedMessages, fallbackLocale, fallbackChain, dateFormats, numberFormats, missing, onMissingKey])
 
   // Sync external locale prop changes
   useEffect(() => {

@@ -5,6 +5,7 @@ import type {
   Messages,
   AllMessages,
   MessageDescriptor,
+  MissingKeyEvent,
   CompileTimeMessageDescriptor,
   CompileTimeT,
   DateFormatOptions,
@@ -57,8 +58,13 @@ export interface I18nProviderProps {
   dateFormats?: DateFormatOptions
   /** Number format styles */
   numberFormats?: NumberFormatOptions
-  /** Missing message handler */
+  /** @deprecated Use `onMissingKey` instead. Will be removed in a future major version. */
   missing?: (locale: Locale, id: string) => string | undefined
+  /**
+   * Unified missing key handler. Called when a translation is missing or a fallback locale is used.
+   * Returning a string uses it as the translation. Returning undefined/void uses default behavior.
+   */
+  onMissingKey?: (event: MissingKeyEvent) => string | undefined | void
   /** App content */
   children: ReactNode
 }
@@ -69,6 +75,7 @@ export type {
   Messages,
   AllMessages,
   MessageDescriptor,
+  MissingKeyEvent,
   CompileTimeMessageDescriptor,
   CompileTimeT,
   DateFormatOptions,

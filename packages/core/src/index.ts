@@ -2,6 +2,7 @@ export type {
   Locale,
   LocalizedString,
   MessageDescriptor,
+  MissingKeyEvent,
   CompiledMessage,
   Messages,
   AllMessages,
@@ -108,24 +109,30 @@ export function createFluent(config: FluentConfigExtended): FluentInstanceExtend
     return result as LocalizedString
   }
 
-  function lookupCatalog(id: string, values?: Record<string, unknown>): LocalizedString | undefined {
+  /** Result of a catalog lookup, including which locale provided the translation. */
+  interface CatalogLookupResult {
+    text: LocalizedString
+    resolvedLocale: Locale
+  }
+
+  function lookupCatalog(id: string, values?: Record<string, unknown>): CatalogLookupResult | undefined {
     // Try current locale
     const msg = catalog.get(currentLocale, id)
     if (msg !== undefined) {
-      if (typeof msg === 'string') {
-        return applyTransform(interp(msg, values, currentLocale), id)
-      }
-      return applyTransform(msg(values), id)
+      const text = typeof msg === 'string'
+        ? applyTransform(interp(msg, values, currentLocale), id)
+        : applyTransform(msg(values), id)
+      return { text, resolvedLocale: currentLocale }
     }
 
     // Try fallback locale
     if (config.fallbackLocale) {
       const fallbackMsg = catalog.get(config.fallbackLocale, id)
       if (fallbackMsg !== undefined) {
-        if (typeof fallbackMsg === 'string') {
-          return applyTransform(interp(fallbackMsg, values, config.fallbackLocale), id)
-        }
-        return applyTransform(fallbackMsg(values), id)
+        const text = typeof fallbackMsg === 'string'
+          ? applyTransform(interp(fallbackMsg, values, config.fallbackLocale), id)
+          : applyTransform(fallbackMsg(values), id)
+        return { text, resolvedLocale: config.fallbackLocale }
       }
     }
 
@@ -135,10 +142,10 @@ export function createFluent(config: FluentConfigExtended): FluentInstanceExtend
       for (const chainLocale of chainLocales) {
         const chainMsg = catalog.get(chainLocale, id)
         if (chainMsg !== undefined) {
-          if (typeof chainMsg === 'string') {
-            return applyTransform(interp(chainMsg, values, chainLocale), id)
-          }
-          return applyTransform(chainMsg(values), id)
+          const text = typeof chainMsg === 'string'
+            ? applyTransform(interp(chainMsg, values, chainLocale), id)
+            : applyTransform(chainMsg(values), id)
+          return { text, resolvedLocale: chainLocale }
         }
       }
     }
@@ -146,17 +153,40 @@ export function createFluent(config: FluentConfigExtended): FluentInstanceExtend
     return undefined
   }
 
-  function resolveMissing(id: string): LocalizedString | undefined {
-    if (!config.missing) return undefined
-
+  /** Fire `onMissingKey` (unified handler) and return a fallback string if provided. */
+  function fireOnMissingKey(id: string, fallbackUsed?: Locale): string | undefined {
+    if (!config.onMissingKey) return undefined
     try {
-      const missingResult = config.missing(currentLocale, id)
-      if (missingResult !== undefined) {
-        return applyTransform(missingResult, id)
-      }
+      const event: import('./types').MissingKeyEvent = fallbackUsed !== undefined
+        ? { locale: currentLocale, id, fallbackUsed }
+        : { locale: currentLocale, id }
+      const result = config.onMissingKey(event)
+      if (typeof result === 'string') return result
     } catch {
-      // Missing handler threw — fall through to next resolution path
+      // Handler threw — fall through
     }
+    return undefined
+  }
+
+  function resolveMissing(id: string): LocalizedString | undefined {
+    // Try the legacy `missing` handler first (deprecated, but not removed)
+    if (config.missing) {
+      try {
+        const missingResult = config.missing(currentLocale, id)
+        if (missingResult !== undefined) {
+          return applyTransform(missingResult, id)
+        }
+      } catch {
+        // Missing handler threw — fall through to next resolution path
+      }
+    }
+
+    // Try the unified `onMissingKey` handler
+    const onMissingResult = fireOnMissingKey(id)
+    if (onMissingResult !== undefined) {
+      return applyTransform(onMissingResult, id)
+    }
+
     return undefined
   }
 
@@ -169,9 +199,16 @@ export function createFluent(config: FluentConfigExtended): FluentInstanceExtend
   }
 
   function resolveMessage(id: string, values?: Record<string, unknown>): LocalizedString {
-    const catalogResult = lookupCatalog(id, values)
-    if (catalogResult !== undefined) {
-      return catalogResult
+    const lookupResult = lookupCatalog(id, values)
+    if (lookupResult !== undefined) {
+      // If a fallback locale was used (not the requested locale), notify via onMissingKey
+      if (lookupResult.resolvedLocale !== currentLocale) {
+        const override = fireOnMissingKey(id, lookupResult.resolvedLocale)
+        if (override !== undefined) {
+          return applyTransform(override, id)
+        }
+      }
+      return lookupResult.text
     }
 
     const missingResult = resolveMissing(id)
@@ -211,9 +248,15 @@ export function createFluent(config: FluentConfigExtended): FluentInstanceExtend
 
         // Look up by hash-based ID first (matches compiled catalogs)
         const hashId = createMessageId(icu)
-        const catalogResult = lookupCatalog(hashId, values)
-        if (catalogResult !== undefined) {
-          return catalogResult
+        const lookupResult = lookupCatalog(hashId, values)
+        if (lookupResult !== undefined) {
+          if (lookupResult.resolvedLocale !== currentLocale) {
+            const override = fireOnMissingKey(hashId, lookupResult.resolvedLocale)
+            if (override !== undefined) {
+              return applyTransform(override, hashId)
+            }
+          }
+          return lookupResult.text
         }
 
         // Fallback: resolve as raw ICU message
@@ -227,9 +270,15 @@ export function createFluent(config: FluentConfigExtended): FluentInstanceExtend
         const descriptor = id
         const messageId = resolveDescriptorId(descriptor)
         if (messageId) {
-          const catalogResult = lookupCatalog(messageId, values)
-          if (catalogResult !== undefined) {
-            return catalogResult
+          const lookupResult = lookupCatalog(messageId, values)
+          if (lookupResult !== undefined) {
+            if (lookupResult.resolvedLocale !== currentLocale) {
+              const override = fireOnMissingKey(messageId, lookupResult.resolvedLocale)
+              if (override !== undefined) {
+                return applyTransform(override, messageId)
+              }
+            }
+            return lookupResult.text
           }
 
           const missingResult = resolveMissing(messageId)
