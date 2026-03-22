@@ -11,12 +11,7 @@ function resolveValue(value: unknown): unknown {
   return value
 }
 
-export function offsetIndices(message: string, offset: number): string {
-  if (offset === 0) return message
-  return message
-    .replace(/<(\d+)(\/?>)/g, (_match, index: string, suffix: string) => `<${Number(index) + offset}${suffix}`)
-    .replace(/<\/(\d+)>/g, (_match, index: string) => `</${Number(index) + offset}>`)
-}
+import { offsetIndices } from '@fluenti/core'
 
 export function extractMessage(value: unknown): {
   message: string
@@ -151,32 +146,3 @@ export function serializeRichForms<T extends string>(
   return { messages, components }
 }
 
-export function buildICUSelectMessage(forms: Record<string, string>): string {
-  return `{value, select, ${Object.entries(forms).map(([key, text]) => `${key} {${text}}`).join(' ')}}`
-}
-
-export function normalizeSelectForms(forms: Record<string, string>): {
-  forms: Record<string, string>
-  valueMap: Record<string, string>
-} {
-  const normalized: Record<string, string> = {}
-  const valueMap: Record<string, string> = {}
-  let index = 0
-
-  for (const [key, text] of Object.entries(forms)) {
-    if (key === 'other') {
-      normalized['other'] = text
-      continue
-    }
-
-    const safeKey = /^[A-Za-z0-9_]+$/.test(key) ? key : `case_${index++}`
-    normalized[safeKey] = text
-    valueMap[key] = safeKey
-  }
-
-  if (normalized['other'] === undefined) {
-    normalized['other'] = ''
-  }
-
-  return { forms: normalized, valueMap }
-}

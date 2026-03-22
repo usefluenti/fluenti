@@ -7,7 +7,7 @@ import {
   type ReactNode,
   type ReactElement,
 } from 'react'
-import { hashMessage } from '@fluenti/core'
+import { hashMessage, offsetIndices } from '@fluenti/core'
 
 export { hashMessage }
 
@@ -53,13 +53,6 @@ export function extractMessage(children: ReactNode): {
   })
 
   return { message, components }
-}
-
-export function offsetIndices(message: string, offset: number): string {
-  if (offset === 0) return message
-  return message
-    .replace(/<(\d+)(\/?>)/g, (_match, index: string, suffix: string) => `<${Number(index) + offset}${suffix}`)
-    .replace(/<\/(\d+)>/g, (_match, index: string) => `</${Number(index) + offset}>`)
 }
 
 /**

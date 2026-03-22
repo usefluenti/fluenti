@@ -2,7 +2,8 @@ import { defineComponent, h } from 'vue'
 import type { ExtractPropTypes, PropType, SetupContext, VNodeChild } from 'vue'
 import { hashMessage } from '@fluenti/core'
 import { useI18n } from '../use-i18n'
-import { buildICUSelectMessage, normalizeSelectForms, reconstruct, serializeRichForms } from './rich-text'
+import { buildICUSelectMessage, normalizeSelectForms } from '@fluenti/core'
+import { reconstruct, serializeRichForms } from './rich-text'
 
 /**
  * `<Select>` component — shorthand for ICU select patterns.

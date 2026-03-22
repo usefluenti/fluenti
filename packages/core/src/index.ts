@@ -50,6 +50,14 @@ export { formatRelativeTime } from './formatters/relative'
 // Config loading (loadConfig, loadConfigSync) is exported from '@fluenti/core/config'
 // subpath to avoid pulling jiti + node:* modules into client bundles.
 export { defineConfig } from './define-config'
+export {
+  PLURAL_CATEGORIES,
+  buildICUPluralMessage,
+  buildICUSelectMessage,
+  normalizeSelectForms,
+  offsetIndices,
+} from './icu-builders'
+export type { PluralCategory } from './icu-builders'
 
 import type {
   FluentConfigExtended,

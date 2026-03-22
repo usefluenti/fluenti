@@ -2,7 +2,8 @@ import type { Component, JSX } from 'solid-js'
 import { Dynamic } from 'solid-js/web'
 import { hashMessage } from '@fluenti/core'
 import { useI18n } from './use-i18n'
-import { buildICUSelectMessage, normalizeSelectForms, reconstruct, serializeRichForms } from './rich-dom'
+import { buildICUSelectMessage, normalizeSelectForms } from '@fluenti/core'
+import { reconstruct, serializeRichForms } from './rich-dom'
 
 /** Props for the `<Select>` component */
 export interface SelectProps {

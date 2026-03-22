@@ -1,41 +1,8 @@
 import { Dynamic } from 'solid-js/web'
 import type { Component, JSX } from 'solid-js'
-import { hashMessage } from '@fluenti/core'
+import { hashMessage, buildICUPluralMessage, PLURAL_CATEGORIES, type PluralCategory } from '@fluenti/core'
 import { useI18n } from './use-i18n'
 import { reconstruct, serializeRichForms } from './rich-dom'
-
-/** Plural category names in a stable order for ICU message building. */
-const PLURAL_CATEGORIES = ['zero', 'one', 'two', 'few', 'many', 'other'] as const
-
-type PluralCategory = (typeof PLURAL_CATEGORIES)[number]
-
-/**
- * Build an ICU plural message string from individual category props.
- *
- * Given `{ zero: "No items", one: "# item", other: "# items" }`,
- * produces `"{count, plural, =0 {No items} one {# item} other {# items}}"`.
- *
- * @internal
- */
-function buildICUPluralMessage(
-  forms: Partial<Record<PluralCategory, string>> & { other: string },
-  offset?: number,
-): string {
-  const parts: string[] = []
-  for (const cat of PLURAL_CATEGORIES) {
-    const text = forms[cat]
-    if (text !== undefined) {
-      // Map the `zero` prop to ICU `=0` exact match. In ICU MessageFormat,
-      // `zero` is a CLDR plural category that only activates in languages
-      // with a grammatical zero form (e.g. Arabic). The `=0` exact match
-      // works universally for the common "show this when count is 0" intent.
-      const key = cat === 'zero' ? '=0' : cat
-      parts.push(`${key} {${text}}`)
-    }
-  }
-  const offsetPrefix = offset ? `offset:${offset} ` : ''
-  return `{count, plural, ${offsetPrefix}${parts.join(' ')}}`
-}
 
 /** Props for the `<Plural>` component */
 export interface PluralProps {
