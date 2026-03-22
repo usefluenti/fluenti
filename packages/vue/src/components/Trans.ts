@@ -32,6 +32,8 @@ const transProps = {
 } as const
 
 export type FluentiTransProps = Readonly<ExtractPropTypes<typeof transProps>>
+/** @deprecated Use `FluentiTransProps` instead */
+export type TransProps = FluentiTransProps
 
 export const Trans = defineComponent({
   name: 'Trans',

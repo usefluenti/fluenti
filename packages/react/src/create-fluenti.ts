@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect, useMemo, useRef } from 'react'
 import { createFluentiCore } from '@fluenti/core'
 import type {
   FluentiCoreInstanceFull as FluentInstanceExtended,
+  CompiledMessage,
   Locale,
   Messages,
   AllMessages,
@@ -60,7 +61,7 @@ export interface FluentiInstance {
   /** Check whether a translation key exists for the given or current locale */
   te: (key: string, locale?: string) => boolean
   /** Get the raw compiled message for a key without interpolation */
-  tm: (key: string, locale?: string) => Messages[string] | undefined
+  tm: (key: string, locale?: string) => CompiledMessage | undefined
   /** The underlying Fluent instance (escape hatch for advanced use) */
   i18n: FluentInstanceExtended
   /** Format an ICU message string directly (no catalog lookup) */

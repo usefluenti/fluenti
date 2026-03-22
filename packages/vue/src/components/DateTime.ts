@@ -19,6 +19,8 @@ const dateTimeProps = {
 } as const
 
 export type FluentiDateTimeProps = Readonly<ExtractPropTypes<typeof dateTimeProps>>
+/** @deprecated Use `FluentiDateTimeProps` instead */
+export type DateTimeProps = FluentiDateTimeProps
 
 export const DateTime = defineComponent({
   name: 'DateTime',
