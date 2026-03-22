@@ -25,7 +25,7 @@ i18n.t('greeting', { name: 'World' }) // "Hello World!"
 
 ### Config
 
-`createFluent()` accepts a `FluentConfigExtended` object:
+`createFluent()` accepts a `FluentRuntimeConfigFull` object:
 
 | Property | Type | Description |
 |----------|------|-------------|
@@ -354,6 +354,14 @@ import {
   LOCALE_CURRENCY_MAP,     // Locale → default currency code mapping
 } from '@fluenti/core'
 ```
+
+### Formatter Design Notes
+
+The three formatters have intentionally different `styles` parameters:
+
+- **`formatNumber`** accepts function callbacks `(locale) => Intl.NumberFormatOptions` because number formats like currency need locale-aware defaults (e.g. USD for `en`, JPY for `ja`).
+- **`formatDate`** accepts a special `'relative'` string style that delegates to `formatRelativeTime`, enabling unified date display with a single function.
+- **`formatRelativeTime`** has no `styles` parameter because relative time formatting always uses `Intl.RelativeTimeFormat` with automatic unit selection — there are no meaningful named style variants.
 
 ## `Catalog`
 
