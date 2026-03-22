@@ -13,15 +13,25 @@
 pnpm add @fluenti/core @fluenti/react @fluenti/next
 ```
 
-## Main Export
+## Main Exports
 
-- `withFluenti(config?)`
+Main entry (`@fluenti/next`) — resolved at runtime to the generated server module:
 
-Package subpaths:
+- `withFluenti(config?)` — Next.js config wrapper (build-time only)
+- `I18nProvider` — async server component for layouts
+- `t` — compile-time authoring API
+- `Trans`, `Plural`, `Select`, `DateTime`, `NumberFormat` — RSC components
+- `getI18n()` — async server-side i18n instance access
+- `setLocale(locale)` — set locale in the async local storage scope
 
-- `@fluenti/next/server`
-- `@fluenti/next/provider`
-- `@fluenti/next/client`
+Server entry (`@fluenti/next/server`):
+
+- `withLocale(locale, fn)` — run a function with a specific locale in RSC context
+
+Provider entry (`@fluenti/next/provider`):
+
+- `I18nProvider` — client-side provider component
+- `I18nProviderProps` — provider prop type
 
 ## Important Boundaries
 

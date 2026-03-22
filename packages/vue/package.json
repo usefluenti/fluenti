@@ -30,7 +30,7 @@
       "require": { "types": "./dist/vite-plugin.d.ts", "default": "./dist/vite-plugin.cjs" }
     }
   },
-  "files": ["dist"],
+  "files": ["dist", "llms*.txt"],
   "scripts": {
     "build": "vite build",
     "dev": "vite build --watch",

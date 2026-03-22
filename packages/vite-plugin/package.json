@@ -57,7 +57,8 @@
   },
   "files": [
     "dist",
-    "client.d.ts"
+    "client.d.ts",
+    "llms*.txt"
   ],
   "scripts": {
     "build": "vite build",

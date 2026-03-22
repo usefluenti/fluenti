@@ -34,7 +34,7 @@
       "require": { "types": "./dist/runtime/client.d.ts", "default": "./dist/runtime/client.cjs" }
     }
   },
-  "files": ["dist"],
+  "files": ["dist", "llms*.txt"],
   "scripts": {
     "build": "vite build",
     "dev": "vite build --watch",
@@ -47,7 +47,7 @@
   "dependencies": {
     "@fluenti/core": "workspace:*",
     "@fluenti/vue": "workspace:*",
-    "@nuxt/kit": "^4.4.2",
+    "@nuxt/kit": "^3.0.0",
     "@nuxt/schema": "^3.0.0"
   },
   "devDependencies": {
@@ -58,6 +58,6 @@
     "@vitest/coverage-v8": "^4",
     "vue": "^3.5",
     "nuxt": "^3.17",
-    "vue-router": "^5"
+    "vue-router": "^4"
   }
 }
