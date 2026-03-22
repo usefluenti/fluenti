@@ -1,21 +1,11 @@
 import { render } from 'solid-js/web'
 import { createSignal, type Component, type JSX } from 'solid-js'
-import { createFluenti, useI18n, Trans, Plural, Select, DateTime, NumberFormat } from '@fluenti/solid'
+import { I18nProvider, useI18n, Trans, Plural, Select, DateTime, NumberFormat } from '@fluenti/solid'
 import en from './locales/compiled/en.js'
 import zhCN from './locales/compiled/zh-CN.js'
 import ja from './locales/compiled/ja.js'
 
 const DEMO_DATE = new Date(Date.UTC(2025, 0, 15, 12))
-
-createFluenti({
-  locale: 'en',
-  fallbackLocale: 'en',
-  messages: {
-    en,
-    'zh-CN': zhCN,
-    ja,
-  },
-})
 
 const Bold: Component<{ children?: JSX.Element }> = (props) => (
   <strong>{props.children}</strong>
@@ -91,4 +81,15 @@ const App: Component = () => {
   )
 }
 
-render(() => <App />, document.getElementById('root')!)
+render(
+  () => (
+    <I18nProvider
+      locale="en"
+      fallbackLocale="en"
+      messages={{ en, 'zh-CN': zhCN, ja }}
+    >
+      <App />
+    </I18nProvider>
+  ),
+  document.getElementById('root')!,
+)
