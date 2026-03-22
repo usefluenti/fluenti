@@ -174,7 +174,7 @@ import ja from './locales/compiled/ja'
 
 export function handleRequest(req: Request) {
   const locale = detectLocale(req)
-  const i18n = createFluentiRuntime({ locale, messages: { en, ja } })
+  const i18n = createFluentiCore({ locale, messages: { en, ja } })
   // ...
 }
 ```
@@ -193,11 +193,11 @@ Never use a singleton i18n instance in SSR — concurrent requests with differen
 
 ```typescript
 // ❌ Shared global — locale race conditions in SSR
-const i18n = createFluentiRuntime({ locale: 'en', messages })
+const i18n = createFluentiCore({ locale: 'en', messages })
 
 // ✅ Per-request instance
 function handleRequest(req: Request) {
-  const i18n = createFluentiRuntime({ locale: detectLocale(req), messages })
+  const i18n = createFluentiCore({ locale: detectLocale(req), messages })
 }
 ```
 

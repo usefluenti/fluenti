@@ -1,39 +1,49 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
 import { createRoot } from 'solid-js'
-import { createFluenti, resetGlobalI18nContext, setGlobalI18nContext, createI18nContext } from '../src/context'
+import { createFluenti, resetGlobalFluentiContext, setGlobalFluentiContext, createI18nContext } from '../src/context'
 import { render } from '@solidjs/testing-library'
 import { I18nProvider, useI18n } from '../src'
 
 const enMessages = { en: { hello: 'Hello' } }
 const jaMessages = { ja: { hello: 'こんにちは' } }
 
-describe('createFluenti() duplicate guard', () => {
+describe('createFluenti() factory', () => {
   afterEach(() => {
-    resetGlobalI18nContext()
+    resetGlobalFluentiContext()
     vi.unstubAllGlobals()
   })
 
-  it('throws when called twice in non-HMR environment', () => {
-    vi.stubGlobal('__fluenti_hmr__', false)
+  it('can be called multiple times to create independent contexts', () => {
+    const ctx1 = createRoot(() => createFluenti({ locale: 'en', messages: enMessages }))
+    const ctx2 = createRoot(() => createFluenti({ locale: 'ja', messages: jaMessages }))
 
-    createFluenti({ locale: 'en', messages: enMessages })
-    expect(() => createFluenti({ locale: 'ja', messages: jaMessages })).toThrow(
-      'already been called',
-    )
+    expect(ctx1.locale()).toBe('en')
+    expect(ctx2.locale()).toBe('ja')
+    expect(ctx1.t('hello')).toBe('Hello')
+    expect(ctx2.t('hello')).toBe('こんにちは')
   })
 
-  it('succeeds after resetGlobalI18nContext()', () => {
-    vi.stubGlobal('__fluenti_hmr__', false)
+  it('resetGlobalFluentiContext() clears global singleton', () => {
+    const ctx = createRoot(() => createFluenti({ locale: 'en', messages: enMessages }))
+    setGlobalFluentiContext(ctx)
+    resetGlobalFluentiContext()
 
-    createFluenti({ locale: 'en', messages: enMessages })
-    resetGlobalI18nContext()
-    expect(() => createFluenti({ locale: 'ja', messages: jaMessages })).not.toThrow()
+    // After reset, useI18n without provider should throw
+    expect(() => render(() => {
+      const { t } = useI18n()
+      return <span>{t('hello')}</span>
+    })).toThrow()
   })
 
-  it('setGlobalI18nContext() throws when globalCtx already exists', () => {
-    createFluenti({ locale: 'en', messages: enMessages })
-    const ctx = createRoot(() => createI18nContext({ locale: 'ja', messages: jaMessages }))
-    expect(() => setGlobalI18nContext(ctx)).toThrow('already been called')
+  it('setGlobalFluentiContext() replaces the global context', () => {
+    const ctx1 = createRoot(() => createFluenti({ locale: 'en', messages: enMessages }))
+    setGlobalFluentiContext(ctx1)
+
+    const ctx2 = createRoot(() => createI18nContext({ locale: 'ja', messages: jaMessages }))
+    setGlobalFluentiContext(ctx2)
+
+    // setGlobalFluentiContext replaces without error
+    expect(ctx2.locale()).toBe('ja')
   })
 
   it('allows replacement in HMR mode', () => {
@@ -46,7 +56,7 @@ describe('createFluenti() duplicate guard', () => {
 
 describe('multi-provider isolation', () => {
   afterEach(() => {
-    resetGlobalI18nContext()
+    resetGlobalFluentiContext()
   })
 
   it('two sibling providers render different locales', () => {
@@ -110,7 +120,8 @@ describe('multi-provider isolation', () => {
   })
 
   it('provider takes priority over globalCtx', () => {
-    createFluenti({ locale: 'en', messages: { en: { hello: 'Global Hello' } } })
+    const ctx = createRoot(() => createFluenti({ locale: 'en', messages: { en: { hello: 'Global Hello' } } }))
+    setGlobalFluentiContext(ctx)
 
     function Child() {
       const { t } = useI18n()

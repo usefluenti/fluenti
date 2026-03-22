@@ -469,11 +469,15 @@ describe('extractMessageVariables', () => {
 })
 
 describe('compileTypeDeclaration', () => {
-  it('generates valid TypeScript with MessageId union and MessageValues interface', () => {
+  it('generates valid TypeScript with MessageId union, MessageValues, and locale narrowing', () => {
     const catalogs: Record<string, CatalogData> = {
       en: {
         'Welcome to Fluenti': { message: 'Welcome to Fluenti' },
         'Hello {name}': { message: 'Hello {name}' },
+      },
+      ja: {
+        'Welcome to Fluenti': { message: 'Fluentiへようこそ' },
+        'Hello {name}': { message: 'こんにちは{name}' },
       },
     }
     const allIds = ['Hello {name}', 'Welcome to Fluenti']
@@ -486,6 +490,8 @@ describe('compileTypeDeclaration', () => {
     expect(output).toContain('export interface MessageValues {')
     expect(output).toContain("'Welcome to Fluenti': Record<string, never>")
     expect(output).toContain("'Hello {name}': { name: string | number }")
+    // Locale narrowing
+    expect(output).toContain("locale: 'en' | 'ja'")
   })
 
   it('handles empty IDs', () => {

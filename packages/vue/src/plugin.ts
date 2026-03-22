@@ -244,6 +244,9 @@ export function createFluenti(options: FluentiConfig): FluentiPlugin {
     return messageId as LocalizedString
   }
 
+  // Guard against out-of-order async locale loads (race condition protection)
+  let _localeRequestId = 0
+
   async function setLocale(newLocale: Locale): Promise<void> {
     if (!lazyLocaleLoading || !options.chunkLoader) {
       locale.value = newLocale
@@ -262,6 +265,7 @@ export function createFluenti(options: FluentiConfig): FluentiPlugin {
     }
 
     // Async load
+    const requestId = ++_localeRequestId
     isLoading.value = true
     try {
       const messages = resolveChunkMessages(await options.chunkLoader(newLocale))
@@ -269,12 +273,19 @@ export function createFluenti(options: FluentiConfig): FluentiPlugin {
       catalogs[newLocale] = { ...catalogs[newLocale], ...messages }
       loadedLocalesSet.add(newLocale)
       loadedLocales.value = new Set(loadedLocalesSet)
-      if (splitRuntime?.__switchLocale) {
-        await splitRuntime.__switchLocale(newLocale)
+
+      // Only switch locale if this is still the latest request
+      if (requestId === _localeRequestId) {
+        if (splitRuntime?.__switchLocale) {
+          await splitRuntime.__switchLocale(newLocale)
+        }
+        locale.value = newLocale
       }
-      locale.value = newLocale
     } finally {
-      isLoading.value = false
+      // Only clear isLoading if this is the latest request
+      if (requestId === _localeRequestId) {
+        isLoading.value = false
+      }
     }
   }
 
@@ -285,8 +296,12 @@ export function createFluenti(options: FluentiConfig): FluentiPlugin {
     loadedLocales.value = new Set(loadedLocalesSet)
   }
 
+  // Track in-flight preload requests to deduplicate concurrent calls
+  const _preloadInFlight = new Set<string>()
+
   function preloadLocale(loc: string): void {
-    if (!lazyLocaleLoading || loadedLocalesSet.has(loc) || !options.chunkLoader) return
+    if (!lazyLocaleLoading || loadedLocalesSet.has(loc) || !options.chunkLoader || _preloadInFlight.has(loc)) return
+    _preloadInFlight.add(loc)
     const splitRuntime = getSplitRuntimeModule()
     options.chunkLoader(loc).then(async (loaded) => {
       const messages = resolveChunkMessages(loaded)
@@ -299,6 +314,8 @@ export function createFluenti(options: FluentiConfig): FluentiPlugin {
       }
     }).catch((e: unknown) => {
       console.warn('[fluenti] preload failed:', loc, e)
+    }).finally(() => {
+      _preloadInFlight.delete(loc)
     })
   }
 

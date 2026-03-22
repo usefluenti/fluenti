@@ -11,7 +11,7 @@ export function ReactCodeSplitting() {
     <I18nProvider
       locale="en"
       messages={{ en }}
-      loadMessages={(locale) => import(`./locales/compiled/${locale}.js`)}
+      loadMessages={(locale: string) => import(`./locales/compiled/${locale}.js`)}
     >
       <button onMouseEnter={() => preloadLocale('ja')} onClick={() => setLocale('ja')}>
         日本語

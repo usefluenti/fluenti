@@ -395,9 +395,13 @@ export function compileTypeDeclaration(
   lines.push('')
 
   // Module augmentation: auto-wire MessageId and MessageValues into CompileTimeT
-  lines.push('// Auto-wiring: narrows t() to accept only compiled message IDs')
+  // Locale union from catalog keys
+  const localeKeys = Object.keys(catalogs).map((l) => `'${escapeStringLiteral(l)}'`).join(' | ')
+
+  lines.push('// Auto-wiring: narrows t() and setLocale() to compiled types')
   lines.push("declare module '@fluenti/core' {")
   lines.push('  interface FluentiTypeConfig {')
+  lines.push(`    locale: ${localeKeys || 'string'}`)
   lines.push('    messageIds: MessageId')
   lines.push('    messageValues: MessageValues')
   lines.push('  }')

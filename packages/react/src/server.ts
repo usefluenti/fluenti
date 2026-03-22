@@ -214,6 +214,18 @@ export interface ServerI18n {
   NumberFormat: ServerNumberComponent
 
   /**
+   * Check if a translation key exists in the catalog.
+   * Optionally check a specific locale instead of the current one.
+   */
+  te: (key: string, locale?: string) => Promise<boolean>
+
+  /**
+   * Get the raw compiled message without interpolation.
+   * Optionally look up in a specific locale instead of the current one.
+   */
+  tm: (key: string, locale?: string) => Promise<Messages[string] | undefined>
+
+  /**
    * Synchronous accessor for the cached i18n instance.
    * Used internally by @fluenti/next webpack loader.
    * @internal
@@ -518,5 +530,27 @@ export function createServerI18n(config: ServerI18nConfig): ServerI18n {
     return store.instance
   }
 
-  return { setLocale, getI18n, __getSyncInstance, Trans, Plural, Select, DateTime, NumberFormat }
+  /**
+   * Check if a translation key exists in the catalog for the given (or current) locale.
+   * Async because it needs to ensure messages are loaded via getI18n().
+   */
+  async function te(key: string, locale?: string): Promise<boolean> {
+    const i18n = await getI18n()
+    const targetLocale = locale ?? i18n.locale
+    const msgs = await loadLocaleMessages(targetLocale)
+    return msgs[key] !== undefined
+  }
+
+  /**
+   * Get the raw compiled message for the given key without interpolation.
+   * Async because it needs to ensure messages are loaded via getI18n().
+   */
+  async function tm(key: string, locale?: string): Promise<Messages[string] | undefined> {
+    const i18n = await getI18n()
+    const targetLocale = locale ?? i18n.locale
+    const msgs = await loadLocaleMessages(targetLocale)
+    return msgs[key]
+  }
+
+  return { setLocale, getI18n, __getSyncInstance, te, tm, Trans, Plural, Select, DateTime, NumberFormat }
 }

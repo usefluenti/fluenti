@@ -1,5 +1,9 @@
 "use client"
 
+// Factory
+export { createFluenti } from './create-fluenti'
+export type { FluentiConfig, FluentiInstance } from './create-fluenti'
+
 // Provider
 export { I18nProvider } from './provider'
 

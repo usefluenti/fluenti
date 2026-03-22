@@ -218,10 +218,14 @@ describe('createServerI18n', () => {
       expect(syncInstance).toBe(asyncInstance)
     })
 
-    it('should throw a descriptive error when getI18n has not been called', () => {
-      const { __getSyncInstance } = createServerI18n({ loadMessages })
+    it('should return a fallback instance when getI18n has not been called', () => {
+      const { __getSyncInstance } = createServerI18n({ loadMessages, fallbackLocale: 'en' })
 
-      expect(() => __getSyncInstance()).toThrow(/getI18n\(\).*must be called/i)
+      // __getSyncInstance now falls back to creating an instance with the default locale
+      // instead of throwing, to support Suspense boundaries and streamed components
+      const instance = __getSyncInstance()
+      expect(instance).toBeDefined()
+      expect(instance.locale).toBe('en')
     })
   })
 })

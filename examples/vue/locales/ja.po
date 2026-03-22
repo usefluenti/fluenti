@@ -1,63 +1,63 @@
 msgid ""
 msgstr "Content-Type: text/plain; charset=utf-8\n"
 
-#: ./src/App.vue:55
+#: /Users/ins/Code/fluenti/examples/vue/src/App.vue:75
 msgid "Fluenti Vue Playground"
 msgstr "Fluenti Vue プレイグラウンド"
 
-#: ./src/App.vue:68
+#: /Users/ins/Code/fluenti/examples/vue/src/App.vue:88
 msgid "Write text. Fluenti translates it. Zero config."
 msgstr "テキストを書くだけ。Fluenti が翻訳。設定不要。"
 
-#: ./src/App.vue:69
+#: /Users/ins/Code/fluenti/examples/vue/src/App.vue:89
 msgid "Loading translations..."
 msgstr "翻訳を読み込み中..."
 
-#: ./src/App.vue:148
+#: /Users/ins/Code/fluenti/examples/vue/src/App.vue:168
 msgid "Welcome to Fluenti"
 msgstr "Fluenti へようこそ"
 
-#: ./src/App.vue:77
+#: /Users/ins/Code/fluenti/examples/vue/src/App.vue:97
 msgid "A modern i18n library for Vue 3"
 msgstr "Vue 3 のためのモダンな i18n ライブラリ"
 
-#: ./src/App.vue:78
+#: /Users/ins/Code/fluenti/examples/vue/src/App.vue:98
 msgid ""
 "Fluenti provides reactive translations, rich text support, and plural "
 "handling out of the box."
 msgstr "Fluenti はリアクティブな翻訳、リッチテキストサポート、複数形処理をすぐに使えます。"
 
-#: ./src/App.vue:126
+#: /Users/ins/Code/fluenti/examples/vue/src/App.vue:146
 msgid "Features"
 msgstr "機能"
 
-#: ./src/App.vue:128
+#: /Users/ins/Code/fluenti/examples/vue/src/App.vue:148
 msgid "Reactive locale switching"
 msgstr "リアクティブなロケール切り替え"
 
-#: ./src/App.vue:129
+#: /Users/ins/Code/fluenti/examples/vue/src/App.vue:149
 msgid "Rich text with Vue components"
 msgstr "Vue コンポーネント付きリッチテキスト"
 
-#: ./src/App.vue:130
+#: /Users/ins/Code/fluenti/examples/vue/src/App.vue:150
 msgid "Built-in plural support"
 msgstr "組み込みの複数形サポート"
 
-#: ./src/App.vue:131
+#: /Users/ins/Code/fluenti/examples/vue/src/App.vue:151
 msgid "Type-safe message catalogs"
 msgstr "型安全なメッセージカタログ"
 
-#: ./src/App.vue:141
+#: /Users/ins/Code/fluenti/examples/vue/src/App.vue:161
 msgid "v-t Directive — Zero Config i18n"
 msgstr ""
 
-#: ./src/App.vue:142
+#: /Users/ins/Code/fluenti/examples/vue/src/App.vue:162
 msgid ""
 "Just write text. Fluenti extracts and translates it at build time. No keys, "
 "no imports, no boilerplate."
 msgstr ""
 
-#: ./src/App.vue:153
+#: /Users/ins/Code/fluenti/examples/vue/src/App.vue:173
 msgid "Hello, welcome back!"
 msgstr "こんにちは、おかえりなさい！"
 
@@ -66,91 +66,91 @@ msgstr "こんにちは、おかえりなさい！"
 msgid "Home"
 msgstr "ホーム"
 
-#: ./src/App.vue:176
+#: /Users/ins/Code/fluenti/examples/vue/src/App.vue:196
 msgid "Read thebefore continuing"
 msgstr "続行する前に<0>利用規約</0>をお読みください"
 
-#: ./src/App.vue:181
+#: /Users/ins/Code/fluenti/examples/vue/src/App.vue:201
 msgid "This isinformation"
 msgstr "これは<0>非常に重要な</0>情報です"
 
-#: ./src/App.vue:452
+#: /Users/ins/Code/fluenti/examples/vue/src/App.vue:531
 msgid "HTML"
 msgstr "HTML"
 
-#: ./src/App.vue:205
+#: /Users/ins/Code/fluenti/examples/vue/src/App.vue:225
 msgid "Rich Text Demos"
 msgstr "リッチテキストデモ"
 
-#: ./src/App.vue:212
+#: /Users/ins/Code/fluenti/examples/vue/src/App.vue:232
 msgid "Visit our <0>documentation</0> to learn more."
 msgstr ""
 
-#: ./src/App.vue:217
+#: /Users/ins/Code/fluenti/examples/vue/src/App.vue:237
 msgid "This is <0>important</0> information."
 msgstr ""
 
-#: ./src/App.vue:222
+#: /Users/ins/Code/fluenti/examples/vue/src/App.vue:242
 msgid "Please <0>sign in</0> or <1>register</1> to continue."
 msgstr ""
 
-#: ./src/App.vue:227
+#: /Users/ins/Code/fluenti/examples/vue/src/App.vue:247
 msgid "Go to the <0>home page</0> or check out <1>plurals</1>."
 msgstr ""
 
-#: ./src/App.vue:232
+#: /Users/ins/Code/fluenti/examples/vue/src/App.vue:252
 msgid "Read the <0>getting started guide</0> for setup instructions."
 msgstr ""
 
-#: ./src/App.vue:296
+#: /Users/ins/Code/fluenti/examples/vue/src/App.vue:316
 msgid "Plural Demos"
 msgstr "複数形デモ"
 
-#: ./src/App.vue:339
+#: /Users/ins/Code/fluenti/examples/vue/src/App.vue:359
 msgid "Remove"
 msgstr "削除"
 
-#: ./src/App.vue:341
+#: /Users/ins/Code/fluenti/examples/vue/src/App.vue:361
 msgid "Add"
 msgstr "追加"
 
-#: ./src/App.vue:342
+#: /Users/ins/Code/fluenti/examples/vue/src/App.vue:362
 msgid "Reset"
 msgstr "リセット"
 
-#: ./src/App.vue:308
+#: /Users/ins/Code/fluenti/examples/vue/src/App.vue:328
 msgid "{appleCount, plural, =0 {No apples} one {1 apple} other {# apples}}"
 msgstr ""
 
-#: ./src/App.vue:327
+#: /Users/ins/Code/fluenti/examples/vue/src/App.vue:347
 msgid ""
 "{messageCount, plural, =0 {No new messages} one {1 new message} other {# "
 "new messages}}"
 msgstr ""
 
-#: ./src/App.vue:346
+#: /Users/ins/Code/fluenti/examples/vue/src/App.vue:366
 msgid ""
 "{fileCount, plural, =0 {No files selected} one {1 file selected} other {# "
 "files selected}}"
 msgstr ""
 
-#: ./src/App.vue:458
+#: /Users/ins/Code/fluenti/examples/vue/src/App.vue:537
 msgid "Built with Fluenti and Vue 3"
 msgstr "Fluenti と Vue 3 で構築"
 
-#: ./src/App.vue:278
+#: /Users/ins/Code/fluenti/examples/vue/src/App.vue:298
 msgid "Hello, {name}!"
 msgstr "こんにちは、{name}さん！"
 
-#: ./src/App.vue:256
+#: /Users/ins/Code/fluenti/examples/vue/src/App.vue:276
 msgid "Current locale: {locale}"
 msgstr "現在のロケール：{locale}"
 
-#: ./src/App.vue:37
+#: /Users/ins/Code/fluenti/examples/vue/src/App.vue:37
 msgid "You have {count} items in your cart."
 msgstr "カートに {count} 個のアイテムがあります。"
 
-#: ./src/App.vue:251
+#: /Users/ins/Code/fluenti/examples/vue/src/App.vue:271
 msgid "You have {count} items."
 msgstr "{count} 個のアイテムがあります。"
 

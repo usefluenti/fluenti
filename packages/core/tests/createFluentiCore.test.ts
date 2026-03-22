@@ -1,10 +1,10 @@
 import { describe, it, expect, vi } from 'vitest'
-import { createFluentiRuntime } from '../src/index'
+import { createFluentiCore } from '../src/index'
 import { msg, hashMessage } from '../src/msg'
 
-describe('createFluentiRuntime', () => {
+describe('createFluentiCore', () => {
   it('creates an instance with locale', () => {
-    const i18n = createFluentiRuntime({
+    const i18n = createFluentiCore({
       locale: 'en',
       messages: { en: {} },
     })
@@ -12,7 +12,7 @@ describe('createFluentiRuntime', () => {
   })
 
   it('translates a simple message', () => {
-    const i18n = createFluentiRuntime({
+    const i18n = createFluentiCore({
       locale: 'en',
       messages: { en: { greeting: 'Hello {name}!' } },
     })
@@ -20,7 +20,7 @@ describe('createFluentiRuntime', () => {
   })
 
   it('falls back to fallbackLocale', () => {
-    const i18n = createFluentiRuntime({
+    const i18n = createFluentiCore({
       locale: 'fr',
       fallbackLocale: 'en',
       messages: {
@@ -32,35 +32,35 @@ describe('createFluentiRuntime', () => {
   })
 
   it('returns id for missing message', () => {
-    const i18n = createFluentiRuntime({
+    const i18n = createFluentiCore({
       locale: 'en',
       messages: { en: {} },
     })
     expect(i18n.t('missing.key')).toBe('missing.key')
   })
 
-  it('calls onMissingKey handler', () => {
+  it('calls missing handler', () => {
     const handler = vi.fn().mockReturnValue('MISSING')
-    const i18n = createFluentiRuntime({
+    const i18n = createFluentiCore({
       locale: 'en',
       messages: { en: {} },
-      onMissingKey: handler,
+      missing: handler,
     })
     expect(i18n.t('unknown')).toBe('MISSING')
-    expect(handler).toHaveBeenCalledWith({ locale: 'en', id: 'unknown' })
+    expect(handler).toHaveBeenCalledWith('en', 'unknown')
   })
 
-  it('onMissingKey handler returning undefined falls back to id', () => {
-    const i18n = createFluentiRuntime({
+  it('missing handler returning undefined falls back to id', () => {
+    const i18n = createFluentiCore({
       locale: 'en',
       messages: { en: {} },
-      onMissingKey: () => undefined,
+      missing: () => undefined,
     })
     expect(i18n.t('unknown')).toBe('unknown')
   })
 
   it('setLocale changes active locale', () => {
-    const i18n = createFluentiRuntime({
+    const i18n = createFluentiCore({
       locale: 'en',
       messages: {
         en: { greeting: 'Hello' },
@@ -74,7 +74,7 @@ describe('createFluentiRuntime', () => {
   })
 
   it('loadMessages adds new messages', () => {
-    const i18n = createFluentiRuntime({
+    const i18n = createFluentiCore({
       locale: 'en',
       messages: { en: {} },
     })
@@ -83,7 +83,7 @@ describe('createFluentiRuntime', () => {
   })
 
   it('getLocales returns loaded locales', () => {
-    const i18n = createFluentiRuntime({
+    const i18n = createFluentiCore({
       locale: 'en',
       messages: {
         en: { greeting: 'Hello' },
@@ -94,7 +94,7 @@ describe('createFluentiRuntime', () => {
   })
 
   it('formats numbers with n()', () => {
-    const i18n = createFluentiRuntime({
+    const i18n = createFluentiCore({
       locale: 'en',
       messages: { en: {} },
       numberFormats: {
@@ -107,7 +107,7 @@ describe('createFluentiRuntime', () => {
   })
 
   it('formats dates with d()', () => {
-    const i18n = createFluentiRuntime({
+    const i18n = createFluentiCore({
       locale: 'en',
       messages: { en: {} },
       dateFormats: {
@@ -120,7 +120,7 @@ describe('createFluentiRuntime', () => {
   })
 
   it('format() interpolates ICU messages directly', () => {
-    const i18n = createFluentiRuntime({
+    const i18n = createFluentiCore({
       locale: 'en',
       messages: { en: {} },
     })
@@ -128,7 +128,7 @@ describe('createFluentiRuntime', () => {
   })
 
   it('handles MessageDescriptor from msg()', () => {
-    const i18n = createFluentiRuntime({
+    const i18n = createFluentiCore({
       locale: 'en',
       messages: { en: {} },
     })
@@ -137,7 +137,7 @@ describe('createFluentiRuntime', () => {
   })
 
   it('handles compiled function messages', () => {
-    const i18n = createFluentiRuntime({
+    const i18n = createFluentiCore({
       locale: 'en',
       messages: {
         en: {
@@ -150,7 +150,7 @@ describe('createFluentiRuntime', () => {
   })
 
   it('supports fallbackChain', () => {
-    const i18n = createFluentiRuntime({
+    const i18n = createFluentiCore({
       locale: 'zh-TW',
       messages: {
         'zh-TW': {},
@@ -165,7 +165,7 @@ describe('createFluentiRuntime', () => {
   })
 
   it('locale property is writable', () => {
-    const i18n = createFluentiRuntime({
+    const i18n = createFluentiCore({
       locale: 'en',
       messages: { en: {} },
     })
@@ -177,7 +177,7 @@ describe('createFluentiRuntime', () => {
 
   describe('tagged template', () => {
     it('t`Hello World` — no expressions', () => {
-      const i18n = createFluentiRuntime({
+      const i18n = createFluentiCore({
         locale: 'en',
         messages: { en: {} },
       })
@@ -185,7 +185,7 @@ describe('createFluentiRuntime', () => {
     })
 
     it('t`Hello ${name}` — simple variable', () => {
-      const i18n = createFluentiRuntime({
+      const i18n = createFluentiCore({
         locale: 'en',
         messages: { en: {} },
       })
@@ -194,7 +194,7 @@ describe('createFluentiRuntime', () => {
     })
 
     it('t`${a} and ${b}` — multiple expressions', () => {
-      const i18n = createFluentiRuntime({
+      const i18n = createFluentiCore({
         locale: 'en',
         messages: { en: {} },
       })
@@ -204,7 +204,7 @@ describe('createFluentiRuntime', () => {
     })
 
     it('equivalent to t("Hello {arg0}", { arg0: name })', () => {
-      const i18n = createFluentiRuntime({
+      const i18n = createFluentiCore({
         locale: 'en',
         messages: { en: {} },
       })
@@ -215,7 +215,7 @@ describe('createFluentiRuntime', () => {
     })
 
     it('looks up catalog when ICU message matches a key', () => {
-      const i18n = createFluentiRuntime({
+      const i18n = createFluentiCore({
         locale: 'en',
         fallbackLocale: 'en',
         messages: {
@@ -228,7 +228,7 @@ describe('createFluentiRuntime', () => {
 
     it('looks up translation by hash ID (compiled catalog format)', () => {
       const hash = hashMessage('Select token')
-      const i18n = createFluentiRuntime({
+      const i18n = createFluentiCore({
         locale: 'zh-CN',
         fallbackLocale: 'en',
         messages: {
@@ -240,7 +240,7 @@ describe('createFluentiRuntime', () => {
     })
 
     it('falls back to ICU interpolation when no catalog match', () => {
-      const i18n = createFluentiRuntime({
+      const i18n = createFluentiCore({
         locale: 'ja',
         fallbackLocale: 'en',
         messages: {
@@ -257,7 +257,7 @@ describe('createFluentiRuntime', () => {
 
   describe('edge cases', () => {
     it('onMissingKey handler that throws does not crash', () => {
-      const i18n = createFluentiRuntime({
+      const i18n = createFluentiCore({
         locale: 'en',
         messages: { en: {} },
         onMissingKey: () => {
@@ -268,7 +268,7 @@ describe('createFluentiRuntime', () => {
     })
 
     it('locale not in messages returns id', () => {
-      const i18n = createFluentiRuntime({
+      const i18n = createFluentiCore({
         locale: 'ja',
         messages: { en: { greeting: 'Hello' } },
       })
@@ -276,7 +276,7 @@ describe('createFluentiRuntime', () => {
     })
 
     it('fallbackChain with wildcard *', () => {
-      const i18n = createFluentiRuntime({
+      const i18n = createFluentiCore({
         locale: 'de',
         messages: {
           de: {},
@@ -290,7 +290,7 @@ describe('createFluentiRuntime', () => {
     })
 
     it('d() handles NaN without throwing', () => {
-      const i18n = createFluentiRuntime({
+      const i18n = createFluentiCore({
         locale: 'en',
         messages: { en: {} },
       })
@@ -298,7 +298,7 @@ describe('createFluentiRuntime', () => {
     })
 
     it('n() handles NaN', () => {
-      const i18n = createFluentiRuntime({
+      const i18n = createFluentiCore({
         locale: 'en',
         messages: { en: {} },
       })
@@ -306,7 +306,7 @@ describe('createFluentiRuntime', () => {
     })
 
     it('t() with MessageDescriptor without message uses catalog', () => {
-      const i18n = createFluentiRuntime({
+      const i18n = createFluentiCore({
         locale: 'en',
         messages: { en: { test: 'From catalog' } },
       })
@@ -314,7 +314,7 @@ describe('createFluentiRuntime', () => {
     })
 
     it('loadMessages then translate works', () => {
-      const i18n = createFluentiRuntime({
+      const i18n = createFluentiCore({
         locale: 'en',
         messages: { en: {} },
       })
@@ -328,7 +328,7 @@ describe('createFluentiRuntime', () => {
 
   describe('edge cases - exhaustive', () => {
     it('t() compiled function throws exception returns id', () => {
-      const i18n = createFluentiRuntime({
+      const i18n = createFluentiCore({
         locale: 'en',
         messages: {
           en: {
@@ -341,7 +341,7 @@ describe('createFluentiRuntime', () => {
     })
 
     it('t() compiled function returning undefined falls back to the key', () => {
-      const i18n = createFluentiRuntime({
+      const i18n = createFluentiCore({
         locale: 'en',
         messages: {
           en: {
@@ -354,7 +354,7 @@ describe('createFluentiRuntime', () => {
     })
 
     it('fallbackChain locale-specific priority over wildcard *', () => {
-      const i18n = createFluentiRuntime({
+      const i18n = createFluentiCore({
         locale: 'de',
         messages: {
           de: {},
@@ -371,7 +371,7 @@ describe('createFluentiRuntime', () => {
     })
 
     it('fallbackChain empty array returns id', () => {
-      const i18n = createFluentiRuntime({
+      const i18n = createFluentiCore({
         locale: 'de',
         messages: {
           de: {},
@@ -385,7 +385,7 @@ describe('createFluentiRuntime', () => {
     })
 
     it('loadMessages merges with existing messages', () => {
-      const i18n = createFluentiRuntime({
+      const i18n = createFluentiCore({
         locale: 'en',
         messages: { en: { a: 'Alpha' } },
       })
@@ -395,7 +395,7 @@ describe('createFluentiRuntime', () => {
     })
 
     it('loadMessages then switch locale', () => {
-      const i18n = createFluentiRuntime({
+      const i18n = createFluentiCore({
         locale: 'en',
         messages: { en: { greeting: 'Hello' } },
       })
@@ -405,7 +405,7 @@ describe('createFluentiRuntime', () => {
     })
 
     it('consecutive multiple setLocale calls', () => {
-      const i18n = createFluentiRuntime({
+      const i18n = createFluentiCore({
         locale: 'en',
         messages: {
           en: { greeting: 'Hello' },
@@ -421,7 +421,7 @@ describe('createFluentiRuntime', () => {
     })
 
     it('setLocale to locale with no messages returns id', () => {
-      const i18n = createFluentiRuntime({
+      const i18n = createFluentiCore({
         locale: 'en',
         messages: { en: { greeting: 'Hello' } },
       })
@@ -430,7 +430,7 @@ describe('createFluentiRuntime', () => {
     })
 
     it('d() custom dateFormats', () => {
-      const i18n = createFluentiRuntime({
+      const i18n = createFluentiCore({
         locale: 'en',
         messages: { en: {} },
         dateFormats: {
@@ -442,7 +442,7 @@ describe('createFluentiRuntime', () => {
     })
 
     it('n() built-in styles (currency, percent, decimal)', () => {
-      const i18n = createFluentiRuntime({
+      const i18n = createFluentiCore({
         locale: 'en-US',
         messages: { 'en-US': {} },
       })
@@ -458,7 +458,7 @@ describe('createFluentiRuntime', () => {
     })
 
     it('format() plural ICU message', () => {
-      const i18n = createFluentiRuntime({
+      const i18n = createFluentiCore({
         locale: 'en',
         messages: { en: {} },
       })
@@ -467,7 +467,7 @@ describe('createFluentiRuntime', () => {
     })
 
     it('format() select ICU message', () => {
-      const i18n = createFluentiRuntime({
+      const i18n = createFluentiCore({
         locale: 'en',
         messages: { en: {} },
       })
@@ -476,7 +476,7 @@ describe('createFluentiRuntime', () => {
     })
 
     it('t(descriptor) - catalog has it uses catalog version', () => {
-      const i18n = createFluentiRuntime({
+      const i18n = createFluentiCore({
         locale: 'en',
         messages: { en: { greeting: 'Catalog Hello' } },
       })
@@ -486,7 +486,7 @@ describe('createFluentiRuntime', () => {
     })
 
     it('locale getter/setter roundtrip', () => {
-      const i18n = createFluentiRuntime({
+      const i18n = createFluentiCore({
         locale: 'en',
         messages: { en: {} },
       })
@@ -498,7 +498,7 @@ describe('createFluentiRuntime', () => {
     })
 
     it('same locale concurrent loadMessages merges all', () => {
-      const i18n = createFluentiRuntime({
+      const i18n = createFluentiCore({
         locale: 'en',
         messages: { en: {} },
       })
@@ -515,7 +515,7 @@ describe('createFluentiRuntime', () => {
 
   describe('transform hook', () => {
     it('applies transform to resolved messages', () => {
-      const i18n = createFluentiRuntime({
+      const i18n = createFluentiCore({
         locale: 'en',
         messages: { en: { greeting: 'hello world' } },
         transform: (result) => result.toUpperCase(),
@@ -525,7 +525,7 @@ describe('createFluentiRuntime', () => {
 
     it('receives id and locale', () => {
       const calls: Array<{ result: string; id: string; locale: string }> = []
-      const i18n = createFluentiRuntime({
+      const i18n = createFluentiCore({
         locale: 'en',
         messages: { en: { greeting: 'Hello' } },
         transform: (result, id, locale) => {
@@ -538,7 +538,7 @@ describe('createFluentiRuntime', () => {
     })
 
     it('applies to fallback messages', () => {
-      const i18n = createFluentiRuntime({
+      const i18n = createFluentiCore({
         locale: 'fr',
         fallbackLocale: 'en',
         messages: { en: { greeting: 'Hello' }, fr: {} },
@@ -548,7 +548,7 @@ describe('createFluentiRuntime', () => {
     })
 
     it('applies to ICU-interpolated messages', () => {
-      const i18n = createFluentiRuntime({
+      const i18n = createFluentiCore({
         locale: 'en',
         messages: { en: {} },
         transform: (result) => result.toUpperCase(),
@@ -562,7 +562,7 @@ describe('createFluentiRuntime', () => {
   describe('onLocaleChange callback', () => {
     it('fires when locale changes via setLocale()', () => {
       const calls: Array<{ newLocale: string; prevLocale: string }> = []
-      const i18n = createFluentiRuntime({
+      const i18n = createFluentiCore({
         locale: 'en',
         messages: { en: {}, fr: {} },
         onLocaleChange: (newLocale, prevLocale) => {
@@ -575,7 +575,7 @@ describe('createFluentiRuntime', () => {
 
     it('fires when locale changes via property setter', () => {
       const calls: Array<{ newLocale: string; prevLocale: string }> = []
-      const i18n = createFluentiRuntime({
+      const i18n = createFluentiCore({
         locale: 'en',
         messages: { en: {}, fr: {} },
         onLocaleChange: (newLocale, prevLocale) => {
@@ -588,7 +588,7 @@ describe('createFluentiRuntime', () => {
 
     it('does not fire when locale is set to the same value', () => {
       const calls: string[] = []
-      const i18n = createFluentiRuntime({
+      const i18n = createFluentiCore({
         locale: 'en',
         messages: { en: {} },
         onLocaleChange: (newLocale) => { calls.push(newLocale) },
@@ -602,7 +602,7 @@ describe('createFluentiRuntime', () => {
 
   describe('custom formatters', () => {
     it('uses custom formatter for ICU function nodes', () => {
-      const i18n = createFluentiRuntime({
+      const i18n = createFluentiCore({
         locale: 'en',
         messages: { en: {} },
         formatters: {
@@ -619,7 +619,7 @@ describe('createFluentiRuntime', () => {
 
     it('custom formatter receives style and locale', () => {
       const calls: Array<{ style: string; locale: string }> = []
-      const i18n = createFluentiRuntime({
+      const i18n = createFluentiCore({
         locale: 'ja',
         messages: { ja: {} },
         formatters: {
@@ -634,7 +634,7 @@ describe('createFluentiRuntime', () => {
     })
 
     it('falls back to built-in formatters when no custom match', () => {
-      const i18n = createFluentiRuntime({
+      const i18n = createFluentiCore({
         locale: 'en',
         messages: { en: {} },
         formatters: {
@@ -653,7 +653,7 @@ describe('createFluentiRuntime', () => {
     it('fallback locale uses compiled function message', () => {
       const compiled = (values?: Record<string, unknown>) =>
         `Hola ${values?.['name'] ?? 'mundo'}`
-      const i18n = createFluentiRuntime({
+      const i18n = createFluentiCore({
         locale: 'fr',
         fallbackLocale: 'es',
         messages: {
@@ -667,7 +667,7 @@ describe('createFluentiRuntime', () => {
     it('fallbackChain uses compiled function message', () => {
       const compiled = (values?: Record<string, unknown>) =>
         `Hallo ${values?.['name'] ?? 'Welt'}`
-      const i18n = createFluentiRuntime({
+      const i18n = createFluentiCore({
         locale: 'fr',
         messages: {
           fr: {},
@@ -680,20 +680,20 @@ describe('createFluentiRuntime', () => {
       expect(i18n.t('greeting', { name: 'Bob' })).toBe('Hallo Bob')
     })
 
-    it('descriptor without catalog hit but with onMissingKey handler', () => {
+    it('descriptor without catalog hit but with missing handler', () => {
       const handler = vi.fn().mockReturnValue('MISSING RESULT')
-      const i18n = createFluentiRuntime({
+      const i18n = createFluentiCore({
         locale: 'en',
         messages: { en: {} },
-        onMissingKey: handler,
+        missing: handler,
       })
       const desc = { id: 'nav.home', message: 'Home' }
       expect(i18n.t(desc)).toBe('MISSING RESULT')
-      expect(handler).toHaveBeenCalledWith({ locale: 'en', id: 'nav.home' })
+      expect(handler).toHaveBeenCalledWith('en', 'nav.home')
     })
 
     it('descriptor with only id (no message, no catalog) returns messageId', () => {
-      const i18n = createFluentiRuntime({
+      const i18n = createFluentiCore({
         locale: 'en',
         messages: { en: {} },
       })
@@ -705,22 +705,22 @@ describe('createFluentiRuntime', () => {
   // ─── input validation ──────────────────────────────────────────────
 
   describe('input validation', () => {
-    it('throws on empty locale in createFluentiRuntime', () => {
-      expect(() => createFluentiRuntime({
+    it('throws on empty locale in createFluentiCore', () => {
+      expect(() => createFluentiCore({
         locale: '',
         messages: {},
       })).toThrow('non-empty string')
     })
 
-    it('throws on whitespace-only locale in createFluentiRuntime', () => {
-      expect(() => createFluentiRuntime({
+    it('throws on whitespace-only locale in createFluentiCore', () => {
+      expect(() => createFluentiCore({
         locale: '  ',
         messages: {},
       })).toThrow('non-empty string')
     })
 
     it('throws on empty locale in setLocale', () => {
-      const i18n = createFluentiRuntime({
+      const i18n = createFluentiCore({
         locale: 'en',
         messages: { en: {} },
       })
@@ -728,7 +728,7 @@ describe('createFluentiRuntime', () => {
     })
 
     it('throws on empty locale in locale setter', () => {
-      const i18n = createFluentiRuntime({
+      const i18n = createFluentiCore({
         locale: 'en',
         messages: { en: {} },
       })
@@ -737,7 +737,7 @@ describe('createFluentiRuntime', () => {
   })
 
   describe('d() and n() locale override', () => {
-    const i18n = createFluentiRuntime({
+    const i18n = createFluentiCore({
       locale: 'en',
       messages: { en: {}, ja: {}, de: {} },
     })
@@ -767,14 +767,15 @@ describe('createFluentiRuntime', () => {
 
   // ─── onMissingKey unified handler ────────────────────────────────────
 
-  describe('onMissingKey', () => {
-    it('calls onMissingKey with correct event when key is missing', () => {
-      const events: Array<{ locale: string; id: string; fallbackUsed?: string }> = []
-      const i18n = createFluentiRuntime({
+  describe('missing callback', () => {
+    it('calls missing with locale and id when key is missing', () => {
+      const events: Array<{ locale: string; id: string }> = []
+      const i18n = createFluentiCore({
         locale: 'fr',
         messages: { fr: {} },
-        onMissingKey: (event) => {
-          events.push(event)
+        missing: (locale, id) => {
+          events.push({ locale, id })
+          return undefined
         },
       })
       i18n.t('greeting')
@@ -782,105 +783,95 @@ describe('createFluentiRuntime', () => {
     })
 
     it('uses returned string as translation', () => {
-      const i18n = createFluentiRuntime({
+      const i18n = createFluentiCore({
         locale: 'en',
         messages: { en: {} },
-        onMissingKey: () => 'FALLBACK',
+        missing: () => 'FALLBACK',
       })
       expect(i18n.t('unknown')).toBe('FALLBACK')
     })
 
     it('returns undefined/void falls through to default behavior', () => {
-      const i18n = createFluentiRuntime({
+      const i18n = createFluentiCore({
         locale: 'en',
         messages: { en: {} },
-        onMissingKey: () => undefined,
+        missing: () => undefined,
       })
       expect(i18n.t('unknown')).toBe('unknown')
     })
 
-    it('sets fallbackUsed when fallback locale provides translation', () => {
-      const events: Array<{ locale: string; id: string; fallbackUsed?: string }> = []
-      const i18n = createFluentiRuntime({
+    it('does not call missing when fallback locale provides translation', () => {
+      const handler = vi.fn()
+      const i18n = createFluentiCore({
         locale: 'fr',
         fallbackLocale: 'en',
         messages: {
           fr: {},
           en: { greeting: 'Hello' },
         },
-        onMissingKey: (event) => {
-          events.push(event)
-        },
+        missing: handler,
       })
       expect(i18n.t('greeting')).toBe('Hello')
-      expect(events).toEqual([
-        { locale: 'fr', id: 'greeting', fallbackUsed: 'en' },
-      ])
+      // fallback locale resolved it — missing is NOT called
+      expect(handler).not.toHaveBeenCalled()
     })
 
-    it('sets fallbackUsed when fallbackChain locale provides translation', () => {
-      const events: Array<{ locale: string; id: string; fallbackUsed?: string }> = []
-      const i18n = createFluentiRuntime({
+    it('does not call missing when fallbackChain locale provides translation', () => {
+      const handler = vi.fn()
+      const i18n = createFluentiCore({
         locale: 'de',
         messages: {
           de: {},
           'zh-CN': { greeting: 'Hello from zh-CN' },
         },
         fallbackChain: { de: ['zh-CN'] },
-        onMissingKey: (event) => {
-          events.push(event)
-        },
+        missing: handler,
       })
       expect(i18n.t('greeting')).toBe('Hello from zh-CN')
-      expect(events).toEqual([
-        { locale: 'de', id: 'greeting', fallbackUsed: 'zh-CN' },
-      ])
+      // fallback chain resolved it — missing is NOT called
+      expect(handler).not.toHaveBeenCalled()
     })
 
-    it('onMissingKey can override fallback translation', () => {
-      const i18n = createFluentiRuntime({
+    it('missing handler is called when neither current nor fallback has the key', () => {
+      const i18n = createFluentiCore({
         locale: 'fr',
         fallbackLocale: 'en',
         messages: {
           fr: {},
-          en: { greeting: 'Hello' },
+          en: {},
         },
-        onMissingKey: (event) => {
-          if (event.fallbackUsed) {
-            return `[${event.locale}] ${event.id}`
-          }
-        },
+        missing: (locale, id) => `[${locale}] ${id}`,
       })
       expect(i18n.t('greeting')).toBe('[fr] greeting')
     })
 
-    it('does NOT call onMissingKey when key is found in current locale', () => {
+    it('does NOT call missing when key is found in current locale', () => {
       const handler = vi.fn()
-      const i18n = createFluentiRuntime({
+      const i18n = createFluentiCore({
         locale: 'en',
         messages: { en: { greeting: 'Hello' } },
-        onMissingKey: handler,
+        missing: handler,
       })
       expect(i18n.t('greeting')).toBe('Hello')
       expect(handler).not.toHaveBeenCalled()
     })
 
-    it('onMissingKey handler that throws does not crash', () => {
-      const i18n = createFluentiRuntime({
+    it('missing handler that throws does not crash', () => {
+      const i18n = createFluentiCore({
         locale: 'en',
         messages: { en: {} },
-        onMissingKey: () => { throw new Error('handler boom') },
+        missing: () => { throw new Error('handler boom') },
       })
       expect(i18n.t('unknown')).toBe('unknown')
     })
 
     it('works with MessageDescriptor path', () => {
       const events: Array<{ locale: string; id: string }> = []
-      const i18n = createFluentiRuntime({
+      const i18n = createFluentiCore({
         locale: 'en',
         messages: { en: {} },
-        onMissingKey: (event) => {
-          events.push({ locale: event.locale, id: event.id })
+        missing: (locale, id) => {
+          events.push({ locale, id })
           return 'DESCRIPTOR_FALLBACK'
         },
       })

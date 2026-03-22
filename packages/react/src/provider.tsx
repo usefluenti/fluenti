@@ -4,6 +4,7 @@ import type { Messages } from '@fluenti/core'
 import { I18nContext } from './context'
 import type { FluentiProviderProps, FluentiContext } from './types'
 import type { FluentiInstance } from './create-fluenti'
+import { setGlobalI18n } from './global-registry'
 
 interface SplitRuntimeModule {
   __switchLocale?: (locale: string) => Promise<void>
@@ -106,6 +107,11 @@ function InlineProvider({
     if (missing !== undefined) config.missing = missing
     return createFluentiCore(config)
   }, [currentLocale, loadedMessages, fallbackLocale, fallbackChain, dateFormats, numberFormats, missing])
+
+  // Set global i18n instance for webpack loader / vite plugin access
+  useEffect(() => {
+    setGlobalI18n(i18n)
+  }, [i18n])
 
   // Sync external locale prop changes
   useEffect(() => {

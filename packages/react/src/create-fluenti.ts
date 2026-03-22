@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useMemo, useRef } from 'react'
-import { createFluent } from '@fluenti/core'
+import { createFluentiCore } from '@fluenti/core'
 import type {
-  FluentInstanceExtended,
+  FluentiCoreInstanceFull as FluentInstanceExtended,
   Locale,
   Messages,
   AllMessages,
@@ -141,7 +141,7 @@ export function createFluenti(config: FluentiConfig): FluentiInstance {
     if (dateFormats !== undefined) cfg.dateFormats = dateFormats
     if (numberFormats !== undefined) cfg.numberFormats = numberFormats
     if (missing !== undefined) cfg.missing = missing
-    return createFluent(cfg)
+    return createFluentiCore(cfg)
   }, [currentLocale, loadedMessages, fallbackLocale, fallbackChain, dateFormats, numberFormats, missing])
 
   // Sync external locale changes

@@ -196,7 +196,7 @@ describe('useI18n outside provider', () => {
     }
 
     expect(() => render(() => <BadChild />)).toThrow(
-      'useI18n requires either createI18n()',
+      'useI18n requires either createFluenti()',
     )
   })
 })
