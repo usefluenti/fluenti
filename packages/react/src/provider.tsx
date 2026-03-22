@@ -36,7 +36,6 @@ function getSplitRuntimeModule(): SplitRuntimeModule | null {
 function InstanceProvider({ instance, children }: { instance: FluentiInstance; children: React.ReactNode }) {
   const ctx: FluentiContext = useMemo(
     () => ({
-      i18n: instance.i18n,
       t: instance.t,
       d: instance.d,
       n: instance.n,
@@ -48,7 +47,11 @@ function InstanceProvider({ instance, children }: { instance: FluentiInstance; c
       isLoading: instance.isLoading,
       loadedLocales: instance.loadedLocales,
       preloadLocale: instance.preloadLocale,
-    }),
+      te: instance.te,
+      tm: instance.tm,
+      // Internal: used by __useI18n hook and compiled components — not part of public API
+      i18n: instance.i18n,
+    }) as FluentiContext,
     [instance],
   )
 
@@ -203,9 +206,26 @@ function InlineProvider({
     [loadMessages],
   )
 
+  const te = useCallback(
+    (id: string): boolean => {
+      const msgs = loadedMessagesRef.current[currentLocale]
+      return msgs !== undefined && id in msgs
+    },
+    [currentLocale],
+  )
+
+  const tm = useCallback(
+    (id: string): string | undefined => {
+      const msgs = loadedMessagesRef.current[currentLocale]
+      if (!msgs) return undefined
+      const val = msgs[id]
+      return typeof val === 'string' ? val : typeof val === 'function' ? id : undefined
+    },
+    [currentLocale],
+  )
+
   const ctx = useMemo(
     () => ({
-      i18n,
       t: i18n.t.bind(i18n),
       d: i18n.d.bind(i18n),
       n: i18n.n.bind(i18n),
@@ -217,8 +237,12 @@ function InlineProvider({
       isLoading,
       loadedLocales,
       preloadLocale,
-    }),
-    [i18n, currentLocale, handleSetLocale, isLoading, loadedLocales, preloadLocale],
+      te,
+      tm,
+      // Internal: used by __useI18n hook and compiled components — not part of public API
+      i18n,
+    }) as FluentiContext,
+    [i18n, currentLocale, handleSetLocale, isLoading, loadedLocales, preloadLocale, te, tm],
   )
 
   return <I18nContext.Provider value={ctx}>{children}</I18nContext.Provider>

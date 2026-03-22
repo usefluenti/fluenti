@@ -1,12 +1,10 @@
 import { describe, it, expect, afterEach } from 'vitest'
 import { render, cleanup } from '@solidjs/testing-library'
 import { DateTime, I18nProvider } from '../src'
-import { resetGlobalFluentiContext } from '../src/context'
 
 describe('DateTime', () => {
   afterEach(() => {
     cleanup()
-    resetGlobalFluentiContext()
   })
 
   const fixedDate = new Date('2024-06-15T12:30:00Z')
@@ -139,7 +137,7 @@ describe('DateTime', () => {
 
   it('throws when used outside of I18nProvider', () => {
     expect(() => render(() => <DateTime value={fixedDate} />)).toThrow(
-      'useI18n requires either createFluenti()',
+      'useI18n() must be used inside an <I18nProvider>.',
     )
   })
 

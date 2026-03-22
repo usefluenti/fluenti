@@ -1,12 +1,10 @@
 import { describe, it, expect, afterEach } from 'vitest'
 import { render, cleanup } from '@solidjs/testing-library'
 import { NumberFormat, I18nProvider } from '../src'
-import { resetGlobalFluentiContext } from '../src/context'
 
 describe('NumberFormat', () => {
   afterEach(() => {
     cleanup()
-    resetGlobalFluentiContext()
   })
 
   it('formats an integer with grouping separators', () => {
@@ -156,7 +154,7 @@ describe('NumberFormat', () => {
 
   it('throws when used outside of I18nProvider', () => {
     expect(() => render(() => <NumberFormat value={42} />)).toThrow(
-      'useI18n requires either createFluenti()',
+      'useI18n() must be used inside an <I18nProvider>.',
     )
   })
 

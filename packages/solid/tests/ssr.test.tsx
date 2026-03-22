@@ -1,8 +1,8 @@
 /**
  * @vitest-environment node
  */
-import { describe, it, expect, vi } from 'vitest'
-import { createFluentiContext, createFluenti, resetGlobalFluentiContext } from '../src/context'
+import { describe, it, expect } from 'vitest'
+import { createFluentiContext } from '../src/context'
 
 const messages = {
   en: { hello: 'Hello', greeting: 'Hi {name}' },
@@ -68,22 +68,6 @@ describe('SSR', () => {
     const ctx = createFluentiContext({ locale: 'en', messages: { en: {} } })
     ctx.loadMessages('en', { dynamic: 'Dynamic value' })
     expect(ctx.t('dynamic')).toBe('Dynamic value')
-  })
-
-  it('createFluenti() warns about SSR singleton in non-browser environment', () => {
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
-    resetGlobalFluentiContext()
-
-    const ctx = createFluenti({ locale: 'en', messages })
-
-    expect(warnSpy).toHaveBeenCalledWith(
-      '[fluenti] createFluenti() detected SSR environment. ' +
-      'Use <I18nProvider> for per-request isolation in SSR.',
-    )
-    expect(ctx.t('hello')).toBe('Hello')
-
-    warnSpy.mockRestore()
-    resetGlobalFluentiContext()
   })
 
   // ─── Edge cases ──────────────────────────────────────────────────────

@@ -25,6 +25,10 @@
       "import": { "types": "./dist/index.d.ts", "default": "./dist/index.js" },
       "require": { "types": "./dist/index.d.ts", "default": "./dist/index.cjs" }
     },
+    "./server": {
+      "import": { "types": "./dist/server.d.ts", "default": "./dist/server.js" },
+      "require": { "types": "./dist/server.d.ts", "default": "./dist/server.cjs" }
+    },
     "./vite-plugin": {
       "import": { "types": "./dist/vite-plugin.d.ts", "default": "./dist/vite-plugin.js" },
       "require": { "types": "./dist/vite-plugin.d.ts", "default": "./dist/vite-plugin.cjs" }

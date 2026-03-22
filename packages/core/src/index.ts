@@ -25,7 +25,6 @@ export type {
   NumberFormatOptions,
   FormatDateFn,
   FormatNumberFn,
-  NamespaceMapping,
   CompileTimeMessageDescriptor,
   CompileTimeT,
   TypedCompileTimeT,

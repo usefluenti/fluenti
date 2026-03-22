@@ -9,12 +9,9 @@ import type {
   CompileTimeT,
   DateFormatOptions,
   NumberFormatOptions,
-  FluentiCoreInstanceFull,
 } from '@fluenti/core'
 
 export interface FluentiContext {
-  /** The underlying Fluent instance (escape hatch for advanced use) */
-  i18n: FluentiCoreInstanceFull
   /** Translate a message by id with optional interpolation values */
   t: {
     (id: string | MessageDescriptor, values?: Record<string, unknown>): LocalizedString
@@ -40,6 +37,10 @@ export interface FluentiContext {
   loadedLocales: string[]
   /** Preload a locale in the background without switching to it */
   preloadLocale: (locale: string) => Promise<void>
+  /** Check if a translation key exists for the current locale */
+  te: (id: string) => boolean
+  /** Get the raw compiled message without interpolation */
+  tm: (id: string) => string | undefined
 }
 
 export interface I18nProviderProps {
@@ -61,10 +62,11 @@ export interface I18nProviderProps {
   missing?: (locale: Locale, id: string) => string | undefined
   /** App content */
   children: ReactNode
+  /** Pre-created FluentiInstance (alternative to inline config) */
+  instance?: import('./create-fluenti').FluentiInstance
 }
 
-/** @deprecated Use `FluentiContext` instead */
-export type I18nContextValue = FluentiContext
+export type FluentiProviderProps = I18nProviderProps
 
 export type {
   Locale,
@@ -76,5 +78,4 @@ export type {
   CompileTimeT,
   DateFormatOptions,
   NumberFormatOptions,
-  FluentiCoreInstanceFull,
 }

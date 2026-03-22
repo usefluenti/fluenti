@@ -2,7 +2,6 @@ import { describe, it, expect, afterEach } from 'vitest'
 import { render, cleanup } from '@solidjs/testing-library'
 import { I18nProvider } from '../src'
 import { __useI18n } from '../src/hooks/__useI18n'
-import { resetGlobalFluentiContext } from '../src/context'
 
 const messages = {
   en: { hello: 'Hello' },
@@ -11,7 +10,6 @@ const messages = {
 describe('__useI18n (internal hook)', () => {
   afterEach(() => {
     cleanup()
-    resetGlobalFluentiContext()
   })
 
   it('returns the i18n context inside a provider', () => {
@@ -61,7 +59,7 @@ describe('__useI18n (internal hook)', () => {
     }
 
     expect(() => render(() => <Bad />)).toThrow(
-      'useI18n requires either createFluenti()',
+      'useI18n() must be used inside an <I18nProvider>.',
     )
   })
 })

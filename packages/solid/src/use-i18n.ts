@@ -1,16 +1,11 @@
 import { useContext } from 'solid-js'
 import { I18nCtx } from './provider'
-import { getGlobalFluentiContext } from './context'
 import type { FluentiContext } from './context'
 
 /**
- * Access the i18n context.
+ * Access the i18n context from the nearest `<I18nProvider>`.
  *
- * Resolution order:
- * 1. Nearest `<I18nProvider>` in the component tree
- * 2. Module-level singleton created by `createFluenti()`
- *
- * Throws if neither is available.
+ * Throws if no provider is found in the component tree.
  */
 export function useI18n(): FluentiContext {
   const ctx = useContext(I18nCtx)
@@ -18,13 +13,7 @@ export function useI18n(): FluentiContext {
     return ctx
   }
 
-  const global = getGlobalFluentiContext()
-  if (global) {
-    return global
-  }
-
   throw new Error(
-    'useI18n requires either createFluenti() to be called at startup, ' +
-    'or the component to be inside an <I18nProvider>.',
+    'useI18n() must be used inside an <I18nProvider>.',
   )
 }

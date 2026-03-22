@@ -225,12 +225,6 @@ export interface FluentiConfig {
   fallbackChain?: Record<string, Locale[]>
   dateFormats?: DateFormatOptions
   numberFormats?: NumberFormatOptions
-  namespaceMapping?: Record<string, string>
-  externalCatalogs?: Array<{ package: string; catalogDir: string }>
-
-  // Legacy / strict build
-  strictBuild?: boolean
-  strictThreshold?: number
 }
 
 // ---- SSR Utilities ----
@@ -278,12 +272,6 @@ export interface TypedCompileTimeT<
   (strings: TemplateStringsArray, ...exprs: unknown[]): FluentiTypeConfig['localizedString']
 }
 
-// ---- Namespace ----
-
-export interface NamespaceMapping {
-  [globPattern: string]: string
-}
-
 // ---- Formatting ----
 
 export interface DateFormatOptions {
@@ -311,11 +299,9 @@ export type CustomFormatter = (value: unknown, style: string, locale: Locale) =>
 // ---- Extended FluentiCoreConfig ----
 
 export interface FluentiCoreConfigFull extends FluentiCoreConfig {
-  namespaceMapping?: NamespaceMapping
   dateFormats?: DateFormatOptions
   numberFormats?: NumberFormatOptions
   fallbackChain?: Record<string, Locale[]>
-  externalCatalogs?: Array<{ package: string; catalogDir: string }>
   /**
    * Post-translation transform applied to every resolved message.
    * Runs after interpolation. No-op when not set.
@@ -391,3 +377,4 @@ export type FluentiBuildConfig = FluentiConfig
 export function normalizeConfig(config: FluentiBuildConfig): FluentiBuildConfig {
   return config
 }
+

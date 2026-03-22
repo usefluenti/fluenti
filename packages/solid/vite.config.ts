@@ -4,6 +4,7 @@ import { createPackageConfig } from '../../scripts/vite-config-factory'
 export default createPackageConfig({
   entry: {
     index: 'src/index.ts',
+    server: 'src/server.ts',
     'vite-plugin': 'src/vite-plugin.ts',
   },
   external: ['solid-js', 'solid-js/web', 'solid-js/jsx-runtime', 'solid-js/store', '@fluenti/core', /^@fluenti\/vite-plugin/, 'vite', /^node:/],

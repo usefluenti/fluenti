@@ -86,5 +86,5 @@ export const Plural = memo(function Plural({
     ...(comment !== undefined ? { comment } : {}),
   }
 
-  return <>{renderRichTranslation(descriptor, { count: value }, (desc, values) => ctx.i18n.t(desc, values), components)}</>
+  return <>{renderRichTranslation(descriptor, { count: value }, (desc, values) => ctx.t(desc, values), components)}</>
 })

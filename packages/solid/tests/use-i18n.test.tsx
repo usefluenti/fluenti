@@ -1,7 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render } from '@solidjs/testing-library'
 import { I18nProvider, useI18n } from '../src'
-import { resetGlobalFluentiContext } from '../src/context'
 
 const messages = {
   en: { hello: 'Hello', greeting: 'Hi {name}' },
@@ -278,15 +277,13 @@ describe('useI18n reactivity', () => {
   // ─── Edge cases ──────────────────────────────────────────────────────
 
   it('throws when useI18n is called outside provider', () => {
-    resetGlobalFluentiContext()
-
     function BadChild() {
       const { t } = useI18n()
       return <span>{t('hello')}</span>
     }
 
     expect(() => render(() => <BadChild />)).toThrow(
-      'useI18n requires either createFluenti()',
+      'useI18n() must be used inside an <I18nProvider>.',
     )
   })
 

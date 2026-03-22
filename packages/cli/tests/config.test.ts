@@ -18,10 +18,7 @@ describe('defineConfig', () => {
       exclude: ['./src/**/*.test.ts'],
       compileOutDir: './src/locales/compiled',
       devWarnings: true,
-      strictBuild: false,
       fallbackChain: { ja: ['en'] },
-      externalCatalogs: [{ package: '@acme/i18n', catalogDir: './locales' }],
-      strictThreshold: 0.9,
       splitting: 'dynamic' as const,
       defaultBuildLocale: 'en',
     }

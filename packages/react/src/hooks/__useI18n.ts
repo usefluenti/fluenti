@@ -1,6 +1,6 @@
 import { useContext } from 'react'
 import { I18nContext } from '../context'
-import type { FluentiCoreInstanceFull } from '../types'
+import type { FluentiCoreInstanceFull } from '@fluenti/core'
 
 /**
  * Internal hook used by the Vite plugin's compiled output.
@@ -20,5 +20,5 @@ export function __useI18n(): FluentiCoreInstanceFull {
     )
   }
   // i18n is present on the context object but not exposed in the public type
-  return (ctx as unknown as { i18n: FluentInstanceExtended }).i18n
+  return (ctx as unknown as { i18n: FluentiCoreInstanceFull }).i18n
 }

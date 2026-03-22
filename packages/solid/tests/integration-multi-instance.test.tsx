@@ -1,7 +1,6 @@
-import { describe, it, expect, afterEach } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import { render } from '@solidjs/testing-library'
 import { I18nProvider, useI18n } from '../src'
-import { resetGlobalFluentiContext } from '../src/context'
 
 const allMessages = {
   en: { hello: 'Hello', welcome: 'Welcome {name}' },
@@ -10,10 +9,6 @@ const allMessages = {
 }
 
 describe('integration: multi-provider rendering', () => {
-  afterEach(() => {
-    resetGlobalFluentiContext()
-  })
-
   it('full page with two providers (en + ja) renders correct translations', () => {
     function Header() {
       const { t } = useI18n()

@@ -1,4 +1,4 @@
-import { createSignal, createRoot, type Accessor } from 'solid-js'
+import { createSignal, type Accessor } from 'solid-js'
 import { formatDate, formatNumber, interpolate as coreInterpolate, buildICUMessage, resolveDescriptorId } from '@fluenti/core'
 import type { FluentiCoreConfig, Locale, LocalizedString, Messages, CompiledMessage, MessageDescriptor, DateFormatOptions, NumberFormatOptions } from '@fluenti/core'
 
@@ -69,6 +69,10 @@ export interface FluentiContext {
   loadedLocales: Accessor<Set<string>>
   /** Preload a locale in the background without switching to it */
   preloadLocale(locale: string): void
+  /** Check if a translation key exists for the given or current locale */
+  te(key: string, loc?: string): boolean
+  /** Get the raw compiled message for a key without interpolation */
+  tm(key: string, loc?: string): CompiledMessage | undefined
 }
 
 /**
@@ -290,49 +294,15 @@ export function createFluentiContext(config: FluentiCoreConfig | FluentiConfig):
     return coreInterpolate(message, values, locale()) as LocalizedString
   }
 
-  return { locale, setLocale, t, loadMessages, getLocales, d, n, format, isLoading, loadedLocales, preloadLocale }
-}
-
-// ─── Module-level singleton ─────────────────────────────────────────────────
-
-let globalCtx: FluentiContext | undefined
-
-/**
- * Initialize the global i18n singleton.
- *
- * Call once at app startup (e.g. in your entry file) before any `useI18n()`.
- * Signals are created inside a `createRoot` so they outlive any component scope.
- *
- * Returns the context for convenience, but `useI18n()` will also find it.
- */
-export function createFluenti(config: FluentiCoreConfig | FluentiConfig): FluentiContext {
-  const ctx = createRoot(() => createFluentiContext(config))
-
-  // Only set global singleton in browser (client-side).
-  // In SSR, each request should use <I18nProvider> for per-request isolation.
-  if (typeof window !== 'undefined') {
-    globalCtx = ctx
-  } else {
-    console.warn(
-      '[fluenti] createFluenti() detected SSR environment. ' +
-      'Use <I18nProvider> for per-request isolation in SSR.',
-    )
+  const te = (key: string, loc?: string): boolean => {
+    const msgs = messages[loc ?? locale()]
+    return msgs !== undefined && key in msgs
   }
 
-  return ctx
-}
+  const tm = (key: string, loc?: string): CompiledMessage | undefined => {
+    const msgs = messages[loc ?? locale()]
+    return msgs ? msgs[key] : undefined
+  }
 
-/** @internal — used by useI18n and I18nProvider */
-export function getGlobalFluentiContext(): FluentiContext | undefined {
-  return globalCtx
-}
-
-/** @internal — used by I18nProvider to set context without createRoot wrapper */
-export function setGlobalFluentiContext(ctx: FluentiContext): void {
-  globalCtx = ctx
-}
-
-/** @internal — reset the global singleton (for testing only) */
-export function resetGlobalFluentiContext(): void {
-  globalCtx = undefined
+  return { locale, setLocale, t, loadMessages, getLocales, d, n, format, isLoading, loadedLocales, preloadLocale, te, tm }
 }

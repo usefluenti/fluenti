@@ -27,7 +27,6 @@ export { msg } from './msg'
 // Types
 export type {
   FluentiContext,
-  I18nContextValue,
   I18nProviderProps,
   Messages,
   AllMessages,
@@ -37,7 +36,6 @@ export type {
   Locale,
   DateFormatOptions,
   NumberFormatOptions,
-  FluentiCoreInstanceFull,
 } from './types'
 export type { TransProps } from './components/Trans'
 export type { PluralProps } from './components/Plural'
