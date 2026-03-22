@@ -248,4 +248,89 @@ test.describe('Next.js path-based routing e2e', () => {
     await expect(page.getByTestId('home-page')).toBeVisible()
     expect(page.url()).toContain('/ja')
   })
+
+  // ─── P1.8 Hydration mismatch check ───
+
+  test('no hydration mismatch warnings in console on /en', async ({ page }) => {
+    const consoleLogs: string[] = []
+    page.on('console', (msg) => consoleLogs.push(msg.text()))
+
+    await page.goto('/en')
+    await page.waitForLoadState('networkidle')
+
+    const hydrationErrors = consoleLogs.filter(
+      (log) =>
+        log.includes('hydration') ||
+        log.includes('Hydration') ||
+        log.includes('mismatch'),
+    )
+    expect(hydrationErrors).toHaveLength(0)
+  })
+
+  test('no hydration mismatch warnings on /ja path', async ({ page }) => {
+    const consoleLogs: string[] = []
+    page.on('console', (msg) => consoleLogs.push(msg.text()))
+
+    await page.goto('/ja')
+    await page.waitForLoadState('networkidle')
+
+    const hydrationErrors = consoleLogs.filter(
+      (log) =>
+        log.includes('hydration') ||
+        log.includes('Hydration') ||
+        log.includes('mismatch'),
+    )
+    expect(hydrationErrors).toHaveLength(0)
+  })
+
+  // ─── P1.10 Concurrent SSR isolation ───
+
+  test('concurrent SSR requests to different locale paths are isolated', async ({ browser }) => {
+    const [ctxEn, ctxJa, ctxZh] = await Promise.all([
+      browser.newContext(),
+      browser.newContext(),
+      browser.newContext(),
+    ])
+
+    const [pageEn, pageJa, pageZh] = await Promise.all([
+      ctxEn.newPage(),
+      ctxJa.newPage(),
+      ctxZh.newPage(),
+    ])
+
+    // Hit different locale paths concurrently
+    await Promise.all([
+      pageEn.goto('/en'),
+      pageJa.goto('/ja'),
+      pageZh.goto('/zh-CN'),
+    ])
+
+    await expect(pageEn.getByTestId('welcome')).toContainText('Welcome to Fluenti')
+    await expect(pageJa.getByTestId('welcome')).toContainText('Fluenti へようこそ')
+    await expect(pageZh.getByTestId('welcome')).toContainText('欢迎使用 Fluenti')
+
+    await Promise.all([ctxEn.close(), ctxJa.close(), ctxZh.close()])
+  })
+
+  // ─── P2.14 preloadLocale reduces switch time ───
+
+  test('locale switch after hover preload is fast', async ({ page }) => {
+    await page.goto('/en')
+    await expect(page.getByTestId('home-page')).toBeVisible()
+
+    const jaBtn = page.getByTestId('lang-ja')
+    if (await jaBtn.isVisible()) {
+      // Hover to trigger preloadLocale
+      await jaBtn.hover()
+      // Wait for preload network request to complete
+      await page.waitForTimeout(1000)
+
+      const start = Date.now()
+      await jaBtn.click()
+      await expect(page.getByTestId('welcome')).toContainText('Fluenti へようこそ')
+      const elapsed = Date.now() - start
+      // Preloaded switch should be fast (under 2s)
+      expect(elapsed).toBeLessThan(2000)
+    }
+  })
 })

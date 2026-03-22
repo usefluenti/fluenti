@@ -145,3 +145,104 @@ test.describe('Nuxt Routes — Round-trip Locale Switching', () => {
     await expect(page.getByTestId('page-title')).toContainText('About Us')
   })
 })
+
+test.describe('Nuxt Routes — Hydration Integrity', () => {
+  test('no hydration mismatch warnings on default locale', async ({ page }) => {
+    const consoleLogs: string[] = []
+    page.on('console', (msg) => consoleLogs.push(msg.text()))
+
+    await page.goto('/')
+    await page.waitForLoadState('networkidle')
+
+    const hydrationErrors = consoleLogs.filter(
+      (log) =>
+        log.includes('hydration') ||
+        log.includes('Hydration') ||
+        log.includes('mismatch'),
+    )
+    expect(hydrationErrors).toHaveLength(0)
+  })
+
+  test('no hydration mismatch on /ja path', async ({ page }) => {
+    const consoleLogs: string[] = []
+    page.on('console', (msg) => consoleLogs.push(msg.text()))
+
+    await page.goto('/ja')
+    await page.waitForLoadState('networkidle')
+
+    const hydrationErrors = consoleLogs.filter(
+      (log) =>
+        log.includes('hydration') ||
+        log.includes('Hydration') ||
+        log.includes('mismatch'),
+    )
+    expect(hydrationErrors).toHaveLength(0)
+  })
+
+  test('no hydration mismatch after locale switch and reload', async ({ page }) => {
+    const consoleLogs: string[] = []
+    page.on('console', (msg) => consoleLogs.push(msg.text()))
+
+    await page.goto('/')
+    await page.getByTestId('lang-ja').click()
+    await expect(page.getByTestId('page-title')).toContainText('ようこそ')
+
+    // Reload — SSR should match client state
+    await page.reload()
+    await page.waitForLoadState('networkidle')
+
+    const hydrationErrors = consoleLogs.filter(
+      (log) =>
+        log.includes('hydration') ||
+        log.includes('Hydration') ||
+        log.includes('mismatch'),
+    )
+    expect(hydrationErrors).toHaveLength(0)
+  })
+})
+
+test.describe('Nuxt Routes — Concurrent SSR Locale Isolation', () => {
+  test('concurrent SSR requests to different locale paths are isolated', async ({ browser }) => {
+    const [ctxEn, ctxJa, ctxZh] = await Promise.all([
+      browser.newContext(),
+      browser.newContext(),
+      browser.newContext(),
+    ])
+
+    const [pageEn, pageJa, pageZh] = await Promise.all([
+      ctxEn.newPage(),
+      ctxJa.newPage(),
+      ctxZh.newPage(),
+    ])
+
+    await Promise.all([
+      pageEn.goto('/'),
+      pageJa.goto('/ja'),
+      pageZh.goto('/zh'),
+    ])
+
+    await expect(pageEn.getByTestId('page-title')).toContainText('Welcome Home')
+    await expect(pageJa.getByTestId('page-title')).toContainText('ようこそ')
+    await expect(pageZh.getByTestId('page-title')).toContainText('欢迎')
+
+    await Promise.all([ctxEn.close(), ctxJa.close(), ctxZh.close()])
+  })
+
+  test('concurrent SSR to different pages with different locales', async ({ browser }) => {
+    const ctxEn = await browser.newContext()
+    const ctxJa = await browser.newContext()
+
+    const pageEn = await ctxEn.newPage()
+    const pageJa = await ctxJa.newPage()
+
+    await Promise.all([
+      pageEn.goto('/about'),
+      pageJa.goto('/ja/contact'),
+    ])
+
+    await expect(pageEn.getByTestId('page-title')).toContainText('About Us')
+    await expect(pageJa.getByTestId('page-title')).toContainText('お問い合わせ')
+
+    await Promise.all([ctxEn.close(), ctxJa.close()])
+  })
+})

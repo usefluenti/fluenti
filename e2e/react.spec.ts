@@ -160,4 +160,39 @@ test.describe('React SPA Playground', () => {
     // But other keys should be Japanese
     await expect(page.getByTestId('welcome')).toContainText('Fluenti へようこそ')
   })
+
+  // P0.6 Concurrent locale switches
+  test('rapid locale switching settles on final locale', async ({ page }) => {
+    await page.goto('/')
+    const enBtn = page.getByTestId('lang-en')
+    const jaBtn = page.getByTestId('lang-ja')
+    // Rapidly switch 10 times
+    for (let i = 0; i < 5; i++) {
+      await jaBtn.click()
+      await enBtn.click()
+    }
+    // Should settle on English (last click)
+    await expect(page.getByTestId('title')).toContainText('Fluenti React Playground')
+  })
+
+  // P2.12 DateTime component renders different styles
+  test('DateTime component renders default and long styles', async ({ page }) => {
+    await page.goto('/')
+    // Default DateTime
+    const dtDefault = await page.getByTestId('datetime-default').textContent()
+    expect(dtDefault).toMatch(/\d/)
+    // Long DateTime — should contain month name or longer format
+    const dtLong = await page.getByTestId('datetime-long').textContent()
+    expect(dtLong).toMatch(/\d/)
+    expect(dtLong!.length).toBeGreaterThan(dtDefault!.length)
+  })
+
+  // P2.13 Number formatting styles — currency and percent
+  test('NumberFormat component renders currency and percent styles', async ({ page }) => {
+    await page.goto('/')
+    // currency: $42.50 or similar
+    await expect(page.getByTestId('number-currency')).toContainText('$42.50')
+    // percent: 86% or similar
+    await expect(page.getByTestId('number-percent')).toContainText('%')
+  })
 })

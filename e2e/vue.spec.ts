@@ -111,4 +111,48 @@ test.describe('Vue Playground', () => {
     const scripts = page.locator('main script')
     await expect(scripts).toHaveCount(0)
   })
+
+  // P0.6 Concurrent locale switches
+  test('rapid locale switching settles on final locale', async ({ page }) => {
+    await page.goto('/')
+    const enBtn = page.locator('.lang-buttons button:has-text("English")')
+    const jaBtn = page.locator('.lang-buttons button:has-text("日本語")')
+    // Rapidly switch 10 times
+    for (let i = 0; i < 5; i++) {
+      await jaBtn.click()
+      await enBtn.click()
+    }
+    // Should settle on English (last click)
+    await expect(page.locator('header h1')).toContainText('Fluenti Vue Playground')
+  })
+
+  // P2.12 DateTime styles — verify d() renders multiple format styles
+  test('d() date formatting renders short, long, relative, and datetime styles', async ({ page }) => {
+    await page.goto('/')
+    // short style
+    const shortOutput = page.locator('.demo-label:has-text("$d(date, \'short\')") + div')
+    await expect(shortOutput).toContainText(/\d/)
+    // long style
+    const longOutput = page.locator('.demo-label:has-text("$d(date, \'long\')") + div')
+    await expect(longOutput).toContainText(/\d/)
+    // relative style — should contain a relative time expression (e.g. "3 days ago")
+    const relativeOutput = page.locator('.demo-label:has-text("$d(date, \'relative\')") + div')
+    await expect(relativeOutput).not.toBeEmpty()
+    // datetime style
+    const datetimeOutput = page.locator('.demo-label:has-text("$d(date, \'datetime\')") + div')
+    await expect(datetimeOutput).toContainText(/\d/)
+  })
+
+  // P2.13 Number formatting styles — verify n() with currency, percent, decimal
+  test('n() number formatting renders currency, percent, and decimal styles', async ({ page }) => {
+    await page.goto('/')
+    // currency: $42.50
+    await expect(page.locator('text=$42.50')).toBeVisible()
+    // percent: 0.856 → 86% (or similar)
+    const percentOutput = page.locator('.demo-label:has-text("$n(0.856, \'percent\')") + div')
+    await expect(percentOutput).toContainText('%')
+    // decimal: 1,234.5
+    const decimalOutput = page.locator('.demo-label:has-text("$n(1234.5, \'decimal\')") + div')
+    await expect(decimalOutput).toContainText('1,234.5')
+  })
 })

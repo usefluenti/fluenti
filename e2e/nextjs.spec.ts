@@ -335,6 +335,45 @@ test.describe('Next.js App Router e2e', () => {
     await page.goto('/')
     await expect(page.getByTestId('welcome')).toContainText('Fluenti へようこそ')
   })
+
+  // ─── P1.8 Hydration mismatch check ───
+
+  test('no hydration mismatch warnings in console', async ({ page }) => {
+    const consoleLogs: string[] = []
+    page.on('console', (msg) => consoleLogs.push(msg.text()))
+
+    await page.goto('/')
+    await page.waitForLoadState('networkidle')
+
+    const hydrationErrors = consoleLogs.filter(
+      (log) =>
+        log.includes('hydration') ||
+        log.includes('Hydration') ||
+        log.includes('mismatch'),
+    )
+    expect(hydrationErrors).toHaveLength(0)
+  })
+
+  test('no hydration mismatch after locale switch and reload', async ({ page }) => {
+    const consoleLogs: string[] = []
+    page.on('console', (msg) => consoleLogs.push(msg.text()))
+
+    await page.goto('/')
+    await page.getByTestId('lang-ja').click()
+    await expect(page.getByTestId('welcome')).toContainText('Fluenti へようこそ')
+
+    // Reload — SSR should match client state because cookie is set
+    await page.reload()
+    await page.waitForLoadState('networkidle')
+
+    const hydrationErrors = consoleLogs.filter(
+      (log) =>
+        log.includes('hydration') ||
+        log.includes('Hydration') ||
+        log.includes('mismatch'),
+    )
+    expect(hydrationErrors).toHaveLength(0)
+  })
 })
 
 test.describe('Next.js — Concurrent Server Actions', () => {
@@ -454,5 +493,63 @@ test.describe('Next.js — Cookie Edge Cases', () => {
     await page.goto('/')
     // Empty cookie should fall back to default English locale
     await expect(page.getByTestId('welcome')).toContainText('Welcome to Fluenti')
+  })
+})
+
+test.describe('Next.js — Concurrent SSR Locale Isolation', () => {
+  test('concurrent SSR requests with different locales are isolated', async ({ browser }) => {
+    const contexts = await Promise.all([
+      browser.newContext(),
+      browser.newContext(),
+      browser.newContext(),
+    ])
+
+    const locales = ['en', 'ja', 'ar']
+    const BASE = 'http://localhost:5190'
+    for (let i = 0; i < contexts.length; i++) {
+      await contexts[i].addCookies([
+        { name: 'locale', value: locales[i], url: BASE },
+      ])
+    }
+
+    const pages = await Promise.all(contexts.map((ctx) => ctx.newPage()))
+
+    // Navigate all pages concurrently
+    await Promise.all(pages.map((p) => p.goto('/')))
+
+    // English page should have English content
+    await expect(pages[0].getByTestId('welcome')).toContainText('Welcome to Fluenti')
+
+    // Japanese page should have Japanese content
+    await expect(pages[1].getByTestId('welcome')).toContainText('Fluenti へようこそ')
+
+    // Arabic page should have Arabic content and RTL direction
+    await expect(pages[2].getByTestId('welcome')).toContainText('مرحباً بكم في Fluenti')
+    expect(await pages[2].locator('html').getAttribute('dir')).toBe('rtl')
+
+    await Promise.all(contexts.map((ctx) => ctx.close()))
+  })
+
+  test('concurrent SSR to different pages with different locales', async ({ browser }) => {
+    const ctxEn = await browser.newContext()
+    const ctxJa = await browser.newContext()
+    await ctxJa.addCookies([
+      { name: 'locale', value: 'ja', url: 'http://localhost:5190' },
+    ])
+
+    const pageEn = await ctxEn.newPage()
+    const pageJa = await ctxJa.newPage()
+
+    // Hit different pages concurrently
+    await Promise.all([
+      pageEn.goto('/about'),
+      pageJa.goto('/rsc'),
+    ])
+
+    await expect(pageEn.getByTestId('about-title')).toContainText('About our project')
+    await expect(pageJa.getByTestId('rsc-title')).toContainText('サーバーレンダリング')
+    await expect(pageJa.getByTestId('rsc-locale')).toContainText('現在のサーバーロケール：ja')
+
+    await Promise.all([ctxEn.close(), ctxJa.close()])
   })
 })

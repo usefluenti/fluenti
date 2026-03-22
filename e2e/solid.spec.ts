@@ -134,4 +134,39 @@ test.describe('Solid Playground', () => {
     const scripts = page.locator('main script')
     await expect(scripts).toHaveCount(0)
   })
+
+  // P1.9 Solid signal race condition — rapid locale switching
+  test('rapid locale switching with signals settles correctly', async ({ page }) => {
+    await page.goto('/')
+    const enBtn = page.locator('button:has-text("English")')
+    const jaBtn = page.locator('button:has-text("日本語")')
+    // 10 rapid switches
+    for (let i = 0; i < 5; i++) {
+      await jaBtn.click()
+      await enBtn.click()
+    }
+    // Verify final state is English
+    await expect(page.locator('h1').first()).toContainText('Welcome to Fluenti')
+  })
+
+  // P2.12 DateTime styles — d() renders multiple format styles
+  test('d() date formatting renders short, long, and relative styles', async ({ page }) => {
+    await page.goto('/')
+    // short style
+    await expect(page.locator('text=d(date, \'short\') >> xpath=.. >> div >> nth=1')).toBeDefined()
+    // Verify the date formatting section has multiple format outputs with digits
+    const dateSection = page.locator('h2:has-text("Feature: d() Date Formatting")').locator('..')
+    const dateOutputs = dateSection.locator('div').filter({ hasText: /\d{1,4}/ })
+    // Should have at least 3 date outputs (default, short, long)
+    expect(await dateOutputs.count()).toBeGreaterThanOrEqual(3)
+  })
+
+  // P2.13 Number formatting styles — n() with currency and percent
+  test('n() number formatting renders currency and percent styles', async ({ page }) => {
+    await page.goto('/')
+    // currency: $42.50 or similar
+    await expect(page.locator('text=$42.50').first()).toBeVisible()
+    // percent: 86% or similar
+    await expect(page.locator('text=86%').first()).toBeVisible()
+  })
 })

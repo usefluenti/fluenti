@@ -225,4 +225,47 @@ test.describe('Dynamic splitting — runtime', () => {
     await page.locator('[data-testid="nav-home"]').click()
     await expect(page.locator('[data-testid="welcome"]')).toContainText('Fluentiへようこそ')
   })
+
+  // P0.5 Network failure for lazy chunk loading
+  test('graceful fallback when locale chunk fails to load', async ({ page }) => {
+    // Intercept locale chunk requests and abort them
+    await page.route('**/*.js', (route) => {
+      const url = route.request().url()
+      // Only block locale chunks (they typically contain locale code in filename)
+      if (url.includes('/ja.') || url.includes('/ja-')) {
+        return route.abort()
+      }
+      return route.continue()
+    })
+
+    await page.goto('/')
+    await expect(page.locator('[data-testid="welcome"]')).toContainText('Welcome to Fluenti')
+
+    // Try switching to ja — should either show error or stay on current locale
+    const jaBtn = page.locator('[data-testid="lang-ja"]')
+    if (await jaBtn.isVisible()) {
+      await jaBtn.click()
+      // Wait a moment for the failed load
+      await page.waitForTimeout(2000)
+      // The app should not crash — verify page is still functional
+      await expect(page.locator('body')).toBeVisible()
+      // Navigation should still work
+      await expect(page.locator('[data-testid="nav-home"]')).toBeVisible()
+    }
+  })
+
+  // P0.6 Rapid locale switching in splitting context
+  test('rapid locale switching settles on final locale with dynamic chunks', async ({ page }) => {
+    await page.goto('/')
+    await page.waitForLoadState('networkidle')
+    const enBtn = page.locator('[data-testid="lang-en"]')
+    const jaBtn = page.locator('[data-testid="lang-ja"]')
+    // Rapidly switch 10 times
+    for (let i = 0; i < 5; i++) {
+      await jaBtn.click()
+      await enBtn.click()
+    }
+    // Should settle on English (last click)
+    await expect(page.locator('[data-testid="welcome"]')).toContainText('Welcome to Fluenti')
+  })
 })
