@@ -2,7 +2,7 @@ import { cache } from 'react'
 import { createFluent, hashMessage as hashSyntheticMessage } from '@fluenti/core'
 import type {
   FluentInstanceExtended,
-  FluentConfigExtended,
+  FluentRuntimeConfigFull,
   Locale,
   Messages,
   DateFormatOptions,
@@ -337,7 +337,7 @@ export function createServerI18n(config: ServerI18nConfig): ServerI18n {
       allMessages[config.fallbackLocale] = await loadLocaleMessages(config.fallbackLocale)
     }
 
-    const fluentConfig: FluentConfigExtended = {
+    const fluentConfig: FluentRuntimeConfigFull = {
       locale,
       messages: allMessages,
     }
@@ -507,7 +507,7 @@ export function createServerI18n(config: ServerI18nConfig): ServerI18n {
       if (fallback) messages[config.fallbackLocale] = fallback
     }
 
-    const fluentConfig: FluentConfigExtended = { locale, messages }
+    const fluentConfig: FluentRuntimeConfigFull = { locale, messages }
     if (config.fallbackLocale !== undefined) fluentConfig.fallbackLocale = config.fallbackLocale
     if (config.fallbackChain !== undefined) fluentConfig.fallbackChain = config.fallbackChain
     if (config.dateFormats !== undefined) fluentConfig.dateFormats = config.dateFormats

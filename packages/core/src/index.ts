@@ -5,10 +5,10 @@ export type {
   CompiledMessage,
   Messages,
   AllMessages,
-  FluentConfig,
+  FluentRuntimeConfig,
   FluentInstance,
   FluentInstanceExtended,
-  FluentConfigExtended,
+  FluentRuntimeConfigFull,
   CustomFormatter,
   ASTNode,
   TextNode,
@@ -17,7 +17,7 @@ export type {
   SelectNode,
   FunctionNode,
   ExtractedMessage,
-  FluentiConfig,
+  FluentiBuildConfig,
   LocaleObject,
   LocaleDefinition,
   DetectLocaleOptions,
@@ -30,6 +30,10 @@ export type {
   CompileTimeT,
   TypedCompileTimeT,
   FluentiTypeConfig,
+  // Deprecated aliases (backward compatibility)
+  FluentConfig,
+  FluentConfigExtended,
+  FluentiConfig,
 } from './types'
 
 export { resolveLocaleCodes } from './types'
@@ -60,7 +64,7 @@ export {
 export type { PluralCategory } from './icu-builders'
 
 import type {
-  FluentConfigExtended,
+  FluentRuntimeConfigFull,
   FluentInstanceExtended,
   LocalizedString,
   Locale,
@@ -93,7 +97,7 @@ import { validateLocale } from './locale'
  * i18n.t('greeting', { name: 'World' }) // 'Hello World!'
  * ```
  */
-export function createFluent(config: FluentConfigExtended): FluentInstanceExtended {
+export function createFluent(config: FluentRuntimeConfigFull): FluentInstanceExtended {
   validateLocale(config.locale, 'createFluent')
   let currentLocale: Locale = config.locale
   const catalog = new Catalog()

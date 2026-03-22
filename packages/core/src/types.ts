@@ -72,7 +72,7 @@ export type CompiledMessage = string | ((values?: Record<string, unknown>) => st
 export type Messages = Record<string, CompiledMessage>
 export type AllMessages = Record<Locale, Messages>
 
-export interface FluentConfig {
+export interface FluentRuntimeConfig {
   locale: Locale
   fallbackLocale?: Locale
   messages: AllMessages
@@ -109,7 +109,7 @@ export interface FluentInstance {
   getLocales(): Locale[]
 }
 
-export type CreateFluent = (config: FluentConfig) => FluentInstance
+export type CreateFluent = (config: FluentRuntimeConfig) => FluentInstance
 
 // ---- ICU Parser AST ----
 
@@ -183,7 +183,7 @@ export interface ExtractedMessage {
   origin: { file: string; line: number; column?: number }
 }
 
-export interface FluentiConfig {
+export interface FluentiBuildConfig {
   /** Path to parent config to inherit from (relative to this config file's directory) */
   extends?: string
   sourceLocale: Locale
@@ -312,7 +312,7 @@ export type CustomFormatter = (value: unknown, style: string, locale: Locale) =>
 
 // ---- Extended FluentConfig ----
 
-export interface FluentConfigExtended extends FluentConfig {
+export interface FluentRuntimeConfigFull extends FluentRuntimeConfig {
   namespaceMapping?: NamespaceMapping
   dateFormats?: DateFormatOptions
   numberFormats?: NumberFormatOptions
@@ -361,3 +361,12 @@ export interface FluentInstanceExtended extends FluentInstance {
   /** Format an ICU message string directly (no catalog lookup) */
   format(message: string, values?: Record<string, unknown>): FluentiTypeConfig['localizedString']
 }
+
+// ---- Deprecated Aliases (backward compatibility) ----
+
+/** @deprecated Use FluentRuntimeConfig instead */
+export type FluentConfig = FluentRuntimeConfig
+/** @deprecated Use FluentRuntimeConfigFull instead */
+export type FluentConfigExtended = FluentRuntimeConfigFull
+/** @deprecated Use FluentiBuildConfig instead */
+export type FluentiConfig = FluentiBuildConfig

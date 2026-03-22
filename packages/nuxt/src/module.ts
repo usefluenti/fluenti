@@ -2,7 +2,7 @@ import { defineNuxtModule, addPlugin, addImports, addComponent, addRouteMiddlewa
 import type { FluentNuxtOptions } from './types'
 import { resolveLocaleProperties, resolveDomainConfigs } from './types'
 import { resolveLocaleCodes } from '@fluenti/core'
-import type { FluentiConfig } from '@fluenti/core'
+import type { FluentiBuildConfig } from '@fluenti/core'
 import fluentiVue from '@fluenti/vue/vite-plugin'
 import { extendPages } from './runtime/page-extend'
 import { validateISRConfig } from './isr-validation'
@@ -26,25 +26,25 @@ export const MODULE_NAME = '@fluenti/nuxt'
 export const CONFIG_KEY = 'fluenti'
 
 /**
- * Resolve the FluentiConfig from the module options.
+ * Resolve the FluentiBuildConfig from the module options.
  */
-function resolveFluentiConfig(configOption: string | FluentiConfig | undefined, rootDir: string): FluentiConfig {
+function resolveFluentiBuildConfig(configOption: string | FluentiBuildConfig | undefined, rootDir: string): FluentiBuildConfig {
   if (typeof configOption === 'object') {
     // Inline config — merge with defaults
     try {
       const { DEFAULT_FLUENTI_CONFIG } = require('@fluenti/core/config') as {
-        DEFAULT_FLUENTI_CONFIG: FluentiConfig
+        DEFAULT_FLUENTI_CONFIG: FluentiBuildConfig
       }
       return { ...DEFAULT_FLUENTI_CONFIG, ...configOption }
     } catch {
-      return configOption as FluentiConfig
+      return configOption as FluentiBuildConfig
     }
   }
 
   // string → specified path; undefined → auto-discover
   try {
     const { loadConfigSync } = require('@fluenti/core/config') as {
-      loadConfigSync: (configPath?: string, cwd?: string) => FluentiConfig
+      loadConfigSync: (configPath?: string, cwd?: string) => FluentiBuildConfig
     }
     return loadConfigSync(
       typeof configOption === 'string' ? configOption : undefined,
@@ -75,9 +75,9 @@ export default defineNuxtModule<FluentNuxtOptions>({
   setup(options, nuxt) {
     const { resolve } = createResolver(import.meta.url)
 
-    // --- Resolve FluentiConfig from options.config, then overlay module-level options ---
+    // --- Resolve FluentiBuildConfig from options.config, then overlay module-level options ---
     const rootDir = nuxt.options.rootDir ?? process.cwd()
-    const fluentiConfig = resolveFluentiConfig(options.config, rootDir)
+    const fluentiConfig = resolveFluentiBuildConfig(options.config, rootDir)
 
     // Module-level options (e.g. nuxt.config.ts `fluenti.locales`) override the
     // resolved fluenti.config.ts values — this ensures Nuxt-specific config takes

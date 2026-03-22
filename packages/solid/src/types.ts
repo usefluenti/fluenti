@@ -1,6 +1,6 @@
 import type { Accessor } from 'solid-js'
 import type {
-  FluentConfig,
+  FluentRuntimeConfig,
   Locale,
   LocalizedString,
   Messages,
@@ -16,7 +16,7 @@ export type ChunkLoader = (
 ) => Promise<Record<string, CompiledMessage> | { default: Record<string, CompiledMessage> }>
 
 /** Extended config with lazy locale loading support */
-export interface I18nConfig extends FluentConfig {
+export interface I18nConfig extends FluentRuntimeConfig {
   /** Async chunk loader for lazy locale loading */
   chunkLoader?: ChunkLoader
   /** Enable lazy locale loading through chunkLoader */

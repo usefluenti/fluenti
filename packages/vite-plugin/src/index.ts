@@ -1,7 +1,7 @@
 import type { Plugin } from 'vite'
 import { createFilter } from 'vite'
 import type { FluentiCoreOptions, RuntimeGenerator } from './types'
-import type { FluentiConfig } from '@fluenti/core'
+import type { FluentiBuildConfig } from '@fluenti/core'
 import { resolveLocaleCodes } from '@fluenti/core'
 import { setResolvedMode, isBuildMode, getPluginEnvironment } from './mode-detect'
 import { resolve } from 'node:path'
@@ -20,22 +20,22 @@ export { setResolvedMode, isBuildMode, getPluginEnvironment } from './mode-detec
 
 const VIRTUAL_PREFIX = 'virtual:fluenti/messages/'
 const RESOLVED_PREFIX = '\0virtual:fluenti/messages/'
-type InternalSplitStrategy = FluentiConfig['splitting'] | 'per-route'
+type InternalSplitStrategy = FluentiBuildConfig['splitting'] | 'per-route'
 
 /**
- * Resolve a config option (string path, inline object, or undefined) into a full FluentiConfig.
+ * Resolve a config option (string path, inline object, or undefined) into a full FluentiBuildConfig.
  */
-function resolvePluginConfig(configOption?: string | FluentiConfig, cwd?: string): FluentiConfig {
+function resolvePluginConfig(configOption?: string | FluentiBuildConfig, cwd?: string): FluentiBuildConfig {
   if (typeof configOption === 'object') {
     // Inline config — merge with defaults
     const { DEFAULT_FLUENTI_CONFIG } = _require('@fluenti/core/config') as {
-      DEFAULT_FLUENTI_CONFIG: FluentiConfig
+      DEFAULT_FLUENTI_CONFIG: FluentiBuildConfig
     }
     return { ...DEFAULT_FLUENTI_CONFIG, ...configOption }
   }
   // string → specified path; undefined → auto-discover
   const { loadConfigSync: loadSync } = _require('@fluenti/core/config') as {
-    loadConfigSync: (configPath?: string, cwd?: string) => FluentiConfig
+    loadConfigSync: (configPath?: string, cwd?: string) => FluentiBuildConfig
   }
   return loadSync(
     typeof configOption === 'string' ? configOption : undefined,
@@ -54,10 +54,10 @@ export function createFluentiPlugins(
   frameworkPlugins: Plugin[],
   runtimeGenerator?: RuntimeGenerator,
 ): Plugin[] {
-  // Resolve the full FluentiConfig from the config option
-  let fluentiConfig: FluentiConfig | undefined
+  // Resolve the full FluentiBuildConfig from the config option
+  let fluentiConfig: FluentiBuildConfig | undefined
 
-  function getConfig(cwd?: string): FluentiConfig {
+  function getConfig(cwd?: string): FluentiBuildConfig {
     if (!fluentiConfig) {
       fluentiConfig = resolvePluginConfig(options.config, cwd)
     }

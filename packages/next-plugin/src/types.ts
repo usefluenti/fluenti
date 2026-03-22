@@ -1,4 +1,4 @@
-import type { FluentiConfig } from '@fluenti/core'
+import type { FluentiBuildConfig } from '@fluenti/core'
 
 /**
  * Configuration for `withFluenti()`.
@@ -8,7 +8,7 @@ import type { FluentiConfig } from '@fluenti/core'
  */
 export interface WithFluentConfig {
   /** fluenti.config.ts path or inline config */
-  config?: string | FluentiConfig
+  config?: string | FluentiBuildConfig
 
   // ---- Next.js-specific ----
 
@@ -45,8 +45,8 @@ export interface WithFluentConfig {
  * Resolved config after merging fluenti.config.ts + withFluenti() overrides.
  */
 export interface ResolvedFluentConfig {
-  /** The fully resolved FluentiConfig */
-  fluentiConfig: FluentiConfig
+  /** The fully resolved FluentiBuildConfig */
+  fluentiConfig: FluentiBuildConfig
   serverModule: string | null
   serverModuleOutDir: string
   resolveLocale?: string
