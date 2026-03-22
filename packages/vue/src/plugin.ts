@@ -1,5 +1,5 @@
 import { type App, type InjectionKey, type Ref, ref, shallowReactive } from 'vue'
-import type { AllMessages, Locale, LocalizedString, Messages, CompiledMessage, MessageDescriptor } from '@fluenti/core'
+import type { AllMessages, Locale, LocalizedString, Messages, CompiledMessage, MessageDescriptor, ChunkLoader, SplitRuntimeModule } from '@fluenti/core'
 import { interpolate, formatDate, formatNumber, buildICUMessage, resolveDescriptorId } from '@fluenti/core'
 import { Trans } from './components/Trans'
 import { Plural } from './components/Plural'
@@ -10,16 +10,6 @@ import { NumberFormat } from './components/NumberFormat'
 /** Escape HTML special characters to prevent XSS. @internal */
 function escapeHtml(str: string): string {
   return str.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-}
-
-/** Compiled message chunk loader for lazy locale loading */
-export type ChunkLoader = (
-  locale: string,
-) => Promise<Record<string, CompiledMessage> | { default: Record<string, CompiledMessage> }>
-
-interface SplitRuntimeModule {
-  __switchLocale?: (locale: string) => Promise<void>
-  __preloadLocale?: (locale: string) => Promise<void>
 }
 
 const SPLIT_RUNTIME_KEY = Symbol.for('fluenti.runtime.vue.v1')
@@ -54,9 +44,9 @@ export interface FluentVueContext {
   /** Get all locales that have loaded messages */
   getLocales(): Locale[]
   /** Format a date value according to locale */
-  d(value: Date | number, style?: string): LocalizedString
+  d(value: Date | number, style?: string, locale?: string): LocalizedString
   /** Format a number according to locale */
-  n(value: number, style?: string): LocalizedString
+  n(value: number, style?: string, locale?: string): LocalizedString
   /** Format an ICU message string directly (no catalog lookup) */
   format(message: string, values?: Record<string, unknown>): LocalizedString
   /** Whether a locale chunk is currently being loaded */
@@ -64,7 +54,7 @@ export interface FluentVueContext {
   /** Set of locales whose messages have been loaded */
   loadedLocales: Readonly<Ref<ReadonlySet<string>>>
   /** Preload a locale in the background without switching to it */
-  preloadLocale(locale: string): void
+  preloadLocale(locale: string): Promise<void>
   /** Check if a translation key exists in the catalog */
   te(key: string, locale?: string): boolean
   /** Get the raw compiled message without interpolation */
@@ -83,9 +73,17 @@ export interface FluentVueOptions {
   dateFormats?: Record<string, Intl.DateTimeFormatOptions | 'relative'>
   numberFormats?: Record<string, Intl.NumberFormatOptions | ((locale: string) => Intl.NumberFormatOptions)>
   fallbackChain?: Record<string, string[]>
-  /** Async chunk loader for lazy locale loading */
+  /**
+   * Async message loader for lazy locale loading.
+   * Preferred over `chunkLoader` (which is deprecated).
+   */
+  loadMessages?: ChunkLoader
+  /**
+   * Async chunk loader for lazy locale loading.
+   * @deprecated Use `loadMessages` instead.
+   */
   chunkLoader?: ChunkLoader
-  /** Enable lazy locale loading through chunkLoader */
+  /** Enable lazy locale loading through loadMessages/chunkLoader */
   lazyLocaleLoading?: boolean
   /**
    * Prefix for globally registered components (Trans, Plural, Select).
@@ -150,7 +148,8 @@ function getModifierAttr(modifiers: Partial<Record<string, boolean>>): string | 
  * Each invocation creates entirely fresh state — no module-level singletons —
  * so it is safe to call once per SSR request.
  */
-export function createFluentVue(options: FluentVueOptions): FluentVuePlugin {
+export function createFluenti(options: FluentVueOptions): FluentVuePlugin {
+  const chunkLoaderFn = options.loadMessages ?? options.chunkLoader
   const lazyLocaleLoading = options.lazyLocaleLoading
     ?? (options as FluentVueOptions & { splitting?: boolean }).splitting
     ?? false
@@ -247,7 +246,7 @@ export function createFluentVue(options: FluentVueOptions): FluentVuePlugin {
   }
 
   async function setLocale(newLocale: Locale): Promise<void> {
-    if (!lazyLocaleLoading || !options.chunkLoader) {
+    if (!lazyLocaleLoading || !chunkLoaderFn) {
       locale.value = newLocale
       return
     }
@@ -266,7 +265,7 @@ export function createFluentVue(options: FluentVueOptions): FluentVuePlugin {
     // Async load
     isLoading.value = true
     try {
-      const messages = resolveChunkMessages(await options.chunkLoader(newLocale))
+      const messages = resolveChunkMessages(await chunkLoaderFn(newLocale))
       // Intentional mutation: Vue's shallowReactive API requires in-place property assignment for reactivity
       catalogs[newLocale] = { ...catalogs[newLocale], ...messages }
       loadedLocalesSet.add(newLocale)
@@ -287,34 +286,34 @@ export function createFluentVue(options: FluentVueOptions): FluentVuePlugin {
     loadedLocales.value = new Set(loadedLocalesSet)
   }
 
-  function preloadLocale(loc: string): void {
-    if (!lazyLocaleLoading || loadedLocalesSet.has(loc) || !options.chunkLoader) return
+  async function preloadLocale(loc: string): Promise<void> {
+    if (!lazyLocaleLoading || loadedLocalesSet.has(loc) || !chunkLoaderFn) return
     const splitRuntime = getSplitRuntimeModule()
-    options.chunkLoader(loc).then(async (loaded) => {
-      const messages = resolveChunkMessages(loaded)
+    try {
+      const loaded = resolveChunkMessages(await chunkLoaderFn(loc))
       // Intentional mutation: Vue's shallowReactive API requires in-place property assignment for reactivity
-      catalogs[loc] = { ...catalogs[loc], ...messages }
+      catalogs[loc] = { ...catalogs[loc], ...loaded }
       loadedLocalesSet.add(loc)
       loadedLocales.value = new Set(loadedLocalesSet)
       if (splitRuntime?.__preloadLocale) {
         await splitRuntime.__preloadLocale(loc)
       }
-    }).catch((e: unknown) => {
+    } catch (e: unknown) {
       console.warn('[fluenti] preload failed:', loc, e)
-    })
+    }
   }
 
   function getLocales(): Locale[] {
     return Object.keys(catalogs)
   }
 
-  function d(value: Date | number, style?: string): LocalizedString {
-    const currentLocale = locale.value
+  function d(value: Date | number, style?: string, loc?: string): LocalizedString {
+    const currentLocale = loc ?? locale.value
     return formatDate(value, currentLocale, style, options.dateFormats) as LocalizedString
   }
 
-  function n(value: number, style?: string): LocalizedString {
-    const currentLocale = locale.value
+  function n(value: number, style?: string, loc?: string): LocalizedString {
+    const currentLocale = loc ?? locale.value
     return formatNumber(value, currentLocale, style, options.numberFormats) as LocalizedString
   }
 
@@ -457,3 +456,8 @@ export function createFluentVue(options: FluentVueOptions): FluentVuePlugin {
     global: context,
   }
 }
+
+/** @deprecated Use {@link createFluenti} instead */
+export const createFluentiVue = createFluenti
+/** @deprecated Use {@link createFluenti} instead */
+export const createFluentVue = createFluenti

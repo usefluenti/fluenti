@@ -1,7 +1,7 @@
-import { createFluent } from '@fluenti/core'
+import { createFluentiRuntime } from '@fluenti/core'
 import type {
   FluentInstanceExtended,
-  FluentConfigExtended,
+  FluentRuntimeConfigFull,
   Locale,
   Messages,
   DateFormatOptions,
@@ -143,7 +143,7 @@ export function createServerI18n(config: ServerI18nConfig): ServerI18n {
       allMessages[config.fallbackLocale] = await loadLocaleMessages(config.fallbackLocale)
     }
 
-    const fluentConfig: FluentConfigExtended = {
+    const fluentConfig: FluentRuntimeConfigFull = {
       locale,
       messages: allMessages,
     }
@@ -153,7 +153,7 @@ export function createServerI18n(config: ServerI18nConfig): ServerI18n {
     if (config.numberFormats !== undefined) fluentConfig.numberFormats = config.numberFormats
     if (config.missing !== undefined) fluentConfig.missing = config.missing
 
-    cachedInstance = createFluent(fluentConfig)
+    cachedInstance = createFluentiRuntime(fluentConfig)
     return cachedInstance
   }
 

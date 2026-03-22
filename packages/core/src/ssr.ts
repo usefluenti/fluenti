@@ -1,4 +1,4 @@
-import type { DetectLocaleOptions, Locale } from './types'
+import type { DetectLocaleOptions, Locale, SSRLocaleScriptOptions, HydratedLocaleOptions } from './types'
 import { negotiateLocale, validateLocale } from './locale'
 
 /**
@@ -100,20 +100,42 @@ function parseAcceptLanguage(header: string): Locale[] {
     .map(entry => entry.locale)
 }
 
+const DEFAULT_SSR_KEY = '__FLUENTI_LOCALE__'
+
+/** Validate that a custom key is a safe JS identifier */
+function validateSSRKey(key: string): void {
+  if (!/^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(key)) {
+    throw new Error(`Invalid SSR key "${key}": must be a valid JavaScript identifier`)
+  }
+}
+
 /**
  * Generate a `<script>` tag that injects the locale into the SSR HTML.
  *
  * Special characters are escaped to prevent XSS attacks.
  *
+ * @param locale - BCP 47 locale code
+ * @param options - Optional configuration (e.g. custom window variable key for multi-instance)
+ *
  * @example
  * getSSRLocaleScript('zh-CN')
  * // -> '<script>window.__FLUENTI_LOCALE__="zh-CN"</script>'
+ *
+ * @example
+ * // Multi-instance / micro-frontend
+ * getSSRLocaleScript('ja', { key: '__MY_APP_LOCALE__' })
+ * // -> '<script>window.__MY_APP_LOCALE__="ja"</script>'
  */
-export function getSSRLocaleScript(locale: Locale): string {
+export function getSSRLocaleScript(locale: Locale, options?: SSRLocaleScriptOptions): string {
   if (locale.length > 255) {
     throw new Error('Locale exceeds maximum length of 255')
   }
   validateLocale(locale, 'getSSRLocaleScript')
+
+  const key = options?.key ?? DEFAULT_SSR_KEY
+  if (key !== DEFAULT_SSR_KEY) {
+    validateSSRKey(key)
+  }
 
   const escaped = locale
     .replace(/\\/g, '\\\\')
@@ -122,20 +144,31 @@ export function getSSRLocaleScript(locale: Locale): string {
     .replace(/>/g, '\\u003e')
     .replace(/&/g, '\\u0026')
     .replace(/'/g, '\\u0027')
-  return `<script>window.__FLUENTI_LOCALE__="${escaped}"</script>`
+  return `<script>window.${key}="${escaped}"</script>`
 }
 
 /**
- * Read the SSR-injected locale from `window.__FLUENTI_LOCALE__`.
+ * Read the SSR-injected locale from the window variable.
  *
  * Returns the locale if running in a browser and the variable exists,
  * otherwise returns the fallback (defaults to `'en'`).
+ *
+ * @param fallback - Fallback locale if the window variable is not set (default: `'en'`)
+ * @param options - Optional configuration (e.g. custom window variable key for multi-instance)
+ *
+ * @example
+ * getHydratedLocale('en')
+ *
+ * @example
+ * // Multi-instance — must match the key used in getSSRLocaleScript
+ * getHydratedLocale('en', { key: '__MY_APP_LOCALE__' })
  */
-export function getHydratedLocale(fallback?: Locale): Locale {
+export function getHydratedLocale(fallback?: Locale, options?: HydratedLocaleOptions): Locale {
+  const key = options?.key ?? DEFAULT_SSR_KEY
   if (typeof window !== 'undefined') {
     const win = window as unknown as Record<string, unknown>
-    if (typeof win['__FLUENTI_LOCALE__'] === 'string') {
-      return win['__FLUENTI_LOCALE__']
+    if (typeof win[key] === 'string') {
+      return win[key] as string
     }
   }
   return fallback ?? 'en'

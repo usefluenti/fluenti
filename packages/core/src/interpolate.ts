@@ -1,57 +1,38 @@
 import type { CustomFormatter, Locale } from './types'
 import { parse } from './parser'
 import { compile } from './compile'
+import { LRUCache } from './lru'
 
-const LRU_MAX = 500
-
-/**
- * Simple LRU cache backed by a Map.
- * Relies on Map's insertion-order iteration for eviction.
- */
-class LRUCache<K, V> {
-  private readonly cache = new Map<K, V>()
-  private readonly max: number
-
-  constructor(max: number) {
-    this.max = max
-  }
-
-  get(key: K): V | undefined {
-    const value = this.cache.get(key)
-    if (value !== undefined) {
-      // Move to end (most recently used)
-      this.cache.delete(key)
-      this.cache.set(key, value)
-    }
-    return value
-  }
-
-  set(key: K, value: V): void {
-    if (this.cache.has(key)) {
-      this.cache.delete(key)
-    } else if (this.cache.size >= this.max) {
-      // Evict least recently used (first entry)
-      const firstKey = this.cache.keys().next().value as K
-      this.cache.delete(firstKey)
-    }
-    this.cache.set(key, value)
-  }
-
-  get size(): number {
-    return this.cache.size
-  }
-
-  clear(): void {
-    this.cache.clear()
-  }
-}
+/** Default LRU cache size for compiled messages. */
+export const DEFAULT_MESSAGE_CACHE_SIZE = 500
 
 type CompiledFn = string | ((values?: Record<string, unknown>) => string)
 
-const compiledCache = new LRUCache<string, CompiledFn>(LRU_MAX)
+let compiledCache = new LRUCache<string, CompiledFn>(DEFAULT_MESSAGE_CACHE_SIZE)
+
+/**
+ * Clear the compiled-message LRU cache.
+ *
+ * Useful for long-running Node.js servers to reclaim memory.
+ */
+export function clearInterpolationCache(): void {
+  compiledCache.clear()
+}
+
+/**
+ * Resize the compiled-message LRU cache.
+ * Clears existing entries when the size changes.
+ *
+ * @param maxSize - New maximum number of cached compiled messages
+ */
+export function setMessageCacheSize(maxSize: number): void {
+  compiledCache = new LRUCache<string, CompiledFn>(maxSize)
+}
 
 /**
  * Parse, compile, and execute an ICU message with the given values and locale.
+ *
+ * @internal Low-level API — most users should use `createFluent()` instead.
  *
  * Compiled messages are cached in an LRU cache (500 entries max) keyed
  * by `locale:message` for fast repeated lookups.

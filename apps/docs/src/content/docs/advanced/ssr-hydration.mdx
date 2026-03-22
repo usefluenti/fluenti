@@ -62,6 +62,10 @@ const script = getSSRLocaleScript(locale)
 
 // Client: read it back
 const locale = getHydratedLocale('en')
+
+// Multi-instance / micro-frontend: use a custom window variable
+const script2 = getSSRLocaleScript(locale, { key: '__MY_APP_LOCALE__' })
+const locale2 = getHydratedLocale('en', { key: '__MY_APP_LOCALE__' })
 ```
 
 ## Framework-Specific SSR
@@ -83,7 +87,7 @@ See [Nuxt SSR](/frameworks/nuxt/ssr-ssg-isr/).
 ```typescript
 // server
 import { detectLocale, getSSRLocaleScript } from '@fluenti/core'
-import { createFluentVue } from '@fluenti/vue'
+import { createFluenti } from '@fluenti/vue'
 
 const locale = detectLocale({
   cookie: getCookie(event, 'lang'),
@@ -91,7 +95,7 @@ const locale = detectLocale({
   available: ['en', 'zh-CN', 'ja'],
   fallback: 'en',
 })
-const i18n = createFluentVue({ locale, messages: allMessages })
+const i18n = createFluenti({ locale, messages: allMessages })
 app.use(i18n)
 
 const script = getSSRLocaleScript(locale)
@@ -102,7 +106,7 @@ const script = getSSRLocaleScript(locale)
 import { getHydratedLocale } from '@fluenti/core'
 
 const locale = getHydratedLocale('en')
-const i18n = createFluentVue({ locale, messages: allMessages })
+const i18n = createFluenti({ locale, messages: allMessages })
 app.use(i18n)
 ```
 
@@ -127,7 +131,7 @@ See [SolidJS Manual SSR](/frameworks/solid/ssr/).
 | Utility | Description |
 |---------|-------------|
 | `detectLocale(options)` | Detect locale from cookie, query, path, or Accept-Language header |
-| `getSSRLocaleScript(locale)` | Generate a `<script>` tag to inject locale into HTML (XSS-safe) |
-| `getHydratedLocale(fallback)` | Read the injected locale on the client |
+| `getSSRLocaleScript(locale, options?)` | Generate a `<script>` tag to inject locale into HTML (XSS-safe). Pass `{ key }` for custom variable |
+| `getHydratedLocale(fallback?, options?)` | Read the injected locale on the client. Pass `{ key }` to match custom variable |
 | `getDirection(locale)` | Return `'rtl'` or `'ltr'` |
 | `isRTL(locale)` | Check if a locale is right-to-left |

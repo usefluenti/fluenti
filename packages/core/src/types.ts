@@ -72,14 +72,27 @@ export type CompiledMessage = string | ((values?: Record<string, unknown>) => st
 export type Messages = Record<string, CompiledMessage>
 export type AllMessages = Record<Locale, Messages>
 
-export interface FluentConfig {
+// ---- Shared Runtime Types ----
+
+/** Compiled message chunk loader for lazy locale loading */
+export type ChunkLoader = (
+  locale: string,
+) => Promise<Record<string, CompiledMessage> | { default: Record<string, CompiledMessage> }>
+
+/** Runtime module injected by the Vite plugin for locale switching */
+export interface SplitRuntimeModule {
+  __switchLocale?: (locale: string) => Promise<void>
+  __preloadLocale?: (locale: string) => Promise<void>
+}
+
+export interface FluentiRuntimeConfig {
   locale: Locale
   fallbackLocale?: Locale
   messages: AllMessages
   missing?: (locale: Locale, id: string) => string | undefined
 }
 
-export interface FluentInstance {
+export interface FluentiInstance {
   locale: Locale
   /**
    * Translate by id or descriptor.
@@ -109,22 +122,26 @@ export interface FluentInstance {
   getLocales(): Locale[]
 }
 
-export type CreateFluent = (config: FluentConfig) => FluentInstance
+export type CreateFluent = (config: FluentiRuntimeConfig) => FluentiInstance
 
 // ---- ICU Parser AST ----
 
+/** @internal Only needed for custom parser/compiler work. */
 export type ASTNode = TextNode | VariableNode | PluralNode | SelectNode | FunctionNode
 
+/** @internal Only needed for custom parser/compiler work. */
 export interface TextNode {
   type: 'text'
   value: string
 }
 
+/** @internal Only needed for custom parser/compiler work. */
 export interface VariableNode {
   type: 'variable'
   name: string
 }
 
+/** @internal Only needed for custom parser/compiler work. */
 export interface PluralNode {
   type: 'plural'
   variable: string
@@ -133,12 +150,14 @@ export interface PluralNode {
   options: Record<string, ASTNode[]>
 }
 
+/** @internal Only needed for custom parser/compiler work. */
 export interface SelectNode {
   type: 'select'
   variable: string
   options: Record<string, ASTNode[]>
 }
 
+/** @internal Only needed for custom parser/compiler work. */
 export interface FunctionNode {
   type: 'function'
   variable: string
@@ -183,7 +202,7 @@ export interface ExtractedMessage {
   origin: { file: string; line: number; column?: number }
 }
 
-export interface FluentiConfig {
+export interface FluentiBuildConfig {
   /** Path to parent config to inherit from (relative to this config file's directory) */
   extends?: string
   sourceLocale: Locale
@@ -247,8 +266,17 @@ export interface DetectLocaleOptions {
 }
 
 export type DetectLocale = (options: DetectLocaleOptions) => Locale
-export type GetSSRLocaleScript = (locale: Locale) => string
-export type GetHydratedLocale = (fallback?: Locale) => Locale
+export interface SSRLocaleScriptOptions {
+  /** Custom window variable name (default: `'__FLUENTI_LOCALE__'`). Useful for micro-frontend / multi-instance scenarios. */
+  key?: string
+}
+export type GetSSRLocaleScript = (locale: Locale, options?: SSRLocaleScriptOptions) => string
+
+export interface HydratedLocaleOptions {
+  /** Custom window variable name (default: `'__FLUENTI_LOCALE__'`). Must match the key used in `getSSRLocaleScript`. */
+  key?: string
+}
+export type GetHydratedLocale = (fallback?: Locale, options?: HydratedLocaleOptions) => Locale
 
 // ---- Lazy Messages ----
 
@@ -298,8 +326,8 @@ export interface NumberFormatOptions {
     | ((locale: Locale) => Intl.NumberFormatOptions)
 }
 
-export type FormatDateFn = (value: Date | number, style?: string) => FluentiTypeConfig['localizedString']
-export type FormatNumberFn = (value: number, style?: string) => FluentiTypeConfig['localizedString']
+export type FormatDateFn = (value: Date | number, style?: string, locale?: Locale) => FluentiTypeConfig['localizedString']
+export type FormatNumberFn = (value: number, style?: string, locale?: Locale) => FluentiTypeConfig['localizedString']
 
 // ---- Custom Formatter ----
 
@@ -310,9 +338,9 @@ export type FormatNumberFn = (value: number, style?: string) => FluentiTypeConfi
  */
 export type CustomFormatter = (value: unknown, style: string, locale: Locale) => string
 
-// ---- Extended FluentConfig ----
+// ---- Extended Runtime Config ----
 
-export interface FluentConfigExtended extends FluentConfig {
+export interface FluentiRuntimeConfigFull extends FluentiRuntimeConfig {
   namespaceMapping?: NamespaceMapping
   dateFormats?: DateFormatOptions
   numberFormats?: NumberFormatOptions
@@ -355,9 +383,27 @@ export interface FluentConfigExtended extends FluentConfig {
 
 // ---- Extended FluentInstance ----
 
-export interface FluentInstanceExtended extends FluentInstance {
+export interface FluentiInstanceExtended extends FluentiInstance {
   d: FormatDateFn
   n: FormatNumberFn
   /** Format an ICU message string directly (no catalog lookup) */
   format(message: string, values?: Record<string, unknown>): FluentiTypeConfig['localizedString']
 }
+
+// ---- Deprecated Aliases (backward compatibility) ----
+// Scheduled for removal in next major version.
+
+/** @deprecated Use {@link FluentiRuntimeConfig} instead */
+export type FluentRuntimeConfig = FluentiRuntimeConfig
+/** @deprecated Use {@link FluentiRuntimeConfigFull} instead */
+export type FluentRuntimeConfigFull = FluentiRuntimeConfigFull
+/** @deprecated Use {@link FluentiInstance} instead */
+export type FluentInstance = FluentiInstance
+/** @deprecated Use {@link FluentiInstanceExtended} instead */
+export type FluentInstanceExtended = FluentiInstanceExtended
+/** @deprecated Use {@link FluentiRuntimeConfig} instead */
+export type FluentConfig = FluentiRuntimeConfig
+/** @deprecated Use {@link FluentiRuntimeConfigFull} instead */
+export type FluentConfigExtended = FluentiRuntimeConfigFull
+/** @deprecated Use {@link FluentiBuildConfig} instead */
+export type FluentiConfig = FluentiBuildConfig

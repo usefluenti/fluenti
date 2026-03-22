@@ -1,11 +1,11 @@
 import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { h } from 'vue'
-import { createFluentVue } from '../src/plugin'
+import { createFluenti } from '../src/plugin'
 import { Select } from '../src/components/Select'
 
 function createPlugin() {
-  return createFluentVue({
+  return createFluenti({
     locale: 'en',
     messages: { en: {} },
   })
@@ -158,7 +158,7 @@ describe('Select component', () => {
     })
 
     it('uses catalog translation for string options', () => {
-      const plugin = createFluentVue({
+      const plugin = createFluenti({
         locale: 'ja',
         messages: {
           ja: {
@@ -227,7 +227,7 @@ describe('Select component', () => {
       expect(wrapper.element.tagName).toBe('DIV')
     })
 
-    it('defaults to span', () => {
+    it('defaults to fragment (no wrapper)', () => {
       const plugin = createPlugin()
       const wrapper = mount(Select, {
         props: {
@@ -237,7 +237,9 @@ describe('Select component', () => {
         global: { plugins: [plugin] },
       })
 
-      expect(wrapper.element.tagName).toBe('SPAN')
+      // No wrapper element — renders as fragment
+      expect(wrapper.find('span').exists()).toBe(false)
+      expect(wrapper.text()).toBe('text')
     })
   })
 
@@ -256,7 +258,8 @@ describe('Select component', () => {
         global: { plugins: [plugin] },
       })
 
-      expect(wrapper.html()).toContain('<strong>He</strong> liked this')
+      expect(wrapper.find('strong').text()).toBe('He')
+      expect(wrapper.text()).toContain('liked this')
     })
 
     it('falls back to #other slot when value does not match', () => {
@@ -272,7 +275,8 @@ describe('Select component', () => {
         global: { plugins: [plugin] },
       })
 
-      expect(wrapper.html()).toContain('<em>They</em> liked this')
+      expect(wrapper.find('em').text()).toBe('They')
+      expect(wrapper.text()).toContain('liked this')
     })
 
     it('passes scoped slot props with value', () => {
@@ -329,7 +333,7 @@ describe('Select component', () => {
     })
 
     it('translates rich slot content without the build plugin', () => {
-      const plugin = createFluentVue({
+      const plugin = createFluenti({
         locale: 'ja',
         messages: {
           ja: {

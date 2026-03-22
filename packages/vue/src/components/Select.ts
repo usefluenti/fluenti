@@ -2,7 +2,8 @@ import { defineComponent, h } from 'vue'
 import type { ExtractPropTypes, PropType, SetupContext, VNodeChild } from 'vue'
 import { hashMessage } from '@fluenti/core'
 import { useI18n } from '../use-i18n'
-import { buildICUSelectMessage, normalizeSelectForms, reconstruct, serializeRichForms } from './rich-text'
+import { buildICUSelectMessage, normalizeSelectForms } from '@fluenti/core'
+import { reconstruct, serializeRichForms } from './rich-text'
 
 /**
  * `<Select>` component — shorthand for ICU select patterns.
@@ -41,7 +42,7 @@ const selectProps = {
   /** Translator-facing note preserved in extraction catalogs */
   comment: String,
   /** Fallback text when no option matches `value` */
-  other: { type: String, default: undefined },
+  other: { type: String, required: true },
   /**
    * Named options map. Keys are match values, values are display strings.
    * Takes precedence over attrs when both are provided.
@@ -52,8 +53,8 @@ const selectProps = {
     type: Object as PropType<Record<string, string>>,
     default: undefined,
   },
-  /** Wrapper element tag name (default: `span`) */
-  tag: { type: String, default: 'span' },
+  /** Wrapper element tag name. Defaults to no wrapper (Fragment). */
+  tag: { type: String, default: undefined },
 } as const
 
 export type SelectProps = Readonly<ExtractPropTypes<typeof selectProps>>
@@ -72,14 +73,14 @@ export const Select = defineComponent({
         for (const [key, value] of Object.entries(props.options)) {
           forms[key] = value
         }
-        forms['other'] = props.other ?? ''
+        forms['other'] = props.other
       } else {
         for (const [key, value] of Object.entries(attrs)) {
           if (typeof value === 'string') {
             forms[key] = value
           }
         }
-        forms['other'] = props.other ?? ''
+        forms['other'] = props.other
       }
 
       for (const [key, slot] of Object.entries(slots)) {
@@ -105,7 +106,8 @@ export const Select = defineComponent({
         { value: normalized.valueMap[props.value] ?? 'other' },
       )
       const result = components.length > 0 ? reconstruct(translated, components) : translated
-      return h(props.tag, undefined, result ?? undefined)
+      if (props.tag) return h(props.tag, undefined, result ?? undefined)
+      return result ?? null
     }
   },
 })

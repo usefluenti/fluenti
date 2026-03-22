@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { Plugin } from 'vite'
 import { hashMessage } from '@fluenti/core'
-import type { FluentiConfig } from '@fluenti/core'
+import type { FluentiBuildConfig } from '@fluenti/core'
 import { createFluentiPlugins } from '../src/index'
 import type { FluentiCoreOptions } from '../src/types'
 
@@ -13,7 +13,7 @@ vi.mock('../src/dev-runner', async () => {
   }
 })
 
-function createPlugins(configOverrides?: Partial<FluentiConfig>): Plugin[] {
+function createPlugins(configOverrides?: Partial<FluentiBuildConfig>): Plugin[] {
   const options: FluentiCoreOptions = {
     framework: 'vue',
     ...(configOverrides ? { config: { sourceLocale: 'en', locales: ['en'], catalogDir: './locales', format: 'po' as const, include: ['./src/**/*.{vue,tsx,jsx,ts,js}'], compileOutDir: 'src/locales/compiled', ...configOverrides } } : {}),
@@ -23,7 +23,7 @@ function createPlugins(configOverrides?: Partial<FluentiConfig>): Plugin[] {
 
 function getPlugin(
   name: string,
-  configOverrides?: Partial<FluentiConfig>,
+  configOverrides?: Partial<FluentiBuildConfig>,
 ): Plugin {
   const plugin = createPlugins(configOverrides).find((entry) => entry.name === name)
   if (!plugin) {

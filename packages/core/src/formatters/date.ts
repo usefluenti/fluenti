@@ -1,9 +1,19 @@
 import type { Locale } from '../types'
 import { formatRelativeTime } from './relative'
+import { LRUCache, stableCacheKey } from '../lru'
 
-const formatCache = new Map<string, Intl.DateTimeFormat>()
+const formatCache = new LRUCache<string, Intl.DateTimeFormat>(200)
 
-/** Built-in date format styles. Used when no custom styles are provided. */
+/**
+ * Clear the cached `Intl.DateTimeFormat` instances used by `formatDate()`.
+ *
+ * Useful for long-running Node.js servers to reclaim memory.
+ */
+export function clearDateFormatCache(): void {
+  formatCache.clear()
+}
+
+/** @internal Built-in date format styles. Used when no custom styles are provided. */
 export const DEFAULT_DATE_FORMATS: Record<string, Intl.DateTimeFormatOptions | 'relative'> = {
   default: { year: 'numeric', month: 'short', day: 'numeric' },
   short: { year: 'numeric', month: 'numeric', day: 'numeric' },
@@ -39,7 +49,7 @@ export function formatDate(
         return formatRelativeTime(value, locale)
       }
       const options = styleDef as Intl.DateTimeFormatOptions
-      const cacheKey = `${locale}:${JSON.stringify(options)}`
+      const cacheKey = stableCacheKey(locale, options as Record<string, unknown>)
       let formatter = formatCache.get(cacheKey)
       if (!formatter) {
         formatter = new Intl.DateTimeFormat(locale, options)
@@ -48,7 +58,7 @@ export function formatDate(
       return formatter.format(value instanceof Date ? value : new Date(value))
     }
 
-    const cacheKey = `${locale}:default`
+    const cacheKey = stableCacheKey(locale)
     let formatter = formatCache.get(cacheKey)
     if (!formatter) {
       formatter = new Intl.DateTimeFormat(locale)

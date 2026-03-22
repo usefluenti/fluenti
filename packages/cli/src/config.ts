@@ -1,4 +1,4 @@
-import type { FluentiConfig } from '@fluenti/core'
+import type { FluentiBuildConfig } from '@fluenti/core'
 
 /**
  * Define a Fluenti configuration with full type inference and IDE autocompletion.
@@ -18,6 +18,6 @@ import type { FluentiConfig } from '@fluenti/core'
  * })
  * ```
  */
-export function defineConfig(config: Partial<FluentiConfig>): Partial<FluentiConfig> {
+export function defineConfig(config: Partial<FluentiBuildConfig>): Partial<FluentiBuildConfig> {
   return config
 }

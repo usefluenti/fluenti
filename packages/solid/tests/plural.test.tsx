@@ -85,16 +85,16 @@ describe('Plural component', () => {
 
   // ─── tag prop ───────────────────────────────────────────────────────
 
-  it('wraps output in default span tag', () => {
+  it('renders without wrapper by default (Fragment)', () => {
     const { container } = render(() => (
       <I18nProvider locale="en" messages={{ en: {} }}>
         <Plural value={5} other="# items" />
       </I18nProvider>
     ))
 
-    const span = container.querySelector('span')
-    expect(span).toBeDefined()
-    expect(span?.textContent).toBe('5 items')
+    // No span wrapper by default — content renders directly
+    expect(container.querySelector('span')).toBeNull()
+    expect(container.textContent).toBe('5 items')
   })
 
   it('wraps output in custom tag', () => {

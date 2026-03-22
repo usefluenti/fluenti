@@ -1,33 +1,8 @@
-import { defineConfig } from 'vitest/config'
-import dts from 'vite-plugin-dts'
+import { createPackageConfig } from '../../scripts/vite-config-factory'
 
-export default defineConfig({
-  build: {
-    lib: {
-      entry: 'src/index.ts',
-      formats: ['es', 'cjs'],
-      fileName: 'index',
-    },
-    rollupOptions: {
-      external: ['vue', 'vue-i18n', '@fluenti/core', '@fluenti/vue'],
-    },
-    sourcemap: true,
-    emptyOutDir: true,
-  },
-  plugins: [
-    dts({ rollupTypes: false }),
-  ],
-  test: {
-    environment: 'happy-dom',
-    coverage: {
-      provider: 'v8',
-      reporter: ['text', 'lcov'],
-      thresholds: {
-        lines: 80,
-        branches: 75,
-        functions: 80,
-        statements: 80,
-      },
-    },
-  },
+export default createPackageConfig({
+  entry: { index: 'src/index.ts' },
+  external: ['vue', 'vue-i18n', '@fluenti/core', '@fluenti/vue'],
+  testEnv: 'happy-dom',
+  coverage: { lines: 80, branches: 75, functions: 80, statements: 80 },
 })

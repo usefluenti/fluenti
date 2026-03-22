@@ -5,14 +5,14 @@ description: "Complete API reference for @fluenti/core — ICU parser, compiler,
 
 The framework-agnostic core engine. Zero runtime dependencies.
 
-## `createFluent(config)`
+## `createFluentiRuntime(config)`
 
 Create a Fluenti instance.
 
 ```typescript
-import { createFluent } from '@fluenti/core'
+import { createFluentiRuntime } from '@fluenti/core'
 
-const i18n = createFluent({
+const i18n = createFluentiRuntime({
   locale: 'en',
   fallbackLocale: 'en',
   messages: {
@@ -25,7 +25,7 @@ i18n.t('greeting', { name: 'World' }) // "Hello World!"
 
 ### Config
 
-`createFluent()` accepts a `FluentConfigExtended` object:
+`createFluentiRuntime()` accepts a `FluentiRuntimeConfigFull` object:
 
 | Property | Type | Description |
 |----------|------|-------------|
@@ -57,7 +57,7 @@ i18n.t('greeting', { name: 'World' }) // "Hello World!"
 Post-processing hook applied to every resolved message, after interpolation. Useful for pseudo-localization, profanity filtering, or analytics:
 
 ```typescript
-const i18n = createFluent({
+const i18n = createFluentiRuntime({
   locale: 'en',
   messages: { en },
   transform: (result, id, locale) => {
@@ -75,7 +75,7 @@ const i18n = createFluent({
 Fired whenever the locale changes via `setLocale()` or the `locale` property setter:
 
 ```typescript
-const i18n = createFluent({
+const i18n = createFluentiRuntime({
   locale: 'en',
   messages: { en, fr },
   onLocaleChange: (newLocale, prevLocale) => {
@@ -92,7 +92,7 @@ const i18n = createFluent({
 Register custom ICU function handlers. When a `{variable, functionName, style}` node is encountered during interpolation, custom formatters are checked before the built-in `Intl` formatters:
 
 ```typescript
-const i18n = createFluent({
+const i18n = createFluentiRuntime({
   locale: 'en',
   messages: { en },
   formatters: {
@@ -111,11 +111,11 @@ const i18n = createFluent({
 
 ### Locale validation
 
-`createFluent()` and `setLocale()` validate that the locale is a non-empty string. An error is thrown if the locale is empty, `undefined`, or not a string:
+`createFluentiRuntime()` and `setLocale()` validate that the locale is a non-empty string. An error is thrown if the locale is empty, `undefined`, or not a string:
 
 ```typescript
-createFluent({ locale: '', messages: {} })
-// Error: [fluenti] createFluent: locale must be a non-empty string, got ""
+createFluentiRuntime({ locale: '', messages: {} })
+// Error: [fluenti] createFluentiRuntime: locale must be a non-empty string, got ""
 
 i18n.setLocale('')
 // Error: [fluenti] setLocale: locale must be a non-empty string, got ""
@@ -220,8 +220,8 @@ const id = resolveDescriptorId('Hello {name}', 'greeting')
 ## SSR Utilities
 
 - `detectLocale(options)` — Detect locale from request context (cookie, query, path, Accept-Language header)
-- `getSSRLocaleScript(locale)` — Generate a `<script>` tag that sets `window.__FLUENTI_LOCALE__` for hydration
-- `getHydratedLocale(fallback?)` — Read the locale set by the SSR script on the client side
+- `getSSRLocaleScript(locale, options?)` — Generate a `<script>` tag that sets `window.__FLUENTI_LOCALE__` for hydration. Pass `{ key }` to use a custom window variable (useful for micro-frontends)
+- `getHydratedLocale(fallback?, options?)` — Read the locale set by the SSR script on the client side. Pass `{ key }` to match a custom variable name
 - `getDirection(locale)` — Returns `'ltr'` or `'rtl'` for the given locale
 
 ## Locale Utilities
@@ -355,6 +355,14 @@ import {
 } from '@fluenti/core'
 ```
 
+### Formatter Design Notes
+
+The three formatters have intentionally different `styles` parameters:
+
+- **`formatNumber`** accepts function callbacks `(locale) => Intl.NumberFormatOptions` because number formats like currency need locale-aware defaults (e.g. USD for `en`, JPY for `ja`).
+- **`formatDate`** accepts a special `'relative'` string style that delegates to `formatRelativeTime`, enabling unified date display with a single function.
+- **`formatRelativeTime`** has no `styles` parameter because relative time formatting always uses `Intl.RelativeTimeFormat` with automatic unit selection — there are no meaningful named style variants.
+
 ## `Catalog`
 
 In-memory catalog manager for compiled messages. Supports namespace-aware message IDs and locale enumeration.
@@ -392,6 +400,61 @@ try {
   }
 }
 ```
+
+## Cache Management
+
+Fluenti caches `Intl.*` formatter instances and compiled messages internally for performance. For long-running servers or test isolation, use these APIs to control memory.
+
+### `clearAllCaches()`
+
+Clear **all** internal caches in one call. Covers compiled messages (LRU), `Intl.NumberFormat`, `Intl.DateTimeFormat`, `Intl.PluralRules`, `Intl.RelativeTimeFormat`, and standalone formatter caches.
+
+```typescript
+import { clearAllCaches } from '@fluenti/core'
+
+// Periodically reclaim memory in a long-running server
+setInterval(() => clearAllCaches(), 4 * 60 * 60 * 1000) // every 4 hours
+
+// Or in tests for deterministic state
+afterEach(() => clearAllCaches())
+```
+
+### `setMessageCacheSize(maxSize)`
+
+Resize the compiled-message LRU cache. Default: `500`. Clears existing entries when the size changes.
+
+```typescript
+import { setMessageCacheSize } from '@fluenti/core'
+
+setMessageCacheSize(1000) // increase for apps with many messages
+setMessageCacheSize(0)    // disable caching entirely
+```
+
+### `clearInterpolationCache()`
+
+Clear only the compiled-message LRU cache (the cache used by `interpolate()`).
+
+### Individual formatter cache clears
+
+For fine-grained control, each formatter has its own clear function:
+
+| Function | Cache cleared |
+|----------|--------------|
+| `clearCompileCache()` | `Intl.NumberFormat` + `Intl.DateTimeFormat` instances used during ICU compilation |
+| `clearPluralCache()` | `Intl.PluralRules` instances |
+| `clearNumberFormatCache()` | `formatNumber()` formatter instances |
+| `clearDateFormatCache()` | `formatDate()` formatter instances |
+| `clearRelativeTimeFormatCache()` | `formatRelativeTime()` formatter instances |
+
+### `DEFAULT_MESSAGE_CACHE_SIZE`
+
+Exported constant (`500`). The default LRU cache capacity for compiled messages.
+
+### Design notes
+
+- The compiled-message cache uses an **LRU** (Least Recently Used) eviction strategy backed by `Map` insertion order, providing O(1) get/set/evict operations.
+- All `Intl.*` caches are **unbounded** `Map`s keyed by `locale:options`. In practice they stay small because most apps use a handful of locales and format styles. For long-running servers, call `clearAllCaches()` periodically to bound memory.
+- `clearAllCaches()` is safe to call at any time — all formatters and interpolation will re-create their cached instances transparently on the next call.
 
 ## Plural Resolution
 

@@ -1,11 +1,11 @@
 import { describe, it, expect } from 'vitest'
 import { nextTick } from 'vue'
 import { mount } from '@vue/test-utils'
-import { createFluentVue } from '../src/plugin'
+import { createFluenti } from '../src/plugin'
 import { Plural } from '../src/components/Plural'
 
 function createPlugin() {
-  return createFluentVue({
+  return createFluenti({
     locale: 'en',
     messages: { en: {} },
   })
@@ -91,7 +91,7 @@ describe('Plural component', () => {
   })
 
   it('reacts to locale changes', async () => {
-    const plugin = createFluentVue({
+    const plugin = createFluenti({
       locale: 'en',
       messages: { en: {}, ar: {} },
     })
@@ -123,7 +123,7 @@ describe('Plural component', () => {
 
   it('renders "two" category when value is 2 and two prop is set', () => {
     // Use Arabic locale where 2 maps to "two" plural category
-    const plugin = createFluentVue({
+    const plugin = createFluenti({
       locale: 'ar',
       messages: { ar: {} },
     })
@@ -157,7 +157,7 @@ describe('Plural component', () => {
 
   it('renders "few" category for matching locale', () => {
     // Polish uses "few" for values like 3
-    const plugin = createFluentVue({
+    const plugin = createFluenti({
       locale: 'pl',
       messages: { pl: {} },
     })
@@ -171,7 +171,7 @@ describe('Plural component', () => {
 
   it('renders "many" category for matching locale', () => {
     // Polish uses "many" for values like 5
-    const plugin = createFluentVue({
+    const plugin = createFluenti({
       locale: 'pl',
       messages: { pl: {} },
     })
@@ -187,7 +187,7 @@ describe('Plural component', () => {
 
   describe('catalog-based auto-translation', () => {
     it('translates plural forms via t() when catalog has the ICU message', () => {
-      const plugin = createFluentVue({
+      const plugin = createFluenti({
         locale: 'ja',
         messages: {
           ja: {
@@ -206,7 +206,7 @@ describe('Plural component', () => {
     })
 
     it('translates zero form via catalog', () => {
-      const plugin = createFluentVue({
+      const plugin = createFluenti({
         locale: 'zh-CN',
         messages: {
           'zh-CN': {
@@ -225,7 +225,7 @@ describe('Plural component', () => {
     })
 
     it('translates one form via catalog', () => {
-      const plugin = createFluentVue({
+      const plugin = createFluenti({
         locale: 'ja',
         messages: {
           ja: {
@@ -244,7 +244,7 @@ describe('Plural component', () => {
     })
 
     it('falls back to local resolution when catalog has no entry', () => {
-      const plugin = createFluentVue({
+      const plugin = createFluenti({
         locale: 'fr',
         messages: { fr: {} },
       })
@@ -259,7 +259,7 @@ describe('Plural component', () => {
     })
 
     it('reacts to locale changes with catalog translation', async () => {
-      const plugin = createFluentVue({
+      const plugin = createFluenti({
         locale: 'en',
         messages: {
           en: {
@@ -287,7 +287,7 @@ describe('Plural component', () => {
     })
 
     it('builds correct ICU key with only other prop', () => {
-      const plugin = createFluentVue({
+      const plugin = createFluenti({
         locale: 'ja',
         messages: {
           ja: {
@@ -306,7 +306,7 @@ describe('Plural component', () => {
     })
 
     it('builds correct ICU key with all category props', () => {
-      const plugin = createFluentVue({
+      const plugin = createFluenti({
         locale: 'ar',
         messages: {
           ar: {
@@ -359,7 +359,9 @@ describe('Plural component', () => {
         global: { plugins: [plugin] },
       })
 
-      expect(wrapper.html()).toContain('<strong>No items</strong> left')
+      expect(wrapper.find('strong').text()).toBe('No items')
+      expect(wrapper.text()).toContain('No items')
+      expect(wrapper.text()).toContain('left')
     })
 
     it('renders slot for matching category (one)', () => {
@@ -373,7 +375,8 @@ describe('Plural component', () => {
         global: { plugins: [plugin] },
       })
 
-      expect(wrapper.html()).toContain('<em>1</em> item remaining')
+      expect(wrapper.find('em').text()).toBe('1')
+      expect(wrapper.text()).toContain('item remaining')
     })
 
     it('renders slot for matching category (other)', () => {
@@ -387,7 +390,8 @@ describe('Plural component', () => {
         global: { plugins: [plugin] },
       })
 
-      expect(wrapper.html()).toContain('<strong>many</strong> items')
+      expect(wrapper.find('strong').text()).toBe('many')
+      expect(wrapper.text()).toContain('items')
     })
 
     it('passes scoped slot props with count', () => {
@@ -448,7 +452,7 @@ describe('Plural component', () => {
     })
 
     it('respects locale for category resolution (Arabic two)', () => {
-      const plugin = createFluentVue({
+      const plugin = createFluenti({
         locale: 'ar',
         messages: { ar: {} },
       })
@@ -466,7 +470,7 @@ describe('Plural component', () => {
     })
 
     it('respects locale for category resolution (Polish few)', () => {
-      const plugin = createFluentVue({
+      const plugin = createFluenti({
         locale: 'pl',
         messages: { pl: {} },
       })
@@ -481,7 +485,8 @@ describe('Plural component', () => {
         global: { plugins: [plugin] },
       })
 
-      expect(wrapper.html()).toContain('<em>kilka</em> elementów')
+      expect(wrapper.find('em').text()).toBe('kilka')
+      expect(wrapper.text()).toContain('elementów')
     })
 
     it('uses correct wrapper tag with slots', () => {

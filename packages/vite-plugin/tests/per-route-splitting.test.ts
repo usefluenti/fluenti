@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { Plugin } from 'vite'
 import { hashMessage } from '@fluenti/core'
 import { createFluentiPlugins } from '../src/index'
+import { createRuntimeGenerator } from '../src/runtime-template'
 
 function makeCatalogSource(locale: string): string {
   const helloId = hashMessage('Hello')
@@ -64,7 +65,17 @@ describe('per-route splitting', () => {
         include: ['./src/**/*.{vue,tsx,jsx,ts,js}'],
       },
       framework: 'vue',
-    }, [])
+    }, [], createRuntimeGenerator({
+      imports: `import { shallowReactive, ref } from 'vue'`,
+      catalogInit: 'const __catalog = shallowReactive({ ...__defaultMsgs })',
+      localeInit: (defaultLocale) => `const __currentLocale = ref('${defaultLocale}')`,
+      loadingInit: 'const __loading = ref(false)',
+      catalogUpdate: (msgs) => `Object.assign(__catalog, ${msgs})`,
+      localeUpdate: (locale) => `__currentLocale.value = ${locale}`,
+      loadingUpdate: (value) => `__loading.value = ${value}`,
+      localeRead: '__currentLocale.value',
+      runtimeKey: 'fluenti.runtime.vue.v1',
+    }))
   })
 
   function getBuildSplitPlugin() {

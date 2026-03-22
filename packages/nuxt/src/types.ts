@@ -1,4 +1,4 @@
-import type { FluentiConfig } from '@fluenti/core'
+import type { FluentiBuildConfig } from '@fluenti/core'
 // Re-export core types for backwards compatibility
 export type { LocaleObject, LocaleDefinition } from '@fluenti/core'
 export { resolveLocaleCodes } from '@fluenti/core'
@@ -88,12 +88,12 @@ export interface DomainConfig {
 /** @fluenti/nuxt module options (set in nuxt.config.ts under `fluenti` key) */
 export interface FluentNuxtOptions {
   /** fluenti.config.ts path or inline config */
-  config?: string | FluentiConfig
+  config?: string | FluentiBuildConfig
 
   // ---- Core overrides (take precedence over fluenti.config.ts) ----
 
   /** Override locales from fluenti.config.ts */
-  locales?: FluentiConfig['locales']
+  locales?: FluentiBuildConfig['locales']
   /** Override defaultLocale from fluenti.config.ts */
   defaultLocale?: string
   /** Override sourceLocale from fluenti.config.ts */

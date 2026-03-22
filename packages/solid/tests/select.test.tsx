@@ -131,16 +131,15 @@ describe('Select component', () => {
   })
 
   describe('tag prop', () => {
-    it('defaults to span wrapper', () => {
+    it('renders without wrapper by default (Fragment)', () => {
       const { container } = render(() => (
         <I18nProvider locale="en" messages={{ en: {} }}>
           <Select value="x" other="text" />
         </I18nProvider>
       ))
 
-      const span = container.querySelector('span')
-      expect(span).not.toBeNull()
-      expect(span!.textContent).toBe('text')
+      expect(container.querySelector('span')).toBeNull()
+      expect(container.textContent).toBe('text')
     })
 
     it('uses custom tag prop', () => {

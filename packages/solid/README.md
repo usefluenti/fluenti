@@ -105,7 +105,7 @@ t('abc123', { count })   // hash-based lookup, no ICU parsing at runtime
 
 ### `useI18n()`
 
-Returns the reactive i18n context. Works inside any component that is a descendant of `<I18nProvider>`, or after a top-level `createI18n()` call.
+Returns the reactive i18n context. Works inside any component that is a descendant of `<I18nProvider>`, or after a top-level `createFluenti()` call.
 
 ```tsx
 const { t, d, n, format, locale, setLocale, isLoading } = useI18n()
@@ -125,14 +125,14 @@ const { t, d, n, format, locale, setLocale, isLoading } = useI18n()
 | `isLoading` | `Accessor<boolean>` | Whether a locale chunk is currently being loaded |
 | `loadedLocales` | `Accessor<Set<string>>` | Set of locales whose messages have been loaded |
 
-### `createI18n(config)`
+### `createFluenti(config)`
 
 Module-level singleton alternative to `<I18nProvider>`. Call once at startup; `useI18n()` will find it automatically.
 
 ```tsx
-import { createI18n } from '@fluenti/solid'
+import { createFluenti } from '@fluenti/solid'
 
-const i18n = createI18n({
+const i18n = createFluenti({
   locale: 'en',
   fallbackLocale: 'en',
   messages: { en, ja },
@@ -144,7 +144,7 @@ const i18n = createI18n({
 })
 ```
 
-The config accepts all `FluentConfigExtended` options from `@fluenti/core`, including `transform`, `onLocaleChange`, and `formatters`. See the [core README](https://github.com/usefluenti/fluenti/tree/main/packages/core#advanced-configuration) for details.
+The config accepts all `FluentiRuntimeConfigFull` options from `@fluenti/core`, including `transform`, `onLocaleChange`, and `formatters`. See the [core README](https://github.com/usefluenti/fluenti/tree/main/packages/core#advanced-configuration) for details.
 
 ### Components
 

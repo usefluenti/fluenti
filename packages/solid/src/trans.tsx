@@ -15,7 +15,7 @@ export interface TransProps {
   context?: string
   /** Translator-facing note preserved in extraction catalogs */
   comment?: string
-  /** Wrapper element tag name (default: `'span'`) — used in children-only mode */
+  /** Wrapper element tag name. Defaults to no wrapper (Fragment). */
   tag?: string
   /** Children — the content to translate (legacy API) */
   children?: JSX.Element
@@ -235,7 +235,10 @@ export const Trans: Component<TransProps> = (props) => {
       : translated
 
     if (Array.isArray(result) && result.length > 1) {
-      return (<Dynamic component={props.tag ?? 'span'}>{result}</Dynamic>) as JSX.Element
+      if (props.tag) {
+        return (<Dynamic component={props.tag}>{result}</Dynamic>) as JSX.Element
+      }
+      return (<>{result}</>) as JSX.Element
     }
 
     return result as JSX.Element

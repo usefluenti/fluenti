@@ -51,3 +51,13 @@ export function formatRelativeTime(value: Date | number, locale: Locale): string
 
   return rtf.format(0, 'second')
 }
+
+/**
+ * Clear the cached `Intl.RelativeTimeFormat` instances.
+ *
+ * Useful for long-running servers to reclaim memory,
+ * or during testing to ensure a clean state.
+ */
+export function clearRelativeTimeFormatCache(): void {
+  rtfCache.clear()
+}

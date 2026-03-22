@@ -1,12 +1,12 @@
 import { describe, it, expect } from 'vitest'
 import { h } from 'vue'
 import { mount } from '@vue/test-utils'
-import { createFluentVue } from '../src/plugin'
+import { createFluenti } from '../src/plugin'
 import { Trans } from '../src/components/Trans'
 import { hashMessage } from '@fluenti/core'
 
 function createPlugin(messages: Record<string, string> = {}) {
-  return createFluentVue({
+  return createFluenti({
     locale: 'en',
     messages: { en: messages },
   })
@@ -64,7 +64,7 @@ describe('Trans component', () => {
     expect(wrapper.html()).toBe('')
   })
 
-  it('uses default span tag for multiple children', () => {
+  it('renders multiple children as fragment (no wrapper) by default', () => {
     const plugin = createPlugin()
     const wrapper = mount(Trans, {
       global: { plugins: [plugin] },
@@ -73,8 +73,11 @@ describe('Trans component', () => {
       },
     })
 
-    expect(wrapper.element.tagName).toBe('SPAN')
-    expect(wrapper.text()).toBe('Hello world')
+    // No span wrapper — renders as fragment
+    expect(wrapper.find('span').exists()).toBe(false)
+    expect(wrapper.find('em').text()).toBe('world')
+    expect(wrapper.text()).toContain('Hello')
+    expect(wrapper.text()).toContain('world')
   })
 
   it('renders nested elements in default slot', () => {
@@ -92,7 +95,7 @@ describe('Trans component', () => {
 
   it('translates default slot content without the build plugin', () => {
     const message = 'Visit the <0>documentation</0> page'
-    const plugin = createFluentVue({
+    const plugin = createFluenti({
       locale: 'ja',
       messages: {
         ja: {

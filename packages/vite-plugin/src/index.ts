@@ -1,7 +1,7 @@
 import type { Plugin } from 'vite'
 import { createFilter } from 'vite'
 import type { FluentiCoreOptions, RuntimeGenerator } from './types'
-import type { FluentiConfig } from '@fluenti/core'
+import type { FluentiBuildConfig } from '@fluenti/core'
 import { resolveLocaleCodes } from '@fluenti/core'
 import { setResolvedMode, isBuildMode, getPluginEnvironment } from './mode-detect'
 import { resolve } from 'node:path'
@@ -12,30 +12,31 @@ import { createDebouncedRunner, runExtractCompile } from './dev-runner'
 import { transformForDynamicSplit, transformForStaticSplit, injectCatalogImport } from './build-transform'
 import { resolveVirtualSplitId, loadVirtualSplitModule } from './virtual-modules'
 import { deriveRouteName, parseCompiledCatalog, buildChunkModule, readCatalogSource } from './route-resolve'
-import { scopeTransform } from './scope-transform'
-import { transformTransComponents } from './trans-transform'
+import { createTransformPipeline, hasScopeTransformCandidate } from '@fluenti/core/transform'
 export type { FluentiPluginOptions, FluentiCoreOptions, RuntimeGenerator, RuntimeGeneratorOptions, IdGenerator } from './types'
+export { createRuntimeGenerator } from './runtime-template'
+export type { RuntimePrimitives } from './runtime-template'
 export { resolveVirtualSplitId, loadVirtualSplitModule } from './virtual-modules'
 export { setResolvedMode, isBuildMode, getPluginEnvironment } from './mode-detect'
 
 const VIRTUAL_PREFIX = 'virtual:fluenti/messages/'
 const RESOLVED_PREFIX = '\0virtual:fluenti/messages/'
-type InternalSplitStrategy = FluentiConfig['splitting'] | 'per-route'
+type InternalSplitStrategy = FluentiBuildConfig['splitting'] | 'per-route'
 
 /**
- * Resolve a config option (string path, inline object, or undefined) into a full FluentiConfig.
+ * Resolve a config option (string path, inline object, or undefined) into a full FluentiBuildConfig.
  */
-function resolvePluginConfig(configOption?: string | FluentiConfig, cwd?: string): FluentiConfig {
+function resolvePluginConfig(configOption?: string | FluentiBuildConfig, cwd?: string): FluentiBuildConfig {
   if (typeof configOption === 'object') {
     // Inline config — merge with defaults
     const { DEFAULT_FLUENTI_CONFIG } = _require('@fluenti/core/config') as {
-      DEFAULT_FLUENTI_CONFIG: FluentiConfig
+      DEFAULT_FLUENTI_CONFIG: FluentiBuildConfig
     }
     return { ...DEFAULT_FLUENTI_CONFIG, ...configOption }
   }
   // string → specified path; undefined → auto-discover
   const { loadConfigSync: loadSync } = _require('@fluenti/core/config') as {
-    loadConfigSync: (configPath?: string, cwd?: string) => FluentiConfig
+    loadConfigSync: (configPath?: string, cwd?: string) => FluentiBuildConfig
   }
   return loadSync(
     typeof configOption === 'string' ? configOption : undefined,
@@ -54,10 +55,10 @@ export function createFluentiPlugins(
   frameworkPlugins: Plugin[],
   runtimeGenerator?: RuntimeGenerator,
 ): Plugin[] {
-  // Resolve the full FluentiConfig from the config option
-  let fluentiConfig: FluentiConfig | undefined
+  // Resolve the full FluentiBuildConfig from the config option
+  let fluentiConfig: FluentiBuildConfig | undefined
 
-  function getConfig(cwd?: string): FluentiConfig {
+  function getConfig(cwd?: string): FluentiBuildConfig {
     if (!fluentiConfig) {
       fluentiConfig = resolvePluginConfig(options.config, cwd)
     }
@@ -120,6 +121,8 @@ export function createFluentiPlugins(
     },
   }
 
+  const pipeline = createTransformPipeline({ framework })
+
   const scriptTransformPlugin: Plugin = {
     name: 'fluenti:script-transform',
     enforce: 'pre',
@@ -128,12 +131,15 @@ export function createFluentiPlugins(
       if (!id.match(/\.(vue|tsx|jsx|ts|js)(\?|$)/)) return undefined
       if (id.includes('.vue') && !id.includes('type=script')) return undefined
 
+      // Vue .vue files need allowTopLevelImportedT for top-level `import { t }`
+      const isVueSfc = framework === 'vue' && id.includes('.vue')
+
       let result = code
       let changed = false
 
       // ── <Trans> compile-time optimization (JSX/TSX only) ──────────────
       if (id.match(/\.[jt]sx(\?|$)/) && /<Trans[\s>]/.test(result)) {
-        const transResult = transformTransComponents(result)
+        const transResult = pipeline.transformTrans(result)
         if (transResult.transformed) {
           result = transResult.code
           changed = true
@@ -142,10 +148,9 @@ export function createFluentiPlugins(
 
       // ── t`` / t() scope-aware transform ────────────────────────────────
       if (hasScopeTransformCandidate(result)) {
-        const scoped = scopeTransform(result, {
-          framework,
-          allowTopLevelImportedT: framework === 'vue' && id.includes('.vue'),
-        })
+        const scoped = pipeline.transformScope(result,
+          isVueSfc ? { allowTopLevelImportedT: true } : undefined,
+        )
         if (scoped.transformed) {
           return { code: scoped.code, map: null }
         }
@@ -322,20 +327,13 @@ export function createFluentiPlugins(
     },
   }
 
+  // Plugin order matters:
+  // 1. virtualPlugin       — resolves virtual:fluenti/* module IDs (must be first)
+  // 2. frameworkPlugins     — framework-specific template transforms (e.g., Vue v-t directive)
+  //                           must run after virtual resolution but before script transforms
+  // 3. scriptTransformPlugin — t()/t`` scope transforms + <Trans> optimization (enforce: 'pre')
+  // 4. buildCompilePlugin   — triggers extract+compile before the build starts
+  // 5. buildSplitPlugin     — rewrites t() calls to catalog refs + emits per-route chunks
+  // 6. devPlugin            — file watcher + HMR for dev mode (must be last)
   return [virtualPlugin, ...frameworkPlugins, scriptTransformPlugin, buildCompilePlugin, buildSplitPlugin, devPlugin]
-}
-
-// ─── Utilities ──────────────────────────────────────────────────────────────
-
-function hasScopeTransformCandidate(code: string): boolean {
-  if (/(?<![.\w$])t\(\s*['"]/.test(code) || /[A-Za-z_$][\w$]*\(\s*\{/.test(code)) {
-    return true
-  }
-
-  if (/[A-Za-z_$][\w$]*`/.test(code) && (code.includes('useI18n') || code.includes('getI18n'))) {
-    return true
-  }
-
-  return /import\s*\{[^}]*\bt(?:\s+as\s+[A-Za-z_$][\w$]*)?\b[^}]*\}/.test(code)
-    && /@fluenti\/(react|vue|solid|next)/.test(code)
 }

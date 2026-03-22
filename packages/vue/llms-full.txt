@@ -25,10 +25,10 @@ pnpm add @fluenti/core @fluenti/vue @fluenti/vite-plugin
 
 ```ts
 import { createApp } from 'vue'
-import { createFluentVue } from '@fluenti/vue'
+import { createFluenti } from '@fluenti/vue'
 import App from './App.vue'
 
-const fluent = createFluentVue({
+const fluent = createFluenti({
   locale: 'en',
   fallbackLocale: 'en',
   messages: { en, ja },
@@ -39,7 +39,7 @@ createApp(App).use(fluent).mount('#app')
 
 ## Public Exports
 
-- `createFluentVue`
+- `createFluenti`
 - `useI18n`
 - `t`
 - `Trans`
@@ -61,14 +61,14 @@ Types:
 - `DateTimeProps`
 - `NumberFormatProps`
 
-## `createFluentVue(options)`
+## `createFluenti(options)`
 
 Creates one Vue plugin instance with isolated state. This is SSR-safe and intended to be called once per app instance or once per request.
 
 ### Options
 
 ```ts
-createFluentVue({
+createFluenti({
   locale: 'en',
   messages: { en, ja },
   fallbackLocale: 'en',
@@ -187,7 +187,7 @@ Cross-framework contract highlights:
 ## Async locale loading
 
 ```ts
-const fluent = createFluentVue({
+const fluent = createFluenti({
   locale: 'en',
   messages: { en },
   lazyLocaleLoading: true,

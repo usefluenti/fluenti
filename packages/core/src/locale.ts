@@ -172,8 +172,18 @@ export function getDirection(locale: Locale): 'rtl' | 'ltr' {
 }
 
 /**
- * Validate that a locale string is well-formed.
- * Throws if the locale is empty or not a string.
+ * Validate that a locale string is well-formed (basic BCP 47 check).
+ *
+ * This performs a lightweight structural check (2-3 letter language code
+ * with optional hyphen-separated subtags of 1-8 alphanumeric chars).
+ * It does **not** validate against the IANA Language Subtag Registry
+ * or enforce strict subtag ordering (script before region).
+ *
+ * For most i18n use cases (e.g., `en`, `en-US`, `zh-Hans-CN`) this is
+ * sufficient. Use a dedicated BCP 47 validation library if you need
+ * full RFC 5646 compliance.
+ *
+ * @throws {Error} If locale is empty, not a string, or fails the basic pattern check
  */
 export function validateLocale(locale: string, context: string): void {
   if (typeof locale !== 'string' || locale.trim() === '') {

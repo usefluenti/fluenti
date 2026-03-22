@@ -19,14 +19,14 @@ pnpm add @fluenti/core
 
 Most users do not install `@fluenti/core` directly -- it is included as a dependency of `@fluenti/vue` and `@fluenti/solid`.
 
-## createFluent(config)
+## createFluentiRuntime(config)
 
 Create a fully configured i18n instance. This is the main entry point for most applications.
 
 ```ts
-import { createFluent } from '@fluenti/core'
+import { createFluentiRuntime } from '@fluenti/core'
 
-const i18n = createFluent({
+const i18n = createFluentiRuntime({
   locale: 'en',
   fallbackLocale: 'en',
   messages: {
@@ -44,7 +44,7 @@ i18n.setLocale('ja')
 i18n.t('greeting', { name: 'World' }) // "こんにちは World！"
 ```
 
-### Config: FluentConfigExtended
+### Config: FluentiRuntimeConfigFull
 
 | Property | Type | Required | Description |
 |---|---|---|---|
@@ -58,7 +58,7 @@ i18n.t('greeting', { name: 'World' }) // "こんにちは World！"
 | `namespaceMapping` | `NamespaceMapping` | No | Glob-pattern to namespace mapping |
 | `externalCatalogs` | `Array<{ package, catalogDir }>` | No | External catalog sources |
 
-### Instance: FluentInstanceExtended
+### Instance: FluentiInstanceExtended
 
 | Method | Signature | Description |
 |---|---|---|
@@ -308,7 +308,7 @@ formatDate(Date.now() - 86400000, 'en', 'relative') // "yesterday"
 | `datetime` | `{ year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric' }` |
 | `relative` | Delegates to `formatRelativeTime()` |
 
-Custom styles are passed as the 4th argument or configured via `dateFormats` in `createFluent()`. Custom styles are merged over defaults, so you can override built-in styles or add new ones.
+Custom styles are passed as the 4th argument or configured via `dateFormats` in `createFluentiRuntime()`. Custom styles are merged over defaults, so you can override built-in styles or add new ones.
 
 A style value can be `Intl.DateTimeFormatOptions` or the string `'relative'` to delegate to relative time formatting.
 
@@ -349,7 +349,7 @@ Maps locales to default currency codes:
 Custom styles can be static `Intl.NumberFormatOptions` or a function `(locale: Locale) => Intl.NumberFormatOptions` for locale-dependent options:
 
 ```ts
-const i18n = createFluent({
+const i18n = createFluentiRuntime({
   locale: 'en',
   messages: { en: {} },
   numberFormats: {
@@ -576,14 +576,14 @@ type AllMessages = Record<Locale, Messages>
 
 // --- Configuration ---
 
-interface FluentConfig {
+interface FluentiRuntimeConfig {
   locale: Locale
   fallbackLocale?: Locale
   messages: AllMessages
   missing?: (locale: Locale, id: string) => string | undefined
 }
 
-interface FluentConfigExtended extends FluentConfig {
+interface FluentiRuntimeConfigFull extends FluentiRuntimeConfig {
   namespaceMapping?: NamespaceMapping
   dateFormats?: DateFormatOptions
   numberFormats?: NumberFormatOptions
@@ -593,7 +593,7 @@ interface FluentConfigExtended extends FluentConfig {
 
 // --- Instance ---
 
-interface FluentInstance {
+interface FluentiInstance {
   locale: Locale
   t(id: string | MessageDescriptor, values?: Record<string, unknown>): string
   setLocale(locale: Locale): void
@@ -601,7 +601,7 @@ interface FluentInstance {
   getLocales(): Locale[]
 }
 
-interface FluentInstanceExtended extends FluentInstance {
+interface FluentiInstanceExtended extends FluentiInstance {
   d: (value: Date | number, style?: string) => string
   n: (value: number, style?: string) => string
   format(message: string, values?: Record<string, unknown>): string

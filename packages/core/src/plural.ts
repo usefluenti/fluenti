@@ -3,6 +3,15 @@ import type { Locale } from './types'
 const rulesCache = new Map<string, Intl.PluralRules>()
 
 /**
+ * Clear the cached `Intl.PluralRules` instances.
+ *
+ * Useful for long-running Node.js servers to reclaim memory.
+ */
+export function clearPluralCache(): void {
+  rulesCache.clear()
+}
+
+/**
  * Get or create a cached `Intl.PluralRules` instance for a locale.
  */
 function getRules(locale: Locale, type: Intl.PluralRulesOptions['type'] = 'cardinal'): Intl.PluralRules {

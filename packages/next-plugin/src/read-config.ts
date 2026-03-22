@@ -1,5 +1,5 @@
 import { loadConfigSync, DEFAULT_FLUENTI_CONFIG } from '@fluenti/core/config'
-import type { FluentiConfig } from '@fluenti/core'
+import type { FluentiBuildConfig } from '@fluenti/core'
 import type { WithFluentConfig, ResolvedFluentConfig } from './types'
 
 /**
@@ -11,7 +11,7 @@ export function resolveConfig(
   projectRoot: string,
   overrides?: WithFluentConfig,
 ): ResolvedFluentConfig {
-  let fluentiConfig: FluentiConfig
+  let fluentiConfig: FluentiBuildConfig
 
   if (overrides?.config && typeof overrides.config === 'object') {
     // Inline config — merge with defaults

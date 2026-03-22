@@ -1,8 +1,8 @@
 import { existsSync } from 'node:fs'
 import { resolve, dirname, relative, isAbsolute } from 'node:path'
-import type { FluentiConfig } from './types'
+import type { FluentiBuildConfig } from './types'
 
-const defaultConfig: FluentiConfig = {
+const defaultConfig: FluentiBuildConfig = {
   sourceLocale: 'en',
   locales: ['en'],
   catalogDir: './locales',
@@ -33,10 +33,10 @@ function rebase(relativePath: string, fromDir: string, toDir: string): string {
  * Rebase path-semantic fields in a config from parent directory to child directory.
  */
 function rebasePaths(
-  config: Partial<FluentiConfig>,
+  config: Partial<FluentiBuildConfig>,
   fromDir: string,
   toDir: string,
-): Partial<FluentiConfig> {
+): Partial<FluentiBuildConfig> {
   const result = { ...config }
   for (const field of PATH_FIELDS) {
     if (result[field] && !isAbsolute(result[field]!)) {
@@ -79,7 +79,7 @@ function findConfigFile(configPath: string | undefined, base: string): string | 
  * @param configPath - Explicit path to config file (optional)
  * @param cwd - Working directory for auto-discovery (defaults to `process.cwd()`)
  */
-export async function loadConfig(configPath?: string, cwd?: string): Promise<FluentiConfig> {
+export async function loadConfig(configPath?: string, cwd?: string): Promise<FluentiBuildConfig> {
   const base = cwd ?? process.cwd()
   const configFilePath = findConfigFile(configPath, base)
 
@@ -95,7 +95,7 @@ async function resolveConfigChain(
   configFilePath: string,
   jiti: { import: (path: string) => Promise<unknown> },
   visited: Set<string>,
-): Promise<FluentiConfig> {
+): Promise<FluentiBuildConfig> {
   const absolutePath = resolve(configFilePath)
 
   if (visited.has(absolutePath)) {
@@ -108,8 +108,8 @@ async function resolveConfigChain(
 
   visited.add(absolutePath)
 
-  const mod = await jiti.import(absolutePath) as { default?: Partial<FluentiConfig> }
-  const userConfig = mod.default ?? mod as unknown as Partial<FluentiConfig>
+  const mod = await jiti.import(absolutePath) as { default?: Partial<FluentiBuildConfig> }
+  const userConfig = mod.default ?? mod as unknown as Partial<FluentiBuildConfig>
 
   if (!userConfig.extends) {
     const { extends: _extends, ...rest } = userConfig
@@ -147,7 +147,7 @@ async function resolveConfigChain(
  * @param configPath - Explicit path to config file (optional)
  * @param cwd - Working directory for auto-discovery (defaults to `process.cwd()`)
  */
-export function loadConfigSync(configPath?: string, cwd?: string): FluentiConfig {
+export function loadConfigSync(configPath?: string, cwd?: string): FluentiBuildConfig {
   const base = cwd ?? process.cwd()
   const configFilePath = findConfigFile(configPath, base)
 
@@ -178,7 +178,7 @@ function resolveConfigChainSync(
     options?: { moduleCache?: boolean; interopDefault?: boolean },
   ) => (path: string) => unknown,
   visited: Set<string>,
-): FluentiConfig {
+): FluentiBuildConfig {
   const absolutePath = resolve(configFilePath)
 
   if (visited.has(absolutePath)) {
@@ -195,10 +195,10 @@ function resolveConfigChainSync(
     moduleCache: false,
     interopDefault: true,
   })
-  const mod = jiti(absolutePath) as FluentiConfig | { default?: FluentiConfig }
+  const mod = jiti(absolutePath) as FluentiBuildConfig | { default?: FluentiBuildConfig }
   const userConfig = typeof mod === 'object' && mod !== null && 'default' in mod
-    ? (mod.default ?? {}) as Partial<FluentiConfig>
-    : mod as Partial<FluentiConfig>
+    ? (mod.default ?? {}) as Partial<FluentiBuildConfig>
+    : mod as Partial<FluentiBuildConfig>
 
   if (!userConfig.extends) {
     const { extends: _extends, ...rest } = userConfig

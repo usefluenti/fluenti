@@ -12,7 +12,7 @@ For general SSR concepts and utilities, see the [SSR & Hydration guide](/advance
 ```typescript
 // server.ts
 import { detectLocale, getSSRLocaleScript } from '@fluenti/core'
-import { createFluentVue } from '@fluenti/vue'
+import { createFluenti } from '@fluenti/vue'
 
 const locale = detectLocale({
   cookie: getCookie(event, 'lang'),
@@ -20,7 +20,7 @@ const locale = detectLocale({
   available: ['en', 'zh-CN', 'ja'],
   fallback: 'en',
 })
-const i18n = createFluentVue({ locale, messages: allMessages })
+const i18n = createFluenti({ locale, messages: allMessages })
 app.use(i18n)
 
 // Inject into HTML head:
@@ -33,15 +33,15 @@ const script = getSSRLocaleScript(locale)
 ```typescript
 // client.ts
 import { getHydratedLocale } from '@fluenti/core'
-import { createFluentVue } from '@fluenti/vue'
+import { createFluenti } from '@fluenti/vue'
 
 const locale = getHydratedLocale('en')
-const i18n = createFluentVue({ locale, messages: allMessages })
+const i18n = createFluenti({ locale, messages: allMessages })
 app.use(i18n)
 ```
 
 ## Key Points
 
-1. **No shared global state** — Create a new `createFluentVue()` instance per request on the server
+1. **No shared global state** — Create a new `createFluenti()` instance per request on the server
 2. **Hydration consistency** — Use `getSSRLocaleScript` + `getHydratedLocale` to ensure the client starts with the same locale the server rendered
 3. **Cookie-based detection** — Use cookies (not `localStorage`) so the server can detect locale on the first request

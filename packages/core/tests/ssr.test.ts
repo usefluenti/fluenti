@@ -360,3 +360,63 @@ describe('edge cases - exhaustive', () => {
     expect(result).toBe('en')
   })
 })
+
+describe('getSSRLocaleScript custom key', () => {
+  it('uses default key when no options provided', () => {
+    expect(getSSRLocaleScript('en')).toBe(
+      '<script>window.__FLUENTI_LOCALE__="en"</script>'
+    )
+  })
+
+  it('uses custom key for multi-instance scenarios', () => {
+    expect(getSSRLocaleScript('ja', { key: '__MY_APP_LOCALE__' })).toBe(
+      '<script>window.__MY_APP_LOCALE__="ja"</script>'
+    )
+  })
+
+  it('rejects invalid key with special characters', () => {
+    expect(() => getSSRLocaleScript('en', { key: 'my-key' })).toThrow('Invalid SSR key')
+  })
+
+  it('rejects key starting with a digit', () => {
+    expect(() => getSSRLocaleScript('en', { key: '0key' })).toThrow('Invalid SSR key')
+  })
+
+  it('accepts key starting with underscore', () => {
+    expect(getSSRLocaleScript('en', { key: '_locale' })).toBe(
+      '<script>window._locale="en"</script>'
+    )
+  })
+
+  it('accepts key starting with $', () => {
+    expect(getSSRLocaleScript('en', { key: '$locale' })).toBe(
+      '<script>window.$locale="en"</script>'
+    )
+  })
+})
+
+describe('getHydratedLocale custom key', () => {
+  afterEach(() => {
+    delete (globalThis as any).window
+  })
+
+  it('reads from custom key', () => {
+    (globalThis as any).window = { __MY_APP_LOCALE__: 'fr' }
+    expect(getHydratedLocale('en', { key: '__MY_APP_LOCALE__' })).toBe('fr')
+  })
+
+  it('returns fallback when custom key not set', () => {
+    (globalThis as any).window = { __FLUENTI_LOCALE__: 'fr' }
+    expect(getHydratedLocale('en', { key: '__MY_APP_LOCALE__' })).toBe('en')
+  })
+
+  it('round-trips with getSSRLocaleScript using same key', () => {
+    const key = '__MICRO_FE_LOCALE__'
+    const script = getSSRLocaleScript('zh-CN', { key })
+    expect(script).toBe('<script>window.__MICRO_FE_LOCALE__="zh-CN"</script>')
+
+    // Simulate browser hydration
+    ;(globalThis as any).window = { [key]: 'zh-CN' }
+    expect(getHydratedLocale('en', { key })).toBe('zh-CN')
+  })
+})

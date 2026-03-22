@@ -1,5 +1,5 @@
 import { bench, describe } from 'vitest'
-import { createFluent } from '@fluenti/core'
+import { createFluentiRuntime } from '@fluenti/core'
 import type { AllMessages, Messages } from '@fluenti/core'
 
 // ── Message corpus ──
@@ -55,7 +55,7 @@ const messages: AllMessages = {
 }
 
 function createInstance() {
-  return createFluent({
+  return createFluentiRuntime({
     locale: 'en',
     fallbackLocale: 'en',
     messages,
@@ -70,7 +70,7 @@ const i18n = createInstance()
 // ── Benchmarks ──
 
 describe('react — instance creation', () => {
-  bench('createFluent()', () => {
+  bench('createFluentiRuntime()', () => {
     createInstance()
   })
 })
@@ -106,7 +106,7 @@ describe('react — t() lookup', () => {
 })
 
 describe('react — t() fallback', () => {
-  const fbI18n = createFluent({
+  const fbI18n = createFluentiRuntime({
     locale: 'fr',
     fallbackLocale: 'en',
     messages,
@@ -122,7 +122,7 @@ describe('react — t() fallback', () => {
   })
 
   bench('missing → handler', () => {
-    const mI18n = createFluent({
+    const mI18n = createFluentiRuntime({
       locale: 'fr',
       fallbackLocale: 'en',
       messages,
@@ -144,7 +144,7 @@ describe('react — formatters', () => {
 
 describe('react — catalog scaling', () => {
   for (const size of [10, 100, 1000]) {
-    const scaleI18n = createFluent({
+    const scaleI18n = createFluentiRuntime({
       locale: 'en',
       messages: { en: generateCatalog(size) },
     })

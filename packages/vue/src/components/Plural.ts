@@ -1,41 +1,8 @@
 import { defineComponent, h } from 'vue'
 import type { ExtractPropTypes, SetupContext, VNodeChild } from 'vue'
-import { hashMessage } from '@fluenti/core'
+import { hashMessage, buildICUPluralMessage, PLURAL_CATEGORIES, type PluralCategory } from '@fluenti/core'
 import { useI18n } from '../use-i18n'
 import { reconstruct, serializeRichForms } from './rich-text'
-
-/** Plural category names in a stable order for ICU message building. */
-const PLURAL_CATEGORIES = ['zero', 'one', 'two', 'few', 'many', 'other'] as const
-
-type PluralCategory = (typeof PLURAL_CATEGORIES)[number]
-
-/**
- * Build an ICU plural message string from individual category props.
- *
- * Given `{ zero: "No items", one: "# item", other: "# items" }`,
- * produces `"{count, plural, =0 {No items} one {# item} other {# items}}"`.
- *
- * @internal
- */
-function buildICUPluralMessage(
-  forms: Partial<Record<PluralCategory, string>> & { other: string },
-  offset?: number,
-): string {
-  const parts: string[] = []
-  for (const cat of PLURAL_CATEGORIES) {
-    const text = forms[cat]
-    if (text !== undefined) {
-      // Map the `zero` prop to ICU `=0` exact match. In ICU MessageFormat,
-      // `zero` is a CLDR plural category that only activates in languages
-      // with a grammatical zero form (e.g. Arabic). The `=0` exact match
-      // works universally for the common "show this when count is 0" intent.
-      const key = cat === 'zero' ? '=0' : cat
-      parts.push(`${key} {${text}}`)
-    }
-  }
-  const offsetPrefix = offset ? `offset:${offset} ` : ''
-  return `{count, plural, ${offsetPrefix}${parts.join(' ')}}`
-}
 
 /**
  * `<Plural>` component — shorthand for ICU plural patterns.
@@ -82,11 +49,11 @@ const pluralProps = {
   /** Text for many (maps to `many`) */
   many: String,
   /** Text for the default/other category */
-  other: { type: String, default: undefined },
+  other: { type: String, required: true },
   /** Offset from value before selecting form */
   offset: Number,
-  /** Wrapper element tag name (default: `span`) */
-  tag: { type: String, default: 'span' },
+  /** Wrapper element tag name. Defaults to no wrapper (Fragment). */
+  tag: { type: String, default: undefined },
 } as const
 
 export type PluralProps = Readonly<ExtractPropTypes<typeof pluralProps>>
@@ -104,7 +71,7 @@ export const Plural = defineComponent({
         two: props.two,
         few: props.few,
         many: props.many,
-        other: props.other ?? '',
+        other: props.other,
       }
 
       for (const cat of PLURAL_CATEGORIES) {
@@ -137,7 +104,8 @@ export const Plural = defineComponent({
       )
 
       const result = components.length > 0 ? reconstruct(translated, components) : translated
-      return h(props.tag, undefined, result ?? undefined)
+      if (props.tag) return h(props.tag, undefined, result ?? undefined)
+      return result ?? null
     }
   },
 })

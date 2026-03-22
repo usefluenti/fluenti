@@ -1,16 +1,6 @@
 import { createSignal, createRoot, type Accessor } from 'solid-js'
 import { formatDate, formatNumber, interpolate as coreInterpolate, buildICUMessage, resolveDescriptorId } from '@fluenti/core'
-import type { FluentConfig, Locale, LocalizedString, Messages, CompiledMessage, MessageDescriptor, DateFormatOptions, NumberFormatOptions } from '@fluenti/core'
-
-/** Chunk loader for lazy locale loading */
-export type ChunkLoader = (
-  locale: string,
-) => Promise<Record<string, CompiledMessage> | { default: Record<string, CompiledMessage> }>
-
-interface SplitRuntimeModule {
-  __switchLocale?: (locale: string) => Promise<void>
-  __preloadLocale?: (locale: string) => Promise<void>
-}
+import type { FluentRuntimeConfig, Locale, LocalizedString, Messages, CompiledMessage, MessageDescriptor, DateFormatOptions, NumberFormatOptions, ChunkLoader, SplitRuntimeModule } from '@fluenti/core'
 
 const SPLIT_RUNTIME_KEY = Symbol.for('fluenti.runtime.solid.v1')
 
@@ -30,10 +20,18 @@ function resolveChunkMessages(
 }
 
 /** Extended config with lazy locale loading support */
-export interface I18nConfig extends FluentConfig {
-  /** Async chunk loader for lazy locale loading */
+export interface I18nConfig extends FluentRuntimeConfig {
+  /**
+   * Async message loader for lazy locale loading.
+   * Preferred over `chunkLoader` (which is deprecated).
+   */
+  loadMessages?: ChunkLoader
+  /**
+   * Async chunk loader for lazy locale loading.
+   * @deprecated Use `loadMessages` instead.
+   */
   chunkLoader?: ChunkLoader
-  /** Enable lazy locale loading through chunkLoader */
+  /** Enable lazy locale loading through loadMessages/chunkLoader */
   lazyLocaleLoading?: boolean
   /** Locale-specific fallback chains */
   fallbackChain?: Record<string, Locale[]>
@@ -58,17 +56,21 @@ export interface I18nContext {
   /** Return all locale codes that have loaded messages */
   getLocales(): Locale[]
   /** Format a date value for the current locale */
-  d(value: Date | number, style?: string): LocalizedString
+  d(value: Date | number, style?: string, locale?: string): LocalizedString
   /** Format a number value for the current locale */
-  n(value: number, style?: string): LocalizedString
+  n(value: number, style?: string, locale?: string): LocalizedString
   /** Format an ICU message string directly (no catalog lookup) */
   format(message: string, values?: Record<string, unknown>): LocalizedString
   /** Whether a locale chunk is currently being loaded */
   isLoading: Accessor<boolean>
   /** Set of locales whose messages have been loaded */
-  loadedLocales: Accessor<Set<string>>
+  loadedLocales: Accessor<ReadonlySet<string>>
   /** Preload a locale in the background without switching to it */
-  preloadLocale(locale: string): void
+  preloadLocale(locale: string): Promise<void>
+  /** Check if a translation key exists in the catalog */
+  te(key: string, locale?: string): boolean
+  /** Get the raw compiled message without interpolation */
+  tm(key: string, locale?: string): CompiledMessage | undefined
 }
 
 /**
@@ -77,13 +79,14 @@ export interface I18nContext {
  * The returned `t()` reads the internal `locale()` signal, so any
  * Solid computation that calls `t()` will re-run when the locale changes.
  */
-export function createI18nContext(config: FluentConfig | I18nConfig): I18nContext {
+export function createI18nContext(config: FluentRuntimeConfig | I18nConfig): I18nContext {
   const [locale, setLocaleSignal] = createSignal<Locale>(config.locale)
   const [isLoading, setIsLoading] = createSignal(false)
   const loadedLocalesSet = new Set<string>([config.locale])
   const [loadedLocales, setLoadedLocales] = createSignal(new Set(loadedLocalesSet))
   const messages: Record<string, Messages> = { ...config.messages }
   const i18nConfig = config as I18nConfig
+  const chunkLoaderFn = i18nConfig.loadMessages ?? i18nConfig.chunkLoader
   const lazyLocaleLoading = i18nConfig.lazyLocaleLoading
     ?? (config as I18nConfig & { splitting?: boolean }).splitting
     ?? false
@@ -230,7 +233,7 @@ export function createI18nContext(config: FluentConfig | I18nConfig): I18nContex
   }
 
   const setLocale = async (newLocale: Locale): Promise<void> => {
-    if (!lazyLocaleLoading || !i18nConfig.chunkLoader) {
+    if (!lazyLocaleLoading || !chunkLoaderFn) {
       setLocaleSignal(newLocale)
       return
     }
@@ -247,7 +250,7 @@ export function createI18nContext(config: FluentConfig | I18nConfig): I18nContex
 
     setIsLoading(true)
     try {
-      const loaded = resolveChunkMessages(await i18nConfig.chunkLoader(newLocale))
+      const loaded = resolveChunkMessages(await chunkLoaderFn(newLocale))
       // Intentional mutation: messages record is locally scoped to this context closure
       messages[newLocale] = { ...messages[newLocale], ...loaded }
       loadedLocalesSet.add(newLocale)
@@ -261,36 +264,47 @@ export function createI18nContext(config: FluentConfig | I18nConfig): I18nContex
     }
   }
 
-  const preloadLocale = (loc: string): void => {
-    if (!lazyLocaleLoading || loadedLocalesSet.has(loc) || !i18nConfig.chunkLoader) return
+  const preloadLocale = async (loc: string): Promise<void> => {
+    if (!lazyLocaleLoading || loadedLocalesSet.has(loc) || !chunkLoaderFn) return
     const splitRuntime = getSplitRuntimeModule()
-    i18nConfig.chunkLoader(loc).then(async (loaded) => {
-      const resolved = resolveChunkMessages(loaded)
+    try {
+      const loaded = resolveChunkMessages(await chunkLoaderFn(loc))
       // Intentional mutation: messages record is locally scoped to this context closure
-      messages[loc] = { ...messages[loc], ...resolved }
+      messages[loc] = { ...messages[loc], ...loaded }
       loadedLocalesSet.add(loc)
       setLoadedLocales(new Set(loadedLocalesSet))
       if (splitRuntime?.__preloadLocale) {
         await splitRuntime.__preloadLocale(loc)
       }
-    }).catch((e: unknown) => {
+    } catch (e: unknown) {
       console.warn('[fluenti] preload failed:', loc, e)
-    })
+    }
   }
 
   const getLocales = (): Locale[] => Object.keys(messages)
 
-  const d = (value: Date | number, style?: string): LocalizedString =>
-    formatDate(value, locale(), style, i18nConfig.dateFormats) as LocalizedString
+  const d = (value: Date | number, style?: string, loc?: string): LocalizedString =>
+    formatDate(value, loc ?? locale(), style, i18nConfig.dateFormats) as LocalizedString
 
-  const n = (value: number, style?: string): LocalizedString =>
-    formatNumber(value, locale(), style, i18nConfig.numberFormats) as LocalizedString
+  const n = (value: number, style?: string, loc?: string): LocalizedString =>
+    formatNumber(value, loc ?? locale(), style, i18nConfig.numberFormats) as LocalizedString
 
   const format = (message: string, values?: Record<string, unknown>): LocalizedString => {
     return coreInterpolate(message, values, locale()) as LocalizedString
   }
 
-  return { locale, setLocale, t, loadMessages, getLocales, d, n, format, isLoading, loadedLocales, preloadLocale }
+  const te = (key: string, loc?: string): boolean => {
+    const targetLocale = loc ?? locale()
+    const catalog = messages[targetLocale]
+    return catalog !== undefined && key in catalog
+  }
+
+  const tm = (key: string, loc?: string): CompiledMessage | undefined => {
+    const targetLocale = loc ?? locale()
+    return messages[targetLocale]?.[key]
+  }
+
+  return { locale, setLocale, t, loadMessages, getLocales, d, n, format, isLoading, loadedLocales, preloadLocale, te, tm }
 }
 
 // ─── Module-level singleton ─────────────────────────────────────────────────
@@ -305,7 +319,7 @@ let globalCtx: I18nContext | undefined
  *
  * Returns the context for convenience, but `useI18n()` will also find it.
  */
-export function createI18n(config: FluentConfig | I18nConfig): I18nContext {
+export function createFluenti(config: FluentRuntimeConfig | I18nConfig): I18nContext {
   const ctx = createRoot(() => createI18nContext(config))
 
   // Only set global singleton in browser (client-side).
@@ -314,13 +328,18 @@ export function createI18n(config: FluentConfig | I18nConfig): I18nContext {
     globalCtx = ctx
   } else {
     console.warn(
-      '[fluenti] createI18n() detected SSR environment. ' +
+      '[fluenti] createFluenti() detected SSR environment. ' +
       'Use <I18nProvider> for per-request isolation in SSR.',
     )
   }
 
   return ctx
 }
+
+/** @deprecated Use {@link createFluenti} instead */
+export const createFluentiSolid = createFluenti
+/** @deprecated Use {@link createFluenti} instead */
+export const createI18n = createFluenti
 
 /** @internal — used by useI18n and I18nProvider */
 export function getGlobalI18nContext(): I18nContext | undefined {

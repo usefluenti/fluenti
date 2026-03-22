@@ -53,7 +53,7 @@ export default defineConfig({
 | `catalogExtension` | `string?` | `'.js'` | File extension for compiled catalog output files |
 | `devAutoCompile` | `boolean?` | `true` | Auto extract+compile in dev mode |
 | `buildAutoCompile` | `boolean?` | `true` | Auto extract+compile before production build |
-| `devAutoCompileDelay` | `number?` | `500` | Debounce delay in ms for dev auto-compile |
+| `devAutoCompileDelay` | `number?` | `300` | Debounce delay in ms for dev auto-compile |
 | `onBeforeCompile` | `() => boolean \| void \| Promise<...>` | — | [Lifecycle hook](/advanced/scaling/#build-lifecycle-hooks) called before auto-compile |
 | `onAfterCompile` | `() => void \| Promise<void>` | — | [Lifecycle hook](/advanced/scaling/#build-lifecycle-hooks) called after auto-compile |
 

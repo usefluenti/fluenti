@@ -22,7 +22,7 @@ describe('useI18n', () => {
   it('returns loadedLocales', () => {
     function Display() {
       const { loadedLocales } = useI18n()
-      return <span>{loadedLocales.join(',')}</span>
+      return <span>{[...loadedLocales].join(',')}</span>
     }
 
     render(

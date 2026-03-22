@@ -10,12 +10,12 @@ const PAGE_LABELS = {
 }
 
 export default function RichTextPage() {
-  const { i18n } = useI18n()
+  const { t: translate } = useI18n()
 
   return (
     <div data-testid="richtext-page">
-      <h1 data-testid="richtext-title">{i18n.t(PAGE_LABELS.title)}</h1>
-      <p data-testid="richtext-subtitle">{i18n.t(PAGE_LABELS.subtitle)}</p>
+      <h1 data-testid="richtext-title">{translate(PAGE_LABELS.title)}</h1>
+      <p data-testid="richtext-subtitle">{translate(PAGE_LABELS.subtitle)}</p>
 
       <h2>Trans</h2>
       <p data-testid="trans-link">
