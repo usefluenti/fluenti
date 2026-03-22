@@ -9,7 +9,10 @@ import {
 import { I18nContext } from '../context'
 import { hashMessage, extractMessage, reconstruct } from './trans-core'
 
-export interface TransProps {
+/** @deprecated Use `FluentiTransProps` instead */
+export type TransProps = FluentiTransProps
+
+export interface FluentiTransProps {
   /** Source text with embedded components */
   children: ReactNode
   /** Override auto-generated hash ID */
@@ -48,7 +51,7 @@ export const Trans = memo(function Trans({
   __id,
   __message,
   __components,
-}: TransProps) {
+}: FluentiTransProps) {
   const ctx = useContext(I18nContext)
   if (!ctx) {
     throw new Error('[fluenti] <Trans> must be used within an <I18nProvider>')

@@ -2,7 +2,8 @@ import { useState, useCallback, useEffect, useMemo, useRef } from 'react'
 import { createFluentiCore } from '@fluenti/core'
 import type { Messages } from '@fluenti/core'
 import { I18nContext } from './context'
-import type { I18nProviderProps } from './types'
+import type { FluentiProviderProps, FluentiContext } from './types'
+import type { FluentiInstance } from './create-fluenti'
 
 interface SplitRuntimeModule {
   __switchLocale?: (locale: string) => Promise<void>
@@ -28,8 +29,44 @@ function getSplitRuntimeModule(): SplitRuntimeModule | null {
     : null
 }
 
-export function I18nProvider({
-  locale,
+/**
+ * Internal provider that uses a pre-created `FluentiInstance`.
+ */
+function InstanceProvider({ instance, children }: { instance: FluentiInstance; children: React.ReactNode }) {
+  const ctx: FluentiContext = useMemo(
+    () => ({
+      i18n: instance.i18n,
+      t: instance.t,
+      d: instance.d,
+      n: instance.n,
+      format: instance.format,
+      loadMessages: instance.loadMessages,
+      getLocales: instance.getLocales,
+      locale: instance.locale,
+      setLocale: instance.setLocale,
+      isLoading: instance.isLoading,
+      loadedLocales: instance.loadedLocales,
+      preloadLocale: instance.preloadLocale,
+    }),
+    [instance],
+  )
+
+  return <I18nContext.Provider value={ctx}>{children}</I18nContext.Provider>
+}
+
+export function I18nProvider(props: FluentiProviderProps) {
+  if (props.instance) {
+    return <InstanceProvider instance={props.instance}>{props.children}</InstanceProvider>
+  }
+
+  return <InlineProvider {...props} />
+}
+
+/**
+ * Original inline provider that manages its own state.
+ */
+function InlineProvider({
+  locale: localeProp,
   fallbackLocale,
   messages,
   loadMessages,
@@ -38,7 +75,9 @@ export function I18nProvider({
   numberFormats,
   missing,
   children,
-}: I18nProviderProps) {
+}: FluentiProviderProps) {
+  const locale = localeProp ?? 'en'
+
   const [currentLocale, setCurrentLocale] = useState(locale)
   const [isLoading, setIsLoading] = useState(false)
   const [loadedMessages, setLoadedMessages] = useState<Record<string, Messages>>(

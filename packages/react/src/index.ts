@@ -3,6 +3,10 @@
 // Provider
 export { I18nProvider } from './provider'
 
+// Factory
+export { createFluenti } from './create-fluenti'
+export type { FluentiConfig, FluentiInstance } from './create-fluenti'
+
 // Context (for advanced use cases)
 export { I18nContext } from './context'
 
@@ -20,10 +24,11 @@ export { NumberFormat } from './components/Number'
 // Lazy messages
 export { msg } from './msg'
 
-// Types
+// Types — new Fluenti-prefixed names
 export type {
-  I18nContextValue,
-  I18nProviderProps,
+  FluentiContext,
+  FluentiProviderProps,
+  FluentiInstanceExtended,
   Messages,
   AllMessages,
   MessageDescriptor,
@@ -32,7 +37,18 @@ export type {
   Locale,
   DateFormatOptions,
   NumberFormatOptions,
-  FluentiCoreInstanceFull,
+} from './types'
+export type { FluentiTransProps } from './components/Trans'
+export type { FluentiPluralProps } from './components/Plural'
+export type { FluentiSelectProps } from './components/Select'
+export type { FluentiDateTimeProps } from './components/DateTime'
+export type { FluentiNumberProps } from './components/Number'
+
+// Types — deprecated aliases (backward compat)
+export type {
+  I18nContextValue,
+  I18nProviderProps,
+  FluentInstanceExtended,
 } from './types'
 export type { TransProps } from './components/Trans'
 export type { PluralProps } from './components/Plural'

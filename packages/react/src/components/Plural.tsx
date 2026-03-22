@@ -1,10 +1,13 @@
-import { createElement, memo, useContext, type ReactNode } from 'react'
+import { memo, useContext, type ReactNode } from 'react'
 import { hashMessage } from '@fluenti/core'
 import { I18nContext } from '../context'
 import { PLURAL_CATEGORIES, type PluralCategory } from './plural-core'
 import { buildICUPluralMessage, renderRichTranslation, serializeRichForms } from './icu-rich'
 
-export interface PluralProps {
+/** @deprecated Use `FluentiPluralProps` instead */
+export type PluralProps = FluentiPluralProps
+
+export interface FluentiPluralProps {
   /** The count value */
   value: number
   /** Override the auto-generated synthetic ICU message id */
@@ -27,8 +30,6 @@ export interface PluralProps {
   other: ReactNode
   /** Offset from value before selecting form */
   offset?: number
-  /** Wrapper element tag name (e.g. 'span', 'div'). Defaults to Fragment (no wrapper). */
-  tag?: keyof React.JSX.IntrinsicElements
 }
 
 /**
@@ -51,8 +52,7 @@ export const Plural = memo(function Plural({
   many,
   other,
   offset,
-  tag,
-}: PluralProps) {
+}: FluentiPluralProps) {
   const ctx = useContext(I18nContext)
   if (!ctx) {
     throw new Error('[fluenti] <Plural> must be used within an <I18nProvider>')
@@ -86,6 +86,5 @@ export const Plural = memo(function Plural({
     ...(comment !== undefined ? { comment } : {}),
   }
 
-  const result = renderRichTranslation(descriptor, { count: value }, (desc, values) => ctx.t(desc, values), components)
-  return tag ? createElement(tag, null, result) : <>{result}</>
+  return <>{renderRichTranslation(descriptor, { count: value }, (desc, values) => ctx.i18n.t(desc, values), components)}</>
 })

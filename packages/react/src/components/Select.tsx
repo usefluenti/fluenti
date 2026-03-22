@@ -3,7 +3,10 @@ import { hashMessage } from '@fluenti/core'
 import { I18nContext } from '../context'
 import { buildICUSelectMessage, normalizeSelectForms, renderRichTranslation, serializeRichForms } from './icu-rich'
 
-export interface SelectProps {
+/** @deprecated Use `FluentiSelectProps` instead */
+export type SelectProps = FluentiSelectProps
+
+export interface FluentiSelectProps {
   /** The selector value */
   value: string
   /** Override the auto-generated synthetic ICU message id */
@@ -35,7 +38,7 @@ export interface SelectProps {
  * />
  * ```
  */
-export const Select = memo(function Select(props: SelectProps) {
+export const Select = memo(function Select(props: FluentiSelectProps) {
   const ctx = useContext(I18nContext)
   if (!ctx) {
     throw new Error('[fluenti] <Select> must be used within an <I18nProvider>')
