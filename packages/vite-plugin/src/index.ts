@@ -303,7 +303,7 @@ export function createFluentiPlugins(
       if (earlyConfig.parallelCompile) runnerOptions.parallelCompile = true
       if (onBeforeCompile) runnerOptions.onBeforeCompile = onBeforeCompile
       if (onAfterCompile) runnerOptions.onAfterCompile = onAfterCompile
-      const debouncedRun = createDebouncedRunner(runnerOptions, earlyConfig.devAutoCompileDelay ?? 300)
+      const debouncedRun = createDebouncedRunner(runnerOptions, earlyConfig.devAutoCompileDelay ?? 500)
 
       debouncedRun()
 

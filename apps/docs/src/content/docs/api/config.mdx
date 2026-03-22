@@ -56,9 +56,12 @@ export default defineConfig({
 | `catalogExtension` | `string?` | `'.js'` | File extension for compiled catalog output files |
 | `devAutoCompile` | `boolean?` | `true` | Auto extract+compile in dev mode |
 | `buildAutoCompile` | `boolean?` | `true` | Auto extract+compile before production build |
-| `devAutoCompileDelay` | `number?` | `300` | Debounce delay in ms for dev auto-compile |
+| `devAutoCompileDelay` | `number?` | `500` | Debounce delay in ms for dev auto-compile |
 | `onBeforeCompile` | `() => boolean \| void \| Promise<...>` | — | Called before auto-compile. Return `false` to skip. |
 | `onAfterCompile` | `() => void \| Promise<void>` | — | Called after auto-compile completes successfully |
+| `plugins` | `FluentiPlugin[]?` | — | Plugins that hook into the extract and compile pipelines |
+| `dateFormats` | `DateFormatOptions?` | — | Named date format presets (e.g. `{ short: { dateStyle: 'short' } }`) |
+| `numberFormats` | `NumberFormatOptions?` | — | Named number format presets. Values can be `Intl.NumberFormatOptions` or `(locale: string) => Intl.NumberFormatOptions` |
 
 :::caution[Flat fields are deprecated]
 The flat config fields above (`splitting`, `defaultBuildLocale`, `devWarnings`, `strictBuild`, `devAutoCompile`, `devAutoCompileDelay`, `parallelCompile`, `onBeforeCompile`, `onAfterCompile`, `fallbackChain`, `externalCatalogs`) are supported for backward compatibility but deprecated. Use the nested structure below instead.
@@ -94,7 +97,7 @@ export default defineConfig({
 
   dev: {
     autoCompile: true,
-    autoCompileDelay: 300,
+    autoCompileDelay: 500,
     warnings: true,
   },
 
@@ -148,6 +151,23 @@ export default defineConfig({
 |--------|------|---------|-------------|
 | `onBeforeCompile` | `() => boolean \| void \| Promise<...>` | — | Called before auto-compile. Return `false` to skip |
 | `onAfterCompile` | `() => void \| Promise<void>` | — | Called after auto-compile completes successfully |
+
+## Runtime Config
+
+These options are available when creating a runtime instance (e.g. via `createFluentiRuntime()`, `createFluenti()`, or `I18nProvider`), but not in `fluenti.config.ts`:
+
+| Option | Type | Description |
+|--------|------|-------------|
+| `locale` | `string` | Active locale |
+| `fallbackLocale` | `string?` | Fallback locale when a key is missing |
+| `messages` | `AllMessages` | Pre-loaded message catalogs |
+| `missing` | `(locale, id) => string \| undefined` | **Deprecated** — use `onMissingKey` |
+| `onMissingKey` | `(event: MissingKeyEvent) => string \| undefined \| void` | Called when a key is missing or a fallback locale is used. Return a string to override. |
+| `transform` | `(result, id, locale) => string` | Post-translation transform applied to every resolved message |
+| `onLocaleChange` | `(newLocale, prevLocale) => void` | Callback fired when locale changes via `setLocale()` |
+| `formatters` | `Record<string, CustomFormatter>` | Custom ICU function formatters (e.g. `{items, list}`) |
+| `devWarnings` | `boolean?` | Show `[!]` prefix and `console.warn` for missing translations |
+| `diagnostics` | `DiagnosticsConfig?` | Runtime diagnostics for development (tree-shaken in production) |
 
 ### `normalizeConfig()`
 
