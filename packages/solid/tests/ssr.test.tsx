@@ -2,7 +2,7 @@
  * @vitest-environment node
  */
 import { describe, it, expect, vi } from 'vitest'
-import { createI18nContext, createFluenti, resetGlobalI18nContext } from '../src/context'
+import { createI18nContext, createFluenti, resetGlobalFluentiContext } from '../src/context'
 
 const messages = {
   en: { hello: 'Hello', greeting: 'Hi {name}' },
@@ -72,7 +72,7 @@ describe('SSR', () => {
 
   it('createFluenti() warns about SSR singleton in non-browser environment', () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
-    resetGlobalI18nContext()
+    resetGlobalFluentiContext()
 
     const ctx = createFluenti({ locale: 'en', messages })
 
@@ -83,7 +83,7 @@ describe('SSR', () => {
     expect(ctx.t('hello')).toBe('Hello')
 
     warnSpy.mockRestore()
-    resetGlobalI18nContext()
+    resetGlobalFluentiContext()
   })
 
   // ─── Edge cases ──────────────────────────────────────────────────────

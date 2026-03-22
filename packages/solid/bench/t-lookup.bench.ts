@@ -1,6 +1,6 @@
 import { bench, describe } from 'vitest'
 import { createRoot } from 'solid-js'
-import { createI18nContext } from '../src/index'
+import { createI18nContext } from '../src/context'
 import type { AllMessages, Messages } from '@fluenti/core'
 
 // ── Message corpus ──

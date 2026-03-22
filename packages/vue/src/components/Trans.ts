@@ -31,7 +31,7 @@ const transProps = {
   tag: { type: String, default: undefined },
 } as const
 
-export type TransProps = Readonly<ExtractPropTypes<typeof transProps>>
+export type FluentiTransProps = Readonly<ExtractPropTypes<typeof transProps>>
 
 export const Trans = defineComponent({
   name: 'Trans',

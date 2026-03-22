@@ -8,7 +8,7 @@ import { extractMessage as extractDomMessage, reconstruct as reconstructDomMessa
 export type RichComponent = Component<{ children?: JSX.Element }>
 
 /** Props for the `<Trans>` component */
-export interface TransProps {
+export interface FluentiTransProps {
   /** Override auto-generated hash ID */
   id?: string
   /** Message context used for identity and translator disambiguation */
@@ -192,7 +192,7 @@ function renderTokens(
  * <Trans>Click <a href="/next">here</a> to continue</Trans>
  * ```
  */
-export const Trans: Component<TransProps> = (props) => {
+export const Trans: Component<FluentiTransProps> = (props) => {
   const { t } = useI18n()
   const resolvedChildren = resolveChildren(() => props.children)
   // message + components API (including build-time __message/__components)

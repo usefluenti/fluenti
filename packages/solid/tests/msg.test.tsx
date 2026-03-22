@@ -1,12 +1,12 @@
 import { describe, it, expect, afterEach } from 'vitest'
 import { render, cleanup } from '@solidjs/testing-library'
 import { msg, I18nProvider, useI18n } from '../src'
-import { resetGlobalI18nContext } from '../src/context'
+import { resetGlobalFluentiContext } from '../src/context'
 
 describe('msg``', () => {
   afterEach(() => {
     cleanup()
-    resetGlobalI18nContext()
+    resetGlobalFluentiContext()
   })
 
   it('creates MessageDescriptor, not a string', () => {

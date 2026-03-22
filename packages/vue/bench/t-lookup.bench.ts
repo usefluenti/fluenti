@@ -1,5 +1,5 @@
 import { bench, describe } from 'vitest'
-import { createFluentVue } from '../src/index'
+import { createFluenti } from '../src/index'
 import type { AllMessages, Messages } from '@fluenti/core'
 
 // ── Message corpus ──
@@ -55,7 +55,7 @@ const messages: AllMessages = {
 }
 
 function createInstance() {
-  return createFluentVue({
+  return createFluenti({
     locale: 'en',
     fallbackLocale: 'en',
     messages,
@@ -71,7 +71,7 @@ const { t, d, n } = fluent.global
 // ── Benchmarks ──
 
 describe('vue — instance creation', () => {
-  bench('createFluentVue()', () => {
+  bench('createFluenti()', () => {
     createInstance()
   })
 })
@@ -107,7 +107,7 @@ describe('vue — t() lookup', () => {
 })
 
 describe('vue — t() fallback', () => {
-  const fbFluent = createFluentVue({
+  const fbFluent = createFluenti({
     locale: 'fr',
     fallbackLocale: 'en',
     messages,
@@ -124,7 +124,7 @@ describe('vue — t() fallback', () => {
   })
 
   bench('missing → handler', () => {
-    const mFluent = createFluentVue({
+    const mFluent = createFluenti({
       locale: 'fr',
       fallbackLocale: 'en',
       messages,
@@ -146,7 +146,7 @@ describe('vue — formatters', () => {
 
 describe('vue — catalog scaling', () => {
   for (const size of [10, 100, 1000]) {
-    const scaleFluent = createFluentVue({
+    const scaleFluent = createFluenti({
       locale: 'en',
       messages: { en: generateCatalog(size) },
     })

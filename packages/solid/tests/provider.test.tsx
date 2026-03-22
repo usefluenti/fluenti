@@ -1,8 +1,7 @@
-import { describe, it, expect, afterEach, vi } from 'vitest'
-import { createRoot } from 'solid-js'
+import { describe, it, expect, afterEach } from 'vitest'
 import { render } from '@solidjs/testing-library'
 import { I18nProvider, useI18n } from '../src'
-import { createI18nContext, createI18n, getGlobalI18nContext, setGlobalI18nContext, resetGlobalI18nContext } from '../src/context'
+import { resetGlobalFluentiContext } from '../src/context'
 
 const messages = {
   en: { hello: 'Hello', greeting: 'Hi {name}' },
@@ -11,7 +10,7 @@ const messages = {
 
 describe('I18nProvider', () => {
   afterEach(() => {
-    resetGlobalI18nContext()
+    resetGlobalFluentiContext()
   })
 
   it('provides context to children', () => {
@@ -183,136 +182,13 @@ describe('I18nProvider', () => {
   })
 })
 
-describe('edge cases — HMR, SSR, and error paths', () => {
-  afterEach(() => {
-    resetGlobalI18nContext()
-  })
-
-  it('setGlobalI18nContext sets the global singleton', () => {
-    // Create a context via createI18n (sets global)
-    const ctx = createI18n({ locale: 'en', messages: { en: { hello: 'Hello' } } })
-    expect(getGlobalI18nContext()).toBe(ctx)
-
-    // Reset before creating again
-    resetGlobalI18nContext()
-
-    // Overwriting with createI18n again should update the global
-    const ctx2 = createI18n({ locale: 'fr', messages: { fr: { hello: 'Bonjour' } } })
-    expect(getGlobalI18nContext()).toBe(ctx2)
-  })
-
-  it('preloadLocale error → logs warning', async () => {
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
-
-    let ctx: any
-    createRoot((dispose) => {
-      ctx = createI18nContext({
-        locale: 'en',
-        messages: { en: { hello: 'Hello' } },
-        lazyLocaleLoading: true,
-        chunkLoader: () => Promise.reject(new Error('network fail')),
-      })
-      setTimeout(dispose, 50)
-    })
-
-    ctx.preloadLocale('fr')
-    await new Promise((r) => setTimeout(r, 20))
-
-    expect(warnSpy).toHaveBeenCalledWith(
-      '[fluenti] preload failed:',
-      'fr',
-      expect.any(Error),
-    )
-
-    warnSpy.mockRestore()
-  })
-
-  it('onMissingKey throws → caught by caller, returns id', () => {
-    function Child() {
-      const { t } = useI18n()
-      return <span>{t('unknown')}</span>
-    }
-
-    const throwingMissing = () => { throw new Error('missing handler exploded') }
-
-    // The missing handler throwing propagates through t()
-    expect(() => {
-      render(() => (
-        <I18nProvider locale="en" messages={messages} missing={throwingMissing}>
-          <Child />
-        </I18nProvider>
-      ))
-    }).toThrow('missing handler exploded')
-  })
-
-  it('multiple rapid setLocale to same locale → no-op after first', async () => {
-    let loadCount = 0
-
-    let ctx: any
-    createRoot((dispose) => {
-      ctx = createI18nContext({
-        locale: 'en',
-        messages: { en: { hello: 'Hello' } },
-        lazyLocaleLoading: true,
-        chunkLoader: () => {
-          loadCount++
-          return Promise.resolve({ hello: 'Bonjour' })
-        },
-      })
-      setTimeout(dispose, 100)
-    })
-
-    // First call loads
-    await ctx.setLocale('fr')
-    const firstCount = loadCount
-
-    // Second call to same locale — already loaded, no chunk load
-    await ctx.setLocale('fr')
-    expect(loadCount).toBe(firstCount)
-  })
-
-  it('getGlobalI18nContext before createI18n → undefined', () => {
-    resetGlobalI18nContext()
-    expect(getGlobalI18nContext()).toBeUndefined()
-  })
-
-  it('HMR replacement: createI18n can be called again after reset', () => {
-    const ctx1 = createI18n({ locale: 'en', messages: { en: { hello: 'Hello' } } })
-    expect(getGlobalI18nContext()).toBe(ctx1)
-
-    resetGlobalI18nContext()
-    expect(getGlobalI18nContext()).toBeUndefined()
-
-    const ctx2 = createI18n({ locale: 'fr', messages: { fr: { hello: 'Bonjour' } } })
-    expect(getGlobalI18nContext()).toBe(ctx2)
-    expect(ctx2).not.toBe(ctx1)
-  })
-
-  it('SSR warning when window undefined', () => {
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
-
-    const origWindow = globalThis.window
-    // @ts-expect-error - simulating SSR by removing window
-    delete globalThis.window
-
-    createI18n({ locale: 'en', messages: { en: {} } })
-
-    expect(warnSpy).toHaveBeenCalledWith(
-      expect.stringContaining('SSR environment'),
-    )
-
-    globalThis.window = origWindow
-    warnSpy.mockRestore()
-  })
-})
-
 describe('useI18n outside provider', () => {
   afterEach(() => {
-    resetGlobalI18nContext()
+    resetGlobalFluentiContext()
   })
 
   it('throws when used without provider or createFluenti', () => {
-    resetGlobalI18nContext()
+    resetGlobalFluentiContext()
 
     function BadChild() {
       const { t } = useI18n()

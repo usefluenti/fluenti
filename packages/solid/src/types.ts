@@ -1,6 +1,6 @@
 import type { Accessor } from 'solid-js'
 import type {
-  FluentiCoreConfig,
+  FluentConfig,
   Locale,
   LocalizedString,
   Messages,
@@ -16,7 +16,7 @@ export type ChunkLoader = (
 ) => Promise<Record<string, CompiledMessage> | { default: Record<string, CompiledMessage> }>
 
 /** Extended config with lazy locale loading support */
-export interface I18nConfig extends FluentiCoreConfig {
+export interface FluentiConfig extends FluentConfig {
   /** Async chunk loader for lazy locale loading */
   chunkLoader?: ChunkLoader
   /** Enable lazy locale loading through chunkLoader */
@@ -28,7 +28,7 @@ export interface I18nConfig extends FluentiCoreConfig {
 }
 
 /** Reactive i18n context holding locale signal and translation utilities */
-export interface I18nContext {
+export interface FluentiContext {
   /** Reactive accessor for the current locale */
   locale(): Locale
   /** Set the active locale (async when lazy locale loading is enabled) */

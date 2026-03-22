@@ -6,7 +6,7 @@ import { buildICUSelectMessage, normalizeSelectForms } from '@fluenti/core'
 import { reconstruct, serializeRichForms } from './rich-dom'
 
 /** Props for the `<Select>` component */
-export interface SelectProps {
+export interface FluentiSelectProps {
   /** The value to match against prop keys */
   value: string
   /** Override the auto-generated synthetic ICU message id */
@@ -52,7 +52,7 @@ export interface SelectProps {
  *
  * Falls back to the `other` prop when no key matches.
  */
-export const SelectComp: Component<SelectProps> = (props) => {
+export const SelectComp: Component<FluentiSelectProps> = (props) => {
   const { t } = useI18n()
 
   const content = () => {

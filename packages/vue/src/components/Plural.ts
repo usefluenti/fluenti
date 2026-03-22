@@ -56,7 +56,7 @@ const pluralProps = {
   tag: { type: String, default: undefined },
 } as const
 
-export type PluralProps = Readonly<ExtractPropTypes<typeof pluralProps>>
+export type FluentiPluralProps = Readonly<ExtractPropTypes<typeof pluralProps>>
 
 export const Plural = defineComponent({
   name: 'Plural',
