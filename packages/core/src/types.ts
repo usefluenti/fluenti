@@ -359,3 +359,35 @@ export interface FluentiCoreInstanceFull extends FluentiCoreInstance {
   /** Format an ICU message string directly (no catalog lookup) */
   format(message: string, values?: Record<string, unknown>): FluentiTypeConfig['localizedString']
 }
+
+// ---- Split Runtime ----
+
+/** Module shape for code-splitting runtime integration */
+export interface SplitRuntimeModule {
+  __switchLocale?: (locale: string) => Promise<void>
+  __preloadLocale?: (locale: string) => Promise<void>
+}
+
+// ---- SSR Options ----
+
+/** Options for getSSRLocaleScript */
+export interface SSRLocaleScriptOptions {
+  /** Custom window variable key (default: '__FLUENTI_LOCALE__') */
+  key?: string
+}
+
+/** Options for getHydratedLocale */
+export interface HydratedLocaleOptions {
+  /** Custom window variable key (default: '__FLUENTI_LOCALE__') */
+  key?: string
+}
+
+// ---- Build Config Alias ----
+
+/** Build-time configuration type used by config-loader and CLI */
+export type FluentiBuildConfig = FluentiConfig
+
+/** Normalize a config object (identity function for type safety) */
+export function normalizeConfig(config: FluentiBuildConfig): FluentiBuildConfig {
+  return config
+}

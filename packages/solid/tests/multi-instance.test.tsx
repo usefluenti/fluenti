@@ -1,6 +1,6 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
 import { createRoot } from 'solid-js'
-import { createFluenti, resetGlobalFluentiContext, setGlobalFluentiContext, createI18nContext } from '../src/context'
+import { createFluenti, resetGlobalFluentiContext, setGlobalFluentiContext } from '../src/context'
 import { render } from '@solidjs/testing-library'
 import { I18nProvider, useI18n } from '../src'
 
@@ -39,7 +39,7 @@ describe('createFluenti() factory', () => {
     const ctx1 = createRoot(() => createFluenti({ locale: 'en', messages: enMessages }))
     setGlobalFluentiContext(ctx1)
 
-    const ctx2 = createRoot(() => createI18nContext({ locale: 'ja', messages: jaMessages }))
+    const ctx2 = createRoot(() => createFluenti({ locale: 'ja', messages: jaMessages }))
     setGlobalFluentiContext(ctx2)
 
     // setGlobalFluentiContext replaces without error

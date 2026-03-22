@@ -246,6 +246,8 @@ export function createFluenti(options: FluentiConfig): FluentiPlugin {
     return messageId as LocalizedString
   }
 
+  let _localeRequestId = 0
+
   async function setLocale(newLocale: Locale): Promise<void> {
     if (!lazyLocaleLoading || !options.chunkLoader) {
       locale.value = newLocale
@@ -263,10 +265,13 @@ export function createFluenti(options: FluentiConfig): FluentiPlugin {
       return
     }
 
-    // Async load
+    // Race-condition protection: track request ID
+    const thisRequest = ++_localeRequestId
     isLoading.value = true
     try {
       const messages = resolveChunkMessages(await options.chunkLoader(newLocale))
+      // Stale request — a newer setLocale call superseded this one
+      if (thisRequest !== _localeRequestId) return
       // Intentional mutation: Vue's shallowReactive API requires in-place property assignment for reactivity
       catalogs[newLocale] = { ...catalogs[newLocale], ...messages }
       loadedLocalesSet.add(newLocale)
@@ -276,7 +281,9 @@ export function createFluenti(options: FluentiConfig): FluentiPlugin {
       }
       locale.value = newLocale
     } finally {
-      isLoading.value = false
+      if (thisRequest === _localeRequestId) {
+        isLoading.value = false
+      }
     }
   }
 
@@ -287,8 +294,11 @@ export function createFluenti(options: FluentiConfig): FluentiPlugin {
     loadedLocales.value = new Set(loadedLocalesSet)
   }
 
+  const _preloadInFlight = new Set<string>()
+
   function preloadLocale(loc: string): void {
-    if (!lazyLocaleLoading || loadedLocalesSet.has(loc) || !options.chunkLoader) return
+    if (!lazyLocaleLoading || loadedLocalesSet.has(loc) || !options.chunkLoader || _preloadInFlight.has(loc)) return
+    _preloadInFlight.add(loc)
     const splitRuntime = getSplitRuntimeModule()
     options.chunkLoader(loc).then(async (loaded) => {
       const messages = resolveChunkMessages(loaded)
@@ -301,6 +311,8 @@ export function createFluenti(options: FluentiConfig): FluentiPlugin {
       }
     }).catch((e: unknown) => {
       console.warn('[fluenti] preload failed:', loc, e)
+    }).finally(() => {
+      _preloadInFlight.delete(loc)
     })
   }
 

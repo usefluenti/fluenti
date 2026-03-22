@@ -1,17 +1,17 @@
 import { describe, it, expect, vi } from 'vitest'
-import { createFluent } from '../src/index'
+import { createFluentiCore } from '../src/index'
 
 // ---------------------------------------------------------------------------
 // Edge cases — error recovery and concurrent loads
 // ---------------------------------------------------------------------------
-// Tests locale loading behavior through createFluent's loadMessages/setLocale.
-// The core createFluent is synchronous; framework-specific async loaders
+// Tests locale loading behavior through createFluentiCore's loadMessages/setLocale.
+// The core createFluentiCore is synchronous; framework-specific async loaders
 // (vue/solid/react) are tested in their own packages.
 // ---------------------------------------------------------------------------
 
 describe('edge cases — error recovery and concurrent loads', () => {
   it('loadMessages with invalid locale still stores messages', () => {
-    const i18n = createFluent({
+    const i18n = createFluentiCore({
       locale: 'en',
       messages: { en: { hello: 'Hello' } },
     })
@@ -24,7 +24,7 @@ describe('edge cases — error recovery and concurrent loads', () => {
 
   it('setLocale to unknown locale — locale changes but translations fall back to id', () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
-    const i18n = createFluent({
+    const i18n = createFluentiCore({
       locale: 'en',
       messages: { en: { hello: 'Hello' } },
     })
@@ -37,7 +37,7 @@ describe('edge cases — error recovery and concurrent loads', () => {
   })
 
   it('loadMessages merges with existing keys via spread', () => {
-    const i18n = createFluent({
+    const i18n = createFluentiCore({
       locale: 'en',
       messages: { en: { a: 'Alpha', b: 'Bravo' } },
     })
@@ -52,7 +52,7 @@ describe('edge cases — error recovery and concurrent loads', () => {
   })
 
   it('loadMessages overwrites existing key with same id', () => {
-    const i18n = createFluent({
+    const i18n = createFluentiCore({
       locale: 'en',
       messages: { en: { greeting: 'Hello' } },
     })
@@ -63,7 +63,7 @@ describe('edge cases — error recovery and concurrent loads', () => {
 
   it('3+ consecutive setLocale calls — only last locale is active', () => {
     const localeChanges: string[] = []
-    const i18n = createFluent({
+    const i18n = createFluentiCore({
       locale: 'en',
       messages: {
         en: { greeting: 'Hello' },
@@ -85,7 +85,7 @@ describe('edge cases — error recovery and concurrent loads', () => {
 
   it('setLocale to same locale does not fire onLocaleChange', () => {
     const changes: string[] = []
-    const i18n = createFluent({
+    const i18n = createFluentiCore({
       locale: 'en',
       messages: { en: {} },
       onLocaleChange: (newLocale) => { changes.push(newLocale) },
@@ -96,7 +96,7 @@ describe('edge cases — error recovery and concurrent loads', () => {
   })
 
   it('loadMessages for locale then setLocale uses loaded messages', () => {
-    const i18n = createFluent({
+    const i18n = createFluentiCore({
       locale: 'en',
       messages: { en: {} },
     })
@@ -108,7 +108,7 @@ describe('edge cases — error recovery and concurrent loads', () => {
   })
 
   it('getLocales returns all locales with loaded messages', () => {
-    const i18n = createFluent({
+    const i18n = createFluentiCore({
       locale: 'en',
       messages: { en: { a: 'A' } },
     })
@@ -124,7 +124,7 @@ describe('edge cases — error recovery and concurrent loads', () => {
 
   it('missing handler called when loadMessages not done for locale', () => {
     const missing = vi.fn().mockReturnValue('MISSING')
-    const i18n = createFluent({
+    const i18n = createFluentiCore({
       locale: 'en',
       messages: { en: {} },
       missing,
@@ -137,7 +137,7 @@ describe('edge cases — error recovery and concurrent loads', () => {
   })
 
   it('loadMessages empty object does not break existing translations', () => {
-    const i18n = createFluent({
+    const i18n = createFluentiCore({
       locale: 'en',
       messages: { en: { greeting: 'Hello' } },
     })

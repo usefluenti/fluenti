@@ -323,16 +323,16 @@ export function createFluenti(config: FluentiCoreConfig | FluentiConfig): Fluent
 }
 
 /** @internal — used by useI18n and I18nProvider */
-export function getGlobalI18nContext(): FluentiContext | undefined {
+export function getGlobalFluentiContext(): FluentiContext | undefined {
   return globalCtx
 }
 
 /** @internal — used by I18nProvider to set context without createRoot wrapper */
-export function setGlobalI18nContext(ctx: FluentiContext): void {
+export function setGlobalFluentiContext(ctx: FluentiContext): void {
   globalCtx = ctx
 }
 
 /** @internal — reset the global singleton (for testing only) */
-export function resetGlobalI18nContext(): void {
+export function resetGlobalFluentiContext(): void {
   globalCtx = undefined
 }

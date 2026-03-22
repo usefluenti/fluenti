@@ -187,8 +187,8 @@ describe('splitting mode', () => {
       // Locale must remain 'de' — the latest user intent
       expect(ctx.locale.value).toBe('de')
       expect(ctx.isLoading.value).toBe(false)
-      // Messages for both locales should be cached (usable later)
-      expect(ctx.loadedLocales.value.has('fr')).toBe(true)
+      // Only the latest locale ('de') should be cached; stale 'fr' was discarded
+      expect(ctx.loadedLocales.value.has('fr')).toBe(false)
       expect(ctx.loadedLocales.value.has('de')).toBe(true)
     })
 
