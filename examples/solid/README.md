@@ -6,7 +6,7 @@ A SolidJS SPA showcasing Fluenti i18n features with the Vite plugin.
 
 ```bash
 # From monorepo root
-pnpm playground:solid
+pnpm example:solid
 
 # Or directly
 cd examples/solid

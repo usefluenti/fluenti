@@ -466,3 +466,33 @@ Resolve a plural branch from a set of options using `Intl.PluralRules`. Checks f
 
 Same as `resolvePlural`, but returns the matched category key (e.g. `'one'`, `'other'`) rather than the branch value.
 
+## ICU Builders
+
+### `normalizeSelectForms(forms)`
+
+Make select form keys safe for ICU MessageFormat. Non-alphanumeric keys are replaced with `case_0`, `case_1`, etc.
+
+```typescript
+import { normalizeSelectForms } from '@fluenti/core'
+
+const { forms, valueMap } = normalizeSelectForms({
+  'user@example.com': 'Email user',
+  'admin': 'Administrator',
+  other: 'Unknown',
+})
+// forms:    { case_0: 'Email user', admin: 'Administrator', other: 'Unknown' }
+// valueMap: { 'user@example.com': 'case_0' }
+```
+
+Returns `{ forms, valueMap }` where `forms` has safe keys and `valueMap` maps original keys to their replacements. The `other` key is always preserved as-is.
+
+> This is an advanced/internal utility used by the `<Select>` component. Most users won't need it directly.
+
+### `buildICUPluralMessage(forms, offset?)`
+
+Build an ICU plural message string from a forms object. Optionally includes an `offset:N` clause.
+
+### `buildICUSelectMessage(forms)`
+
+Build an ICU select message string from a forms object.
+

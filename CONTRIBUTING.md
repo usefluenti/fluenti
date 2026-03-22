@@ -58,8 +58,8 @@ pnpm typecheck
 pnpm lint
 
 # Start playground apps
-pnpm playground:vue    # port 5173
-pnpm playground:solid  # port 5174
+pnpm example:vue    # port 5173
+pnpm example:solid  # port 5174
 
 # Documentation
 pnpm docs:dev          # port 8321

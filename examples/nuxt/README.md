@@ -6,7 +6,7 @@ A Nuxt 3 SSR application with cookie-based locale detection.
 
 ```bash
 # From monorepo root
-pnpm playground:nuxt
+pnpm example:nuxt
 
 # Or directly
 cd examples/nuxt

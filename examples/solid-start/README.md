@@ -6,7 +6,7 @@ A SolidStart SSR application with hydration and server-side i18n.
 
 ```bash
 # From monorepo root
-pnpm playground:solid-start
+pnpm example:solid-start
 
 # Or directly
 cd examples/solid-start

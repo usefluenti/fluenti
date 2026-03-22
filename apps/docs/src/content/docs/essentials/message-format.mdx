@@ -71,3 +71,48 @@ Plurals and selects can be nested:
   other {{gender, select, male {He has # items} other {She has # items}}}
 }
 ```
+
+## Message IDs
+
+Fluenti uses **content-based hashing** to generate message IDs automatically. You write natural-language messages in your source code, and Fluenti generates a deterministic short ID from the content using the FNV-1a algorithm.
+
+### How IDs are generated
+
+```
+Source message: "Hello {name}"  →  hashMessage("Hello {name}")  →  "k4f2x9"
+```
+
+The hash is a 32-bit FNV-1a hash converted to base-36, producing short alphanumeric IDs. The same message always produces the same ID.
+
+### Context-sensitive hashing
+
+When two identical messages need different translations (e.g., "Save" as a verb vs. noun), use `context` to differentiate:
+
+```typescript
+// These produce different IDs despite identical message text
+t({ message: 'Save', context: 'button' }, {})   // → ID "a1b2c3"
+t({ message: 'Save', context: 'noun' }, {})      // → ID "x7y8z9"
+```
+
+In PO catalogs, context maps to the `msgctxt` field — a standard gettext concept.
+
+### Explicit vs auto-generated IDs
+
+| Approach | When to use |
+|----------|------------|
+| **Auto-generated** (default) | Most cases — natural-language keys are self-documenting |
+| **Explicit ID** | Legacy migration, external translation management systems that require stable IDs |
+
+To use explicit IDs, pass `id` in a message descriptor:
+
+```typescript
+t({ id: 'nav.save_button', message: 'Save' })
+```
+
+When an explicit `id` is provided, it takes precedence over the auto-generated hash. The resolution order is:
+
+1. Explicit `id` (if non-empty string) → use it
+2. `message` exists → hash-based ID from `hashMessage(message, context)`
+3. Fallback → empty string
+
+For the full identity API, see [`hashMessage`](/api/core/#hashmessage), [`createMessageId`](/api/core/), and [`resolveDescriptorId`](/api/core/) in the core reference.

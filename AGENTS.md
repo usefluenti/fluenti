@@ -50,8 +50,8 @@ apps/docs (standalone)
 # Build & Dev
 pnpm build                  # Build all packages
 pnpm dev                    # Watch-mode build all packages
-pnpm playground:vue         # Start Vue playground (port 5173)
-pnpm playground:solid       # Start Solid playground (port 5174)
+pnpm example:vue         # Start Vue playground (port 5173)
+pnpm example:solid       # Start Solid playground (port 5174)
 pnpm docs:dev               # Start docs site (port 8321)
 pnpm docs:build             # Build docs site
 
@@ -68,11 +68,11 @@ pnpm --filter @fluenti/vue test -- --coverage
 
 ## Dev Server Lifecycle
 
-**IMPORTANT**: Dev servers (`pnpm playground:vue`, `pnpm playground:solid`, `pnpm docs:dev`) are long-running processes. When started in background for testing, **always kill them when done**:
+**IMPORTANT**: Dev servers (`pnpm example:vue`, `pnpm example:solid`, `pnpm docs:dev`) are long-running processes. When started in background for testing, **always kill them when done**:
 
 ```bash
 # Start in background, capture PID
-pnpm playground:vue &
+pnpm example:vue &
 DEV_PID=$!
 
 # ... do your testing ...

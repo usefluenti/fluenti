@@ -118,7 +118,7 @@ export function pseudoLocalePlugin(options?: PseudoLocaleOptions): FluentiPlugin
     ): Record<string, string> {
       if (locale !== targetLocale) return { ...messages }
 
-      const result: ExtractedMessages = {}
+      const result: Record<string, string> = {}
       for (const [id, message] of Object.entries(messages)) {
         result[id] = pseudoLocalize(message)
       }

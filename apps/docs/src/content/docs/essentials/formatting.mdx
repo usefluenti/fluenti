@@ -483,3 +483,80 @@ formatters: {
 ```
 
 Usage: `{amount, number, accounting}` with value `-1234` → `"(1,234)"`
+
+## `<DateTime>` and `<NumberFormat>` Components
+
+All frameworks provide `<DateTime>` and `<NumberFormat>` components for formatting values directly in templates. These are the component equivalents of the `d()` and `n()` functions.
+
+### When to use components vs functions
+
+| | Component (`<DateTime>`, `<NumberFormat>`) | Function (`d()`, `n()`) |
+|---|---|---|
+| **Best for** | Template/JSX inline rendering | Computed values, string concatenation |
+| **Usage** | Declarative, in markup | Imperative, in script/logic |
+
+### `<DateTime>`
+
+<Tabs>
+<TabItem label="Vue">
+```vue
+<template>
+  <p>Created: <DateTime :value="post.createdAt" style="long" /></p>
+  <p>Updated: <DateTime :value="post.updatedAt" style="relative" /></p>
+</template>
+```
+</TabItem>
+
+<TabItem label="React">
+```tsx
+<p>Created: <DateTime value={post.createdAt} style="long" /></p>
+<p>Updated: <DateTime value={post.updatedAt} style="relative" /></p>
+```
+</TabItem>
+
+<TabItem label="Solid">
+```tsx
+<p>Created: <DateTime value={post.createdAt} style="long" /></p>
+<p>Updated: <DateTime value={post.updatedAt} style="relative" /></p>
+```
+</TabItem>
+</Tabs>
+
+| Prop | Type | Description |
+|------|------|-------------|
+| `value` | `Date \| number` | **(required)** Date value to format |
+| `style` | `string?` | Named format style: `'short'`, `'long'`, `'time'`, `'datetime'`, `'relative'`, or a custom style name |
+
+### `<NumberFormat>`
+
+<Tabs>
+<TabItem label="Vue">
+```vue
+<template>
+  <p>Price: <NumberFormat :value="item.price" style="currency" /></p>
+  <p>Progress: <NumberFormat :value="0.85" style="percent" /></p>
+</template>
+```
+</TabItem>
+
+<TabItem label="React">
+```tsx
+<p>Price: <NumberFormat value={item.price} style="currency" /></p>
+<p>Progress: <NumberFormat value={0.85} style="percent" /></p>
+```
+</TabItem>
+
+<TabItem label="Solid">
+```tsx
+<p>Price: <NumberFormat value={item.price} style="currency" /></p>
+<p>Progress: <NumberFormat value={0.85} style="percent" /></p>
+```
+</TabItem>
+</Tabs>
+
+| Prop | Type | Description |
+|------|------|-------------|
+| `value` | `number` | **(required)** Number value to format |
+| `style` | `string?` | Named format style: `'currency'`, `'percent'`, `'decimal'`, or a custom style name |
+
+Custom styles are defined via `dateFormats` and `numberFormats` in the provider configuration. See [Configuration](/essentials/configuration/) for details.

@@ -382,3 +382,59 @@ For programmatic usage, pass an `options` object instead of individual props:
 | Plural forms | `<Plural>` component |
 | Outside component lifecycle (routes, stores) | `msg` tagged template |
 | Dynamic message IDs from API | `t()` function |
+
+## Checking and Inspecting Messages
+
+All frameworks provide two utility functions via `useI18n()` for working with the catalog directly:
+
+- **`te(key, locale?)`** — Check if a translation key exists. Returns `boolean`.
+- **`tm(key, locale?)`** — Get the raw compiled message without interpolation. Returns `CompiledMessage | undefined`.
+
+These are useful for conditional rendering, debugging, and validating dynamic keys before translation.
+
+<Tabs>
+<TabItem label="Vue">
+```vue
+<script setup>
+import { useI18n } from '@fluenti/vue'
+const { te, t } = useI18n()
+</script>
+
+<template>
+  <span v-if="te('premium.badge')">{{ t('premium.badge') }}</span>
+  <span v-else>Free</span>
+</template>
+```
+</TabItem>
+
+<TabItem label="React">
+```tsx
+import { useI18n } from '@fluenti/react'
+
+function Badge() {
+  const { te, t } = useI18n()
+  return te('premium.badge') ? <span>{t('premium.badge')}</span> : <span>Free</span>
+}
+```
+</TabItem>
+
+<TabItem label="Solid">
+```tsx
+import { useI18n } from '@fluenti/solid'
+
+function Badge() {
+  const { te, t } = useI18n()
+  return te('premium.badge') ? <span>{t('premium.badge')}</span> : <span>Free</span>
+}
+```
+</TabItem>
+</Tabs>
+
+Both functions accept an optional `locale` parameter to check a specific locale instead of the current one:
+
+```ts
+te('greeting', 'ja')  // Does Japanese have this key?
+tm('greeting', 'ja')  // What's the raw Japanese message?
+```
+
+For full API details, see the framework-specific reference pages: [@fluenti/vue](/api/vue/#te--check-translation-existence), [@fluenti/react](/api/react/), [@fluenti/solid](/api/solid/#te--check-translation-existence).

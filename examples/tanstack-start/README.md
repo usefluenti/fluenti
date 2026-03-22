@@ -6,7 +6,7 @@ A TanStack Start application with file-based routing and SSR support.
 
 ```bash
 # From monorepo root
-pnpm playground:tanstack-start
+pnpm example:tanstack-start
 
 # Or directly
 cd examples/tanstack-start

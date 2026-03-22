@@ -1,6 +1,6 @@
 import { createSignal, createRoot, type Accessor } from 'solid-js'
 import { formatDate, formatNumber, interpolate as coreInterpolate, buildICUMessage, resolveDescriptorId } from '@fluenti/core'
-import type { Locale, LocalizedString, Messages, CompiledMessage, MessageDescriptor, MissingKeyEvent, DateFormatOptions, NumberFormatOptions, ChunkLoader, SplitRuntimeModule, DiagnosticsConfig } from '@fluenti/core'
+import type { FluentiRuntimeConfig, Locale, LocalizedString, Messages, CompiledMessage, MessageDescriptor, MissingKeyEvent, DateFormatOptions, NumberFormatOptions, ChunkLoader, SplitRuntimeModule, DiagnosticsConfig } from '@fluenti/core'
 
 const SPLIT_RUNTIME_KEY = Symbol.for('fluenti.runtime.solid.v1')
 
@@ -20,7 +20,7 @@ function resolveChunkMessages(
 }
 
 /** Extended config with lazy locale loading support */
-export interface I18nConfig extends FluentRuntimeConfig {
+export interface I18nConfig extends FluentiRuntimeConfig {
   /**
    * Async message loader for lazy locale loading.
    * Preferred over `chunkLoader` (which is deprecated).
@@ -86,7 +86,7 @@ export interface I18nContext {
  * The returned `t()` reads the internal `locale()` signal, so any
  * Solid computation that calls `t()` will re-run when the locale changes.
  */
-export function createI18nContext(config: FluentRuntimeConfig | I18nConfig): I18nContext {
+export function createI18nContext(config: FluentiRuntimeConfig | I18nConfig): I18nContext {
   const [locale, setLocaleSignal] = createSignal<Locale>(config.locale)
   const [isLoading, setIsLoading] = createSignal(false)
   const loadedLocalesSet = new Set<string>([config.locale])
@@ -365,7 +365,7 @@ let globalCtx: I18nContext | undefined
  *
  * Returns the context for convenience, but `useI18n()` will also find it.
  */
-export function createFluenti(config: FluentRuntimeConfig | I18nConfig): I18nContext {
+export function createFluenti(config: FluentiRuntimeConfig | I18nConfig): I18nContext {
   const ctx = createRoot(() => createI18nContext(config))
 
   // Only set global singleton in browser (client-side).

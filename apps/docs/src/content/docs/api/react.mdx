@@ -32,7 +32,8 @@ import zhCN from './locales/compiled/zh-CN'
 | `fallbackChain` | `Record<string, string[]>?` | Locale fallback chains |
 | `dateFormats` | `DateFormatOptions?` | Custom date format presets |
 | `numberFormats` | `NumberFormatOptions?` | Custom number format presets |
-| `missing` | `(locale, id) => string?` | Missing message handler |
+| `missing` | `(locale, id) => string?` | **Deprecated.** Use `onMissingKey` instead |
+| `onMissingKey` | `(event: MissingKeyEvent) => string \| undefined \| void` | Called when a translation is missing or fallback locale is used |
 
 ### Lazy loading
 
@@ -298,7 +299,8 @@ export const { setLocale, getI18n, Trans, Plural, Select, DateTime, NumberFormat
 | `fallbackChain` | `Record<string, string[]>?` | Custom fallback chains per locale |
 | `dateFormats` | `DateFormatOptions?` | Custom date format presets |
 | `numberFormats` | `NumberFormatOptions?` | Custom number format presets |
-| `missing` | `(locale, id) => string?` | Missing message handler |
+| `missing` | `(locale, id) => string?` | **Deprecated.** Use `onMissingKey` instead |
+| `onMissingKey` | `(event: MissingKeyEvent) => string \| undefined \| void` | Called when a translation is missing or fallback locale is used |
 
 #### Returns
 

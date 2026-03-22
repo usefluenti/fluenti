@@ -145,7 +145,6 @@ export default defineConfig({
           collapsed: true,
           items: [
             { label: 'Code Splitting', slug: 'advanced/code-splitting' },
-            { label: 'Custom Bundlers', slug: 'advanced/custom-bundlers' },
             { label: 'Performance', slug: 'advanced/performance' },
             { label: 'Scaling & Enterprise', slug: 'advanced/scaling' },
             { label: 'SSR & Hydration', slug: 'advanced/ssr-hydration' },

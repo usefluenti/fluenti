@@ -40,8 +40,8 @@ export interface DiagnosticsConfig {
 export const __DEV__: boolean = /* @__PURE__ */ (() => {
   try {
     // Vite / esbuild
-    if (typeof import.meta !== 'undefined' && import.meta.env != null) {
-      return !!import.meta.env.DEV
+    if (typeof import.meta !== 'undefined' && (import.meta as any).env != null) {
+      return !!(import.meta as any).env.DEV
     }
   } catch {
     // import.meta not available

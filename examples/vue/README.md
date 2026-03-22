@@ -6,7 +6,7 @@ A Vue 3 SPA showcasing all Fluenti i18n features with the Vite plugin.
 
 ```bash
 # From monorepo root
-pnpm playground:vue
+pnpm example:vue
 
 # Or directly
 cd examples/vue

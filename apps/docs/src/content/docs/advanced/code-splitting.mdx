@@ -5,7 +5,7 @@ description: Choose a build-time locale chunk strategy and wire runtime lazy loc
 
 import { Tabs, TabItem, Aside } from '@astrojs/starlight/components'
 
-`fluenti compile` always generates tree-shakeable locale modules — every message is a `/* @__PURE__ */` annotated export so bundlers can eliminate unused translations. Fluenti splits this into two separate concerns:
+`fluenti compile` always generates tree-shakeable locale modules — every message is a `/* @__PURE__ */` annotated export so bundlers can eliminate unused translations. For bundle size optimization and cache tuning, see the [Performance](/advanced/performance/) guide. Fluenti splits this into two separate concerns:
 
 - **Build-time strategy** via `splitting` in `fluenti.config.ts`
 - **Runtime locale loading** via `loadMessages()` or `chunkLoader`

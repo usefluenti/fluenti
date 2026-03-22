@@ -28,7 +28,8 @@ app.use(i18n)
 | `locale` | `string` | Initial locale |
 | `fallbackLocale` | `string?` | Fallback locale |
 | `messages` | `AllMessages` | Compiled message catalogs (from `fluenti compile`) |
-| `missing` | `(locale, id) => string?` | Missing message handler |
+| `missing` | `(locale, id) => string?` | **Deprecated.** Use `onMissingKey` instead |
+| `onMissingKey` | `(event: MissingKeyEvent) => string \| undefined \| void` | Called when a translation is missing or fallback locale is used |
 | `dateFormats` | `Record<string, DateTimeFormatOptions \| 'relative'>?` | Named date styles |
 | `numberFormats` | `Record<string, NumberFormatOptions>?` | Named number styles |
 | `fallbackChain` | `Record<string, string[]>?` | Locale fallback chains |

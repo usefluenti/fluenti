@@ -52,10 +52,11 @@ i18n.t('greeting', { name: 'World' }) // "こんにちは World！"
 | `messages` | `AllMessages` | Yes | `Record<Locale, Messages>` -- all locale messages |
 | `fallbackLocale` | `Locale` | No | Single fallback locale when key not found in current locale |
 | `fallbackChain` | `Record<string, Locale[]>` | No | Per-locale or wildcard (`'*'`) fallback chains |
-| `missing` | `(locale, id) => string \| undefined` | No | Handler for missing translations; return undefined to fall through to ID |
+| `missing` | `(locale, id) => string \| undefined` | No | **Deprecated** -- use `onMissingKey` instead. Handler for missing translations; return undefined to fall through to ID |
+| `onMissingKey` | `(event: MissingKeyEvent) => string \| undefined \| void` | No | Called when a translation key is missing or a fallback locale is used; return string to use as translation, undefined/void to fall through |
 | `dateFormats` | `DateFormatOptions` | No | Custom named date format styles, merged over defaults |
 | `numberFormats` | `NumberFormatOptions` | No | Custom named number format styles, merged over defaults |
-| `namespaceMapping` | `NamespaceMapping` | No | Glob-pattern to namespace mapping |
+| `diagnostics` | `DiagnosticsConfig` | No | Runtime diagnostics for missing keys, fallback usage, parse/format errors (no-op in production) |
 | `externalCatalogs` | `Array<{ package, catalogDir }>` | No | External catalog sources |
 
 ### Instance: FluentiInstanceExtended
@@ -576,19 +577,28 @@ type AllMessages = Record<Locale, Messages>
 
 // --- Configuration ---
 
+interface MissingKeyEvent {
+  locale: Locale
+  id: string
+  context?: string
+  fallbackUsed?: Locale
+}
+
 interface FluentiRuntimeConfig {
   locale: Locale
   fallbackLocale?: Locale
   messages: AllMessages
+  /** @deprecated Use onMissingKey instead */
   missing?: (locale: Locale, id: string) => string | undefined
+  onMissingKey?: (event: MissingKeyEvent) => string | undefined | void
 }
 
 interface FluentiRuntimeConfigFull extends FluentiRuntimeConfig {
-  namespaceMapping?: NamespaceMapping
   dateFormats?: DateFormatOptions
   numberFormats?: NumberFormatOptions
   fallbackChain?: Record<string, Locale[]>
   externalCatalogs?: Array<{ package: string; catalogDir: string }>
+  diagnostics?: DiagnosticsConfig
 }
 
 // --- Instance ---
@@ -687,8 +697,47 @@ interface ParsedLocale {
   region?: string
 }
 
-interface NamespaceMapping {
-  [globPattern: string]: string
+// --- Diagnostics ---
+
+interface DiagnosticEvent {
+  readonly type: 'missing-key' | 'fallback-used' | 'parse-error' | 'format-error'
+  readonly locale: string
+  readonly messageId?: string
+  readonly fallbackLocale?: string
+  readonly error?: Error
+  readonly timestamp: number
+}
+
+interface DiagnosticsConfig {
+  warnMissing?: boolean
+  warnFallback?: boolean
+  reporter?: (event: DiagnosticEvent) => void
+}
+
+// --- Plugin System ---
+
+interface FluentiPlugin {
+  readonly name: string
+  onAfterExtract?: (context: PluginExtractContext) => void | Promise<void>
+  onBeforeCompile?: (context: PluginCompileContext) => void | Promise<void>
+  onAfterCompile?: (context: PluginCompileContext) => void | Promise<void>
+  transformMessages?: (messages: Readonly<Record<string, string>>, locale: string) => Record<string, string> | Promise<Record<string, string>>
+  formatters?: Readonly<Record<string, CustomFormatter>>
+  configKey?: string
+}
+
+interface PluginExtractContext {
+  readonly messages: Map<string, ExtractedMessage>
+  readonly sourceLocale: string
+  readonly targetLocales: readonly string[]
+  readonly config: Readonly<FluentiBuildConfig>
+}
+
+interface PluginCompileContext {
+  readonly locale: string
+  readonly messages: Readonly<Record<string, string>>
+  readonly outDir: string
+  readonly config: Readonly<FluentiBuildConfig>
 }
 
 // --- Lazy Messages ---
@@ -696,26 +745,152 @@ interface NamespaceMapping {
 type MsgTaggedTemplate = (strings: TemplateStringsArray, ...exprs: unknown[]) => MessageDescriptor
 type MsgDescriptor = (descriptor: MessageDescriptor) => MessageDescriptor
 
-// --- CLI/Build Config ---
+// --- Nested Config Interfaces ---
 
-interface FluentiConfig {
+interface FluentiSourceConfig {
   sourceLocale: Locale
-  locales: Locale[]
+  locales: LocaleDefinition[]
+  defaultLocale?: Locale
   catalogDir: string
   format: 'json' | 'po'
   include: string[]
   exclude?: string[]
   compileOutDir: string
-  devWarnings?: boolean
-  strictBuild?: boolean
-  namespaceMapping?: Record<string, string>
-  fallbackChain?: Record<string, Locale[]>
-  externalCatalogs?: Array<{ package: string; catalogDir: string }>
-  strictThreshold?: number
+}
+
+interface FluentiBuildOptions {
   splitting?: 'dynamic' | 'static' | false
   defaultBuildLocale?: Locale
+  catalogExtension?: string
+  idGenerator?: (message: string, context?: string) => string
+  autoCompile?: boolean
+  parallel?: boolean
+  strict?: boolean
+  strictThreshold?: number
+}
+
+interface FluentiDevOptions {
+  autoCompile?: boolean
+  autoCompileDelay?: number
+  warnings?: boolean
+}
+
+interface FluentiRuntimeOptions {
+  fallbackChain?: Record<string, Locale[]>
+  dateFormats?: DateFormatOptions
+  numberFormats?: NumberFormatOptions
+  externalCatalogs?: Array<{ package: string; catalogDir: string }>
+}
+
+interface FluentiHooksConfig {
+  onBeforeCompile?: () => boolean | void | Promise<boolean | void>
+  onAfterCompile?: () => void | Promise<void>
+}
+
+// --- CLI/Build Config ---
+
+interface FluentiBuildConfig extends FluentiSourceConfig {
+  extends?: string
+  build?: FluentiBuildOptions
+  dev?: FluentiDevOptions
+  runtime?: FluentiRuntimeOptions
+  hooks?: FluentiHooksConfig
+  plugins?: readonly FluentiPlugin[]
+  // Legacy flat fields (backward-compatible, mapped by normalizeConfig)
+  splitting?: 'dynamic' | 'static' | false
+  defaultBuildLocale?: Locale
+  devWarnings?: boolean
+  strictBuild?: boolean
+  strictThreshold?: number
+  fallbackChain?: Record<string, Locale[]>
+  externalCatalogs?: Array<{ package: string; catalogDir: string }>
 }
 ```
+
+## normalizeConfig(raw)
+
+Normalize a config that may use flat (legacy) fields into the nested structure. Flat fields are mapped into their nested equivalents (`splitting` -> `build.splitting`, `devWarnings` -> `dev.warnings`, etc.). If both flat and nested fields are present, nested fields take precedence. Returns a new config object -- the input is never mutated.
+
+```ts
+import { normalizeConfig } from '@fluenti/core'
+
+const normalized = normalizeConfig({
+  sourceLocale: 'en',
+  locales: ['en', 'ja'],
+  catalogDir: './locales',
+  format: 'po',
+  include: ['./src/**/*.vue'],
+  compileOutDir: './locales/compiled',
+  splitting: 'dynamic',       // legacy flat field
+  devWarnings: true,           // legacy flat field
+})
+// normalized.build.splitting === 'dynamic'
+// normalized.dev.warnings === true
+```
+
+## Plugin System
+
+### createPluginRunner(plugins)
+
+Create a plugin runner that calls hooks in registration order. Hooks are awaited sequentially. Errors are logged and swallowed -- one plugin failing does not break others.
+
+```ts
+import { createPluginRunner } from '@fluenti/core'
+
+const runner = createPluginRunner([myPlugin, anotherPlugin])
+await runner.runAfterExtract(extractContext)
+await runner.runBeforeCompile(compileContext)
+await runner.runTransformMessages(messages, 'ja')
+const formatters = runner.collectFormatters()
+```
+
+### pseudoLocalePlugin(options?)
+
+Built-in plugin that generates pseudo-localized strings for UI testing. Transforms ASCII characters into accented equivalents and wraps messages in brackets (`"Hello"` -> `"[Ħëļļö]"`).
+
+```ts
+import { pseudoLocalePlugin } from '@fluenti/core'
+
+export default defineConfig({
+  plugins: [pseudoLocalePlugin({ locale: 'pseudo' })],
+})
+```
+
+### messageValidatorPlugin()
+
+Built-in plugin that validates ICU message syntax in catalogs during compilation. Checks that all messages parse as valid ICU MessageFormat and that placeholder variables are consistent across locales.
+
+```ts
+import { messageValidatorPlugin } from '@fluenti/core'
+
+export default defineConfig({
+  plugins: [messageValidatorPlugin()],
+})
+```
+
+## Diagnostics
+
+### createDiagnostics(config?)
+
+Create a diagnostics instance for development-time i18n issue reporting. In production builds, returns a no-op implementation that is fully tree-shakeable when guarded with `if (__DEV__)`.
+
+```ts
+import { createDiagnostics, __DEV__ } from '@fluenti/core'
+
+const diagnostics = createDiagnostics({
+  warnMissing: true,
+  warnFallback: true,
+  reporter: (event) => myLogger.warn(event),
+})
+
+if (__DEV__) {
+  diagnostics.missingKey('ja', 'greeting')
+}
+```
+
+### __DEV__
+
+Development-mode flag for tree-shaking diagnostics. Build tools (Vite, webpack, esbuild) replace this with `false` in production builds, allowing dead-code elimination of all diagnostic calls wrapped in `if (__DEV__)` blocks.
 
 ## Documentation
 

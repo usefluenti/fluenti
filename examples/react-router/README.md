@@ -6,7 +6,7 @@ A React Router v7 SPA demonstrating client-side routing with Fluenti.
 
 ```bash
 # From monorepo root
-pnpm playground:react-router
+pnpm example:react-router
 
 # Or directly
 cd examples/react-router

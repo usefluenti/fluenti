@@ -6,7 +6,7 @@ A Next.js 15 application with App Router, React Server Components, streaming, an
 
 ```bash
 # From monorepo root
-pnpm playground:nextjs
+pnpm example:nextjs
 
 # Or directly
 cd examples/nextjs

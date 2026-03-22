@@ -63,6 +63,8 @@ function MyComponent() {
 | `isLoading` | `Accessor<boolean>` | Whether a locale chunk is loading |
 | `loadedLocales` | `Accessor<Set<string>>` | Set of loaded locales |
 | `preloadLocale` | `(locale) => void` | Preload a locale without switching |
+| `te` | `(key, locale?) => boolean` | Check if a translation key exists in the catalog |
+| `tm` | `(key, locale?) => CompiledMessage \| undefined` | Get the raw compiled message without interpolation |
 
 ## `t` (compile-time import)
 
@@ -95,6 +97,43 @@ function MyComponent() {
   return <p>{format('Hello {name}!', { name: 'World' })}</p>
 }
 ```
+
+## `te()` — Check Translation Existence
+
+Check whether a translation key exists in the catalog without resolving it.
+
+```tsx
+function PremiumBadge() {
+  const { te, t } = useI18n()
+  return te('premium.badge') ? <span>{t('premium.badge')}</span> : null
+}
+```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `key` | `string` | Message ID to check |
+| `locale` | `string?` | Override locale (defaults to current) |
+
+**Returns:** `boolean`
+
+## `tm()` — Get Raw Message
+
+Retrieve the raw compiled message without interpolation. Useful for inspecting what is in the catalog.
+
+```tsx
+function DebugMessage(props: { id: string }) {
+  const { tm } = useI18n()
+  const raw = tm(props.id) // string or compiled function, or undefined
+  return <pre>{typeof raw === 'function' ? '[dynamic]' : raw ?? '[missing]'}</pre>
+}
+```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `key` | `string` | Message ID to retrieve |
+| `locale` | `string?` | Override locale (defaults to current) |
+
+**Returns:** `CompiledMessage | undefined` — a `string` for static messages, a `(values?) => string` function for dynamic messages, or `undefined` if not found.
 
 ## `<Trans>`
 

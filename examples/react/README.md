@@ -6,7 +6,7 @@ A React 19 single-page application demonstrating Fluenti's i18n features with th
 
 ```bash
 # From monorepo root
-pnpm playground:react
+pnpm example:react
 
 # Or directly
 cd examples/react

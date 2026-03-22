@@ -1,4 +1,4 @@
-import type { FluentiPlugin, PluginPluginCompileContext } from '../types'
+import type { FluentiPlugin, PluginCompileContext } from '../types'
 import { parse, FluentParseError } from '../parser'
 
 /** Validation issue found in a message */
@@ -73,8 +73,9 @@ export function messageValidatorPlugin(): FluentiPlugin {
 
     onBeforeCompile(context: PluginCompileContext): void {
       const issues: ValidationIssue[] = []
+      const msgs: Record<string, string> = context.messages as Record<string, string>
 
-      for (const [id, message] of Object.entries(context.messages)) {
+      for (const [id, message] of Object.entries(msgs)) {
         // 1. Check ICU parse validity
         try {
           parse(message)

@@ -44,11 +44,11 @@ export default {
 | `devWarnings` | `boolean` | `undefined` | Enable development-mode warnings |
 | `strictBuild` | `boolean` | `undefined` | Fail build on missing translations |
 | `strictThreshold` | `number` | `undefined` | Minimum translation percentage for strict mode |
-| `namespaceMapping` | `Record<string, string>` | `undefined` | Map glob patterns to namespace prefixes |
 | `fallbackChain` | `Record<string, Locale[]>` | `undefined` | Per-locale or wildcard fallback chains |
 | `externalCatalogs` | `Array<{ package, catalogDir }>` | `undefined` | External catalog sources from other packages |
 | `splitting` | `'dynamic' \| 'static' \| false` | `undefined` | Code splitting strategy |
 | `defaultBuildLocale` | `string` | `undefined` | Default locale for static build strategy |
+| `plugins` | `readonly FluentiPlugin[]` | `undefined` | Plugins that hook into the extract and compile pipelines |
 
 All commands accept `--config path` to specify a custom config file path.
 

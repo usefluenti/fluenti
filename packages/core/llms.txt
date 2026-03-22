@@ -33,22 +33,35 @@ Install: `pnpm add @fluenti/core` (usually included automatically via framework 
 - `hashMessage(message, context?)`: Generate a deterministic FNV-1a hash ID from message content and optional context
 - `defineConfig(config)`: Identity function providing type-safe config authoring for `fluenti.config.ts`
 - `resolveLocaleCodes(locales)`: Extract locale code strings from `LocaleDefinition[]` (handles both string and object forms)
+- `normalizeConfig(raw)`: Normalize legacy flat config fields into nested structure (`splitting` -> `build.splitting`, etc.); returns new object
+- `createPluginRunner(plugins)`: Create a plugin runner that calls hooks in registration order (sequential, error-safe)
+- `pseudoLocalePlugin(options?)`: Built-in plugin for pseudo-localized strings (ASCII -> accented, wrapped in brackets)
+- `messageValidatorPlugin()`: Built-in plugin that validates ICU syntax and placeholder consistency across locales
+- `createDiagnostics(config?)`: Create a diagnostics instance for dev-time i18n issue reporting (no-op in production, tree-shakeable)
+- `__DEV__`: Development-mode flag for tree-shaking diagnostics; replaced with `false` in production builds
 
 ## Key Types
 
 - `Locale`: string alias for BCP 47 locale codes
 - `Messages` / `AllMessages`: `Record<string, CompiledMessage>` / `Record<Locale, Messages>`
 - `CompiledMessage`: `string | ((values?) => string)`
-- `FluentiRuntimeConfig` / `FluentiRuntimeConfigFull`: Configuration with locale, messages, fallbackLocale, fallbackChain, missing handler, dateFormats, numberFormats
+- `MissingKeyEvent`: `{ locale, id, context?, fallbackUsed? }` -- event payload for `onMissingKey` handler
+- `FluentiRuntimeConfig` / `FluentiRuntimeConfigFull`: Configuration with locale, messages, fallbackLocale, fallbackChain, onMissingKey, dateFormats, numberFormats, diagnostics
 - `FluentiInstance` / `FluentiInstanceExtended`: Instance with `t()`, `setLocale()`, `loadMessages()`, `getLocales()`, plus `d()`, `n()`, `format()`
 - `MessageDescriptor`: `{ id, message?, comment?, context? }`
-- `FluentiConfig`: CLI/build config (sourceLocale, locales, catalogDir, format, include, compileOutDir, splitting, fallbackChain)
+- `FluentiBuildConfig`: CLI/build config with nested structure (extends `FluentiSourceConfig` with `build`, `dev`, `runtime`, `hooks`, `plugins`)
+- `FluentiSourceConfig`: Source-related config (sourceLocale, locales, catalogDir, format, include, exclude, compileOutDir)
+- `FluentiBuildOptions`: Build-time options (splitting, defaultBuildLocale, strict, parallel, idGenerator)
+- `FluentiDevOptions`: Dev-mode options (autoCompile, autoCompileDelay, warnings)
+- `FluentiRuntimeOptions`: Runtime options (fallbackChain, dateFormats, numberFormats, externalCatalogs)
+- `FluentiHooksConfig`: Compile lifecycle hooks (onBeforeCompile, onAfterCompile)
+- `FluentiPlugin`: Plugin interface with hooks (onAfterExtract, onBeforeCompile, onAfterCompile, transformMessages, formatters)
+- `DiagnosticsConfig`: Diagnostics configuration (warnMissing, warnFallback, reporter)
 - `ASTNode`: Union of TextNode, VariableNode, PluralNode, SelectNode, FunctionNode
 - `DetectLocaleOptions`: SSR detection options (cookie, query, path, headers, available, fallback)
 - `DateFormatOptions` / `NumberFormatOptions`: Named style maps for formatters
 - `LocaleObject`: Extended locale metadata (code, iso, dir, name, domain) for Nuxt/advanced use
 - `LocaleDefinition`: `string | LocaleObject` union for flexible locale configuration
-- `NamespaceMapping`: Maps namespace prefixes to message subsets
 - `CompileTimeMessageDescriptor`: Descriptor type used by compile-time `t` (includes `message`, `id?`, `comment?`, `context?`)
 - `CompileTimeT` / `TypedCompileTimeT`: Type signatures for the compile-time `t` function (tagged template + descriptor + call forms)
 - `FluentiTypeConfig`: Module augmentation interface for custom type config (branded locale types, etc.)

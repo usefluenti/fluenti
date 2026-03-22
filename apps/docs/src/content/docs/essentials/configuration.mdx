@@ -43,7 +43,6 @@ export default defineConfig({
 | `defaultBuildLocale` | `string?` | — | Default locale embedded in the bundle |
 | `devWarnings` | `boolean?` | — | Enable development-mode warnings for missing translations and format errors |
 | `strictBuild` | `boolean?` | — | Fail the build if any translations are missing |
-| `namespaceMapping` | `Record<string, string>?` | — | Map namespace prefixes to catalog subdirectories |
 | `externalCatalogs` | `Array<{ package: string; catalogDir: string }>?` | — | Load catalogs from external npm packages |
 | `strictThreshold` | `number?` | — | Minimum translation percentage required (used by `fluenti stats`) |
 | `extends` | `string?` | — | Path to parent config file for [monorepo inheritance](/advanced/scaling/#monorepo-configuration) |
@@ -56,6 +55,50 @@ export default defineConfig({
 | `devAutoCompileDelay` | `number?` | `300` | Debounce delay in ms for dev auto-compile |
 | `onBeforeCompile` | `() => boolean \| void \| Promise<...>` | — | [Lifecycle hook](/advanced/scaling/#build-lifecycle-hooks) called before auto-compile |
 | `onAfterCompile` | `() => void \| Promise<void>` | — | [Lifecycle hook](/advanced/scaling/#build-lifecycle-hooks) called after auto-compile |
+
+:::caution[Flat fields are deprecated]
+The flat config fields above (`splitting`, `defaultBuildLocale`, `devWarnings`, `strictBuild`, `devAutoCompile`, `devAutoCompileDelay`, `parallelCompile`, `onBeforeCompile`, `onAfterCompile`, `fallbackChain`, `externalCatalogs`) are supported for backward compatibility but deprecated. Use the nested structure below instead.
+:::
+
+## Nested Config Structure
+
+The recommended configuration groups related options into `build`, `dev`, `runtime`, and `hooks`:
+
+```typescript
+export default defineConfig({
+  sourceLocale: 'en',
+  locales: ['en', 'zh-CN', 'ja'],
+  catalogDir: './locales',
+  format: 'po',
+  include: ['./src/**/*.vue', './src/**/*.tsx'],
+  compileOutDir: './src/locales/compiled',
+
+  build: {
+    splitting: 'dynamic',
+    defaultBuildLocale: 'en',
+    parallel: true,
+  },
+
+  dev: {
+    autoCompile: true,
+    autoCompileDelay: 300,
+    warnings: true,
+  },
+
+  runtime: {
+    fallbackChain: { 'zh-TW': ['zh-CN', 'en'], '*': ['en'] },
+  },
+
+  hooks: {
+    onBeforeCompile: () => console.log('Compiling...'),
+    onAfterCompile: () => console.log('Done!'),
+  },
+})
+```
+
+Use `normalizeConfig()` from `@fluenti/core` to convert any config (flat or nested) into the canonical nested form. Flat fields are mapped to their nested equivalents (e.g., `splitting` to `build.splitting`, `devWarnings` to `dev.warnings`). Nested fields take precedence when both are specified.
+
+For the full nested options reference, see [Configuration API](/api/config/#nested-config-structure).
 
 ## PO vs JSON
 
@@ -181,3 +224,79 @@ export default defineConfig({
   compileOutDir: './locales/compiled',
 })
 ```
+
+## TypeScript Integration
+
+Fluenti provides strict type safety for translation calls via the `FluentiTypeConfig` interface and auto-generated type declarations.
+
+### Auto-generated types
+
+When you run `fluenti compile`, Fluenti generates a `messages.d.ts` file alongside your compiled catalogs. This file narrows the `t()` function signature to only accept valid message IDs and their expected interpolation values:
+
+```typescript
+// locales/compiled/messages.d.ts (auto-generated)
+declare module '@fluenti/core' {
+  interface FluentiTypeConfig {
+    messageIds: 'greeting' | 'item_count' | 'welcome_back'
+    messageValues: {
+      greeting: { name: string }
+      item_count: { count: number }
+      welcome_back: Record<string, never>
+    }
+  }
+}
+```
+
+After compilation, your IDE will autocomplete message IDs and flag missing or incorrect interpolation values:
+
+```typescript
+const { t } = useI18n()
+
+t('greeting', { name: 'Alice' })  // ✅ Valid
+t('greeting', {})                  // ❌ Missing required 'name'
+t('unknown_key')                   // ❌ Not a valid message ID
+```
+
+### Setup
+
+1. Run `fluenti compile` to generate the type declarations
+2. Ensure `compileOutDir` is included in your `tsconfig.json`:
+
+```json
+{
+  "compilerOptions": {
+    "strict": true,
+    "verbatimModuleSyntax": true
+  },
+  "include": ["src", "locales/compiled"]
+}
+```
+
+The types update automatically on each `fluenti compile` run. In dev mode with `devAutoCompile: true` (the default), types stay in sync as you edit messages.
+
+### `FluentiTypeConfig` interface
+
+The `FluentiTypeConfig` interface has three fields you can augment:
+
+| Field | Default | Purpose |
+|-------|---------|---------|
+| `localizedString` | `LocalizedString` (branded) | The return type of `t()`. Override to `string` to disable the branded type |
+| `messageIds` | `string` | Union of all valid message IDs (auto-narrowed by `messages.d.ts`) |
+| `messageValues` | `Record<string, Record<string, unknown>>` | Map of message ID → interpolation values (auto-narrowed by `messages.d.ts`) |
+
+### Disabling the branded type
+
+By default, `t()` returns a `LocalizedString` branded type — a `string` that has been marked as translated. This prevents accidentally passing untranslated strings where translated ones are expected.
+
+If this is too strict for your project, disable it:
+
+```typescript
+// fluenti.d.ts
+declare module '@fluenti/core' {
+  interface FluentiTypeConfig {
+    localizedString: string
+  }
+}
+```
+
+For more on type safety at scale, see [Scaling & Enterprise](/advanced/scaling/#type-safety-at-scale). For type-safe message authoring patterns, see [Best Practices](/advanced/best-practices/#type-safe-messages).

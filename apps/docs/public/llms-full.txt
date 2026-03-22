@@ -471,7 +471,6 @@ export default defineConfig({
 | `defaultBuildLocale` | `string?` | — | Locale embedded in the initial bundle |
 | `devWarnings` | `boolean?` | — | Warn on missing translations in dev |
 | `strictBuild` | `boolean?` | — | Fail build on missing translations |
-| `namespaceMapping` | `Record<string, string>?` | — | Map namespace prefixes to catalog subdirectories |
 | `externalCatalogs` | `Array<{ package, catalogDir }>?` | — | Load catalogs from npm packages |
 | `strictThreshold` | `number?` | — | Min translation % for `fluenti stats` |
 

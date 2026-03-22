@@ -230,22 +230,6 @@ fluenti extract --no-cache && fluenti compile --no-cache
 
 Cache files are stored alongside your catalog directory. They are safe to delete and will be regenerated on the next run.
 
-### Namespace splitting
-
-For very large codebases, split catalogs by feature area:
-
-```typescript
-export default defineConfig({
-  namespaceMapping: {
-    'src/features/auth/**': 'auth',
-    'src/features/billing/**': 'billing',
-    'src/features/dashboard/**': 'dashboard',
-  },
-})
-```
-
-Each namespace produces separate catalog files, enabling targeted extraction and independent translation workflows.
-
 ## Monitoring
 
 Track these metrics to ensure i18n doesn't regress performance:
