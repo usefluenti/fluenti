@@ -70,6 +70,8 @@ Detection chain runs in order: path -> cookie -> header -> fallback. First match
 | `useSwitchLocalePath()` | `@fluenti/nuxt` |
 | `useLocaleHead()` | `@fluenti/nuxt` |
 | `<NuxtLinkLocale>` | `@fluenti/nuxt` |
+| `useLocaleRoute()` | `@fluenti/nuxt` |
+| `defineI18nRoute(config)` | `@fluenti/nuxt` |
 
 ## Route Utilities
 
@@ -77,6 +79,22 @@ Detection chain runs in order: path -> cookie -> header -> fallback. First match
 - `switchLocalePath(path, targetLocale, locales, defaultLocale, strategy)` — Switch locale in path
 - `extractLocaleFromPath(path, locales)` — Extract locale from path
 - `extendPages(pages, options)` — Extend Nuxt pages with locale variants
+
+## SEO & Sitemap
+
+- `buildLocaleHead(locale, path, config, options?)` — Generate locale-aware HTML head metadata (lang, dir, hreflang, og:locale, canonical)
+- `generateSitemapUrls(paths, locales, defaultLocale, strategy, baseUrl?)` — Generate multi-locale sitemap entries with hreflang alternatives
+- `createSitemapHook(locales, defaultLocale, strategy, baseUrl?)` — Hook handler for `@nuxtjs/sitemap`'s `sitemap:generate` hook
+
+## Key Types
+
+- `Strategy` — `'prefix' | 'prefix_except_default' | 'prefix_and_default' | 'no_prefix' | 'domains'`
+- `FluentNuxtRuntimeConfig` — Runtime config injected into Nuxt's public runtimeConfig
+- `DetectBrowserLanguageOptions` — Cookie and fallback settings for browser language detection
+- `ISROptions` — ISR route rules configuration (`enabled`, `ttl?`)
+- `DomainConfig` — Domain-to-locale mapping for the `'domains'` strategy
+- `I18nRouteConfig` — Per-page locale restriction (`{ locales: string[] } | false`)
+- `LocaleHeadMeta`, `LocaleHeadOptions` — Locale-aware HTML head metadata types
 
 ## Documentation
 

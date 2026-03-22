@@ -23,6 +23,12 @@ pnpm add @fluenti/core @fluenti/solid @fluenti/vite-plugin
 - `t` — compile-time-only authoring API
 - `Trans`, `Plural`, `Select`, `DateTime`, `NumberFormat`
 - `msg`
+- `I18nCtx` — raw SolidJS context object (for advanced `useContext` usage)
+
+### Type Exports
+
+- `I18nContext`, `I18nConfig` — context value and config types
+- `TransProps`, `PluralProps`, `SelectProps` — component prop types
 
 ## Config Extensions
 
