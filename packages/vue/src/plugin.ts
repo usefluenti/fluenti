@@ -161,6 +161,12 @@ export function createFluentVue(options: FluentVueOptions): FluentVuePlugin {
   const loadedLocalesSet = new Set<string>([options.locale])
   const loadedLocales = ref<ReadonlySet<string>>(new Set(loadedLocalesSet))
 
+  // Guard against out-of-order async locale loads (race condition protection)
+  let localeRequestId = 0
+
+  // Track in-flight preload requests to avoid duplicate async work
+  const inFlightPreloads = new Set<string>()
+
   function lookup(
     loc: Locale,
     id: string,
@@ -263,20 +269,29 @@ export function createFluentVue(options: FluentVueOptions): FluentVuePlugin {
       return
     }
 
-    // Async load
+    // Async load with race condition guard
+    const requestId = ++localeRequestId
     isLoading.value = true
     try {
       const messages = resolveChunkMessages(await options.chunkLoader(newLocale))
+      // Always cache loaded messages regardless of staleness
       // Intentional mutation: Vue's shallowReactive API requires in-place property assignment for reactivity
       catalogs[newLocale] = { ...catalogs[newLocale], ...messages }
       loadedLocalesSet.add(newLocale)
       loadedLocales.value = new Set(loadedLocalesSet)
-      if (splitRuntime?.__switchLocale) {
-        await splitRuntime.__switchLocale(newLocale)
+
+      // Only switch locale if this is still the latest request
+      if (requestId === localeRequestId) {
+        if (splitRuntime?.__switchLocale) {
+          await splitRuntime.__switchLocale(newLocale)
+        }
+        locale.value = newLocale
       }
-      locale.value = newLocale
     } finally {
-      isLoading.value = false
+      // Only clear isLoading if this is the latest request
+      if (requestId === localeRequestId) {
+        isLoading.value = false
+      }
     }
   }
 
@@ -288,7 +303,8 @@ export function createFluentVue(options: FluentVueOptions): FluentVuePlugin {
   }
 
   function preloadLocale(loc: string): void {
-    if (!lazyLocaleLoading || loadedLocalesSet.has(loc) || !options.chunkLoader) return
+    if (!lazyLocaleLoading || loadedLocalesSet.has(loc) || inFlightPreloads.has(loc) || !options.chunkLoader) return
+    inFlightPreloads.add(loc)
     const splitRuntime = getSplitRuntimeModule()
     options.chunkLoader(loc).then(async (loaded) => {
       const messages = resolveChunkMessages(loaded)
@@ -301,6 +317,8 @@ export function createFluentVue(options: FluentVueOptions): FluentVuePlugin {
       }
     }).catch((e: unknown) => {
       console.warn('[fluenti] preload failed:', loc, e)
+    }).finally(() => {
+      inFlightPreloads.delete(loc)
     })
   }
 
