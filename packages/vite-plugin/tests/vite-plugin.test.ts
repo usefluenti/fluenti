@@ -335,4 +335,24 @@ const label = t('nav.home')
       expect(watcherEvents.has('change')).toBe(false)
     })
   })
+
+  describe('edge cases', () => {
+    it('returns undefined for malformed virtual module IDs', () => {
+      const plugin = getPlugin('fluenti:virtual')
+      // IDs that start with the prefix but are not well-formed
+      expect(callHook(plugin.load, {}, 'not-a-virtual-id')).toBeUndefined()
+      expect(callHook(plugin.load, {}, '\0virtual:other/messages/en')).toBeUndefined()
+      expect(callHook(plugin.resolveId, {}, '')).toBeUndefined()
+    })
+
+    it('config resolution with invalid inline config merges with defaults', () => {
+      // Passing an empty inline config object should still produce valid plugins
+      const plugins = createFluentiPlugins(
+        { framework: 'vue', config: { sourceLocale: 'en', locales: ['en'], catalogDir: './locales', format: 'po' as const, include: ['./src/**/*.tsx'], compileOutDir: 'src/locales/compiled' } },
+        [],
+      )
+      expect(plugins.length).toBeGreaterThan(0)
+      expect(plugins.map(p => p.name)).toContain('fluenti:virtual')
+    })
+  })
 })

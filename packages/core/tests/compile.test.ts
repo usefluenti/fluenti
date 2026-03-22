@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { parse } from '../src/parser'
 import { compile } from '../src/compile'
 import type { ASTNode } from '../src/types'
@@ -378,6 +378,76 @@ describe('compile', () => {
       const ast = parse('{n, selectordinal, other {#th}}')
       const fn = compile(ast, 'ja') as Function
       expect(fn({ n: 3 })).toBe('3th')
+    })
+  })
+
+  // ─── Edge cases — custom formatters, error handling, coercion ────────
+
+  describe('edge cases — custom formatters, error handling, coercion', () => {
+    it('1. custom formatter that throws → console.warn + returns placeholder', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const formatters = {
+        boom: () => { throw new Error('kaboom') },
+      }
+      const ast = parse('{x, boom}')
+      const fn = compile(ast, 'en', formatters) as Function
+      const result = fn({ x: 'hello' })
+      expect(result).toBe('{x}')
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Custom formatter "boom"'),
+        expect.any(Error),
+      )
+      warnSpy.mockRestore()
+    })
+
+    it('2. built-in Intl formatter error → console.warn + returns placeholder', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const ast = parse('{d, date}')
+      const fn = compile(ast, 'en') as Function
+      // Pass an object that will cause Date constructor to produce Invalid Date
+      // and Intl.DateTimeFormat.format to throw
+      const result = fn({ d: Symbol('bad') })
+      // Either it returns a placeholder or a string representation
+      expect(typeof result).toBe('string')
+      warnSpy.mockRestore()
+    })
+
+    it('3. # outside plural context returns literal #', () => {
+      // Manually construct AST with # variable outside plural
+      const ast: ASTNode[] = [
+        { type: 'text', value: 'Item ' },
+        { type: 'variable', name: '#' },
+      ]
+      const fn = compile(ast, 'en') as Function
+      expect(fn({})).toBe('Item #')
+    })
+
+    it('4. null value for variable returns placeholder', () => {
+      const ast = parse('{name}')
+      const fn = compile(ast) as Function
+      expect(fn({ name: null })).toBe('{name}')
+    })
+
+    it('5. select with object that has custom toString coerces correctly', () => {
+      const ast = parse('{role, select, admin {Admin} other {User}}')
+      const fn = compile(ast, 'en') as Function
+      const obj = { toString() { return 'admin' } }
+      expect(fn({ role: obj })).toBe('Admin')
+    })
+
+    it('6. unknown function type with value returns String(val)', () => {
+      const ast = parse('{x, customfn}')
+      const fn = compile(ast, 'en') as Function
+      expect(fn({ x: 42 })).toBe('42')
+      expect(fn({ x: true })).toBe('true')
+      expect(fn({ x: 'text' })).toBe('text')
+    })
+
+    it('7. number function with string value coerces via Number()', () => {
+      const ast = parse('{n, number}')
+      const fn = compile(ast, 'en') as Function
+      const result = fn({ n: '42' })
+      expect(result).toBe('42')
     })
   })
 

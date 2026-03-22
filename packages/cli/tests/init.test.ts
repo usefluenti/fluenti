@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest'
-import { detectFramework, generateFluentiConfig, validateLocale } from '../src/init'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { detectFramework, generateFluentiConfig, validateLocale, runInit } from '../src/init'
 
 describe('detectFramework', () => {
   it('detects Next.js', () => {
@@ -133,5 +133,106 @@ describe('validateLocale', () => {
 
   it('rejects overly long subtags', () => {
     expect(() => validateLocale('en-123456789')).toThrow('Invalid locale format')
+  })
+})
+
+vi.mock('node:fs', async () => {
+  const actual = await vi.importActual<typeof import('node:fs')>('node:fs')
+  return {
+    ...actual,
+    existsSync: vi.fn(actual.existsSync),
+    readFileSync: vi.fn(actual.readFileSync),
+    writeFileSync: vi.fn(actual.writeFileSync),
+    appendFileSync: vi.fn(actual.appendFileSync),
+  }
+})
+
+vi.mock('consola', async () => {
+  const actual = await vi.importActual<typeof import('consola')>('consola')
+  return {
+    ...actual,
+    default: {
+      ...actual.default,
+      info: vi.fn(),
+      warn: vi.fn(),
+      error: vi.fn(),
+      success: vi.fn(),
+      log: vi.fn(),
+      box: vi.fn(),
+      prompt: vi.fn(),
+    },
+  }
+})
+
+import { existsSync, readFileSync, writeFileSync, appendFileSync } from 'node:fs'
+import consola from 'consola'
+
+describe('runInit — edge cases', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('handles corrupt package.json with JSON.parse error', async () => {
+    vi.mocked(existsSync).mockReturnValue(true)
+    vi.mocked(readFileSync).mockReturnValue('not valid json {{{')
+
+    await expect(runInit({ cwd: '/test' })).rejects.toThrow()
+  })
+
+  it('exits early when user cancels prompt (symbol)', async () => {
+    vi.mocked(existsSync).mockImplementation((path) => {
+      if (String(path).endsWith('package.json')) return true
+      if (String(path).endsWith('fluenti.config.ts')) return false
+      return false
+    })
+    vi.mocked(readFileSync).mockReturnValue('{"dependencies":{}}')
+
+    vi.mocked(consola.prompt).mockResolvedValueOnce(Symbol('cancel') as never)
+
+    await runInit({ cwd: '/test' })
+
+    // Should not have written any config file since prompt was cancelled
+    expect(writeFileSync).not.toHaveBeenCalled()
+  })
+
+  it('validates locale format and rejects invalid target locale input', async () => {
+    vi.mocked(existsSync).mockImplementation((path) => {
+      if (String(path).endsWith('package.json')) return true
+      if (String(path).endsWith('fluenti.config.ts')) return false
+      return false
+    })
+    vi.mocked(readFileSync).mockReturnValue('{"dependencies":{}}')
+
+    vi.mocked(consola.prompt)
+      .mockResolvedValueOnce('en' as never)         // sourceLocale
+      .mockResolvedValueOnce('!!!bad' as never)      // targetLocales (invalid)
+      .mockResolvedValueOnce('po' as never)          // format
+
+    await expect(runInit({ cwd: '/test' })).rejects.toThrow('Invalid locale format')
+  })
+
+  it('handles file I/O error during gitignore append', async () => {
+    vi.mocked(existsSync).mockImplementation((path) => {
+      if (String(path).endsWith('package.json')) return true
+      if (String(path).endsWith('fluenti.config.ts')) return false
+      if (String(path).endsWith('.gitignore')) return true
+      return false
+    })
+    vi.mocked(readFileSync).mockImplementation(((path: string) => {
+      if (String(path).endsWith('package.json')) return '{"dependencies":{}}'
+      if (String(path).endsWith('.gitignore')) return '# existing gitignore'
+      return ''
+    }) as typeof readFileSync)
+    vi.mocked(writeFileSync).mockImplementation(() => {})
+    vi.mocked(appendFileSync).mockImplementation(() => {
+      throw new Error('EACCES: permission denied')
+    })
+
+    vi.mocked(consola.prompt)
+      .mockResolvedValueOnce('en' as never)
+      .mockResolvedValueOnce('ja' as never)
+      .mockResolvedValueOnce('po' as never)
+
+    await expect(runInit({ cwd: '/test' })).rejects.toThrow('EACCES')
   })
 })

@@ -312,6 +312,40 @@ describe('loadVirtualSplitModule', () => {
     expect(loadVirtualSplitModule('unknown', defaultOptions)).toBeUndefined()
   })
 
+  describe('edge cases — validation and runtimeGenerator', () => {
+    it('catalogDir with backticks triggers validation error', () => {
+      expect(() =>
+        loadVirtualSplitModule('\0virtual:fluenti/runtime', {
+          ...defaultOptions,
+          catalogDir: 'locales/`injected`',
+        }),
+      ).toThrow(/catalogDir/)
+    })
+
+    it('invalid locale code triggers validation error', () => {
+      expect(() =>
+        loadVirtualSplitModule('\0virtual:fluenti/runtime', {
+          ...defaultOptions,
+          locales: ['en', '!!!invalid'],
+        }),
+      ).toThrow()
+    })
+
+    it('uses runtimeGenerator when provided instead of legacy fallback', () => {
+      const mockGenerator = {
+        generateRuntime: (opts: unknown) => '/* custom runtime */',
+        generateRouteRuntime: (opts: unknown) => '/* custom route runtime */',
+      }
+      const code = loadVirtualSplitModule('\0virtual:fluenti/runtime', {
+        ...defaultOptions,
+        runtimeGenerator: mockGenerator,
+      })
+
+      expect(code).toBe('/* custom runtime */')
+      expect(code).not.toContain('shallowReactive')
+    })
+  })
+
   describe('path injection hardening', () => {
     it('static messages module validates locale via validateLocale', () => {
       expect(() =>

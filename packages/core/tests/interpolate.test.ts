@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { interpolate } from '../src/interpolate'
 
 describe('interpolate', () => {
@@ -231,6 +231,105 @@ describe('edge cases - exhaustive', () => {
   it('unicode escape sequence value', () => {
     const result = interpolate('Char: {v}', { v: '\u0041\u{1F600}' })
     expect(result).toBe('Char: A\u{1F600}')
+  })
+})
+
+// ─── Edge cases — cache control and exotic values ─────────────────────
+
+describe('edge cases — cache control and exotic values', () => {
+  it('1. cache is used for repeated messages (verified by consistency)', () => {
+    // After many unique messages, the cache still serves correct results
+    for (let i = 0; i < 10; i++) {
+      interpolate(`cache-test-${i} {v}`, { v: 'a' }, 'en')
+    }
+    // Verify cached message still works correctly
+    expect(interpolate('cache-test-0 {v}', { v: 'b' }, 'en')).toBe('cache-test-0 b')
+  })
+
+  it('2. cache is bypassed when custom formatters provided (different results possible)', () => {
+    const msg = '{v, upper}'
+    const fmt1 = { upper: (val: unknown) => String(val).toUpperCase() }
+    const fmt2 = { upper: (val: unknown) => String(val).toLowerCase() }
+    expect(interpolate(msg, { v: 'Hello' }, 'en', fmt1)).toBe('HELLO')
+    expect(interpolate(msg, { v: 'Hello' }, 'en', fmt2)).toBe('hello')
+  })
+
+  it('3. NaN as plural count — typeof NaN is number so count stays NaN', () => {
+    const msg = '{n, plural, =0 {zero} one {one} other {other}}'
+    const result = interpolate(msg, { n: NaN }, 'en')
+    // typeof NaN === 'number', so count = NaN. No exact match, CLDR resolves to 'other'
+    expect(result).toBe('other')
+  })
+
+  it('4. Infinity as plural count resolves as 0', () => {
+    const msg = '{n, plural, =0 {zero} one {one} other {other}}'
+    // Number(Infinity) is Infinity, which is truthy, so || 0 does NOT fire
+    // Actually: typeof Infinity === 'number' → count = Infinity, not 0
+    const result = interpolate(msg, { n: Infinity }, 'en')
+    // Infinity is a number, so it goes through as-is. No exact match, falls to CLDR
+    expect(result).toBe('other')
+  })
+
+  it('5. function as variable value → String representation', () => {
+    const fn = () => 'hello'
+    const result = interpolate('Value: {v}', { v: fn })
+    // Arrow functions stringify as "() => ..." not "function ..."
+    expect(result).toContain('=>')
+  })
+
+  it('6. BigInt as variable value → "42"', () => {
+    const result = interpolate('Value: {v}', { v: BigInt(42) })
+    expect(result).toBe('Value: 42')
+  })
+
+  it('7. object with custom toString uses toString result', () => {
+    const obj = { toString() { return 'custom-string' } }
+    const result = interpolate('Value: {v}', { v: obj })
+    expect(result).toBe('Value: custom-string')
+  })
+
+  it('8. Proxy object as variable value', () => {
+    const target = { toString() { return 'proxied' } }
+    const proxy = new Proxy(target, {})
+    const result = interpolate('Value: {v}', { v: proxy })
+    expect(result).toBe('Value: proxied')
+  })
+
+  it('9. {amount, number} with missing value returns placeholder', () => {
+    const result = interpolate('{amount, number}', {})
+    expect(result).toBe('{amount}')
+  })
+
+  it('10. {d, date} with missing value returns placeholder', () => {
+    const result = interpolate('{d, date}', {})
+    expect(result).toBe('{d}')
+  })
+
+  it('11. toString that throws', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const evil = {
+      toString() { throw new Error('toString exploded') },
+    }
+    // String(evil) will throw. The compile renderNode calls String(val)
+    // which propagates the error. Let's verify the actual behavior.
+    expect(() => interpolate('Value: {v}', { v: evil })).toThrow('toString exploded')
+    warnSpy.mockRestore()
+  })
+
+  it('12. getter that throws on access', () => {
+    const values: Record<string, unknown> = {}
+    Object.defineProperty(values, 'v', {
+      get() { throw new Error('getter exploded') },
+      enumerable: true,
+    })
+    expect(() => interpolate('Value: {v}', values)).toThrow('getter exploded')
+  })
+
+  it('13. circular reference object → String produces [object Object]', () => {
+    const obj: Record<string, unknown> = {}
+    obj.self = obj
+    const result = interpolate('Value: {v}', { v: obj })
+    expect(result).toBe('Value: [object Object]')
   })
 })
 

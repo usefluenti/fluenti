@@ -439,6 +439,122 @@ describe('parse', () => {
     })
   })
 
+  // ─── Edge cases — escaping, malformed input, boundaries ─────────────
+
+  describe('edge cases — escaping, malformed input, boundaries', () => {
+    it('1. consecutive escapes `\'\'\'\'` produce two literal single quotes', () => {
+      const result = parse("''''")
+      const text = result.map(n => (n as any).value).join('')
+      expect(text).toBe("''")
+    })
+
+    it('2. single quote at message start starts quoted sequence', () => {
+      const result = parse("'hello'")
+      expect(result).toEqual([{ type: 'text', value: 'hello' }])
+    })
+
+    it('3. single quote at message end — unterminated quote', () => {
+      // A trailing single quote with nothing after it: pos increments past it
+      const result = parse("hello'")
+      // The quote at end has no next char, so the branch pos++ at line 129 fires
+      // and flushText picks up "hello'"
+      const text = result.map(n => (n as any).value).join('')
+      expect(text).toContain('hello')
+    })
+
+    it('4. single quote inside braces throws FluentParseError', () => {
+      expect(() => parse("{name'test}")).toThrow(FluentParseError)
+    })
+
+    it('5. mixed escape types in same message', () => {
+      const result = parse("it''s a '{'test'}'")
+      const text = result.map(n => (n as any).value).join('')
+      expect(text).toContain("it")
+      expect(text).toContain("'")
+      expect(text).toContain("s a ")
+      expect(text).toContain("{")
+      expect(text).toContain("test")
+      expect(text).toContain("}")
+    })
+
+    it('6. whitespace in variable name throws FluentParseError', () => {
+      expect(() => parse('{my name}')).toThrow(FluentParseError)
+    })
+
+    it('7. tab in variable name throws FluentParseError', () => {
+      expect(() => parse('{my\tname}')).toThrow(FluentParseError)
+    })
+
+    it('8. multiple commas `{n,, plural}` throws FluentParseError', () => {
+      expect(() => parse('{n,, plural}')).toThrow(FluentParseError)
+    })
+
+    it('9. unknown function type produces function node with fn: unknown', () => {
+      const result = parse('{val, unknown}')
+      expect(result).toEqual([
+        { type: 'function', variable: 'val', fn: 'unknown' },
+      ])
+    })
+
+    it('10. function with whitespace-only style', () => {
+      const result = parse('{val, number,    }')
+      // style is trimmed, so empty string → style not set (or empty)
+      expect(result).toHaveLength(1)
+      expect(result[0]!.type).toBe('function')
+      const fn = result[0] as any
+      expect(fn.fn).toBe('number')
+      // Trimmed whitespace results in empty string, which is falsy → no style key
+      expect(fn.style).toBeUndefined()
+    })
+
+    it('11. duplicate plural keys — last definition wins', () => {
+      const result = parse('{n, plural, one {first} one {second} other {default}}')
+      const node = result[0] as any
+      expect(node.options.one).toEqual([{ type: 'text', value: 'second' }])
+    })
+
+    it('12. negative exact match =-1 — parse behavior', () => {
+      // = followed by no digits → key becomes "="
+      // The parser reads = then tries to read digits, -1 has no digits at pos
+      // so key = "=" and then it tries to read identifier starting with "-"
+      // which is not IDENT_REGEX → throws
+      expect(() => parse('{n, plural, =-1 {neg} other {x}}')).toThrow(FluentParseError)
+    })
+
+    it('13. very large exact match =999999999 works normally', () => {
+      const result = parse('{n, plural, =999999999 {big} other {x}}')
+      const node = result[0] as any
+      expect(node.options['=999999999']).toEqual([{ type: 'text', value: 'big' }])
+    })
+
+    it('14. nesting boundary: exactly 10 levels succeeds, 11 fails', () => {
+      // Build 10-level nested select
+      const vars = 'abcdefghij'
+      let msg10 = ''
+      for (let i = 0; i < 10; i++) {
+        msg10 += `{${vars[i]}, select, other {`
+      }
+      msg10 += 'leaf'
+      for (let i = 0; i < 10; i++) {
+        msg10 += '}}'
+      }
+      expect(() => parse(msg10)).not.toThrow()
+
+      // Build 11-level nested select
+      const vars11 = 'abcdefghijk'
+      let msg11 = ''
+      for (let i = 0; i < 11; i++) {
+        msg11 += `{${vars11[i]}, select, other {`
+      }
+      msg11 += 'leaf'
+      for (let i = 0; i < 11; i++) {
+        msg11 += '}}'
+      }
+      expect(() => parse(msg11)).toThrow(FluentParseError)
+      expect(() => parse(msg11)).toThrow(/maximum nesting depth/i)
+    })
+  })
+
   // ─── Recursion depth limit ─────────────────────────────────────────
   describe('recursion depth limit', () => {
     /** Build a deeply nested select message with the given number of nesting levels. */

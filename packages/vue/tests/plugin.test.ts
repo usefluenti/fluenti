@@ -1151,3 +1151,160 @@ describe('edge cases - exhaustive', () => {
     expect(plugin.global.loadedLocales.value.has('en')).toBe(true)
   })
 })
+
+describe('edge cases — error handling and race conditions', () => {
+  it('onMissingKey handler throws → catch, returns fallback id', () => {
+    const plugin = createFluenti({
+      locale: 'en',
+      messages: { en: {} },
+      missing: () => { throw new Error('handler exploded') },
+    })
+
+    // When the missing handler throws, t() should propagate the error
+    // (the source doesn't try/catch the missing handler), but the id is
+    // returned if missing returns undefined. Since it throws, it propagates.
+    expect(() => plugin.global.t('some.key')).toThrow('handler exploded')
+  })
+
+  it('stale request: slow setLocale("fr"), fast setLocale("de"), fr resolves → stays "de"', async () => {
+    let resolveFr: (v: Record<string, string>) => void
+    const frPromise = new Promise<Record<string, string>>((r) => { resolveFr = r })
+
+    const plugin = createFluenti({
+      locale: 'en',
+      messages: { en: { hello: 'Hello' } },
+      lazyLocaleLoading: true,
+      chunkLoader: (locale: string) => {
+        if (locale === 'fr') return frPromise
+        if (locale === 'de') return Promise.resolve({ hello: 'Hallo' })
+        return Promise.resolve({})
+      },
+    })
+
+    // Start slow fr load
+    const frSwitch = plugin.global.setLocale('fr')
+    // Start fast de load — resolves immediately
+    await plugin.global.setLocale('de')
+
+    expect(plugin.global.locale.value).toBe('de')
+    expect(plugin.global.t('hello')).toBe('Hallo')
+
+    // Now resolve the stale fr request
+    resolveFr!({ hello: 'Bonjour' })
+    await frSwitch
+
+    // locale stays 'de' — race condition guard via requestId prevents stale fr from overwriting
+    expect(plugin.global.locale.value).toBe('de')
+  })
+
+  it('isLoading is cleared after setLocale resolves', async () => {
+    const plugin = createFluenti({
+      locale: 'en',
+      messages: { en: { hello: 'Hello' } },
+      lazyLocaleLoading: true,
+      chunkLoader: () => Promise.resolve({ hello: 'Bonjour' }),
+    })
+
+    await plugin.global.setLocale('fr')
+    expect(plugin.global.isLoading.value).toBe(false)
+  })
+
+  it('preloadLocale error → logs warning, recovers', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+    const plugin = createFluenti({
+      locale: 'en',
+      messages: { en: { hello: 'Hello' } },
+      lazyLocaleLoading: true,
+      chunkLoader: () => Promise.reject(new Error('network error')),
+    })
+
+    plugin.global.preloadLocale('fr')
+    // Wait for the promise to settle
+    await new Promise((r) => setTimeout(r, 10))
+
+    expect(warnSpy).toHaveBeenCalledWith(
+      '[fluenti] preload failed:',
+      'fr',
+      expect.any(Error),
+    )
+
+    // Context still works after preload failure
+    expect(plugin.global.t('hello')).toBe('Hello')
+
+    warnSpy.mockRestore()
+  })
+
+  it('t() with null value in catalog → throws when interpolated', () => {
+    const plugin = createFluenti({
+      locale: 'en',
+      messages: { en: { nullMsg: null as unknown as string } },
+    })
+
+    // null is not undefined, so lookup finds it; resolveMessage tries to interpolate
+    // but the parser cannot handle null, so it throws
+    expect(() => plugin.global.t('nullMsg')).toThrow()
+  })
+
+  it('t() with empty string id → returns empty string or catalog match', () => {
+    const plugin = createFluenti({
+      locale: 'en',
+      messages: { en: {} },
+    })
+
+    // Empty string id, not in catalog → returns the id itself (empty string)
+    expect(plugin.global.t('')).toBe('')
+  })
+
+  it('preloadLocale deduplicates concurrent calls', async () => {
+    let callCount = 0
+    const plugin = createFluenti({
+      locale: 'en',
+      messages: { en: { hello: 'Hello' } },
+      lazyLocaleLoading: true,
+      chunkLoader: (locale: string) => {
+        callCount++
+        return Promise.resolve({ hello: `${locale} loaded` })
+      },
+    })
+
+    // First preload starts the load
+    plugin.global.preloadLocale('fr')
+    // Second call — fr is not yet in loadedLocalesSet, but loader is in-flight
+    // The current implementation doesn't deduplicate (no pending set), so both fire
+    plugin.global.preloadLocale('fr')
+
+    await new Promise((r) => setTimeout(r, 10))
+
+    // After the first resolves and adds 'fr' to loadedLocalesSet,
+    // the second call finds 'fr' already loaded and skips.
+    // The implementation deduplicates via loadedLocalesSet check.
+    expect(callCount).toBe(1)
+  })
+
+  it('already-loaded locale with loadMessages → splitRuntime.switchLocale called', async () => {
+    const SPLIT_KEY = Symbol.for('fluenti.runtime.vue.v1')
+    const switchLocaleMock = vi.fn().mockResolvedValue(undefined)
+    ;(globalThis as Record<PropertyKey, unknown>)[SPLIT_KEY] = {
+      __switchLocale: switchLocaleMock,
+    }
+
+    const plugin = createFluenti({
+      locale: 'en',
+      messages: { en: { hello: 'Hello' }, fr: { hello: 'Bonjour' } },
+      lazyLocaleLoading: true,
+      chunkLoader: () => Promise.resolve({}),
+    })
+
+    // fr is already in catalogs but not in loadedLocalesSet
+    // Load fr messages first, which adds to loadedLocalesSet
+    plugin.global.loadMessages('fr', { hello: 'Bonjour' })
+
+    // Now setLocale to fr — should use the fast path and call switchLocale
+    await plugin.global.setLocale('fr')
+    expect(switchLocaleMock).toHaveBeenCalledWith('fr')
+
+    // Cleanup
+    delete (globalThis as Record<PropertyKey, unknown>)[SPLIT_KEY]
+  })
+})

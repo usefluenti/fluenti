@@ -257,4 +257,67 @@ describe('parseResponse', () => {
     expect(result.steps).toBeDefined()
     expect(result.installCommands).toBeDefined()
   })
+
+  it('parseResponse returns empty locale files for empty AI output', () => {
+    const result = parseResponse('')
+
+    expect(result.config).toBeUndefined()
+    expect(result.localeFiles).toEqual([])
+    expect(result.steps).toBeUndefined()
+    expect(result.installCommands).toBeUndefined()
+  })
+
+  it('parseResponse handles response with LOCALE_FILES section but no locale entries', () => {
+    const response = [
+      '### LOCALE_FILES',
+      'No locale files generated.',
+      '### MIGRATION_STEPS',
+      'Nothing to migrate.',
+    ].join('\n')
+
+    const result = parseResponse(response)
+
+    expect(result.localeFiles).toEqual([])
+    expect(result.steps).toBe('Nothing to migrate.')
+  })
+})
+
+describe('migrate — edge cases', () => {
+  it('resolveLibrary returns undefined for empty string', () => {
+    expect(resolveLibrary('')).toBeUndefined()
+  })
+
+  it('resolveLibrary returns undefined for unknown library', () => {
+    expect(resolveLibrary('some-unknown-lib')).toBeUndefined()
+  })
+
+  it('buildMigratePrompt includes all detected file sections', () => {
+    const libraryInfo = {
+      name: 'vue-i18n' as const,
+      framework: 'Vue',
+      configPatterns: [],
+      localePatterns: [],
+      sourcePatterns: [],
+      migrationGuide: '',
+    }
+
+    const detected: DetectedFiles = {
+      configFiles: [{ path: 'i18n.ts', content: 'config content' }],
+      localeFiles: [{ path: 'locales/en.json', content: '{"hello":"Hello"}' }],
+      sampleSources: [{ path: 'src/App.vue', content: '<template>Hello</template>' }],
+      packageJson: '{"name":"test"}',
+    }
+
+    const result = buildMigratePrompt(libraryInfo, detected, 'migration guide text')
+
+    expect(result).toContain('EXISTING CONFIG FILES')
+    expect(result).toContain('i18n.ts')
+    expect(result).toContain('EXISTING LOCALE FILES')
+    expect(result).toContain('locales/en.json')
+    expect(result).toContain('SAMPLE SOURCE FILES')
+    expect(result).toContain('src/App.vue')
+    expect(result).toContain('MIGRATION GUIDE')
+    expect(result).toContain('migration guide text')
+    expect(result).toContain('package.json')
+  })
 })

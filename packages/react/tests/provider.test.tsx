@@ -223,6 +223,170 @@ describe('I18nProvider', () => {
     expect(getGlobalI18n()!.t('hello')).toBe('Hello')
   })
 
+  it('no loadMessages but locale not loaded → console.warn', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+    function Switcher() {
+      const { setLocale } = useI18n()
+      return <button onClick={() => setLocale('de')}>Switch</button>
+    }
+
+    render(
+      <I18nProvider locale="en" messages={{ en: { hello: 'Hello' } }}>
+        <Switcher />
+      </I18nProvider>,
+    )
+
+    await act(async () => {
+      screen.getByText('Switch').click()
+    })
+
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('No messages for locale "de"'),
+    )
+
+    warnSpy.mockRestore()
+  })
+
+  it('stale request error is silently ignored', async () => {
+    let callCount = 0
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    let rejectFirst: (err: Error) => void
+    const firstPromise = new Promise<Record<string, string>>((_resolve, reject) => {
+      rejectFirst = reject
+    })
+
+    const loadMessages = vi.fn((locale: string) => {
+      callCount++
+      if (callCount === 1) return firstPromise // slow, will be rejected
+      if (locale === 'de') return Promise.resolve({ hello: 'Hallo' })
+      return Promise.resolve({})
+    })
+
+    function Switcher() {
+      const { setLocale, i18n } = useI18n()
+      return (
+        <div>
+          <span data-testid="text">{i18n.t('hello')}</span>
+          <button data-testid="fr" onClick={() => setLocale('fr')}>FR</button>
+          <button data-testid="de" onClick={() => setLocale('de')}>DE</button>
+        </div>
+      )
+    }
+
+    render(
+      <I18nProvider
+        locale="en"
+        messages={{ en: { hello: 'Hello' } }}
+        loadMessages={loadMessages}
+      >
+        <Switcher />
+      </I18nProvider>,
+    )
+
+    // Start slow fr load
+    await act(async () => {
+      screen.getByTestId('fr').click()
+    })
+
+    // Start fast de load — supersedes fr
+    await act(async () => {
+      screen.getByTestId('de').click()
+    })
+
+    await waitFor(() => {
+      expect(screen.getByTestId('text').textContent).toBe('Hallo')
+    })
+
+    // Now reject the stale first request — should not log error
+    await act(async () => {
+      rejectFirst!(new Error('stale network error'))
+    })
+
+    // The stale error should NOT be logged (requestId mismatch)
+    expect(errorSpy).not.toHaveBeenCalled()
+
+    errorSpy.mockRestore()
+  })
+
+  it('preloadLocale error does not break subsequent setLocale', async () => {
+    let loadCallCount = 0
+    const loadMessages = vi.fn(async (locale: string) => {
+      loadCallCount++
+      if (locale === 'fr' && loadCallCount === 1) throw new Error('preload fail')
+      if (locale === 'de') return { hello: 'Hallo' }
+      return { hello: 'Bonjour' }
+    })
+
+    function Switcher() {
+      const { setLocale, i18n, preloadLocale } = useI18n()
+      return (
+        <div>
+          <span data-testid="text">{i18n.t('hello')}</span>
+          <button data-testid="preload" onClick={() => preloadLocale('fr')}>Preload</button>
+          <button data-testid="switch" onClick={() => setLocale('de')}>DE</button>
+        </div>
+      )
+    }
+
+    render(
+      <I18nProvider
+        locale="en"
+        messages={{ en: { hello: 'Hello' } }}
+        loadMessages={loadMessages}
+      >
+        <Switcher />
+      </I18nProvider>,
+    )
+
+    // Preload fr (will fail silently)
+    await act(async () => {
+      screen.getByTestId('preload').click()
+    })
+
+    await new Promise((r) => setTimeout(r, 10))
+
+    // Now switch to de — should work fine
+    await act(async () => {
+      screen.getByTestId('switch').click()
+    })
+
+    await waitFor(() => {
+      expect(screen.getByTestId('text').textContent).toBe('Hallo')
+    })
+  })
+
+  it('early return when already loaded + no loadMessages', async () => {
+    function Switcher() {
+      const { setLocale, i18n } = useI18n()
+      return (
+        <div>
+          <span data-testid="text">{i18n.t('hello')}</span>
+          <button onClick={() => setLocale('fr')}>Switch</button>
+        </div>
+      )
+    }
+
+    render(
+      <I18nProvider locale="en" messages={messages}>
+        <Switcher />
+      </I18nProvider>,
+    )
+
+    // fr is already in static messages, no loadMessages provided
+    await act(async () => {
+      screen.getByText('Switch').click()
+    })
+
+    expect(screen.getByTestId('text').textContent).toBe('Bonjour')
+  })
+
+  it('getGlobalI18n undefined before mount', () => {
+    clearGlobalI18n()
+    expect(getGlobalI18n()).toBeUndefined()
+  })
+
   it('updates global i18n instance on locale change', async () => {
     clearGlobalI18n()
 
