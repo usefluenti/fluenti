@@ -1,22 +1,6 @@
 import type { FluentiBuildConfig } from '@fluenti/core'
 
-/** Options passed to RuntimeGenerator methods */
-export interface RuntimeGeneratorOptions {
-  rootDir: string
-  catalogDir: string
-  catalogExtension: string
-  locales: string[]
-  sourceLocale: string
-  defaultBuildLocale: string
-}
-
-/** Framework-specific virtual module runtime generator */
-export interface RuntimeGenerator {
-  /** Generate the main reactive runtime module (virtual:fluenti/runtime) */
-  generateRuntime(options: RuntimeGeneratorOptions): string
-  /** Generate the per-route runtime module (virtual:fluenti/route-runtime) */
-  generateRouteRuntime(options: RuntimeGeneratorOptions): string
-}
+export type { RuntimeGeneratorOptions, RuntimeGenerator } from '@fluenti/core/transform'
 
 /** Custom message ID generator function */
 export type IdGenerator = (message: string, context?: string) => string

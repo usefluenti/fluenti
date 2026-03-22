@@ -3,8 +3,8 @@ import { createPackageConfig } from '../../scripts/vite-config-factory'
 export default createPackageConfig({
   entry: {
     index: 'src/index.ts',
-    internal: 'src/internal.ts',
-    'internal-browser': 'src/internal-browser.ts',
+    transform: 'src/transform.ts',
+    'transform-browser': 'src/transform-browser.ts',
     config: 'src/config.ts',
   },
   external: [/^node:/, 'jiti'],

@@ -25,14 +25,13 @@
       "import": { "types": "./dist/index.d.ts", "default": "./dist/index.js" },
       "require": { "types": "./dist/index.d.ts", "default": "./dist/index.cjs" }
     },
-    "./internal": {
-      "browser": { "types": "./dist/internal-browser.d.ts", "default": "./dist/internal-browser.js" },
-      "import": { "types": "./dist/internal.d.ts", "default": "./dist/internal.js" },
-      "require": { "types": "./dist/internal.d.ts", "default": "./dist/internal.cjs" }
+    "./transform": {
+      "import": { "types": "./dist/transform.d.ts", "default": "./dist/transform.js" },
+      "require": { "types": "./dist/transform.d.ts", "default": "./dist/transform.cjs" }
     },
-    "./internal/browser": {
-      "import": { "types": "./dist/internal-browser.d.ts", "default": "./dist/internal-browser.js" },
-      "require": { "types": "./dist/internal-browser.d.ts", "default": "./dist/internal-browser.cjs" }
+    "./transform/browser": {
+      "import": { "types": "./dist/transform-browser.d.ts", "default": "./dist/transform-browser.js" },
+      "require": { "types": "./dist/transform-browser.d.ts", "default": "./dist/transform-browser.cjs" }
     },
     "./config": {
       "import": { "types": "./dist/config.d.ts", "default": "./dist/config.js" },

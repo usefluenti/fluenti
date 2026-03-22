@@ -12,8 +12,7 @@ import { createDebouncedRunner, runExtractCompile } from './dev-runner'
 import { transformForDynamicSplit, transformForStaticSplit, injectCatalogImport } from './build-transform'
 import { resolveVirtualSplitId, loadVirtualSplitModule } from './virtual-modules'
 import { deriveRouteName, parseCompiledCatalog, buildChunkModule, readCatalogSource } from './route-resolve'
-import { scopeTransform } from './scope-transform'
-import { transformTransComponents } from './trans-transform'
+import { createTransformPipeline, hasScopeTransformCandidate } from '@fluenti/core/transform'
 export type { FluentiPluginOptions, FluentiCoreOptions, RuntimeGenerator, RuntimeGeneratorOptions, IdGenerator } from './types'
 export { createRuntimeGenerator } from './runtime-template'
 export type { RuntimePrimitives } from './runtime-template'
@@ -122,6 +121,8 @@ export function createFluentiPlugins(
     },
   }
 
+  const pipeline = createTransformPipeline({ framework })
+
   const scriptTransformPlugin: Plugin = {
     name: 'fluenti:script-transform',
     enforce: 'pre',
@@ -130,12 +131,15 @@ export function createFluentiPlugins(
       if (!id.match(/\.(vue|tsx|jsx|ts|js)(\?|$)/)) return undefined
       if (id.includes('.vue') && !id.includes('type=script')) return undefined
 
+      // Vue .vue files need allowTopLevelImportedT for top-level `import { t }`
+      const isVueSfc = framework === 'vue' && id.includes('.vue')
+
       let result = code
       let changed = false
 
       // ── <Trans> compile-time optimization (JSX/TSX only) ──────────────
       if (id.match(/\.[jt]sx(\?|$)/) && /<Trans[\s>]/.test(result)) {
-        const transResult = transformTransComponents(result)
+        const transResult = pipeline.transformTrans(result)
         if (transResult.transformed) {
           result = transResult.code
           changed = true
@@ -144,10 +148,9 @@ export function createFluentiPlugins(
 
       // ── t`` / t() scope-aware transform ────────────────────────────────
       if (hasScopeTransformCandidate(result)) {
-        const scoped = scopeTransform(result, {
-          framework,
-          allowTopLevelImportedT: framework === 'vue' && id.includes('.vue'),
-        })
+        const scoped = pipeline.transformScope(result,
+          isVueSfc ? { allowTopLevelImportedT: true } : undefined,
+        )
         if (scoped.transformed) {
           return { code: scoped.code, map: null }
         }
@@ -333,19 +336,4 @@ export function createFluentiPlugins(
   // 5. buildSplitPlugin     — rewrites t() calls to catalog refs + emits per-route chunks
   // 6. devPlugin            — file watcher + HMR for dev mode (must be last)
   return [virtualPlugin, ...frameworkPlugins, scriptTransformPlugin, buildCompilePlugin, buildSplitPlugin, devPlugin]
-}
-
-// ─── Utilities ──────────────────────────────────────────────────────────────
-
-function hasScopeTransformCandidate(code: string): boolean {
-  if (/(?<![.\w$])t\(\s*['"]/.test(code) || /[A-Za-z_$][\w$]*\(\s*\{/.test(code)) {
-    return true
-  }
-
-  if (/[A-Za-z_$][\w$]*`/.test(code) && (code.includes('useI18n') || code.includes('getI18n'))) {
-    return true
-  }
-
-  return /import\s*\{[^}]*\bt(?:\s+as\s+[A-Za-z_$][\w$]*)?\b[^}]*\}/.test(code)
-    && /@fluenti\/(react|vue|solid|next)/.test(code)
 }

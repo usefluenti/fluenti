@@ -1,0 +1,207 @@
+---
+title: "@fluenti/core/transform"
+description: "Stable bundler plugin API — code transforms, runtime generation, and utilities for building Fluenti integrations with any bundler."
+---
+
+Stable, semver-guaranteed API for bundler plugin authors. Use this to build Fluenti integrations for Vite, webpack, Parcel, or any other bundler.
+
+## `createTransformPipeline(options)`
+
+Create a reusable transform pipeline that encapsulates the full Fluenti code-transform chain.
+
+```typescript
+import { createTransformPipeline } from '@fluenti/core/transform'
+
+const pipeline = createTransformPipeline({
+  framework: 'react',
+  scope: { serverModuleImport: '@fluenti/next' },
+})
+
+// In your bundler's transform hook / loader:
+const result = pipeline.transform(source, filePath)
+if (result.transformed) {
+  return result.code
+}
+```
+
+### Options
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `framework` | `string` | Framework identifier: `'vue'`, `'solid'`, `'react'`, `'svelte'` |
+| `scope` | `Omit<ScopeTransformOptions, 'framework'>` | Default scope-transform options (merged with per-call overrides) |
+
+### Returns: `TransformPipeline`
+
+| Method | Signature | Description |
+|--------|-----------|-------------|
+| `transform` | `(code: string, fileId: string) => TransformResult` | Full chain: `<Trans>` optimization → scope transform |
+| `transformTrans` | `(code: string) => TransTransformResult` | Only `<Trans>` component optimization |
+| `transformScope` | `(code: string, overrides?) => ScopeTransformResult` | Only scope-aware `t` rewriting, with optional per-call overrides |
+
+The `transform` method automatically:
+1. Detects JSX/TSX files and runs `<Trans>` optimization when `<Trans` is found
+2. Runs a quick regex pre-check (`hasScopeTransformCandidate`) to skip files without Fluenti patterns
+3. Runs the full scope-aware AST transform
+
+## `hasScopeTransformCandidate(code)`
+
+Quick regex pre-check that returns `true` when source code *may* contain Fluenti patterns (`t()`, `` t` ` ``, `import { t }`). Use this to skip expensive AST parsing on irrelevant files.
+
+```typescript
+import { hasScopeTransformCandidate } from '@fluenti/core/transform'
+
+// In a webpack loader:
+if (!hasScopeTransformCandidate(source)) {
+  return source // skip transform
+}
+```
+
+False positives are acceptable (the AST transform is authoritative). False negatives are not.
+
+## `scopeTransform(code, options)`
+
+Low-level scope-aware transform. Rewrites `` t`Hello ${name}` `` to `t({ id, message }, { name })` based on AST analysis of variable bindings.
+
+```typescript
+import { scopeTransform } from '@fluenti/core/transform'
+
+const result = scopeTransform(source, {
+  framework: 'react',
+  serverModuleImport: '@fluenti/next',
+  treatFrameworkDirectImportsAsServer: true,
+})
+```
+
+### ScopeTransformOptions
+
+| Option | Type | Description |
+|--------|------|-------------|
+| `framework` | `string` | **Required.** Framework identifier |
+| `allowTopLevelImportedT` | `boolean` | Vue SFC: allow top-level `import { t }` without `useI18n()` |
+| `serverModuleImport` | `string` | Next.js: module that provides server-side `t` (e.g. `'@fluenti/next'`) |
+| `treatFrameworkDirectImportsAsServer` | `boolean` | Next.js: treat direct framework imports as server-side |
+| `rerouteServerAuthoringImports` | `boolean` | Next.js: reroute server authoring imports |
+| `errorOnServerUseI18n` | `boolean` | Next.js: error when `useI18n()` is used in server context |
+
+## `transformTransComponents(code)`
+
+Optimizes `<Trans>`, `<Plural>`, `<Select>` JSX components at compile time by injecting `__id`, `__message`, and `__components` props.
+
+```typescript
+import { transformTransComponents } from '@fluenti/core/transform'
+
+const result = transformTransComponents(jsxSource)
+if (result.transformed) {
+  // result.code has optimized components
+}
+```
+
+## Runtime Code Generation
+
+### `createRuntimeGenerator(primitives)`
+
+Create a `RuntimeGenerator` from framework-specific reactive primitives. This eliminates duplication across framework packages by parameterizing only the reactivity API differences.
+
+```typescript
+import { createRuntimeGenerator } from '@fluenti/core/transform'
+
+const generator = createRuntimeGenerator({
+  imports: "import { ref, shallowReactive } from 'vue'",
+  catalogInit: 'const __catalog = shallowReactive({ ...__defaultMsgs })',
+  localeInit: (d) => `const __currentLocale = ref('${d}')`,
+  loadingInit: 'const __loading = ref(false)',
+  catalogUpdate: (msgs) => `Object.assign(__catalog, ${msgs})`,
+  localeUpdate: (locale) => `__currentLocale.value = ${locale}`,
+  loadingUpdate: (value) => `__loading.value = ${value}`,
+  localeRead: '__currentLocale.value',
+  runtimeKey: 'fluenti.runtime.vue.v1',
+})
+```
+
+### RuntimePrimitives
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `imports` | `string` | Import statements for framework reactivity |
+| `catalogInit` | `string` | Expression to create reactive catalog object |
+| `localeInit` | `(defaultLocale: string) => string` | Expression to create reactive locale variable |
+| `loadingInit` | `string` | Expression to create reactive loading flag |
+| `catalogUpdate` | `(msgs: string) => string` | Statement to replace catalog with new messages |
+| `catalogMerge` | `(msgs: string) => string` | Optional: merge messages into catalog (for route loading) |
+| `localeUpdate` | `(locale: string) => string` | Statement to update current locale |
+| `loadingUpdate` | `(value: string) => string` | Statement to set loading state |
+| `localeRead` | `string` | Expression to read current locale value |
+| `runtimeKey` | `string` | `Symbol.for()` key for globalThis registration |
+
+### RuntimeGenerator
+
+| Method | Signature | Description |
+|--------|-----------|-------------|
+| `generateRuntime` | `(options: RuntimeGeneratorOptions) => string` | Generate the main reactive runtime module |
+| `generateRouteRuntime` | `(options: RuntimeGeneratorOptions) => string` | Generate per-route runtime module (code splitting) |
+
+## Utility Exports
+
+### Message Identity
+
+| Function | Description |
+|----------|-------------|
+| `createMessageId(message, context?)` | Generate a deterministic hash-based message ID |
+| `canonicalizeMessageIdentity(message, context?)` | Canonicalize message + context for hashing |
+| `resolveDescriptorId(descriptor)` | Resolve a descriptor's effective ID (explicit or hash) |
+| `isGeneratedMessageId(id)` | Check if an ID was auto-generated (vs explicit) |
+
+### AST Analysis
+
+| Function | Description |
+|----------|-------------|
+| `parseSourceModule(code)` | Parse source code to Babel AST |
+| `walkSourceAst(ast, visitor)` | Walk AST with visitor pattern |
+| `isSourceNode(node)` | Type guard for AST nodes |
+
+## Building a Webpack Plugin
+
+Conceptual example showing how to use these APIs in a webpack plugin:
+
+```typescript
+import { createTransformPipeline, hasScopeTransformCandidate } from '@fluenti/core/transform'
+import { loadConfigSync } from '@fluenti/core/config'
+import { resolveLocaleCodes } from '@fluenti/core'
+
+const config = loadConfigSync()
+const pipeline = createTransformPipeline({ framework: 'react' })
+
+// Webpack loader
+export default function fluentLoader(source: string): string {
+  if (!hasScopeTransformCandidate(source)) return source
+
+  const result = pipeline.transform(source, this.resourcePath)
+  return result.transformed ? result.code : source
+}
+
+// Webpack plugin
+class FluentWebpackPlugin {
+  apply(compiler) {
+    // Pre-build: compile catalogs
+    compiler.hooks.beforeCompile.tapPromise('fluenti', async () => {
+      const { runCompile } = await import('@fluenti/cli')
+      await runCompile(process.cwd())
+    })
+
+    // Register loader
+    compiler.options.module.rules.push({
+      test: /\.[jt]sx?$/,
+      exclude: /node_modules/,
+      use: [{ loader: require.resolve('./loader') }],
+    })
+
+    // Alias compiled catalogs
+    const locales = resolveLocaleCodes(config.locales)
+    for (const locale of locales) {
+      compiler.options.resolve.alias[`@fluenti/messages/${locale}`] =
+        resolve(config.compileOutDir, `${locale}.js`)
+    }
+  }
+}
+```

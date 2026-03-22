@@ -5,7 +5,7 @@ import {
   parseSourceModule,
   walkSourceAst,
   type SourceNode,
-} from '@fluenti/core/internal'
+} from '@fluenti/core/transform'
 
 interface IdentifierNode extends SourceNode {
   type: 'Identifier'

@@ -5,8 +5,9 @@
  * Only statically provable `t` bindings are optimized; runtime `t()` calls
  * continue to work without injected proxy globals.
  */
-import { scopeTransform } from './scope-transform'
-import { transformTransComponents } from './trans-transform'
+import { createTransformPipeline, hasScopeTransformCandidate } from '@fluenti/core/transform'
+
+const pipeline = createTransformPipeline({ framework: 'react' })
 
 /**
  * Webpack loader function.
@@ -28,21 +29,20 @@ export default function fluentLoader(this: LoaderContext, source: string): strin
 
   // ── <Trans> compile-time optimization (JSX/TSX only) ──────────────
   if (/\.[jt]sx$/.test(this.resourcePath) && /<Trans[\s>]/.test(result)) {
-    const transResult = transformTransComponents(result)
+    const transResult = pipeline.transformTrans(result)
     if (transResult.transformed) {
       result = transResult.code
     }
   }
 
-  // Quick check: does this file contain any Fluenti authoring/runtime surface?
-  if (!isServerFluentiFile(result, isClientModule) && !hasFluentPatterns(result)) {
+  // Quick check: does this file contain any Fluenti patterns?
+  if (!hasScopeTransformCandidate(result)) {
     return result
   }
 
-  // Try scope-aware transform first (AST-based, zero false positives)
+  // Try scope-aware transform (AST-based, zero false positives)
   try {
-    const scoped = scopeTransform(result, {
-      framework: 'react',
+    const scoped = pipeline.transformScope(result, {
       serverModuleImport: '@fluenti/next',
       treatFrameworkDirectImportsAsServer: !isClientModule,
       rerouteServerAuthoringImports: !isClientModule,
@@ -57,31 +57,6 @@ export default function fluentLoader(this: LoaderContext, source: string): strin
   }
 
   return result
-}
-
-/**
- * Quick regex check to avoid full parsing on files without t`` or t().
- */
-function hasFluentPatterns(code: string): boolean {
-  if (/(?<![.\w$])t\(\s*['"]/.test(code) || /[A-Za-z_$][\w$]*\(\s*\{/.test(code)) {
-    return true
-  }
-
-  if (/[A-Za-z_$][\w$]*`/.test(code) && (code.includes('useI18n') || code.includes('getI18n'))) {
-    return true
-  }
-
-  return /import\s*\{\s*t(?:\s+as\s+[A-Za-z_$][\w$]*)?[\s,}]/.test(code)
-    && (code.includes('@fluenti/react') || code.includes('@fluenti/next'))
-}
-
-function isServerFluentiFile(code: string, isClientModule: boolean): boolean {
-  if (isClientModule) return false
-  if (!code.includes('@fluenti/react') && !code.includes('@fluenti/next')) {
-    return false
-  }
-
-  return /\b(useI18n|Trans|Plural|Select|DateTime|NumberFormat|t)\b/.test(code)
 }
 
 interface LoaderContext {

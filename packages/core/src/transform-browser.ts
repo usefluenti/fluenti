@@ -1,9 +1,11 @@
 /**
- * Browser-safe subset of @fluenti/core/internal.
+ * Browser-safe subset of @fluenti/core/transform.
  *
  * Excludes `scopeTransform` (requires `node:module` + `@babel/generator`)
  * but exposes `scopeTransformAst` which produces a mutated Babel AST
  * without any Node.js-only dependencies.
+ *
+ * Also excludes `createRuntimeGenerator` (Node.js-only, uses `node:path`).
  */
 export { transformTransComponents } from './trans-transform'
 export type { TransTransformResult } from './trans-transform'
