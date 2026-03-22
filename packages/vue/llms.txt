@@ -33,7 +33,8 @@ app.use(fluent)
 - `createFluentVue(options)` — Vue plugin factory
 - `useI18n()` — composable returning the full i18n context
 - `t` — compile-time-only authoring API for tagged templates and descriptors
-- `Trans`, `Plural`, `Select`, `DateTime`, `NumberFormat`
+- `Trans`, `Plural`, `Select`, `DateTime`, `NumberFormat` — runtime-capable components
+- `TransProps`, `PluralProps`, `SelectProps`, `DateTimeProps`, `NumberFormatProps` — component prop types
 - `msg` — lazy message descriptor helper
 - `FLUENTI_KEY` — injection key
 

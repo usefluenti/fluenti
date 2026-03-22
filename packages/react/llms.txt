@@ -26,6 +26,11 @@ Main entry (`@fluenti/react`):
 - `msg`
 - `I18nContext`
 
+Type re-exports from `@fluenti/react`:
+
+- `I18nContextValue`, `I18nProviderProps`, `Messages`, `AllMessages`, `MessageDescriptor`, `CompileTimeMessageDescriptor`, `CompileTimeT`, `Locale`, `DateFormatOptions`, `NumberFormatOptions`, `FluentInstanceExtended`
+- `TransProps`, `PluralProps`, `SelectProps`, `DateTimeProps`, `NumberProps` — component prop types
+
 Server entry (`@fluenti/react/server`):
 
 - `createServerI18n()`

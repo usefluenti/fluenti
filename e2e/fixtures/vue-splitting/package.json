@@ -10,7 +10,7 @@
     "@fluenti/cli": "workspace:*",
     "@fluenti/vue": "workspace:*",
     "vue": "^3.5",
-    "vue-router": "^5"
+    "vue-router": "^4"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^6",

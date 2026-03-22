@@ -39,7 +39,7 @@
       "require": { "types": "./dist/config.d.ts", "default": "./dist/config.cjs" }
     }
   },
-  "files": ["dist"],
+  "files": ["dist", "llms*.txt"],
   "scripts": {
     "build": "vite build",
     "dev": "vite build --watch",
@@ -49,7 +49,7 @@
   },
   "dependencies": {
     "@babel/generator": "^7.29.1",
-    "@babel/parser": "^7.29.2",
+    "@babel/parser": "^7.28.4",
     "jiti": "^2"
   },
   "devDependencies": {

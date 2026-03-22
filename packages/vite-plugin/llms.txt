@@ -49,3 +49,9 @@ All framework plugins accept the same `FluentiPluginOptions`:
 - `FluentiPluginOptions`: user-facing plugin options type
 - `FluentiCoreOptions`: internal options type (includes `framework` field)
 - `RuntimeGenerator`, `RuntimeGeneratorOptions`: interface for framework-specific runtime generation
+- `resolveVirtualSplitId(id)`: Resolve a virtual split module ID to its `\0`-prefixed form
+- `loadVirtualSplitModule(id, options)`: Load and generate code for a virtual split module
+- `setResolvedMode(command)`: Set the resolved Vite command mode ('serve' | 'build')
+- `isBuildMode(env?)`: Check if the current Vite environment is a production build
+- `getPluginEnvironment(pluginContext)`: Get the plugin environment from a Vite plugin context
+- `IdGenerator`: Type for custom message ID generation functions

@@ -91,7 +91,7 @@ export async function parallelCompile(
         spawnNext()
       })
 
-      worker.on('error', (err: Error) => {
+      worker.on('error', (err) => {
         if (!rejected) {
           rejected = true
           worker.terminate()

@@ -26,6 +26,13 @@ Install: `pnpm add @fluenti/core` (usually included automatically via framework 
 - `parseLocale(locale)`: Parse BCP 47 string into `{ language, script?, region? }`
 - `msg`: Tagged template literal for creating lazy message descriptors with auto-generated FNV-1a hash IDs
 - `Catalog`: In-memory message catalog with namespace-aware lookup, locale enumeration, and merge-on-load
+- `buildICUMessage(strings, values)`: Build an ICU message string from tagged template parts — used internally by `t` tagged templates
+- `validateLocale(locale, caller?)`: Validate a BCP 47 locale string, throws on empty/invalid input
+- `resolvePluralCategory(count, locale, ordinal?)`: Resolve CLDR plural category for a count via `Intl.PluralRules`
+- `resolveDescriptorId(descriptor)`: Resolve a message ID from a `MessageDescriptor` (uses `id` field or hashes `message` + `context`)
+- `hashMessage(message, context?)`: Generate a deterministic FNV-1a hash ID from message content and optional context
+- `defineConfig(config)`: Identity function providing type-safe config authoring for `fluenti.config.ts`
+- `resolveLocaleCodes(locales)`: Extract locale code strings from `LocaleDefinition[]` (handles both string and object forms)
 
 ## Key Types
 
@@ -39,6 +46,20 @@ Install: `pnpm add @fluenti/core` (usually included automatically via framework 
 - `ASTNode`: Union of TextNode, VariableNode, PluralNode, SelectNode, FunctionNode
 - `DetectLocaleOptions`: SSR detection options (cookie, query, path, headers, available, fallback)
 - `DateFormatOptions` / `NumberFormatOptions`: Named style maps for formatters
+- `LocaleObject`: Extended locale metadata (code, iso, dir, name, domain) for Nuxt/advanced use
+- `LocaleDefinition`: `string | LocaleObject` union for flexible locale configuration
+- `NamespaceMapping`: Maps namespace prefixes to message subsets
+- `CompileTimeMessageDescriptor`: Descriptor type used by compile-time `t` (includes `message`, `id?`, `comment?`, `context?`)
+- `CompileTimeT` / `TypedCompileTimeT`: Type signatures for the compile-time `t` function (tagged template + descriptor + call forms)
+- `FluentiTypeConfig`: Module augmentation interface for custom type config (branded locale types, etc.)
+- `ExtractedMessage`: Message extracted by the CLI (id, message, comment, context, file, line)
+- `ParsedLocale`: Parsed BCP 47 locale: `{ language, script?, region? }`
+
+## Constants
+
+- `DEFAULT_NUMBER_FORMATS`: Built-in named number format presets (currency, percent, decimal)
+- `DEFAULT_DATE_FORMATS`: Built-in named date format presets (default, short, long, time, datetime, relative)
+- `LOCALE_CURRENCY_MAP`: Map of locale codes to their default ISO 4217 currency codes
 
 ## Documentation
 
