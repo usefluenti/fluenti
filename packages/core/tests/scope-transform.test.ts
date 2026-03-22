@@ -1493,6 +1493,60 @@ export function Card() {
     expect(result.transformed).toBe(true)
     expect(result.code).toContain("message: 'Hello'")
   })
+
+  it('preserves separate binding names for multiple useI18n() destructures', () => {
+    const code = `
+import { useI18n } from '@fluenti/react'
+function App() {
+  const { t: t1 } = useI18n()
+  const { t: t2 } = useI18n()
+  const a = t1\`Hello\`
+  const b = t2\`World\`
+}
+`
+    const result = scopeTransform(code, opts)
+    expect(result.transformed).toBe(true)
+    expect(result.code).toContain('t1({')
+    expect(result.code).toContain('t2({')
+    expect(result.code).toContain("message: 'Hello'")
+    expect(result.code).toContain("message: 'World'")
+  })
+
+  it('import { t } in separate functions each get own helper', () => {
+    const code = `
+import { t } from '@fluenti/react'
+function CompA() {
+  return t\`Hello\`
+}
+function CompB() {
+  return t\`World\`
+}
+`
+    const result = scopeTransform(code, opts)
+    expect(result.transformed).toBe(true)
+    expect(result.code).toContain("message: 'Hello'")
+    expect(result.code).toContain("message: 'World'")
+    // The direct import `t` should be removed
+    expect(result.code).not.toMatch(/import\s*\{[^}]*\bt\b[^}]*\}\s*from\s*['"]@fluenti\/react['"]/)
+  })
+
+  it('shadowed t in nested scope: outer transformed, inner untouched', () => {
+    const code = `
+import { useI18n } from '@fluenti/react'
+function App() {
+  const { t } = useI18n()
+  const msg = t\`Outer\`
+  function nested() {
+    const t = (x: string) => x.toUpperCase()
+    const inner = t('hello')
+  }
+}
+`
+    const result = scopeTransform(code, opts)
+    expect(result.transformed).toBe(true)
+    expect(result.code).toContain("message: 'Outer'")
+    expect(result.code).toContain("t('hello')")
+  })
 })
 
 // ─── Direct unit tests for scope-read helpers ──────────
