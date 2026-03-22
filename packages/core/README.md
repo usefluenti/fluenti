@@ -74,7 +74,7 @@ i18n.t('greeting', { name: 'World' }) // "Hello World!"
 
 ### Advanced configuration
 
-`createFluent()` accepts additional options on `FluentConfigExtended`:
+`createFluent()` accepts additional options on `FluentiRuntimeConfigFull`:
 
 ```ts
 const i18n = createFluent({

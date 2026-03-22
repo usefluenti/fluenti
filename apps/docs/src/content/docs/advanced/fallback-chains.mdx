@@ -12,7 +12,7 @@ When a message is not found in the current locale, Fluenti tries:
 ## Configuration
 
 ```typescript
-const i18n = createFluentVue({
+const i18n = createFluentiVue({
   locale: 'zh-TW',
   fallbackLocale: 'en',
   messages: { en, 'zh-CN': zhCN, 'zh-TW': zhTW },
@@ -52,7 +52,7 @@ createFluent({
 For custom behavior when a message is not found:
 
 ```typescript
-const i18n = createFluentVue({
+const i18n = createFluentiVue({
   locale: 'en',
   messages,
   missing: (locale, id) => {

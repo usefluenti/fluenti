@@ -252,7 +252,7 @@ Define your own date and number format styles when creating your i18n instance.
 <TabItem label="Vue">
 
 ```typescript
-const i18n = createFluentVue({
+const i18n = createFluentiVue({
   locale: 'en',
   messages,
   dateFormats: {
@@ -312,7 +312,7 @@ Usage: `d(date, 'month-year')` → "January 2025"
 <TabItem label="Vue">
 
 ```typescript
-const i18n = createFluentVue({
+const i18n = createFluentiVue({
   locale: 'en',
   messages,
   numberFormats: {
@@ -401,7 +401,7 @@ type CustomFormatter = (value: unknown, style: string, locale: string) => string
 <TabItem label="Vue">
 
 ```typescript
-const i18n = createFluentVue({
+const i18n = createFluentiVue({
   locale: 'en',
   messages,
   formatters: {

@@ -80,12 +80,12 @@ export default {
 ```ts
 // main.ts
 import { createApp } from 'vue'
-import { createFluentVue } from '@fluenti/vue'
+import { createFluentiVue } from '@fluenti/vue'
 import App from './App.vue'
 import en from './locales/compiled/en'
 import ja from './locales/compiled/ja'
 
-const fluent = createFluentVue({
+const fluent = createFluentiVue({
   locale: 'en',
   fallbackLocale: 'en',
   messages: { en, ja },
@@ -259,7 +259,7 @@ const { t, d, n, locale, setLocale } = useI18n()
 ## Plugin Options
 
 ```ts
-const fluent = createFluentVue({
+const fluent = createFluentiVue({
   // Required
   locale: 'en',
   messages: { en, ja, zh },
@@ -320,7 +320,7 @@ const fluent = createFluentVue({
 For large apps, load locale messages on demand instead of bundling everything upfront:
 
 ```ts
-const fluent = createFluentVue({
+const fluent = createFluentiVue({
   locale: 'en',
   messages: { en },           // only the default locale is bundled
   lazyLocaleLoading: true,
@@ -349,7 +349,7 @@ const { setLocale, isLoading, preloadLocale } = useI18n()
 
 ## SSR / SSG Support
 
-`createFluentVue()` creates entirely fresh state per call -- no module-level singletons. Call it once per SSR request to avoid locale leaking between users.
+`createFluentiVue()` creates entirely fresh state per call -- no module-level singletons. Call it once per SSR request to avoid locale leaking between users.
 
 For server-side i18n in Nuxt or custom Vue SSR setups, use the dedicated server utilities:
 

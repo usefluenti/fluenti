@@ -39,8 +39,8 @@ Install: `pnpm add @fluenti/core` (usually included automatically via framework 
 - `Locale`: string alias for BCP 47 locale codes
 - `Messages` / `AllMessages`: `Record<string, CompiledMessage>` / `Record<Locale, Messages>`
 - `CompiledMessage`: `string | ((values?) => string)`
-- `FluentConfig` / `FluentConfigExtended`: Configuration with locale, messages, fallbackLocale, fallbackChain, missing handler, dateFormats, numberFormats
-- `FluentInstance` / `FluentInstanceExtended`: Instance with `t()`, `setLocale()`, `loadMessages()`, `getLocales()`, plus `d()`, `n()`, `format()`
+- `FluentiRuntimeConfig` / `FluentiRuntimeConfigFull`: Configuration with locale, messages, fallbackLocale, fallbackChain, missing handler, dateFormats, numberFormats
+- `FluentiInstance` / `FluentiInstanceExtended`: Instance with `t()`, `setLocale()`, `loadMessages()`, `getLocales()`, plus `d()`, `n()`, `format()`
 - `MessageDescriptor`: `{ id, message?, comment?, context? }`
 - `FluentiConfig`: CLI/build config (sourceLocale, locales, catalogDir, format, include, compileOutDir, splitting, fallbackChain)
 - `ASTNode`: Union of TextNode, VariableNode, PluralNode, SelectNode, FunctionNode

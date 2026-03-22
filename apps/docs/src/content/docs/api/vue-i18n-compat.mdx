@@ -11,11 +11,11 @@ Create a bridge plugin that installs both vue-i18n and Fluenti, syncs locale sta
 
 ```typescript
 import { createI18n } from 'vue-i18n'
-import { createFluentVue } from '@fluenti/vue'
+import { createFluentiVue } from '@fluenti/vue'
 import { createFluentBridge } from '@fluenti/vue-i18n-compat'
 
 const vueI18n = createI18n({ legacy: false, locale: 'en', messages: legacyMessages })
-const fluenti = createFluentVue({ locale: 'en', messages: newMessages })
+const fluenti = createFluentiVue({ locale: 'en', messages: newMessages })
 
 const bridge = createFluentBridge({
   vueI18n,
@@ -31,7 +31,7 @@ app.use(bridge)
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
 | `vueI18n` | `VueI18nInstance` | required | vue-i18n instance from `createI18n()` |
-| `fluenti` | `FluentVuePlugin` | required | Fluenti plugin from `createFluentVue()` |
+| `fluenti` | `FluentVuePlugin` | required | Fluenti plugin from `createFluentiVue()` |
 | `priority` | `BridgePriority` | `'fluenti-first'` | Which library to check first |
 
 ### `BridgePriority`

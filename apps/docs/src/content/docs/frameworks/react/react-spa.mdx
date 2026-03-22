@@ -142,7 +142,7 @@ function Dashboard() {
 | `format` | `(message, values?) => string` | Direct ICU interpolation (no catalog lookup) |
 | `loadMessages` | `(locale, messages) => void` | Merge messages into a locale catalog at runtime |
 | `getLocales` | `() => string[]` | Return all locale codes with loaded messages |
-| `i18n` | `FluentInstanceExtended` | Core instance (escape hatch for advanced use) |
+| `i18n` | `FluentiInstanceExtended` | Core instance (escape hatch for advanced use) |
 | `locale` | `string` | Current active locale |
 | `setLocale` | `(locale) => Promise<void>` | Switch locale (loads messages if needed) |
 | `isLoading` | `boolean` | `true` while a locale is being loaded |

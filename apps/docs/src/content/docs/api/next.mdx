@@ -100,7 +100,7 @@ This module is primarily the Next runtime/integration surface. For ordinary tran
 |--------|------|-------------|
 | `I18nProvider` | async server component | Sets server locale + wraps children in `ClientI18nProvider` |
 | `setLocale` | `(locale: string) => void` | Set locale for the current request (`React.cache()` scoped) |
-| `getI18n` | `() => Promise<FluentInstanceExtended & { locale: string }>` | Get the i18n instance for the current request |
+| `getI18n` | `() => Promise<FluentiInstanceExtended & { locale: string }>` | Get the i18n instance for the current request |
 | `t` | `CompileTimeT` | Compile-time translation API for tagged templates and descriptor calls |
 | `Trans` | async server component | Rich text translation |
 | `Plural` | async server component | Locale-aware pluralization |

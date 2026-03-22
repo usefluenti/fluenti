@@ -3,16 +3,16 @@ title: "@fluenti/vue"
 description: "API reference for @fluenti/vue — Trans, Plural, Select components, useI18n composable, v-t compile-time directive, and Vue 3 plugin setup."
 ---
 
-## `createFluentVue(options)`
+## `createFluentiVue(options)`
 
 Create a Vue plugin instance. SSR-safe — call once per request in SSR.
 
 ```typescript
-import { createFluentVue } from '@fluenti/vue'
+import { createFluentiVue } from '@fluenti/vue'
 import en from './locales/compiled/en'
 import zhCN from './locales/compiled/zh-CN'
 
-const i18n = createFluentVue({
+const i18n = createFluentiVue({
   locale: 'en',
   fallbackLocale: 'en',
   messages: { en, 'zh-CN': zhCN },
@@ -152,7 +152,7 @@ const raw = tm('greeting') // string or compiled function, or undefined
 If `Trans`, `Plural`, or `Select` conflicts with another library (e.g. a UI framework), use `componentPrefix`:
 
 ```typescript
-const i18n = createFluentVue({
+const i18n = createFluentiVue({
   locale: 'en',
   messages: { en },
   componentPrefix: 'I18n',

@@ -70,7 +70,7 @@ function MyComponent() {
 | `format` | `(message, values?) => string` | Direct ICU interpolation (no catalog lookup) |
 | `loadMessages` | `(locale, messages) => void` | Merge messages into a locale catalog at runtime |
 | `getLocales` | `() => string[]` | Return all locale codes with loaded messages |
-| `i18n` | `FluentInstanceExtended` | Core instance (escape hatch for advanced use) |
+| `i18n` | `FluentiInstanceExtended` | Core instance (escape hatch for advanced use) |
 | `locale` | `string` | Current locale |
 | `setLocale` | `(locale) => Promise<void>` | Change locale (async if loading is needed) |
 | `isLoading` | `boolean` | Whether a locale is being loaded |
@@ -305,7 +305,7 @@ export const { setLocale, getI18n, Trans, Plural, Select, DateTime, NumberFormat
 | Property | Type | Description |
 |----------|------|-------------|
 | `setLocale` | `(locale: string) => void` | Set locale for the current request |
-| `getI18n` | `() => Promise<FluentInstanceExtended>` | Get the i18n instance |
+| `getI18n` | `() => Promise<FluentiInstanceExtended>` | Get the i18n instance |
 | `Trans` | async component | Rich text with component interpolation |
 | `Plural` | async component | Locale-aware pluralization |
 | `Select` | async component | Locale-aware categorical selection |
@@ -421,8 +421,8 @@ Re-exported from `@fluenti/core` for convenience:
 | Export | Description |
 |--------|-------------|
 | `detectLocale(options)` | Detect locale from cookie, header, query, etc. |
-| `getSSRLocaleScript(locale)` | Generate `<script>` tag to inject locale into HTML |
-| `getHydratedLocale(fallback)` | Read the injected locale on the client |
+| `getSSRLocaleScript(locale, options?)` | Generate `<script>` tag to inject locale into HTML. Pass `{ key }` for custom variable |
+| `getHydratedLocale(fallback?, options?)` | Read the injected locale on the client. Pass `{ key }` to match custom variable |
 | `isRTL(locale)` | Check if a locale is right-to-left |
 | `getDirection(locale)` | Return `'rtl'` or `'ltr'` |
 
