@@ -5,10 +5,10 @@ export type {
   CompiledMessage,
   Messages,
   AllMessages,
-  FluentRuntimeConfig,
-  FluentInstance,
-  FluentInstanceExtended,
-  FluentRuntimeConfigFull,
+  FluentiRuntimeConfig,
+  FluentiInstance,
+  FluentiInstanceExtended,
+  FluentiRuntimeConfigFull,
   CustomFormatter,
   ASTNode,
   TextNode,
@@ -21,6 +21,8 @@ export type {
   LocaleObject,
   LocaleDefinition,
   DetectLocaleOptions,
+  SSRLocaleScriptOptions,
+  HydratedLocaleOptions,
   DateFormatOptions,
   NumberFormatOptions,
   FormatDateFn,
@@ -32,7 +34,11 @@ export type {
   FluentiTypeConfig,
   ChunkLoader,
   SplitRuntimeModule,
-  // Deprecated aliases (backward compatibility)
+  // Deprecated aliases (backward compatibility — remove in next major)
+  FluentRuntimeConfig,
+  FluentRuntimeConfigFull,
+  FluentInstance,
+  FluentInstanceExtended,
   FluentConfig,
   FluentConfigExtended,
   FluentiConfig,
@@ -69,8 +75,8 @@ export {
 export type { PluralCategory } from './icu-builders'
 
 import type {
-  FluentRuntimeConfigFull,
-  FluentInstanceExtended,
+  FluentiRuntimeConfigFull,
+  FluentiInstanceExtended,
   LocalizedString,
   Locale,
   Messages,
@@ -129,7 +135,7 @@ export function clearAllCaches(): void {
  * i18n.t('greeting', { name: 'World' }) // 'Hello World!'
  * ```
  */
-export function createFluent(config: FluentRuntimeConfigFull): FluentInstanceExtended {
+export function createFluent(config: FluentiRuntimeConfigFull): FluentiInstanceExtended {
   validateLocale(config.locale, 'createFluent')
   let currentLocale: Locale = config.locale
   const catalog = new Catalog()
