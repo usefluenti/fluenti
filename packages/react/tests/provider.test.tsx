@@ -2,6 +2,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest'
 import { useState } from 'react'
 import { render, screen, act, waitFor, cleanup } from '@testing-library/react'
 import { I18nProvider, useI18n } from '../src'
+import { getGlobalI18n, clearGlobalI18n } from '../src/global-registry'
 
 const messages = {
   en: { hello: 'Hello', greeting: 'Hello {name}!' },
@@ -206,6 +207,48 @@ describe('I18nProvider', () => {
       </I18nProvider>,
     )
     expect(screen.getByText('Hello')).toBeDefined()
+  })
+
+  it('sets global i18n instance on mount', () => {
+    clearGlobalI18n()
+    expect(getGlobalI18n()).toBeUndefined()
+
+    render(
+      <I18nProvider locale="en" messages={messages}>
+        <Child />
+      </I18nProvider>,
+    )
+
+    expect(getGlobalI18n()).toBeDefined()
+    expect(getGlobalI18n()!.t('hello')).toBe('Hello')
+  })
+
+  it('updates global i18n instance on locale change', async () => {
+    clearGlobalI18n()
+
+    function Switcher() {
+      const { setLocale, i18n } = useI18n()
+      return (
+        <div>
+          <span data-testid="text">{i18n.t('hello')}</span>
+          <button onClick={() => setLocale('fr')}>Switch</button>
+        </div>
+      )
+    }
+
+    render(
+      <I18nProvider locale="en" messages={messages}>
+        <Switcher />
+      </I18nProvider>,
+    )
+
+    expect(getGlobalI18n()!.t('hello')).toBe('Hello')
+
+    await act(async () => {
+      screen.getByText('Switch').click()
+    })
+
+    expect(getGlobalI18n()!.t('hello')).toBe('Bonjour')
   })
 
   it('setLocale for already-loaded locale switches instantly', async () => {

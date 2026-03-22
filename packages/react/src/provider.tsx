@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect, useMemo, useRef } from 'react'
 import { createFluent } from '@fluenti/core'
 import type { Messages } from '@fluenti/core'
 import { I18nContext } from './context'
+import { setGlobalI18n } from './global-registry'
 import type { I18nProviderProps } from './types'
 
 interface SplitRuntimeModule {
@@ -67,6 +68,11 @@ export function I18nProvider({
     if (missing !== undefined) config.missing = missing
     return createFluent(config)
   }, [currentLocale, loadedMessages, fallbackLocale, fallbackChain, dateFormats, numberFormats, missing])
+
+  // Register instance in global registry for webpack loader / vite plugin access
+  useEffect(() => {
+    setGlobalI18n(i18n)
+  }, [i18n])
 
   // Sync external locale prop changes
   useEffect(() => {
