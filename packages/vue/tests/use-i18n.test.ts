@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { defineComponent, h, nextTick } from 'vue'
-import { createFluentiVue } from '../src/plugin'
+import { createFluenti } from '../src/plugin'
 import { useI18n } from '../src/use-i18n'
 import { mount } from '@vue/test-utils'
 
@@ -15,11 +15,11 @@ describe('useI18n', () => {
       },
     })
 
-    expect(() => mount(Comp)).toThrow('[fluenti] useI18n() requires createFluentiVue plugin')
+    expect(() => mount(Comp)).toThrow('[fluenti] useI18n() requires createFluenti plugin')
   })
 
   it('returns the context when plugin is installed', () => {
-    const plugin = createFluentiVue({
+    const plugin = createFluenti({
       locale: 'en',
       messages: { en: { hello: 'Hello' } },
     })
@@ -42,7 +42,7 @@ describe('useI18n', () => {
   })
 
   it('re-renders when locale changes', async () => {
-    const plugin = createFluentiVue({
+    const plugin = createFluenti({
       locale: 'en',
       messages: {
         en: { hello: 'Hello' },
@@ -70,7 +70,7 @@ describe('useI18n', () => {
   })
 
   it('re-renders with fallback locale', async () => {
-    const plugin = createFluentiVue({
+    const plugin = createFluenti({
       locale: 'en',
       fallbackLocale: 'en',
       messages: {
@@ -100,7 +100,7 @@ describe('useI18n', () => {
   })
 
   it('dynamically loads messages and re-renders', async () => {
-    const plugin = createFluentiVue({
+    const plugin = createFluenti({
       locale: 'en',
       messages: { en: {} },
     })
@@ -129,7 +129,7 @@ describe('useI18n', () => {
   })
 
   it('exposes locale as a readonly ref', () => {
-    const plugin = createFluentiVue({
+    const plugin = createFluenti({
       locale: 'en',
       messages: { en: {} },
     })
@@ -142,7 +142,7 @@ describe('useI18n', () => {
 
   describe('edge cases', () => {
     it('returns all expected properties', () => {
-      const plugin = createFluentiVue({
+      const plugin = createFluenti({
         locale: 'en',
         messages: { en: {} },
       })
@@ -174,7 +174,7 @@ describe('useI18n', () => {
     })
 
     it('context is same as plugin.global instance', () => {
-      const plugin = createFluentiVue({
+      const plugin = createFluenti({
         locale: 'en',
         messages: { en: { hello: 'Hello' } },
       })

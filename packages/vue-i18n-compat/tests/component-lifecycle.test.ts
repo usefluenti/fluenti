@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { createApp, defineComponent, h, inject, nextTick } from 'vue'
-import { createFluentiVue } from '@fluenti/vue'
+import { createFluenti } from '@fluenti/vue'
 import { createFluentBridge, BRIDGE_KEY } from '../src/bridge'
 import { useI18n } from '../src/composable'
 import type { BridgeContext } from '../src/types'
@@ -9,7 +9,7 @@ import { createMockVueI18n, mountApp } from './_helpers'
 describe('component lifecycle — bridge context in components', () => {
   it('multiple components calling useI18n() independently get same context', () => {
     const vueI18n = createMockVueI18n({ messages: { en: { hello: 'Hi' } } })
-    const fluenti = createFluentiVue({ locale: 'en', messages: { en: { world: 'World' } } })
+    const fluenti = createFluenti({ locale: 'en', messages: { en: { world: 'World' } } })
     const bridge = createFluentBridge({ vueI18n, fluenti })
 
     let ctx1: BridgeContext | undefined
@@ -40,7 +40,7 @@ describe('component lifecycle — bridge context in components', () => {
 
   it('nested components (parent/child) share bridge context', () => {
     const vueI18n = createMockVueI18n({ messages: { en: { msg: 'Hello' } } })
-    const fluenti = createFluentiVue({ locale: 'en', messages: { en: {} } })
+    const fluenti = createFluenti({ locale: 'en', messages: { en: {} } })
     const bridge = createFluentBridge({ vueI18n, fluenti })
 
     let parentCtx: BridgeContext | undefined
@@ -66,7 +66,7 @@ describe('component lifecycle — bridge context in components', () => {
 
   it('component renders translated text via useI18n().t()', () => {
     const vueI18n = createMockVueI18n({ messages: { en: {} } })
-    const fluenti = createFluentiVue({ locale: 'en', messages: { en: { greeting: 'Hello World' } } })
+    const fluenti = createFluenti({ locale: 'en', messages: { en: { greeting: 'Hello World' } } })
     const bridge = createFluentBridge({ vueI18n, fluenti })
 
     let translated = ''
@@ -85,7 +85,7 @@ describe('component lifecycle — bridge context in components', () => {
       locale: 'en',
       messages: { en: { hello: 'Hello' }, ja: { hello: 'こんにちは' } },
     })
-    const fluenti = createFluentiVue({
+    const fluenti = createFluenti({
       locale: 'en',
       messages: { en: { hello: 'Hello' }, ja: { hello: 'こんにちは' } },
     })
@@ -107,7 +107,7 @@ describe('component lifecycle — bridge context in components', () => {
 
   it('template uses $t global property correctly', () => {
     const vueI18n = createMockVueI18n({ messages: { en: {} } })
-    const fluenti = createFluentiVue({ locale: 'en', messages: { en: { title: 'Page Title' } } })
+    const fluenti = createFluenti({ locale: 'en', messages: { en: { title: 'Page Title' } } })
     const bridge = createFluentBridge({ vueI18n, fluenti })
 
     const { app } = mountApp(() => {}, [bridge])
@@ -119,7 +119,7 @@ describe('component lifecycle — bridge context in components', () => {
 
   it('component with defineComponent and render function using bridge context', () => {
     const vueI18n = createMockVueI18n({ messages: { en: {} } })
-    const fluenti = createFluentiVue({ locale: 'en', messages: { en: { label: 'Click me' } } })
+    const fluenti = createFluenti({ locale: 'en', messages: { en: { label: 'Click me' } } })
     const bridge = createFluentBridge({ vueI18n, fluenti })
 
     let rendered = ''

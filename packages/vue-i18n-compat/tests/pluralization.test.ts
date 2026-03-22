@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { createFluentiVue } from '@fluenti/vue'
+import { createFluenti } from '@fluenti/vue'
 import { createFluentBridge } from '../src/bridge'
 import { createMockVueI18n } from './_helpers'
 
@@ -8,7 +8,7 @@ describe('pluralization — complex plural scenarios', () => {
     const vueI18n = createMockVueI18n({
       messages: { en: { items: 'no items | {count} items' } },
     })
-    const fluenti = createFluentiVue({ locale: 'en', messages: { en: {} } })
+    const fluenti = createFluenti({ locale: 'en', messages: { en: {} } })
     const bridge = createFluentBridge({ vueI18n, fluenti })
 
     // count 0 !== 1, so picks second pipe form
@@ -19,7 +19,7 @@ describe('pluralization — complex plural scenarios', () => {
     const vueI18n = createMockVueI18n({
       messages: { en: { items: '{count} item | {count} items' } },
     })
-    const fluenti = createFluentiVue({ locale: 'en', messages: { en: {} } })
+    const fluenti = createFluenti({ locale: 'en', messages: { en: {} } })
     const bridge = createFluentBridge({ vueI18n, fluenti })
 
     expect(bridge.global.tc('items', 1)).toBe('1 item')
@@ -29,7 +29,7 @@ describe('pluralization — complex plural scenarios', () => {
     const vueI18n = createMockVueI18n({
       messages: { en: { items: '{count} item | {count} items' } },
     })
-    const fluenti = createFluentiVue({ locale: 'en', messages: { en: {} } })
+    const fluenti = createFluenti({ locale: 'en', messages: { en: {} } })
     const bridge = createFluentBridge({ vueI18n, fluenti })
 
     expect(bridge.global.tc('items', 7)).toBe('7 items')
@@ -37,7 +37,7 @@ describe('pluralization — complex plural scenarios', () => {
 
   it('tc() ICU with =0, one, other forms via fluenti', () => {
     const vueI18n = createMockVueI18n({ messages: { en: {} } })
-    const fluenti = createFluentiVue({
+    const fluenti = createFluenti({
       locale: 'en',
       messages: {
         en: {
@@ -54,7 +54,7 @@ describe('pluralization — complex plural scenarios', () => {
 
   it('tc() with extra interpolation values alongside count', () => {
     const vueI18n = createMockVueI18n({ messages: { en: {} } })
-    const fluenti = createFluentiVue({
+    const fluenti = createFluenti({
       locale: 'en',
       messages: {
         en: {
@@ -72,7 +72,7 @@ describe('pluralization — complex plural scenarios', () => {
     const vueI18n = createMockVueI18n({
       messages: { en: { apples: '{count} apple | {count} apples' } },
     })
-    const fluenti = createFluentiVue({ locale: 'en', messages: { en: {} } })
+    const fluenti = createFluenti({ locale: 'en', messages: { en: {} } })
     const bridge = createFluentBridge({ vueI18n, fluenti })
 
     expect(bridge.global.tc('apples', 1)).toBe('1 apple')
@@ -81,7 +81,7 @@ describe('pluralization — complex plural scenarios', () => {
 
   it('tc() when key exists in neither library returns the key', () => {
     const vueI18n = createMockVueI18n({ messages: { en: {} } })
-    const fluenti = createFluentiVue({ locale: 'en', messages: { en: {} } })
+    const fluenti = createFluenti({ locale: 'en', messages: { en: {} } })
     const bridge = createFluentBridge({ vueI18n, fluenti })
 
     // fluenti te returns false, falls to vue-i18n tc which returns the key
@@ -92,7 +92,7 @@ describe('pluralization — complex plural scenarios', () => {
     const vueI18n = createMockVueI18n({
       messages: { en: { items: '{count} thing | {count} things' } },
     })
-    const fluenti = createFluentiVue({
+    const fluenti = createFluenti({
       locale: 'en',
       messages: { en: { items: '{count, plural, one {# item} other {# items}}' } },
     })

@@ -286,7 +286,7 @@ describe('useI18n reactivity', () => {
     }
 
     expect(() => render(() => <BadChild />)).toThrow(
-      'useI18n requires either createFluentiSolid()',
+      'useI18n requires either createFluenti()',
     )
   })
 

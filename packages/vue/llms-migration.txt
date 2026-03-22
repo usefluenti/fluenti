@@ -22,11 +22,11 @@ pnpm add @fluenti/vue-i18n-compat @fluenti/core @fluenti/vue
 
 ```ts
 import { createI18n } from 'vue-i18n'
-import { createFluentiVue } from '@fluenti/vue'
+import { createFluenti } from '@fluenti/vue'
 import { createFluentBridge } from '@fluenti/vue-i18n-compat'
 
 const i18n = createI18n({ legacy: false, locale: 'en', messages: { en: legacyMessages } })
-const fluenti = createFluentiVue({ locale: 'en', fallbackLocale: 'en', messages: { en: newMessages } })
+const fluenti = createFluenti({ locale: 'en', fallbackLocale: 'en', messages: { en: newMessages } })
 const bridge = createFluentBridge({ vueI18n: i18n, fluenti, priority: 'fluenti-first' })
 
 app.use(bridge) // installs both, syncs locale, falls through on lookups
@@ -66,8 +66,8 @@ app.use(i18n)
 
 After (Fluenti):
 ```ts
-import { createFluentiVue } from '@fluenti/vue'
-const fluent = createFluentiVue({ locale: 'en', fallbackLocale: 'en', messages: { en, ja } })
+import { createFluenti } from '@fluenti/vue'
+const fluent = createFluenti({ locale: 'en', fallbackLocale: 'en', messages: { en, ja } })
 app.use(fluent)
 ```
 
@@ -149,7 +149,7 @@ pnpm remove vue-i18n
 
 | vue-i18n | Fluenti |
 |----------|---------|
-| `createI18n()` | `createFluentiVue()` |
+| `createI18n()` | `createFluenti()` |
 | `useI18n()` | `useI18n()` |
 | `t(key, values)` | `t(key, values)` |
 | `tc(key, count)` | `t(key, { count })` (ICU plural) |

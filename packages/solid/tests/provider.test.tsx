@@ -187,7 +187,7 @@ describe('useI18n outside provider', () => {
     resetGlobalI18nContext()
   })
 
-  it('throws when used without provider or createFluentiSolid', () => {
+  it('throws when used without provider or createFluenti', () => {
     resetGlobalI18nContext()
 
     function BadChild() {
@@ -196,7 +196,7 @@ describe('useI18n outside provider', () => {
     }
 
     expect(() => render(() => <BadChild />)).toThrow(
-      'useI18n requires either createFluentiSolid()',
+      'useI18n requires either createFluenti()',
     )
   })
 })

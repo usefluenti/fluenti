@@ -1,17 +1,17 @@
 import { describe, it, expect } from 'vitest'
 import { createSSRApp, defineComponent, h } from 'vue'
 import { renderToString } from 'vue/server-renderer'
-import { createFluentiVue } from '../src/plugin'
+import { createFluenti } from '../src/plugin'
 import { useI18n } from '../src/use-i18n'
 
 describe('SSR safety', () => {
   it('per-request isolation: separate instances do not share state', () => {
-    const instance1 = createFluentiVue({
+    const instance1 = createFluenti({
       locale: 'en',
       messages: { en: { hello: 'Hello' } },
     })
 
-    const instance2 = createFluentiVue({
+    const instance2 = createFluenti({
       locale: 'fr',
       messages: { fr: { hello: 'Bonjour' } },
     })
@@ -25,12 +25,12 @@ describe('SSR safety', () => {
   })
 
   it('per-request isolation: loaded messages do not leak', () => {
-    const instance1 = createFluentiVue({
+    const instance1 = createFluenti({
       locale: 'en',
       messages: { en: {} },
     })
 
-    const instance2 = createFluentiVue({
+    const instance2 = createFluenti({
       locale: 'en',
       messages: { en: {} },
     })
@@ -42,7 +42,7 @@ describe('SSR safety', () => {
   })
 
   it('renders correctly with createSSRApp and renderToString', async () => {
-    const plugin = createFluentiVue({
+    const plugin = createFluenti({
       locale: 'en',
       messages: { en: { greeting: 'Hello SSR' } },
     })
@@ -63,7 +63,7 @@ describe('SSR safety', () => {
 
   it('multiple SSR requests render independently', async () => {
     async function renderRequest(locale: string, messages: Record<string, string>) {
-      const plugin = createFluentiVue({
+      const plugin = createFluenti({
         locale,
         messages: { [locale]: messages },
       })
@@ -96,8 +96,8 @@ describe('SSR safety', () => {
   it('initial messages are not shared between instances', () => {
     const sharedMessages = { en: { hello: 'Hello' } }
 
-    const i1 = createFluentiVue({ locale: 'en', messages: sharedMessages })
-    const i2 = createFluentiVue({ locale: 'en', messages: sharedMessages })
+    const i1 = createFluenti({ locale: 'en', messages: sharedMessages })
+    const i2 = createFluenti({ locale: 'en', messages: sharedMessages })
 
     i1.global.loadMessages('en', { extra: 'Extra' })
 

@@ -5,14 +5,14 @@ description: "Complete API reference for @fluenti/core — ICU parser, compiler,
 
 The framework-agnostic core engine. Zero runtime dependencies.
 
-## `createFluent(config)`
+## `createFluentiRuntime(config)`
 
 Create a Fluenti instance.
 
 ```typescript
-import { createFluent } from '@fluenti/core'
+import { createFluentiRuntime } from '@fluenti/core'
 
-const i18n = createFluent({
+const i18n = createFluentiRuntime({
   locale: 'en',
   fallbackLocale: 'en',
   messages: {
@@ -25,7 +25,7 @@ i18n.t('greeting', { name: 'World' }) // "Hello World!"
 
 ### Config
 
-`createFluent()` accepts a `FluentiRuntimeConfigFull` object:
+`createFluentiRuntime()` accepts a `FluentiRuntimeConfigFull` object:
 
 | Property | Type | Description |
 |----------|------|-------------|
@@ -57,7 +57,7 @@ i18n.t('greeting', { name: 'World' }) // "Hello World!"
 Post-processing hook applied to every resolved message, after interpolation. Useful for pseudo-localization, profanity filtering, or analytics:
 
 ```typescript
-const i18n = createFluent({
+const i18n = createFluentiRuntime({
   locale: 'en',
   messages: { en },
   transform: (result, id, locale) => {
@@ -75,7 +75,7 @@ const i18n = createFluent({
 Fired whenever the locale changes via `setLocale()` or the `locale` property setter:
 
 ```typescript
-const i18n = createFluent({
+const i18n = createFluentiRuntime({
   locale: 'en',
   messages: { en, fr },
   onLocaleChange: (newLocale, prevLocale) => {
@@ -92,7 +92,7 @@ const i18n = createFluent({
 Register custom ICU function handlers. When a `{variable, functionName, style}` node is encountered during interpolation, custom formatters are checked before the built-in `Intl` formatters:
 
 ```typescript
-const i18n = createFluent({
+const i18n = createFluentiRuntime({
   locale: 'en',
   messages: { en },
   formatters: {
@@ -111,11 +111,11 @@ const i18n = createFluent({
 
 ### Locale validation
 
-`createFluent()` and `setLocale()` validate that the locale is a non-empty string. An error is thrown if the locale is empty, `undefined`, or not a string:
+`createFluentiRuntime()` and `setLocale()` validate that the locale is a non-empty string. An error is thrown if the locale is empty, `undefined`, or not a string:
 
 ```typescript
-createFluent({ locale: '', messages: {} })
-// Error: [fluenti] createFluent: locale must be a non-empty string, got ""
+createFluentiRuntime({ locale: '', messages: {} })
+// Error: [fluenti] createFluentiRuntime: locale must be a non-empty string, got ""
 
 i18n.setLocale('')
 // Error: [fluenti] setLocale: locale must be a non-empty string, got ""

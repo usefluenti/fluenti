@@ -17,9 +17,9 @@ pnpm add @fluenti/core @fluenti/vue @fluenti/vite-plugin
 ## Quick Start
 
 ```ts
-import { createFluentiVue } from '@fluenti/vue'
+import { createFluenti } from '@fluenti/vue'
 
-const fluent = createFluentiVue({
+const fluent = createFluenti({
   locale: 'en',
   fallbackLocale: 'en',
   messages: { en, ja },
@@ -30,7 +30,7 @@ app.use(fluent)
 
 ## Main Exports
 
-- `createFluentiVue(options)` — Vue plugin factory
+- `createFluenti(options)` — Vue plugin factory
 - `useI18n()` — composable returning the full i18n context
 - `t` — compile-time-only authoring API for tagged templates and descriptors
 - `Trans`, `Plural`, `Select`, `DateTime`, `NumberFormat` — runtime-capable components

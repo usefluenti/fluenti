@@ -139,7 +139,7 @@ describe('DateTime', () => {
 
   it('throws when used outside of I18nProvider', () => {
     expect(() => render(() => <DateTime value={fixedDate} />)).toThrow(
-      'useI18n requires either createFluentiSolid()',
+      'useI18n requires either createFluenti()',
     )
   })
 

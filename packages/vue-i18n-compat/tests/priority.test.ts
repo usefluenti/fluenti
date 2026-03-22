@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { createFluentiVue } from '@fluenti/vue'
+import { createFluenti } from '@fluenti/vue'
 import { createFluentBridge } from '../src/bridge'
 import { createMockVueI18n } from './_helpers'
 
@@ -11,7 +11,7 @@ describe('priority strategy — comprehensive tests', () => {
 
   function createWithPriority(priority?: 'fluenti-first' | 'vue-i18n-first') {
     const vueI18n = createMockVueI18n({ messages: sharedMessages.vueI18n })
-    const fluenti = createFluentiVue({ locale: 'en', messages: sharedMessages.fluenti })
+    const fluenti = createFluenti({ locale: 'en', messages: sharedMessages.fluenti })
     const bridge = createFluentBridge({ vueI18n, fluenti, ...(priority ? { priority } : {}) })
     return bridge
   }
@@ -74,7 +74,7 @@ describe('priority strategy — comprehensive tests', () => {
     const vueI18n = createMockVueI18n({
       messages: { en: { items: '{count} thing | {count} things' } },
     })
-    const fluenti = createFluentiVue({
+    const fluenti = createFluenti({
       locale: 'en',
       messages: { en: { items: '{count, plural, one {# item} other {# items}}' } },
     })
@@ -96,7 +96,7 @@ describe('priority strategy — comprehensive tests', () => {
     const vueI18n = createMockVueI18n({
       messages: { en: { msg: 'vue-i18n raw' } },
     })
-    const fluenti = createFluentiVue({
+    const fluenti = createFluenti({
       locale: 'en',
       messages: { en: { msg: 'fluenti raw' } },
     })
@@ -115,7 +115,7 @@ describe('priority strategy — comprehensive tests', () => {
     const vueI18n = createMockVueI18n({
       messages: { en: { legacyKey: 'L' } },
     })
-    const fluenti = createFluentiVue({
+    const fluenti = createFluenti({
       locale: 'en',
       messages: { en: { fluentiKey: 'F' } },
     })

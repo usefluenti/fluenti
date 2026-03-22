@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { defineComponent, h } from 'vue'
 import { mount } from '@vue/test-utils'
-import { createFluentiVue } from '../src/plugin'
+import { createFluenti } from '../src/plugin'
 import { msg } from '../src/msg'
 import { useI18n } from '../src/use-i18n'
 
@@ -27,7 +27,7 @@ describe('msg``', () => {
       },
     })
 
-    const plugin = createFluentiVue({ locale: 'en', messages: { en: {} } })
+    const plugin = createFluenti({ locale: 'en', messages: { en: {} } })
     const wrapper = mount(Display, { global: { plugins: [plugin] } })
 
     expect(wrapper.text()).toBe('Hello')
@@ -50,7 +50,7 @@ describe('msg``', () => {
       },
     })
 
-    const plugin = createFluentiVue({ locale: 'en', messages: { en: {} } })
+    const plugin = createFluenti({ locale: 'en', messages: { en: {} } })
     const wrapper = mount(Nav, { global: { plugins: [plugin] } })
 
     expect(wrapper.text()).toContain('Home')

@@ -148,7 +148,7 @@ function getModifierAttr(modifiers: Partial<Record<string, boolean>>): string | 
  * Each invocation creates entirely fresh state — no module-level singletons —
  * so it is safe to call once per SSR request.
  */
-export function createFluentiVue(options: FluentVueOptions): FluentVuePlugin {
+export function createFluenti(options: FluentVueOptions): FluentVuePlugin {
   const chunkLoaderFn = options.loadMessages ?? options.chunkLoader
   const lazyLocaleLoading = options.lazyLocaleLoading
     ?? (options as FluentVueOptions & { splitting?: boolean }).splitting
@@ -457,5 +457,7 @@ export function createFluentiVue(options: FluentVueOptions): FluentVuePlugin {
   }
 }
 
-/** @deprecated Use {@link createFluentiVue} instead */
-export const createFluentVue = createFluentiVue
+/** @deprecated Use {@link createFluenti} instead */
+export const createFluentiVue = createFluenti
+/** @deprecated Use {@link createFluenti} instead */
+export const createFluentVue = createFluenti

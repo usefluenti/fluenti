@@ -1,12 +1,12 @@
 import { describe, it, expect } from 'vitest'
 import { h } from 'vue'
 import { mount } from '@vue/test-utils'
-import { createFluentiVue } from '../src/plugin'
+import { createFluenti } from '../src/plugin'
 import { Trans } from '../src/components/Trans'
 import { hashMessage } from '@fluenti/core'
 
 function createPlugin(messages: Record<string, string> = {}) {
-  return createFluentiVue({
+  return createFluenti({
     locale: 'en',
     messages: { en: messages },
   })
@@ -95,7 +95,7 @@ describe('Trans component', () => {
 
   it('translates default slot content without the build plugin', () => {
     const message = 'Visit the <0>documentation</0> page'
-    const plugin = createFluentiVue({
+    const plugin = createFluenti({
       locale: 'ja',
       messages: {
         ja: {

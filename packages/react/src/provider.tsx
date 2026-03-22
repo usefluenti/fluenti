@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useMemo, useRef } from 'react'
-import { createFluent } from '@fluenti/core'
+import { createFluentiRuntime } from '@fluenti/core'
 import type { Messages, SplitRuntimeModule } from '@fluenti/core'
 import { I18nContext } from './context'
 import type { I18nProviderProps } from './types'
@@ -52,7 +52,7 @@ export function I18nProvider({
   const localeRequestRef = useRef(0)
 
   const i18n = useMemo(() => {
-    const config: Parameters<typeof createFluent>[0] = {
+    const config: Parameters<typeof createFluentiRuntime>[0] = {
       locale: currentLocale,
       messages: loadedMessages,
     }
@@ -61,7 +61,7 @@ export function I18nProvider({
     if (dateFormats !== undefined) config.dateFormats = dateFormats
     if (numberFormats !== undefined) config.numberFormats = numberFormats
     if (missing !== undefined) config.missing = missing
-    return createFluent(config)
+    return createFluentiRuntime(config)
   }, [currentLocale, loadedMessages, fallbackLocale, fallbackChain, dateFormats, numberFormats, missing])
 
   // Sync external locale prop changes

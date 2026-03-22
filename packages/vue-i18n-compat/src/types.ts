@@ -8,7 +8,7 @@ export type BridgePriority = 'fluenti-first' | 'vue-i18n-first'
 export interface BridgeOptions {
   /** The vue-i18n instance (from createI18n()) */
   vueI18n: VueI18nInstance
-  /** The fluenti Vue plugin (from createFluentiVue()) */
+  /** The fluenti Vue plugin (from createFluenti()) */
   fluenti: FluentVuePlugin
   /** Which library to check first when resolving translations (default: 'fluenti-first') */
   priority?: BridgePriority

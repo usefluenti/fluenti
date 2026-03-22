@@ -125,7 +125,7 @@ export function clearAllCaches(): void {
  *
  * @example
  * ```ts
- * const i18n = createFluent({
+ * const i18n = createFluentiRuntime({
  *   locale: 'en',
  *   messages: {
  *     en: { greeting: 'Hello {name}!' },
@@ -135,8 +135,8 @@ export function clearAllCaches(): void {
  * i18n.t('greeting', { name: 'World' }) // 'Hello World!'
  * ```
  */
-export function createFluent(config: FluentiRuntimeConfigFull): FluentiInstanceExtended {
-  validateLocale(config.locale, 'createFluent')
+export function createFluentiRuntime(config: FluentiRuntimeConfigFull): FluentiInstanceExtended {
+  validateLocale(config.locale, 'createFluentiRuntime')
   let currentLocale: Locale = config.locale
   const catalog = new Catalog()
   const customFormatters = config.formatters
@@ -326,3 +326,6 @@ export function createFluent(config: FluentiRuntimeConfigFull): FluentiInstanceE
     },
   }
 }
+
+/** @deprecated Use {@link createFluentiRuntime} instead */
+export const createFluent = createFluentiRuntime

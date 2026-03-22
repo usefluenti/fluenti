@@ -433,7 +433,7 @@ Re-exported from `@fluenti/core` for convenience:
 React's re-render cycle handles reactivity automatically. When `setLocale()` is called:
 
 1. The provider updates its internal state
-2. A new `createFluent()` instance is created with the new locale
+2. A new `createFluentiRuntime()` instance is created with the new locale
 3. All child components re-render with updated translations
 
 Since `t()` is an O(1) hash lookup, calling it directly in JSX is efficient — no `useMemo` needed.

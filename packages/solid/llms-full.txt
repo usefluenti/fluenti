@@ -17,7 +17,7 @@ pnpm add @fluenti/core @fluenti/solid @fluenti/vite-plugin
 
 ## Public Exports
 
-- `createFluentiSolid`
+- `createFluenti`
 - `createI18nContext`
 - `I18nProvider`
 - `I18nCtx`
@@ -40,7 +40,7 @@ Types:
 
 ## Context model
 
-### `createFluentiSolid(config)`
+### `createFluenti(config)`
 
 Creates an app-level singleton context, intended for SPA startup code.
 
@@ -57,7 +57,7 @@ Creates and provides the nearest Solid context boundary for its subtree.
 Resolution order:
 
 1. nearest `<I18nProvider>`
-2. singleton created by `createFluentiSolid()`
+2. singleton created by `createFluenti()`
 
 This is the public runtime API for translations, locale switching, and formatting.
 
@@ -166,7 +166,7 @@ Cross-framework contract highlights:
 ## Lazy locale loading
 
 ```tsx
-const i18n = createFluentiSolid({
+const i18n = createFluenti({
   locale: 'en',
   messages: { en },
   lazyLocaleLoading: true,

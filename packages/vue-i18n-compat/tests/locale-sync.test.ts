@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { nextTick } from 'vue'
-import { createFluentiVue } from '@fluenti/vue'
+import { createFluenti } from '@fluenti/vue'
 import { createFluentBridge } from '../src/bridge'
 import { createMockVueI18n, mountApp } from './_helpers'
 
@@ -10,7 +10,7 @@ describe('locale synchronization — deep tests', () => {
       locale: 'en',
       messages: { en: {}, ja: {}, fr: {}, zh: {} },
     })
-    const fluenti = createFluentiVue({
+    const fluenti = createFluenti({
       locale: 'en',
       messages: { en: {}, ja: {}, fr: {}, zh: {} },
     })
@@ -33,7 +33,7 @@ describe('locale synchronization — deep tests', () => {
       locale: 'en',
       messages: { en: {}, ko: {} },
     })
-    const fluenti = createFluentiVue({
+    const fluenti = createFluenti({
       locale: 'en',
       messages: { en: {}, ko: {} },
     })
@@ -57,7 +57,7 @@ describe('locale synchronization — deep tests', () => {
       locale: 'en',
       messages: { en: {}, de: {} },
     })
-    const fluenti = createFluentiVue({
+    const fluenti = createFluenti({
       locale: 'en',
       messages: { en: {}, de: {} },
     })
@@ -78,7 +78,7 @@ describe('locale synchronization — deep tests', () => {
       locale: 'en',
       messages: { en: {}, pt: {} },
     })
-    const fluenti = createFluentiVue({
+    const fluenti = createFluenti({
       locale: 'en',
       messages: { en: {}, pt: {} },
     })
@@ -98,7 +98,7 @@ describe('locale synchronization — deep tests', () => {
       locale: 'en',
       messages: { en: {}, ja: {} },
     })
-    const fluenti = createFluentiVue({
+    const fluenti = createFluenti({
       locale: 'en',
       messages: { en: {}, ja: {} },
     })
@@ -129,7 +129,7 @@ describe('locale synchronization — deep tests', () => {
       locale: 'en',
       messages: { en: {}, ja: {} },
     })
-    const fluenti = createFluentiVue({
+    const fluenti = createFluenti({
       locale: 'ja',
       messages: { en: {}, ja: {} },
     })

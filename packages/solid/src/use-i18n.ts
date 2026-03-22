@@ -8,7 +8,7 @@ import type { I18nContext } from './context'
  *
  * Resolution order:
  * 1. Nearest `<I18nProvider>` in the component tree
- * 2. Module-level singleton created by `createFluentiSolid()`
+ * 2. Module-level singleton created by `createFluenti()`
  *
  * Throws if neither is available.
  */
@@ -24,7 +24,7 @@ export function useI18n(): I18nContext {
   }
 
   throw new Error(
-    'useI18n requires either createFluentiSolid() to be called at startup, ' +
+    'useI18n requires either createFluenti() to be called at startup, ' +
     'or the component to be inside an <I18nProvider>.',
   )
 }

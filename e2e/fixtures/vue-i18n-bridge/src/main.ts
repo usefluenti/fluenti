@@ -1,6 +1,6 @@
 import { createApp } from 'vue'
 import { createI18n } from 'vue-i18n'
-import { createFluentiVue } from '@fluenti/vue'
+import { createFluenti } from '@fluenti/vue'
 import { createFluentBridge } from '@fluenti/vue-i18n-compat'
 import App from './App.vue'
 import { legacyMessages } from './locales/legacy'
@@ -14,7 +14,7 @@ const vueI18n = createI18n({
 })
 
 // 2. Create fluenti instance (new migrated translations)
-const fluenti = createFluentiVue({
+const fluenti = createFluenti({
   locale: 'en',
   fallbackLocale: 'en',
   messages: fluentMessages,

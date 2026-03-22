@@ -12,7 +12,7 @@ When a message is not found in the current locale, Fluenti tries:
 ## Configuration
 
 ```typescript
-const i18n = createFluentiVue({
+const i18n = createFluenti({
   locale: 'zh-TW',
   fallbackLocale: 'en',
   messages: { en, 'zh-CN': zhCN, 'zh-TW': zhTW },
@@ -35,7 +35,7 @@ With this config, when locale is `zh-TW`:
 Instead of duplicating an entire catalog for `en-GB`, let it fall back to `en` and only translate the differences:
 
 ```ts
-createFluent({
+createFluentiRuntime({
   locale: 'en-GB',
   fallbackLocale: 'en',
   fallbackChain: {
@@ -52,7 +52,7 @@ createFluent({
 For custom behavior when a message is not found:
 
 ```typescript
-const i18n = createFluentiVue({
+const i18n = createFluenti({
   locale: 'en',
   messages,
   missing: (locale, id) => {

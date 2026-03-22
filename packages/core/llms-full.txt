@@ -19,14 +19,14 @@ pnpm add @fluenti/core
 
 Most users do not install `@fluenti/core` directly -- it is included as a dependency of `@fluenti/vue` and `@fluenti/solid`.
 
-## createFluent(config)
+## createFluentiRuntime(config)
 
 Create a fully configured i18n instance. This is the main entry point for most applications.
 
 ```ts
-import { createFluent } from '@fluenti/core'
+import { createFluentiRuntime } from '@fluenti/core'
 
-const i18n = createFluent({
+const i18n = createFluentiRuntime({
   locale: 'en',
   fallbackLocale: 'en',
   messages: {
@@ -308,7 +308,7 @@ formatDate(Date.now() - 86400000, 'en', 'relative') // "yesterday"
 | `datetime` | `{ year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric' }` |
 | `relative` | Delegates to `formatRelativeTime()` |
 
-Custom styles are passed as the 4th argument or configured via `dateFormats` in `createFluent()`. Custom styles are merged over defaults, so you can override built-in styles or add new ones.
+Custom styles are passed as the 4th argument or configured via `dateFormats` in `createFluentiRuntime()`. Custom styles are merged over defaults, so you can override built-in styles or add new ones.
 
 A style value can be `Intl.DateTimeFormatOptions` or the string `'relative'` to delegate to relative time formatting.
 
@@ -349,7 +349,7 @@ Maps locales to default currency codes:
 Custom styles can be static `Intl.NumberFormatOptions` or a function `(locale: Locale) => Intl.NumberFormatOptions` for locale-dependent options:
 
 ```ts
-const i18n = createFluent({
+const i18n = createFluentiRuntime({
   locale: 'en',
   messages: { en: {} },
   numberFormats: {

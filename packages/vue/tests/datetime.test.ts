@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { defineComponent, h, nextTick } from 'vue'
 import { mount } from '@vue/test-utils'
-import { createFluentiVue } from '../src/plugin'
+import { createFluenti } from '../src/plugin'
 import { DateTime } from '../src/components/DateTime'
 
 describe('DateTime', () => {
@@ -10,9 +10,9 @@ describe('DateTime', () => {
 
   function mountWithPlugin(
     component: ReturnType<typeof defineComponent>,
-    options: Parameters<typeof createFluentiVue>[0] = { locale: 'en', messages: { en: {} } },
+    options: Parameters<typeof createFluenti>[0] = { locale: 'en', messages: { en: {} } },
   ) {
-    const plugin = createFluentiVue(options)
+    const plugin = createFluenti(options)
     return mount(component, { global: { plugins: [plugin] } })
   }
 
@@ -163,7 +163,7 @@ describe('DateTime', () => {
         return () => h(DateTime, { value: fixedDate })
       },
     })
-    expect(() => mount(Comp)).toThrow('useI18n() requires createFluentiVue plugin')
+    expect(() => mount(Comp)).toThrow('useI18n() requires createFluenti plugin')
   })
 
   it('renders with custom tag', () => {
@@ -234,7 +234,7 @@ describe('DateTime', () => {
     })
 
     it('re-renders on locale switch', async () => {
-      const plugin = createFluentiVue({
+      const plugin = createFluenti({
         locale: 'en',
         messages: { en: {}, de: {} },
       })

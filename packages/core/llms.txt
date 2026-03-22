@@ -10,7 +10,7 @@ Install: `pnpm add @fluenti/core` (usually included automatically via framework 
 
 ## Key Exports
 
-- `createFluent(config)`: Create a full i18n instance with `t()`, `d()`, `n()`, `format()`, locale switching, fallback chains, and missing message handlers
+- `createFluentiRuntime(config)`: Create a full i18n instance with `t()`, `d()`, `n()`, `format()`, locale switching, fallback chains, and missing message handlers
 - `parse(message)`: Parse an ICU MessageFormat string into an AST (supports plurals, selects, nested arguments, ordinals, offsets, `#` substitution, escaping)
 - `compile(ast, locale?)`: Compile an AST into a `CompiledMessage` -- returns a plain string for static text or a function for dynamic messages
 - `interpolate(message, values?, locale?)`: One-step parse + compile + execute with LRU caching (500 entries)

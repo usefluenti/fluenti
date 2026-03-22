@@ -1,13 +1,13 @@
 import { describe, it, expect } from 'vitest'
 import { createApp, defineComponent, h } from 'vue'
-import { createFluentiVue } from '@fluenti/vue'
+import { createFluenti } from '@fluenti/vue'
 import { createFluentBridge } from '../src/bridge'
 import { createMockVueI18n, mountApp } from './_helpers'
 
 describe('global properties — Vue app.$t, $te, $tc, $d, $n', () => {
   it('$t is overridden to bridged version', () => {
     const vueI18n = createMockVueI18n({ messages: { en: { hello: 'Hi vue-i18n' } } })
-    const fluenti = createFluentiVue({ locale: 'en', messages: { en: { hello: 'Hi fluenti' } } })
+    const fluenti = createFluenti({ locale: 'en', messages: { en: { hello: 'Hi fluenti' } } })
     const bridge = createFluentBridge({ vueI18n, fluenti })
 
     const { app } = mountApp(() => {}, [bridge])
@@ -19,7 +19,7 @@ describe('global properties — Vue app.$t, $te, $tc, $d, $n', () => {
 
   it('$te is overridden to bridged version', () => {
     const vueI18n = createMockVueI18n({ messages: { en: { legacy: 'L' } } })
-    const fluenti = createFluentiVue({ locale: 'en', messages: { en: { modern: 'M' } } })
+    const fluenti = createFluenti({ locale: 'en', messages: { en: { modern: 'M' } } })
     const bridge = createFluentBridge({ vueI18n, fluenti })
 
     const { app } = mountApp(() => {}, [bridge])
@@ -36,7 +36,7 @@ describe('global properties — Vue app.$t, $te, $tc, $d, $n', () => {
     const vueI18n = createMockVueI18n({
       messages: { en: { apples: '{count} apple | {count} apples' } },
     })
-    const fluenti = createFluentiVue({ locale: 'en', messages: { en: {} } })
+    const fluenti = createFluenti({ locale: 'en', messages: { en: {} } })
     const bridge = createFluentBridge({ vueI18n, fluenti })
 
     const { app } = mountApp(() => {}, [bridge])
@@ -49,7 +49,7 @@ describe('global properties — Vue app.$t, $te, $tc, $d, $n', () => {
 
   it('$d is available from fluenti', () => {
     const vueI18n = createMockVueI18n({ messages: { en: {} } })
-    const fluenti = createFluentiVue({ locale: 'en', messages: { en: {} } })
+    const fluenti = createFluenti({ locale: 'en', messages: { en: {} } })
     const bridge = createFluentBridge({ vueI18n, fluenti })
 
     const { app } = mountApp(() => {}, [bridge])
@@ -62,7 +62,7 @@ describe('global properties — Vue app.$t, $te, $tc, $d, $n', () => {
 
   it('$n is available from fluenti', () => {
     const vueI18n = createMockVueI18n({ messages: { en: {} } })
-    const fluenti = createFluentiVue({ locale: 'en', messages: { en: {} } })
+    const fluenti = createFluenti({ locale: 'en', messages: { en: {} } })
     const bridge = createFluentBridge({ vueI18n, fluenti })
 
     const { app } = mountApp(() => {}, [bridge])
@@ -76,7 +76,7 @@ describe('global properties — Vue app.$t, $te, $tc, $d, $n', () => {
     const vueI18n = createMockVueI18n({
       messages: { en: { shared: 'vue-i18n', legacy: 'only vue-i18n' } },
     })
-    const fluenti = createFluentiVue({
+    const fluenti = createFluenti({
       locale: 'en',
       messages: { en: { shared: 'fluenti', modern: 'only fluenti' } },
     })
@@ -95,7 +95,7 @@ describe('global properties — Vue app.$t, $te, $tc, $d, $n', () => {
     const vueI18n = createMockVueI18n({
       messages: { en: { shared: 'vue-i18n', legacy: 'only vue-i18n' } },
     })
-    const fluenti = createFluentiVue({
+    const fluenti = createFluenti({
       locale: 'en',
       messages: { en: { shared: 'fluenti', modern: 'only fluenti' } },
     })
@@ -112,7 +112,7 @@ describe('global properties — Vue app.$t, $te, $tc, $d, $n', () => {
 
   it('global properties survive across component re-mounts', () => {
     const vueI18n = createMockVueI18n({ messages: { en: { msg: 'Hello' } } })
-    const fluenti = createFluentiVue({ locale: 'en', messages: { en: {} } })
+    const fluenti = createFluenti({ locale: 'en', messages: { en: {} } })
     const bridge = createFluentBridge({ vueI18n, fluenti })
 
     const el = document.createElement('div')

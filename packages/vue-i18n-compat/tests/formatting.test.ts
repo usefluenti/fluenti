@@ -1,12 +1,12 @@
 import { describe, it, expect } from 'vitest'
-import { createFluentiVue } from '@fluenti/vue'
+import { createFluenti } from '@fluenti/vue'
 import { createFluentBridge } from '../src/bridge'
 import { createMockVueI18n } from './_helpers'
 
 describe('formatting — date and number delegation', () => {
   function createBridge() {
     const vueI18n = createMockVueI18n({ messages: { en: {} } })
-    const fluenti = createFluentiVue({ locale: 'en', messages: { en: {} } })
+    const fluenti = createFluenti({ locale: 'en', messages: { en: {} } })
     const bridge = createFluentBridge({ vueI18n, fluenti })
     return { bridge, fluenti }
   }
