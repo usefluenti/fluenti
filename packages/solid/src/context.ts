@@ -357,6 +357,19 @@ export function createI18nContext(config: FluentiRuntimeConfig | I18nConfig): I1
 
 let globalCtx: I18nContext | undefined
 
+function isHMR(): boolean {
+  try {
+    const g = globalThis as Record<string, unknown>
+    // import.meta.hot is also truthy in Vitest; use a global flag for testability
+    if (typeof g['__fluenti_hmr__'] !== 'undefined') {
+      return !!g['__fluenti_hmr__']
+    }
+    return !!(import.meta as unknown as Record<string, unknown>)['hot']
+  } catch {
+    return false
+  }
+}
+
 /**
  * Initialize the global i18n singleton.
  *
@@ -366,16 +379,26 @@ let globalCtx: I18nContext | undefined
  * Returns the context for convenience, but `useI18n()` will also find it.
  */
 export function createFluenti(config: FluentiRuntimeConfig | I18nConfig): I18nContext {
+  if (typeof window !== 'undefined' && globalCtx !== undefined) {
+    if (isHMR()) {
+      console.warn('[fluenti] HMR: replacing global i18n instance')
+    } else {
+      throw new Error(
+        '[fluenti] createFluenti() has already been called. '
+        + 'Use <I18nProvider> for multiple i18n instances, '
+        + 'or call resetGlobalI18nContext() first (testing only).',
+      )
+    }
+  }
+
   const ctx = createRoot(() => createI18nContext(config))
 
-  // Only set global singleton in browser (client-side).
-  // In SSR, each request should use <I18nProvider> for per-request isolation.
   if (typeof window !== 'undefined') {
     globalCtx = ctx
   } else {
     console.warn(
-      '[fluenti] createFluenti() detected SSR environment. ' +
-      'Use <I18nProvider> for per-request isolation in SSR.',
+      '[fluenti] createFluenti() detected SSR environment. '
+      + 'Use <I18nProvider> for per-request isolation in SSR.',
     )
   }
 
@@ -394,6 +417,12 @@ export function getGlobalI18nContext(): I18nContext | undefined {
 
 /** @internal — used by I18nProvider to set context without createRoot wrapper */
 export function setGlobalI18nContext(ctx: I18nContext): void {
+  if (globalCtx !== undefined) {
+    throw new Error(
+      '[fluenti] setGlobalI18nContext() has already been called. '
+      + 'Use <I18nProvider> for multiple i18n instances.',
+    )
+  }
   globalCtx = ctx
 }
 
