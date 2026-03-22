@@ -85,6 +85,8 @@ export { createPluginRunner } from './plugin'
 export type { PluginRunner, ExtractedMessages } from './plugin'
 export { pseudoLocalePlugin, pseudoLocalize } from './plugins/pseudo-locale'
 export { messageValidatorPlugin } from './plugins/message-validator'
+export { createDiagnostics, __DEV__ } from './diagnostics'
+export type { DiagnosticsConfig, DiagnosticEvent, Diagnostics } from './diagnostics'
 
 import type {
   FluentiRuntimeConfigFull,
@@ -106,6 +108,8 @@ import { formatDate } from './formatters/date'
 import { buildICUMessage } from './msg'
 import { createMessageId, resolveDescriptorId } from './identity'
 import { validateLocale } from './locale'
+import { createDiagnostics as createDiagnosticsImpl, __DEV__ as DEV_FLAG } from './diagnostics'
+import type { Diagnostics } from './diagnostics'
 
 /**
  * Clear **all** internal Intl and message caches in one call.
@@ -151,6 +155,11 @@ export function createFluentiRuntime(config: FluentiRuntimeConfigFull): FluentiI
   validateLocale(config.locale, 'createFluentiRuntime')
   let currentLocale: Locale = config.locale
   const catalog = new Catalog()
+
+  const diagnostics: Diagnostics | undefined = DEV_FLAG && config.diagnostics
+    ? createDiagnosticsImpl(config.diagnostics)
+    : undefined
+
   const customFormatters = config.formatters
   const devWarningsEnabled = config.devWarnings
     || (typeof process !== 'undefined' && process.env?.['FLUENTI_DEBUG'] === 'true')
@@ -214,6 +223,9 @@ export function createFluentiRuntime(config: FluentiRuntimeConfigFull): FluentiI
     for (const locale of buildFallbackChain()) {
       const msg = catalog.get(locale, id)
       if (msg !== undefined) {
+        if (DEV_FLAG && diagnostics && locale !== currentLocale) {
+          diagnostics.fallbackUsed(currentLocale, locale, id)
+        }
         return executeMessage(msg, id, values, locale)
       }
     }
@@ -255,6 +267,9 @@ export function createFluentiRuntime(config: FluentiRuntimeConfigFull): FluentiI
       return applyTransform(interp(id, values, currentLocale), id)
     }
 
+    if (DEV_FLAG && diagnostics) {
+      diagnostics.missingKey(currentLocale, id)
+    }
     if (devWarningsEnabled) {
       console.warn(`[fluenti] Missing translation for "${id}" in locale "${currentLocale}"`)
       return `[!] ${id}` as LocalizedString

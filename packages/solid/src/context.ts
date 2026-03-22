@@ -1,6 +1,6 @@
 import { createSignal, createRoot, type Accessor } from 'solid-js'
 import { formatDate, formatNumber, interpolate as coreInterpolate, buildICUMessage, resolveDescriptorId } from '@fluenti/core'
-import type { FluentRuntimeConfig, Locale, LocalizedString, Messages, CompiledMessage, MessageDescriptor, DateFormatOptions, NumberFormatOptions, ChunkLoader, SplitRuntimeModule } from '@fluenti/core'
+import type { Locale, LocalizedString, Messages, CompiledMessage, MessageDescriptor, DateFormatOptions, NumberFormatOptions, ChunkLoader, SplitRuntimeModule, DiagnosticsConfig } from '@fluenti/core'
 
 const SPLIT_RUNTIME_KEY = Symbol.for('fluenti.runtime.solid.v1')
 
@@ -39,6 +39,8 @@ export interface I18nConfig extends FluentRuntimeConfig {
   dateFormats?: DateFormatOptions
   /** Named number format styles */
   numberFormats?: NumberFormatOptions
+  /** Runtime diagnostics configuration (forwarded to core) */
+  diagnostics?: DiagnosticsConfig
 }
 
 /** Reactive i18n context holding locale signal and translation utilities */
