@@ -156,7 +156,7 @@ describe('NumberFormat', () => {
 
   it('throws when used outside of I18nProvider', () => {
     expect(() => render(() => <NumberFormat value={42} />)).toThrow(
-      'useI18n requires either createI18n()',
+      'useI18n requires either createFluentiSolid()',
     )
   })
 

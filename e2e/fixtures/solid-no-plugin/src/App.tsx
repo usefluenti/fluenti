@@ -1,13 +1,13 @@
 import { render } from 'solid-js/web'
 import { createSignal, type Component, type JSX } from 'solid-js'
-import { createI18n, useI18n, Trans, Plural, Select, DateTime, NumberFormat } from '@fluenti/solid'
+import { createFluentiSolid, useI18n, Trans, Plural, Select, DateTime, NumberFormat } from '@fluenti/solid'
 import en from './locales/compiled/en.js'
 import zhCN from './locales/compiled/zh-CN.js'
 import ja from './locales/compiled/ja.js'
 
 const DEMO_DATE = new Date(Date.UTC(2025, 0, 15, 12))
 
-createI18n({
+createFluentiSolid({
   locale: 'en',
   fallbackLocale: 'en',
   messages: {

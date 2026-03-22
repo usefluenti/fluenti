@@ -1,4 +1,4 @@
-export { createFluentVue, FLUENTI_KEY } from './plugin'
+export { createFluentiVue, createFluentVue, FLUENTI_KEY } from './plugin'
 export type { FluentVueOptions, FluentVuePlugin, FluentVueContext } from './plugin'
 export { useI18n } from './use-i18n'
 export { t } from './compile-time-t'

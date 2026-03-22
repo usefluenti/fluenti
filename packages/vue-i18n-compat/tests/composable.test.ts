@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { createApp, defineComponent, h, ref } from 'vue'
-import { createFluentVue } from '@fluenti/vue'
+import { createFluentiVue } from '@fluenti/vue'
 import { createFluentBridge } from '../src/bridge'
 import { useI18n } from '../src/composable'
 import type { VueI18nInstance, VueI18nGlobal, BridgeContext } from '../src/types'
@@ -59,7 +59,7 @@ function mountApp(setup: () => any, plugins: any[]) {
 describe('useBridge composable', () => {
   it('returns bridge context when bridge plugin is installed', () => {
     const vueI18n = createMockVueI18n({ messages: { en: { hello: 'Hi' } } })
-    const fluenti = createFluentVue({ locale: 'en', messages: { en: { world: 'World' } } })
+    const fluenti = createFluentiVue({ locale: 'en', messages: { en: { world: 'World' } } })
     const bridge = createFluentBridge({ vueI18n, fluenti })
 
     let ctx: BridgeContext | undefined

@@ -1,12 +1,12 @@
 import { describe, it, expect } from 'vitest'
-import { createFluentVue } from '@fluenti/vue'
+import { createFluentiVue } from '@fluenti/vue'
 import { createFluentBridge } from '../src/bridge'
 import { createMockVueI18n, mountApp } from './_helpers'
 
 describe('error handling — edge cases', () => {
   it('t() with empty string key returns the empty string key', () => {
     const vueI18n = createMockVueI18n({ messages: { en: {} } })
-    const fluenti = createFluentVue({ locale: 'en', messages: { en: {} } })
+    const fluenti = createFluentiVue({ locale: 'en', messages: { en: {} } })
     const bridge = createFluentBridge({ vueI18n, fluenti })
 
     // Empty key is not found in either library, vue-i18n mock returns the key as-is
@@ -16,7 +16,7 @@ describe('error handling — edge cases', () => {
 
   it('t() with undefined values does not throw', () => {
     const vueI18n = createMockVueI18n({ messages: { en: { hello: 'Hello' } } })
-    const fluenti = createFluentVue({ locale: 'en', messages: { en: {} } })
+    const fluenti = createFluentiVue({ locale: 'en', messages: { en: {} } })
     const bridge = createFluentBridge({ vueI18n, fluenti })
 
     expect(() => bridge.global.t('hello', undefined)).not.toThrow()
@@ -27,7 +27,7 @@ describe('error handling — edge cases', () => {
     const vueI18n = createMockVueI18n({
       messages: { en: { items: 'no items | {count} items' } },
     })
-    const fluenti = createFluentVue({ locale: 'en', messages: { en: {} } })
+    const fluenti = createFluentiVue({ locale: 'en', messages: { en: {} } })
     const bridge = createFluentBridge({ vueI18n, fluenti })
 
     const result = bridge.global.tc('items', 0)
@@ -39,7 +39,7 @@ describe('error handling — edge cases', () => {
     const vueI18n = createMockVueI18n({
       messages: { en: { temp: '{count} degree | {count} degrees' } },
     })
-    const fluenti = createFluentVue({ locale: 'en', messages: { en: {} } })
+    const fluenti = createFluentiVue({ locale: 'en', messages: { en: {} } })
     const bridge = createFluentBridge({ vueI18n, fluenti })
 
     expect(() => bridge.global.tc('temp', -5)).not.toThrow()
@@ -49,7 +49,7 @@ describe('error handling — edge cases', () => {
 
   it('te() with empty string returns false (no key matches empty)', () => {
     const vueI18n = createMockVueI18n({ messages: { en: { hello: 'Hi' } } })
-    const fluenti = createFluentVue({ locale: 'en', messages: { en: { world: 'World' } } })
+    const fluenti = createFluentiVue({ locale: 'en', messages: { en: { world: 'World' } } })
     const bridge = createFluentBridge({ vueI18n, fluenti })
 
     expect(bridge.global.te('')).toBe(false)
@@ -57,7 +57,7 @@ describe('error handling — edge cases', () => {
 
   it('tm() for non-existent key returns undefined', () => {
     const vueI18n = createMockVueI18n({ messages: { en: {} } })
-    const fluenti = createFluentVue({ locale: 'en', messages: { en: {} } })
+    const fluenti = createFluentiVue({ locale: 'en', messages: { en: {} } })
     const bridge = createFluentBridge({ vueI18n, fluenti })
 
     expect(bridge.global.tm('nonexistent')).toBeUndefined()
@@ -65,7 +65,7 @@ describe('error handling — edge cases', () => {
 
   it('setLocale with same locale completes without error', async () => {
     const vueI18n = createMockVueI18n({ locale: 'en', messages: { en: {} } })
-    const fluenti = createFluentVue({ locale: 'en', messages: { en: {} } })
+    const fluenti = createFluentiVue({ locale: 'en', messages: { en: {} } })
     const bridge = createFluentBridge({ vueI18n, fluenti })
 
     const { app } = mountApp(() => {}, [bridge])
@@ -77,7 +77,7 @@ describe('error handling — edge cases', () => {
 
   it('multiple app.use(bridge) on separate apps does not throw', () => {
     const vueI18n = createMockVueI18n({ messages: { en: {} } })
-    const fluenti = createFluentVue({ locale: 'en', messages: { en: {} } })
+    const fluenti = createFluentiVue({ locale: 'en', messages: { en: {} } })
     const bridge = createFluentBridge({ vueI18n, fluenti })
 
     const { app: app1 } = mountApp(() => {}, [bridge])

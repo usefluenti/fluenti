@@ -61,7 +61,7 @@ describe('__useI18n (internal hook)', () => {
     }
 
     expect(() => render(() => <Bad />)).toThrow(
-      'useI18n requires either createI18n()',
+      'useI18n requires either createFluentiSolid()',
     )
   })
 })

@@ -319,7 +319,7 @@ let globalCtx: I18nContext | undefined
  *
  * Returns the context for convenience, but `useI18n()` will also find it.
  */
-export function createI18n(config: FluentRuntimeConfig | I18nConfig): I18nContext {
+export function createFluentiSolid(config: FluentRuntimeConfig | I18nConfig): I18nContext {
   const ctx = createRoot(() => createI18nContext(config))
 
   // Only set global singleton in browser (client-side).
@@ -328,13 +328,16 @@ export function createI18n(config: FluentRuntimeConfig | I18nConfig): I18nContex
     globalCtx = ctx
   } else {
     console.warn(
-      '[fluenti] createI18n() detected SSR environment. ' +
+      '[fluenti] createFluentiSolid() detected SSR environment. ' +
       'Use <I18nProvider> for per-request isolation in SSR.',
     )
   }
 
   return ctx
 }
+
+/** @deprecated Use {@link createFluentiSolid} instead */
+export const createI18n = createFluentiSolid
 
 /** @internal — used by useI18n and I18nProvider */
 export function getGlobalI18nContext(): I18nContext | undefined {

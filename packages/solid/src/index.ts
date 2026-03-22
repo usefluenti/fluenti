@@ -1,4 +1,4 @@
-export { createI18nContext, createI18n } from './context'
+export { createI18nContext, createFluentiSolid, createI18n } from './context'
 export type { I18nContext, I18nConfig } from './context'
 export { I18nProvider, I18nCtx } from './provider'
 export { useI18n } from './use-i18n'

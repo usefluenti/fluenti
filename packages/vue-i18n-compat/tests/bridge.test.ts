@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import { createApp, defineComponent, h, inject, nextTick, ref } from 'vue'
-import { createFluentVue } from '@fluenti/vue'
+import { createFluentiVue } from '@fluenti/vue'
 import { createFluentBridge, BRIDGE_KEY } from '../src/bridge'
 import type { VueI18nInstance, VueI18nGlobal, BridgeContext } from '../src/types'
 
@@ -82,7 +82,7 @@ function mountApp(setup: () => any, plugins: any[]) {
 describe('createFluentBridge', () => {
   it('returns a plugin with install and global', () => {
     const vueI18n = createMockVueI18n({ messages: { en: {} } })
-    const fluenti = createFluentVue({ locale: 'en', messages: { en: {} } })
+    const fluenti = createFluentiVue({ locale: 'en', messages: { en: {} } })
     const bridge = createFluentBridge({ vueI18n, fluenti })
 
     expect(bridge).toHaveProperty('install')
@@ -91,7 +91,7 @@ describe('createFluentBridge', () => {
 
   it('installs both vue-i18n and fluenti plugins', () => {
     const vueI18n = createMockVueI18n({ messages: { en: {} } })
-    const fluenti = createFluentVue({ locale: 'en', messages: { en: {} } })
+    const fluenti = createFluentiVue({ locale: 'en', messages: { en: {} } })
     const bridge = createFluentBridge({ vueI18n, fluenti })
 
     const { app } = mountApp(() => {}, [bridge])
@@ -105,7 +105,7 @@ describe('createFluentBridge', () => {
 describe('bridged t() — fluenti-first', () => {
   it('returns fluenti translation when key exists in fluenti', () => {
     const vueI18n = createMockVueI18n({ messages: { en: { hello: 'Hello from vue-i18n' } } })
-    const fluenti = createFluentVue({ locale: 'en', messages: { en: { hello: 'Hello from fluenti' } } })
+    const fluenti = createFluentiVue({ locale: 'en', messages: { en: { hello: 'Hello from fluenti' } } })
     const bridge = createFluentBridge({ vueI18n, fluenti, priority: 'fluenti-first' })
 
     expect(bridge.global.t('hello')).toBe('Hello from fluenti')
@@ -113,7 +113,7 @@ describe('bridged t() — fluenti-first', () => {
 
   it('falls back to vue-i18n when key not in fluenti', () => {
     const vueI18n = createMockVueI18n({ messages: { en: { legacy: 'Legacy message' } } })
-    const fluenti = createFluentVue({ locale: 'en', messages: { en: {} } })
+    const fluenti = createFluentiVue({ locale: 'en', messages: { en: {} } })
     const bridge = createFluentBridge({ vueI18n, fluenti, priority: 'fluenti-first' })
 
     expect(bridge.global.t('legacy')).toBe('Legacy message')
@@ -121,7 +121,7 @@ describe('bridged t() — fluenti-first', () => {
 
   it('passes values to fluenti interpolation', () => {
     const vueI18n = createMockVueI18n({ messages: { en: {} } })
-    const fluenti = createFluentVue({ locale: 'en', messages: { en: { greeting: 'Hello {name}!' } } })
+    const fluenti = createFluentiVue({ locale: 'en', messages: { en: { greeting: 'Hello {name}!' } } })
     const bridge = createFluentBridge({ vueI18n, fluenti })
 
     expect(bridge.global.t('greeting', { name: 'World' })).toBe('Hello World!')
@@ -129,7 +129,7 @@ describe('bridged t() — fluenti-first', () => {
 
   it('passes values to vue-i18n fallback interpolation', () => {
     const vueI18n = createMockVueI18n({ messages: { en: { greeting: 'Hi {name}!' } } })
-    const fluenti = createFluentVue({ locale: 'en', messages: { en: {} } })
+    const fluenti = createFluentiVue({ locale: 'en', messages: { en: {} } })
     const bridge = createFluentBridge({ vueI18n, fluenti })
 
     expect(bridge.global.t('greeting', { name: 'Alice' })).toBe('Hi Alice!')
@@ -139,7 +139,7 @@ describe('bridged t() — fluenti-first', () => {
 describe('bridged t() — vue-i18n-first', () => {
   it('prefers vue-i18n when key exists in both', () => {
     const vueI18n = createMockVueI18n({ messages: { en: { hello: 'Hello from vue-i18n' } } })
-    const fluenti = createFluentVue({ locale: 'en', messages: { en: { hello: 'Hello from fluenti' } } })
+    const fluenti = createFluentiVue({ locale: 'en', messages: { en: { hello: 'Hello from fluenti' } } })
     const bridge = createFluentBridge({ vueI18n, fluenti, priority: 'vue-i18n-first' })
 
     expect(bridge.global.t('hello')).toBe('Hello from vue-i18n')
@@ -147,7 +147,7 @@ describe('bridged t() — vue-i18n-first', () => {
 
   it('falls back to fluenti when key not in vue-i18n', () => {
     const vueI18n = createMockVueI18n({ messages: { en: {} } })
-    const fluenti = createFluentVue({ locale: 'en', messages: { en: { newKey: 'New fluenti key' } } })
+    const fluenti = createFluentiVue({ locale: 'en', messages: { en: { newKey: 'New fluenti key' } } })
     const bridge = createFluentBridge({ vueI18n, fluenti, priority: 'vue-i18n-first' })
 
     expect(bridge.global.t('newKey')).toBe('New fluenti key')
@@ -157,7 +157,7 @@ describe('bridged t() — vue-i18n-first', () => {
 describe('bridged tc()', () => {
   it('uses fluenti ICU plurals when key exists in fluenti', () => {
     const vueI18n = createMockVueI18n({ messages: { en: {} } })
-    const fluenti = createFluentVue({
+    const fluenti = createFluentiVue({
       locale: 'en',
       messages: { en: { items: '{count, plural, one {# item} other {# items}}' } },
     })
@@ -169,7 +169,7 @@ describe('bridged tc()', () => {
 
   it('falls back to vue-i18n tc for legacy pipe plurals', () => {
     const vueI18n = createMockVueI18n({ messages: { en: { apples: '{count} apple | {count} apples' } } })
-    const fluenti = createFluentVue({ locale: 'en', messages: { en: {} } })
+    const fluenti = createFluentiVue({ locale: 'en', messages: { en: {} } })
     const bridge = createFluentBridge({ vueI18n, fluenti })
 
     expect(bridge.global.tc('apples', 1)).toBe('1 apple')
@@ -180,7 +180,7 @@ describe('bridged tc()', () => {
 describe('bridged te()', () => {
   it('returns true if key exists in fluenti', () => {
     const vueI18n = createMockVueI18n({ messages: { en: {} } })
-    const fluenti = createFluentVue({ locale: 'en', messages: { en: { hello: 'Hello' } } })
+    const fluenti = createFluentiVue({ locale: 'en', messages: { en: { hello: 'Hello' } } })
     const bridge = createFluentBridge({ vueI18n, fluenti })
 
     expect(bridge.global.te('hello')).toBe(true)
@@ -188,7 +188,7 @@ describe('bridged te()', () => {
 
   it('returns true if key exists in vue-i18n only', () => {
     const vueI18n = createMockVueI18n({ messages: { en: { legacy: 'Legacy' } } })
-    const fluenti = createFluentVue({ locale: 'en', messages: { en: {} } })
+    const fluenti = createFluentiVue({ locale: 'en', messages: { en: {} } })
     const bridge = createFluentBridge({ vueI18n, fluenti })
 
     expect(bridge.global.te('legacy')).toBe(true)
@@ -196,7 +196,7 @@ describe('bridged te()', () => {
 
   it('returns false if key exists in neither', () => {
     const vueI18n = createMockVueI18n({ messages: { en: {} } })
-    const fluenti = createFluentVue({ locale: 'en', messages: { en: {} } })
+    const fluenti = createFluentiVue({ locale: 'en', messages: { en: {} } })
     const bridge = createFluentBridge({ vueI18n, fluenti })
 
     expect(bridge.global.te('missing')).toBe(false)
@@ -206,7 +206,7 @@ describe('bridged te()', () => {
 describe('locale sync', () => {
   it('syncs fluenti locale change to vue-i18n', async () => {
     const vueI18n = createMockVueI18n({ locale: 'en', messages: { en: {}, ja: {} } })
-    const fluenti = createFluentVue({ locale: 'en', messages: { en: {}, ja: {} } })
+    const fluenti = createFluentiVue({ locale: 'en', messages: { en: {}, ja: {} } })
     const bridge = createFluentBridge({ vueI18n, fluenti })
 
     const { app } = mountApp(() => {}, [bridge])
@@ -221,7 +221,7 @@ describe('locale sync', () => {
 
   it('syncs vue-i18n locale change to fluenti', async () => {
     const vueI18n = createMockVueI18n({ locale: 'en', messages: { en: {}, fr: {} } })
-    const fluenti = createFluentVue({ locale: 'en', messages: { en: {}, fr: {} } })
+    const fluenti = createFluentiVue({ locale: 'en', messages: { en: {}, fr: {} } })
     const bridge = createFluentBridge({ vueI18n, fluenti })
 
     const { app } = mountApp(() => {}, [bridge])
@@ -236,7 +236,7 @@ describe('locale sync', () => {
 
   it('does not enter infinite loop when both change simultaneously', async () => {
     const vueI18n = createMockVueI18n({ locale: 'en', messages: { en: {}, de: {} } })
-    const fluenti = createFluentVue({ locale: 'en', messages: { en: {}, de: {} } })
+    const fluenti = createFluentiVue({ locale: 'en', messages: { en: {}, de: {} } })
     const bridge = createFluentBridge({ vueI18n, fluenti })
 
     const { app } = mountApp(() => {}, [bridge])
@@ -255,7 +255,7 @@ describe('locale sync', () => {
 describe('availableLocales', () => {
   it('merges locales from both libraries', () => {
     const vueI18n = createMockVueI18n({ messages: { en: {}, fr: {} } })
-    const fluenti = createFluentVue({ locale: 'en', messages: { en: {}, ja: {} } })
+    const fluenti = createFluentiVue({ locale: 'en', messages: { en: {}, ja: {} } })
     const bridge = createFluentBridge({ vueI18n, fluenti })
 
     expect(bridge.global.availableLocales.value).toEqual(['en', 'fr', 'ja'])
@@ -265,7 +265,7 @@ describe('availableLocales', () => {
 describe('useI18n composable', () => {
   it('provides bridge context via injection', () => {
     const vueI18n = createMockVueI18n({ messages: { en: { hello: 'Hi' } } })
-    const fluenti = createFluentVue({ locale: 'en', messages: { en: { world: 'World' } } })
+    const fluenti = createFluentiVue({ locale: 'en', messages: { en: { world: 'World' } } })
     const bridge = createFluentBridge({ vueI18n, fluenti })
 
     let ctx: BridgeContext | undefined
@@ -283,7 +283,7 @@ describe('useI18n composable', () => {
 describe('tm()', () => {
   it('returns fluenti raw message when priority is fluenti-first', () => {
     const vueI18n = createMockVueI18n({ messages: { en: { hello: 'Hi from vue-i18n' } } })
-    const fluenti = createFluentVue({ locale: 'en', messages: { en: { hello: 'Hi from fluenti' } } })
+    const fluenti = createFluentiVue({ locale: 'en', messages: { en: { hello: 'Hi from fluenti' } } })
     const bridge = createFluentBridge({ vueI18n, fluenti, priority: 'fluenti-first' })
 
     expect(bridge.global.tm('hello')).toBe('Hi from fluenti')
@@ -291,7 +291,7 @@ describe('tm()', () => {
 
   it('falls back to vue-i18n tm when key not in fluenti', () => {
     const vueI18n = createMockVueI18n({ messages: { en: { legacy: 'Legacy' } } })
-    const fluenti = createFluentVue({ locale: 'en', messages: { en: {} } })
+    const fluenti = createFluentiVue({ locale: 'en', messages: { en: {} } })
     const bridge = createFluentBridge({ vueI18n, fluenti, priority: 'fluenti-first' })
 
     expect(bridge.global.tm('legacy')).toBe('Legacy')
@@ -312,7 +312,7 @@ describe('edge cases — createFluentBridge', () => {
       originalVueI18nInstall(app)
     }
 
-    const fluenti = createFluentVue({ locale: 'en', messages: { en: {} } })
+    const fluenti = createFluentiVue({ locale: 'en', messages: { en: {} } })
     const originalFluentiInstall = fluenti.install
     fluenti.install = (app: any) => {
       fluentiInstall()
@@ -329,7 +329,7 @@ describe('edge cases — createFluentBridge', () => {
 
   it('sync guard prevents infinite loop during rapid locale changes', async () => {
     const vueI18n = createMockVueI18n({ locale: 'en', messages: { en: {}, ja: {}, fr: {} } })
-    const fluenti = createFluentVue({ locale: 'en', messages: { en: {}, ja: {}, fr: {} } })
+    const fluenti = createFluentiVue({ locale: 'en', messages: { en: {}, ja: {}, fr: {} } })
     const bridge = createFluentBridge({ vueI18n, fluenti })
 
     const { app } = mountApp(() => {}, [bridge])
@@ -348,7 +348,7 @@ describe('edge cases — createFluentBridge', () => {
 
   it('bridgedT with MessageDescriptor object', () => {
     const vueI18n = createMockVueI18n({ messages: { en: {} } })
-    const fluenti = createFluentVue({
+    const fluenti = createFluentiVue({
       locale: 'en',
       messages: { en: { 'msg-id': 'Resolved from catalog' } },
     })
@@ -360,7 +360,7 @@ describe('edge cases — createFluentBridge', () => {
 
   it('bridgedTc fluenti-first uses fluenti ICU with extra values', () => {
     const vueI18n = createMockVueI18n({ messages: { en: {} } })
-    const fluenti = createFluentVue({
+    const fluenti = createFluentiVue({
       locale: 'en',
       messages: { en: { files: '{count, plural, one {# file in {folder}} other {# files in {folder}}}' } },
     })
@@ -374,7 +374,7 @@ describe('edge cases — createFluentBridge', () => {
     const vueI18n = createMockVueI18nNoTc({
       messages: { en: { items: '{count} item(s)' } },
     })
-    const fluenti = createFluentVue({ locale: 'en', messages: { en: {} } })
+    const fluenti = createFluentiVue({ locale: 'en', messages: { en: {} } })
     const bridge = createFluentBridge({ vueI18n, fluenti })
 
     // Without tc, falls through to vueI18nGlobal.t with { count }
@@ -385,7 +385,7 @@ describe('edge cases — createFluentBridge', () => {
 
   it('bridgedTe checks both libraries', () => {
     const vueI18n = createMockVueI18n({ messages: { en: { legacyOnly: 'L' } } })
-    const fluenti = createFluentVue({ locale: 'en', messages: { en: { fluentiOnly: 'F' } } })
+    const fluenti = createFluentiVue({ locale: 'en', messages: { en: { fluentiOnly: 'F' } } })
     const bridge = createFluentBridge({ vueI18n, fluenti })
 
     expect(bridge.global.te('fluentiOnly')).toBe(true)
@@ -395,7 +395,7 @@ describe('edge cases — createFluentBridge', () => {
 
   it('bridgedTm fluenti-first prefers fluenti over vue-i18n', () => {
     const vueI18n = createMockVueI18n({ messages: { en: { msg: 'vue-i18n version' } } })
-    const fluenti = createFluentVue({ locale: 'en', messages: { en: { msg: 'fluenti version' } } })
+    const fluenti = createFluentiVue({ locale: 'en', messages: { en: { msg: 'fluenti version' } } })
     const bridge = createFluentBridge({ vueI18n, fluenti, priority: 'fluenti-first' })
 
     expect(bridge.global.tm('msg')).toBe('fluenti version')
@@ -403,7 +403,7 @@ describe('edge cases — createFluentBridge', () => {
 
   it('availableLocales computes union of both (deduplicates shared locales)', () => {
     const vueI18n = createMockVueI18n({ messages: { en: {}, fr: {}, de: {} } })
-    const fluenti = createFluentVue({ locale: 'en', messages: { en: {}, ja: {}, de: {} } })
+    const fluenti = createFluentiVue({ locale: 'en', messages: { en: {}, ja: {}, de: {} } })
     const bridge = createFluentBridge({ vueI18n, fluenti })
 
     const locales = bridge.global.availableLocales.value
@@ -414,7 +414,7 @@ describe('edge cases — createFluentBridge', () => {
 
   it('bridge d() delegates to fluenti', () => {
     const vueI18n = createMockVueI18n({ messages: { en: {} } })
-    const fluenti = createFluentVue({ locale: 'en', messages: { en: {} } })
+    const fluenti = createFluentiVue({ locale: 'en', messages: { en: {} } })
     const bridge = createFluentBridge({ vueI18n, fluenti })
 
     const date = new Date('2024-01-15')
@@ -425,7 +425,7 @@ describe('edge cases — createFluentBridge', () => {
 
   it('bridge n() delegates to fluenti', () => {
     const vueI18n = createMockVueI18n({ messages: { en: {} } })
-    const fluenti = createFluentVue({ locale: 'en', messages: { en: {} } })
+    const fluenti = createFluentiVue({ locale: 'en', messages: { en: {} } })
     const bridge = createFluentBridge({ vueI18n, fluenti })
 
     const result = bridge.global.n(1234.56)
@@ -434,7 +434,7 @@ describe('edge cases — createFluentBridge', () => {
 
   it('bridge format() delegates to fluenti', () => {
     const vueI18n = createMockVueI18n({ messages: { en: {} } })
-    const fluenti = createFluentVue({ locale: 'en', messages: { en: {} } })
+    const fluenti = createFluentiVue({ locale: 'en', messages: { en: {} } })
     const bridge = createFluentBridge({ vueI18n, fluenti })
 
     const result = bridge.global.format('Hello {name}!', { name: 'Test' })
@@ -443,7 +443,7 @@ describe('edge cases — createFluentBridge', () => {
 
   it('bridge setLocale syncs both libraries', async () => {
     const vueI18n = createMockVueI18n({ locale: 'en', messages: { en: {}, ko: {} } })
-    const fluenti = createFluentVue({ locale: 'en', messages: { en: {}, ko: {} } })
+    const fluenti = createFluentiVue({ locale: 'en', messages: { en: {}, ko: {} } })
     const bridge = createFluentBridge({ vueI18n, fluenti })
 
     const { app } = mountApp(() => {}, [bridge])
@@ -459,7 +459,7 @@ describe('edge cases — createFluentBridge', () => {
 
   it('bridge install overrides global properties with bridged versions', () => {
     const vueI18n = createMockVueI18n({ messages: { en: { hello: 'Hi from vue-i18n' } } })
-    const fluenti = createFluentVue({ locale: 'en', messages: { en: { hello: 'Hi from fluenti' } } })
+    const fluenti = createFluentiVue({ locale: 'en', messages: { en: { hello: 'Hi from fluenti' } } })
     const bridge = createFluentBridge({ vueI18n, fluenti })
 
     const { app } = mountApp(() => {}, [bridge])
@@ -474,7 +474,7 @@ describe('edge cases — createFluentBridge', () => {
 
   it('bridge provides BRIDGE_KEY context', () => {
     const vueI18n = createMockVueI18n({ messages: { en: {} } })
-    const fluenti = createFluentVue({ locale: 'en', messages: { en: {} } })
+    const fluenti = createFluentiVue({ locale: 'en', messages: { en: {} } })
     const bridge = createFluentBridge({ vueI18n, fluenti })
 
     let ctx: BridgeContext | undefined
@@ -501,7 +501,7 @@ describe('edge cases — createFluentBridge', () => {
 
   it('defaults priority to fluenti-first when not specified', () => {
     const vueI18n = createMockVueI18n({ messages: { en: { key: 'vue-i18n' } } })
-    const fluenti = createFluentVue({ locale: 'en', messages: { en: { key: 'fluenti' } } })
+    const fluenti = createFluentiVue({ locale: 'en', messages: { en: { key: 'fluenti' } } })
     // No priority option specified
     const bridge = createFluentBridge({ vueI18n, fluenti })
 
@@ -510,7 +510,7 @@ describe('edge cases — createFluentBridge', () => {
 
   it('vue-i18n-first bridgedTc falls back to fluenti when key not in vue-i18n', () => {
     const vueI18n = createMockVueI18n({ messages: { en: {} } })
-    const fluenti = createFluentVue({
+    const fluenti = createFluentiVue({
       locale: 'en',
       messages: { en: { items: '{count, plural, one {# item} other {# items}}' } },
     })
@@ -526,7 +526,7 @@ describe('edge cases — createFluentBridge', () => {
 
   it('bridged t() returns key when missing from both', () => {
     const vueI18n = createMockVueI18n({ messages: { en: {} } })
-    const fluenti = createFluentVue({ locale: 'en', messages: { en: {} } })
+    const fluenti = createFluentiVue({ locale: 'en', messages: { en: {} } })
     const bridge = createFluentBridge({ vueI18n, fluenti })
 
     // fluenti te returns false, falls to vue-i18n t which returns key
@@ -535,7 +535,7 @@ describe('edge cases — createFluentBridge', () => {
 
   it('context exposes fluenti and vueI18n references', () => {
     const vueI18n = createMockVueI18n({ messages: { en: {} } })
-    const fluenti = createFluentVue({ locale: 'en', messages: { en: {} } })
+    const fluenti = createFluentiVue({ locale: 'en', messages: { en: {} } })
     const bridge = createFluentBridge({ vueI18n, fluenti })
 
     expect(bridge.global.fluenti).toBe(fluenti.global)
@@ -544,7 +544,7 @@ describe('edge cases — createFluentBridge', () => {
 
   it('bidirectional locale sync: fluenti to vue-i18n via watcher', async () => {
     const vueI18n = createMockVueI18n({ locale: 'en', messages: { en: {}, zh: {} } })
-    const fluenti = createFluentVue({ locale: 'en', messages: { en: {}, zh: {} } })
+    const fluenti = createFluentiVue({ locale: 'en', messages: { en: {}, zh: {} } })
     const bridge = createFluentBridge({ vueI18n, fluenti })
 
     const { app } = mountApp(() => {}, [bridge])
@@ -559,7 +559,7 @@ describe('edge cases — createFluentBridge', () => {
 
   it('bidirectional locale sync: vue-i18n to fluenti via watcher', async () => {
     const vueI18n = createMockVueI18n({ locale: 'en', messages: { en: {}, es: {} } })
-    const fluenti = createFluentVue({ locale: 'en', messages: { en: {}, es: {} } })
+    const fluenti = createFluentiVue({ locale: 'en', messages: { en: {}, es: {} } })
     const bridge = createFluentBridge({ vueI18n, fluenti })
 
     const { app } = mountApp(() => {}, [bridge])

@@ -1,8 +1,8 @@
 import { describe, it, expect, vi } from 'vitest'
-import { createFluentVue } from '../src/plugin'
+import { createFluentiVue } from '../src/plugin'
 
 function createSplitPlugin(chunkLoader: (locale: string) => Promise<Record<string, any>>) {
-  return createFluentVue({
+  return createFluentiVue({
     locale: 'en',
     messages: { en: { hello: 'Hello', bye: 'Goodbye' } },
     lazyLocaleLoading: true,
@@ -139,7 +139,7 @@ describe('splitting mode', () => {
   })
 
   it('without splitting, setLocale is synchronous', async () => {
-    const plugin = createFluentVue({
+    const plugin = createFluentiVue({
       locale: 'en',
       messages: { en: { hello: 'Hello' }, fr: { hello: 'Bonjour' } },
     })

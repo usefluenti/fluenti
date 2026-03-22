@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import { createApp, defineComponent, h, inject, nextTick, ref, resolveDirective, withDirectives } from 'vue'
-import { createFluentVue, FLUENTI_KEY } from '../src/plugin'
+import { createFluentiVue, FLUENTI_KEY } from '../src/plugin'
 import type { FluentVueContext } from '../src/plugin'
 
 function createTestApp(setup: () => any) {
@@ -8,9 +8,9 @@ function createTestApp(setup: () => any) {
   return createApp(Comp)
 }
 
-describe('createFluentVue', () => {
+describe('createFluentiVue', () => {
   it('returns a plugin with install and global', () => {
-    const plugin = createFluentVue({
+    const plugin = createFluentiVue({
       locale: 'en',
       messages: { en: { hello: 'Hello' } },
     })
@@ -22,7 +22,7 @@ describe('createFluentVue', () => {
 
   it('provides context via FLUENTI_KEY', () => {
     let ctx: FluentVueContext | undefined
-    const plugin = createFluentVue({
+    const plugin = createFluentiVue({
       locale: 'en',
       messages: { en: { hello: 'Hello' } },
     })
@@ -40,7 +40,7 @@ describe('createFluentVue', () => {
   })
 
   it('adds $t, $d, $n to globalProperties', () => {
-    const plugin = createFluentVue({
+    const plugin = createFluentiVue({
       locale: 'en',
       messages: { en: {} },
     })
@@ -54,7 +54,7 @@ describe('createFluentVue', () => {
   })
 
   it('registers Trans, Plural, Select as global components', () => {
-    const plugin = createFluentVue({
+    const plugin = createFluentiVue({
       locale: 'en',
       messages: { en: {} },
     })
@@ -68,7 +68,7 @@ describe('createFluentVue', () => {
   })
 
   it('registers components with prefix when componentPrefix is set', () => {
-    const plugin = createFluentVue({
+    const plugin = createFluentiVue({
       locale: 'en',
       messages: { en: {} },
       componentPrefix: 'I18n',
@@ -89,7 +89,7 @@ describe('createFluentVue', () => {
 
 describe('t()', () => {
   it('looks up and returns a simple string message', () => {
-    const plugin = createFluentVue({
+    const plugin = createFluentiVue({
       locale: 'en',
       messages: { en: { greeting: 'Hello world' } },
     })
@@ -98,7 +98,7 @@ describe('t()', () => {
   })
 
   it('performs {key} interpolation on string messages', () => {
-    const plugin = createFluentVue({
+    const plugin = createFluentiVue({
       locale: 'en',
       messages: { en: { greeting: 'Hello {name}!' } },
     })
@@ -107,7 +107,7 @@ describe('t()', () => {
   })
 
   it('calls compiled function messages', () => {
-    const plugin = createFluentVue({
+    const plugin = createFluentiVue({
       locale: 'en',
       messages: {
         en: {
@@ -121,7 +121,7 @@ describe('t()', () => {
   })
 
   it('falls back to fallbackLocale when message not found', () => {
-    const plugin = createFluentVue({
+    const plugin = createFluentiVue({
       locale: 'fr',
       fallbackLocale: 'en',
       messages: {
@@ -134,7 +134,7 @@ describe('t()', () => {
   })
 
   it('uses the missing handler when no message found', () => {
-    const plugin = createFluentVue({
+    const plugin = createFluentiVue({
       locale: 'en',
       messages: { en: {} },
       missing: (_locale, id) => `[missing: ${id}]`,
@@ -144,7 +144,7 @@ describe('t()', () => {
   })
 
   it('returns the id when nothing else works', () => {
-    const plugin = createFluentVue({
+    const plugin = createFluentiVue({
       locale: 'en',
       messages: { en: {} },
     })
@@ -153,7 +153,7 @@ describe('t()', () => {
   })
 
   it('does not replace {key} when value is not provided', () => {
-    const plugin = createFluentVue({
+    const plugin = createFluentiVue({
       locale: 'en',
       messages: { en: { msg: 'Hello {name}' } },
     })
@@ -162,7 +162,7 @@ describe('t()', () => {
   })
 
   it('uses fallbackChain when configured', () => {
-    const plugin = createFluentVue({
+    const plugin = createFluentiVue({
       locale: 'pt-BR',
       messages: {
         'pt-BR': {},
@@ -178,7 +178,7 @@ describe('t()', () => {
 
 describe('setLocale / getLocales', () => {
   it('setLocale changes the active locale', () => {
-    const plugin = createFluentVue({
+    const plugin = createFluentiVue({
       locale: 'en',
       messages: {
         en: { hello: 'Hello' },
@@ -193,7 +193,7 @@ describe('setLocale / getLocales', () => {
   })
 
   it('getLocales returns all loaded locales', () => {
-    const plugin = createFluentVue({
+    const plugin = createFluentiVue({
       locale: 'en',
       messages: { en: {}, fr: {} },
     })
@@ -204,7 +204,7 @@ describe('setLocale / getLocales', () => {
 
 describe('loadMessages', () => {
   it('adds new messages for a locale', () => {
-    const plugin = createFluentVue({
+    const plugin = createFluentiVue({
       locale: 'en',
       messages: { en: {} },
     })
@@ -214,7 +214,7 @@ describe('loadMessages', () => {
   })
 
   it('adds a new locale entirely', () => {
-    const plugin = createFluentVue({
+    const plugin = createFluentiVue({
       locale: 'en',
       messages: { en: {} },
     })
@@ -229,7 +229,7 @@ describe('loadMessages', () => {
 
 describe('d() and n()', () => {
   it('formats a date using Intl.DateTimeFormat', () => {
-    const plugin = createFluentVue({
+    const plugin = createFluentiVue({
       locale: 'en',
       messages: { en: {} },
     })
@@ -240,7 +240,7 @@ describe('d() and n()', () => {
   })
 
   it('formats a date with a named style', () => {
-    const plugin = createFluentVue({
+    const plugin = createFluentiVue({
       locale: 'en',
       messages: { en: {} },
       dateFormats: {
@@ -253,7 +253,7 @@ describe('d() and n()', () => {
   })
 
   it('formats a number using Intl.NumberFormat', () => {
-    const plugin = createFluentVue({
+    const plugin = createFluentiVue({
       locale: 'en',
       messages: { en: {} },
     })
@@ -263,7 +263,7 @@ describe('d() and n()', () => {
   })
 
   it('formats a number with a named style', () => {
-    const plugin = createFluentVue({
+    const plugin = createFluentiVue({
       locale: 'en',
       messages: { en: {} },
       numberFormats: {
@@ -276,7 +276,7 @@ describe('d() and n()', () => {
   })
 
   it('formats a number with a function-based style', () => {
-    const plugin = createFluentVue({
+    const plugin = createFluentiVue({
       locale: 'en',
       messages: { en: {} },
       numberFormats: {
@@ -291,7 +291,7 @@ describe('d() and n()', () => {
 
 describe('format()', () => {
   it('interpolates an ICU message string directly', () => {
-    const plugin = createFluentVue({
+    const plugin = createFluentiVue({
       locale: 'en',
       messages: { en: {} },
     })
@@ -300,7 +300,7 @@ describe('format()', () => {
   })
 
   it('returns the string unchanged when no values', () => {
-    const plugin = createFluentVue({
+    const plugin = createFluentiVue({
       locale: 'en',
       messages: { en: {} },
     })
@@ -311,7 +311,7 @@ describe('format()', () => {
 
 describe('d() with relative style', () => {
   it('formats a recent past date as relative time', () => {
-    const plugin = createFluentVue({
+    const plugin = createFluentiVue({
       locale: 'en',
       messages: { en: {} },
       dateFormats: { relative: 'relative' },
@@ -325,7 +325,7 @@ describe('d() with relative style', () => {
   })
 
   it('formats a future date as relative time', () => {
-    const plugin = createFluentVue({
+    const plugin = createFluentiVue({
       locale: 'en',
       messages: { en: {} },
       dateFormats: { relative: 'relative' },
@@ -339,7 +339,7 @@ describe('d() with relative style', () => {
   })
 
   it('formats a date far in the past (years ago)', () => {
-    const plugin = createFluentVue({
+    const plugin = createFluentiVue({
       locale: 'en',
       messages: { en: {} },
       dateFormats: { relative: 'relative' },
@@ -353,7 +353,7 @@ describe('d() with relative style', () => {
   })
 
   it('formats a date a few minutes ago', () => {
-    const plugin = createFluentVue({
+    const plugin = createFluentiVue({
       locale: 'en',
       messages: { en: {} },
       dateFormats: { relative: 'relative' },
@@ -367,7 +367,7 @@ describe('d() with relative style', () => {
   })
 
   it('formats a date a few days ago', () => {
-    const plugin = createFluentVue({
+    const plugin = createFluentiVue({
       locale: 'en',
       messages: { en: {} },
       dateFormats: { relative: 'relative' },
@@ -381,7 +381,7 @@ describe('d() with relative style', () => {
   })
 
   it('formats a date a few months ago', () => {
-    const plugin = createFluentVue({
+    const plugin = createFluentiVue({
       locale: 'en',
       messages: { en: {} },
       dateFormats: { relative: 'relative' },
@@ -395,7 +395,7 @@ describe('d() with relative style', () => {
   })
 
   it('formats a numeric timestamp as relative time', () => {
-    const plugin = createFluentVue({
+    const plugin = createFluentiVue({
       locale: 'en',
       messages: { en: {} },
       dateFormats: { relative: 'relative' },
@@ -410,7 +410,7 @@ describe('d() with relative style', () => {
 
 describe('runtime v-t directive', () => {
   it('translates text content on mount', async () => {
-    const plugin = createFluentVue({
+    const plugin = createFluentiVue({
       locale: 'en',
       messages: { en: { 'hello.world': 'Hello World Translated' } },
     })
@@ -435,7 +435,7 @@ describe('runtime v-t directive', () => {
   })
 
   it('translates an attribute via v-t.alt modifier', async () => {
-    const plugin = createFluentVue({
+    const plugin = createFluentiVue({
       locale: 'en',
       messages: { en: { 'img.alt': 'A nice image' } },
     })
@@ -463,7 +463,7 @@ describe('runtime v-t directive', () => {
   })
 
   it('translates with a binding arg as the message id', async () => {
-    const plugin = createFluentVue({
+    const plugin = createFluentiVue({
       locale: 'en',
       messages: { en: { greeting: 'Hi there' } },
     })
@@ -488,7 +488,7 @@ describe('runtime v-t directive', () => {
   })
 
   it('translates with interpolation values', async () => {
-    const plugin = createFluentVue({
+    const plugin = createFluentiVue({
       locale: 'en',
       messages: { en: { welcome: 'Welcome {name}!' } },
     })
@@ -513,7 +513,7 @@ describe('runtime v-t directive', () => {
   })
 
   it('runs updated hook for text content when reactive state changes', async () => {
-    const plugin = createFluentVue({
+    const plugin = createFluentiVue({
       locale: 'en',
       messages: { en: { hello: 'Hello', goodbye: 'Goodbye' } },
     })
@@ -550,7 +550,7 @@ describe('runtime v-t directive', () => {
   })
 
   it('runs updated hook for attribute modifier when reactive state changes', async () => {
-    const plugin = createFluentVue({
+    const plugin = createFluentiVue({
       locale: 'en',
       messages: { en: { 'alt.text': 'Translated alt' } },
     })
@@ -590,7 +590,7 @@ describe('runtime v-t directive', () => {
 
 describe('te()', () => {
   it('returns true when the key exists in the current locale', () => {
-    const plugin = createFluentVue({
+    const plugin = createFluentiVue({
       locale: 'en',
       messages: { en: { hello: 'Hello' }, fr: { bonjour: 'Bonjour' } },
     })
@@ -600,7 +600,7 @@ describe('te()', () => {
   })
 
   it('checks a specific locale when provided', () => {
-    const plugin = createFluentVue({
+    const plugin = createFluentiVue({
       locale: 'en',
       messages: { en: { hello: 'Hello' }, fr: { bonjour: 'Bonjour' } },
     })
@@ -610,7 +610,7 @@ describe('te()', () => {
   })
 
   it('returns true for compiled function messages', () => {
-    const plugin = createFluentVue({
+    const plugin = createFluentiVue({
       locale: 'en',
       messages: {
         en: { greeting: () => 'Hello' },
@@ -623,7 +623,7 @@ describe('te()', () => {
 
 describe('tm()', () => {
   it('returns the raw compiled message', () => {
-    const plugin = createFluentVue({
+    const plugin = createFluentiVue({
       locale: 'en',
       messages: { en: { hello: 'Hello {name}' } },
     })
@@ -632,7 +632,7 @@ describe('tm()', () => {
   })
 
   it('returns undefined when the key does not exist', () => {
-    const plugin = createFluentVue({
+    const plugin = createFluentiVue({
       locale: 'en',
       messages: { en: {} },
     })
@@ -642,7 +642,7 @@ describe('tm()', () => {
 
   it('returns a function message as-is', () => {
     const fn = () => 'Hello'
-    const plugin = createFluentVue({
+    const plugin = createFluentiVue({
       locale: 'en',
       messages: { en: { greeting: fn } },
     })
@@ -651,7 +651,7 @@ describe('tm()', () => {
   })
 
   it('looks up a specific locale when provided', () => {
-    const plugin = createFluentVue({
+    const plugin = createFluentiVue({
       locale: 'en',
       messages: { en: { hello: 'Hello' }, fr: { hello: 'Bonjour' } },
     })
@@ -662,7 +662,7 @@ describe('tm()', () => {
 
 describe('$vtRich XSS prevention', () => {
   it('escapes HTML injected outside numbered tags in translation', () => {
-    const plugin = createFluentVue({
+    const plugin = createFluentiVue({
       locale: 'en',
       messages: {
         en: {
@@ -695,7 +695,7 @@ describe('$vtRich XSS prevention', () => {
   })
 
   it('escapes HTML injected inside numbered tags in translation', () => {
-    const plugin = createFluentVue({
+    const plugin = createFluentiVue({
       locale: 'en',
       messages: {
         en: {
@@ -719,7 +719,7 @@ describe('$vtRich XSS prevention', () => {
   })
 
   it('renders safe translations correctly', () => {
-    const plugin = createFluentVue({
+    const plugin = createFluentiVue({
       locale: 'en',
       messages: {
         en: {
@@ -741,7 +741,7 @@ describe('$vtRich XSS prevention', () => {
   })
 
   it('passes values to t() when values parameter is provided', () => {
-    const plugin = createFluentVue({
+    const plugin = createFluentiVue({
       locale: 'en',
       messages: {
         en: {
@@ -766,7 +766,7 @@ describe('$vtRich XSS prevention', () => {
   })
 
   it('works without values parameter (backward compatible)', () => {
-    const plugin = createFluentVue({
+    const plugin = createFluentiVue({
       locale: 'en',
       messages: {
         en: {
@@ -788,7 +788,7 @@ describe('$vtRich XSS prevention', () => {
   })
 
   it('handles self-closing <idx/> tags in translated message', () => {
-    const plugin = createFluentVue({
+    const plugin = createFluentiVue({
       locale: 'en',
       messages: {
         en: {
@@ -812,7 +812,7 @@ describe('$vtRich XSS prevention', () => {
   })
 
   it('handles mixed self-closing and paired tags', () => {
-    const plugin = createFluentVue({
+    const plugin = createFluentiVue({
       locale: 'en',
       messages: {
         en: {
@@ -838,7 +838,7 @@ describe('$vtRich XSS prevention', () => {
   })
 
   it('supports rawAttrs format from SFC transform', () => {
-    const plugin = createFluentVue({
+    const plugin = createFluentiVue({
       locale: 'en',
       messages: {
         en: {
@@ -860,7 +860,7 @@ describe('$vtRich XSS prevention', () => {
   })
 
   it('escapes HTML injection in rawAttrs values', () => {
-    const plugin = createFluentVue({
+    const plugin = createFluentiVue({
       locale: 'en',
       messages: {
         en: {
@@ -887,7 +887,7 @@ describe('$vtRich XSS prevention', () => {
 
 describe('edge cases - exhaustive', () => {
   it('installs v-t directive', () => {
-    const plugin = createFluentVue({
+    const plugin = createFluentiVue({
       locale: 'en',
       messages: { en: {} },
     })
@@ -901,7 +901,7 @@ describe('edge cases - exhaustive', () => {
   })
 
   it('adds $vtRich', () => {
-    const plugin = createFluentVue({
+    const plugin = createFluentiVue({
       locale: 'en',
       messages: { en: {} },
     })
@@ -914,7 +914,7 @@ describe('edge cases - exhaustive', () => {
   })
 
   it('empty componentPrefix uses default names', () => {
-    const plugin = createFluentVue({
+    const plugin = createFluentiVue({
       locale: 'en',
       messages: { en: {} },
       componentPrefix: '',
@@ -929,7 +929,7 @@ describe('edge cases - exhaustive', () => {
   })
 
   it('t() compiled function returns undefined', () => {
-    const plugin = createFluentVue({
+    const plugin = createFluentiVue({
       locale: 'en',
       messages: {
         en: {
@@ -944,7 +944,7 @@ describe('edge cases - exhaustive', () => {
   })
 
   it('t() fallbackChain wildcard *', () => {
-    const plugin = createFluentVue({
+    const plugin = createFluentiVue({
       locale: 'xx',
       messages: {
         xx: {},
@@ -957,7 +957,7 @@ describe('edge cases - exhaustive', () => {
   })
 
   it('t() MessageDescriptor (msg`...`)', () => {
-    const plugin = createFluentVue({
+    const plugin = createFluentiVue({
       locale: 'en',
       messages: {
         en: {
@@ -971,7 +971,7 @@ describe('edge cases - exhaustive', () => {
   })
 
   it('t() MessageDescriptor falls back to message field', () => {
-    const plugin = createFluentVue({
+    const plugin = createFluentiVue({
       locale: 'en',
       messages: { en: {} },
     })
@@ -981,7 +981,7 @@ describe('edge cases - exhaustive', () => {
   })
 
   it('t() empty string id (exists in catalog)', () => {
-    const plugin = createFluentVue({
+    const plugin = createFluentiVue({
       locale: 'en',
       messages: { en: { '': 'Empty key message' } },
     })
@@ -990,7 +990,7 @@ describe('edge cases - exhaustive', () => {
   })
 
   it('t() full fallback chain test', () => {
-    const plugin = createFluentVue({
+    const plugin = createFluentiVue({
       locale: 'zh-TW',
       fallbackLocale: 'en',
       messages: {
@@ -1006,7 +1006,7 @@ describe('edge cases - exhaustive', () => {
   })
 
   it('v-t directive null binding value', async () => {
-    const plugin = createFluentVue({
+    const plugin = createFluentiVue({
       locale: 'en',
       messages: { en: { hello: 'Hello World' } },
     })
@@ -1031,7 +1031,7 @@ describe('edge cases - exhaustive', () => {
   })
 
   it('v-t directive undefined text content', async () => {
-    const plugin = createFluentVue({
+    const plugin = createFluentiVue({
       locale: 'en',
       messages: { en: { greeting: 'Hi there' } },
     })
@@ -1057,7 +1057,7 @@ describe('edge cases - exhaustive', () => {
   })
 
   it('te() non-existent locale', () => {
-    const plugin = createFluentVue({
+    const plugin = createFluentiVue({
       locale: 'en',
       messages: { en: { hello: 'Hello' } },
     })
@@ -1066,7 +1066,7 @@ describe('edge cases - exhaustive', () => {
   })
 
   it('tm() non-existent locale', () => {
-    const plugin = createFluentVue({
+    const plugin = createFluentiVue({
       locale: 'en',
       messages: { en: { hello: 'Hello' } },
     })
@@ -1075,7 +1075,7 @@ describe('edge cases - exhaustive', () => {
   })
 
   it('n() NaN / Infinity', () => {
-    const plugin = createFluentVue({
+    const plugin = createFluentiVue({
       locale: 'en',
       messages: { en: {} },
     })
@@ -1091,7 +1091,7 @@ describe('edge cases - exhaustive', () => {
   })
 
   it('d() NaN / invalid Date', () => {
-    const plugin = createFluentVue({
+    const plugin = createFluentiVue({
       locale: 'en',
       messages: { en: {} },
     })
@@ -1106,7 +1106,7 @@ describe('edge cases - exhaustive', () => {
   })
 
   it('preloadLocale without chunkLoader configured', () => {
-    const plugin = createFluentVue({
+    const plugin = createFluentiVue({
       locale: 'en',
       messages: { en: {} },
       // No chunkLoader, no splitting
@@ -1118,7 +1118,7 @@ describe('edge cases - exhaustive', () => {
 
   it('preloadLocale already loaded locale (no-op)', async () => {
     const loader = vi.fn().mockResolvedValue({ hello: 'Bonjour' })
-    const plugin = createFluentVue({
+    const plugin = createFluentiVue({
       locale: 'en',
       messages: { en: { hello: 'Hello' } },
       lazyLocaleLoading: true,
@@ -1134,7 +1134,7 @@ describe('edge cases - exhaustive', () => {
   })
 
   it('isLoading initially false', () => {
-    const plugin = createFluentVue({
+    const plugin = createFluentiVue({
       locale: 'en',
       messages: { en: {} },
     })
@@ -1143,7 +1143,7 @@ describe('edge cases - exhaustive', () => {
   })
 
   it('loadedLocales initially contains initial locale', () => {
-    const plugin = createFluentVue({
+    const plugin = createFluentiVue({
       locale: 'en',
       messages: { en: {}, fr: {} },
     })

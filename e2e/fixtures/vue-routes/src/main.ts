@@ -1,5 +1,5 @@
 import { createApp, ref, computed, type InjectionKey } from 'vue'
-import { createFluentVue } from '@fluenti/vue'
+import { createFluentiVue } from '@fluenti/vue'
 import {
   extractLocaleFromPath,
 } from '@fluenti/nuxt/client'
@@ -18,7 +18,7 @@ const runtimeConfig: FluentNuxtRuntimeConfig = {
 export const RUNTIME_CONFIG_KEY: InjectionKey<FluentNuxtRuntimeConfig> = Symbol('runtimeConfig')
 
 // Create fluenti plugin
-const fluenti = createFluentVue({
+const fluenti = createFluentiVue({
   locale: 'en',
   fallbackLocale: 'en',
   messages,

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { defineComponent, h } from 'vue'
 import { mount } from '@vue/test-utils'
-import { createFluentVue } from '../src/plugin'
+import { createFluentiVue } from '../src/plugin'
 import { __useI18n } from '../src/hooks/__useI18n'
 
 const messages = {
@@ -19,7 +19,7 @@ describe('__useI18n (internal hook)', () => {
       },
     })
 
-    const plugin = createFluentVue({ locale: 'en', messages })
+    const plugin = createFluentiVue({ locale: 'en', messages })
     mount(Capture, { global: { plugins: [plugin] } })
 
     expect(ctx).toBeDefined()
@@ -40,7 +40,7 @@ describe('__useI18n (internal hook)', () => {
       },
     })
 
-    const plugin = createFluentVue({ locale: 'en', messages })
+    const plugin = createFluentiVue({ locale: 'en', messages })
     const wrapper = mount(Capture, { global: { plugins: [plugin] } })
 
     expect(result).toBe('Hello')
@@ -55,6 +55,6 @@ describe('__useI18n (internal hook)', () => {
       },
     })
 
-    expect(() => mount(Bad)).toThrow('useI18n() requires createFluentVue plugin')
+    expect(() => mount(Bad)).toThrow('useI18n() requires createFluentiVue plugin')
   })
 })
