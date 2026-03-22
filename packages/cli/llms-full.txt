@@ -30,7 +30,7 @@ export default {
 }
 ```
 
-### Config Options (FluentiConfig)
+### Config Options (FluentiBuildConfig)
 
 | Property | Type | Default | Description |
 |---|---|---|---|

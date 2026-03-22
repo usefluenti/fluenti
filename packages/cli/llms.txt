@@ -78,7 +78,7 @@ All CLI commands are also available as importable functions from `@fluenti/cli`:
 - `CatalogData`, `CatalogEntry`, `UpdateResult` — catalog data structures
 - `CompileStats` — compilation statistics
 - `RunCompileOptions`, `RunExtractOptions` — options for programmatic runners
-- `FluentiConfig` — re-exported from `@fluenti/core`
+- `FluentiBuildConfig` — re-exported from `@fluenti/core`
 
 ## Documentation
 
