@@ -105,6 +105,62 @@ describe('complex locales', () => {
   })
 })
 
+// ─── Plural ordinal edge cases ──────────────────────────────────────────
+
+describe('plural ordinal edge cases', () => {
+  const ordOpts = { 'one': '1st', 'two': '2nd', 'few': '3rd', 'other': 'th' }
+
+  it('negative numbers with ordinal: -1', () => {
+    const result = resolvePlural(-1, ordOpts, 'en', true)
+    // Intl.PluralRules handles negative ordinals
+    expect(['one', 'two', 'few', 'other']).toContain(result)
+  })
+
+  it('negative numbers with ordinal: -5', () => {
+    const result = resolvePlural(-5, ordOpts, 'en', true)
+    expect(['one', 'two', 'few', 'other']).toContain(result)
+  })
+
+  it('float values with ordinal: 0.5', () => {
+    const opts = { 'one': 'x', 'other': 'y' }
+    const result = resolvePlural(0.5, opts, 'en', true)
+    expect(['one', 'other']).toContain(result)
+  })
+
+  it('float values with ordinal: 1.5', () => {
+    const opts = { 'one': 'x', 'other': 'y' }
+    const result = resolvePlural(1.5, opts, 'en', true)
+    expect(['one', 'other']).toContain(result)
+  })
+
+  it('float values with ordinal: 2.7', () => {
+    const opts = { 'one': 'x', 'two': 'y', 'few': 'z', 'other': 'w' }
+    const result = resolvePlural(2.7, opts, 'en', true)
+    expect(['one', 'two', 'few', 'other']).toContain(result)
+  })
+
+  it('zero with ordinal', () => {
+    const result = resolvePlural(0, ordOpts, 'en', true)
+    expect(result).toBe('other')
+  })
+
+  it('NaN with ordinal', () => {
+    const result = resolvePlural(NaN, ordOpts, 'en', true)
+    expect(result).toBe('other')
+  })
+
+  it('Infinity with ordinal', () => {
+    const result = resolvePlural(Infinity, ordOpts, 'en', true)
+    expect(result).toBe('other')
+  })
+
+  it('-Infinity with cardinal', () => {
+    const opts = { 'one': 'x', 'other': 'y' }
+    const result = resolvePlural(-Infinity, opts, 'en')
+    expect(result).toBe('other')
+  })
+})
+
 // ─── Exhaustive edge cases ───────────────────────────────────────────────
 
 describe('edge cases - exhaustive', () => {

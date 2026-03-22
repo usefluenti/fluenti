@@ -221,6 +221,52 @@ describe('negotiateLocale edge cases', () => {
 
 // ─── Exhaustive edge cases ───────────────────────────────────────────────
 
+// ─── validateLocale edge cases ──────────────────────────────────────────
+
+describe('validateLocale edge cases', () => {
+  it('rejects very long locale string (300+ chars)', () => {
+    const longLocale = 'en-' + 'a'.repeat(300)
+    expect(() => validateLocale(longLocale, 'test')).toThrow()
+  })
+
+  it('rejects locale starting with digit', () => {
+    expect(() => validateLocale('0en-US', 'test')).toThrow()
+  })
+
+  it('rejects locale with consecutive hyphens', () => {
+    expect(() => validateLocale('en--US', 'test')).toThrow()
+  })
+
+  it('rejects locale with trailing hyphen', () => {
+    expect(() => validateLocale('en-', 'test')).toThrow()
+  })
+
+  it('throws on empty string', () => {
+    expect(() => validateLocale('', 'test')).toThrow('locale must be a non-empty string')
+  })
+
+  it('rejects locale with @ character', () => {
+    expect(() => validateLocale('en@US', 'test')).toThrow()
+  })
+
+  it('rejects locale with . character', () => {
+    expect(() => validateLocale('en.US', 'test')).toThrow()
+  })
+
+  it('rejects locale with space character', () => {
+    expect(() => validateLocale('en US', 'test')).toThrow()
+  })
+
+  it.each([
+    'en',
+    'en-US',
+    'zh-Hans-CN',
+    'ar-001',
+  ])('accepts valid locale %s', (locale) => {
+    expect(() => validateLocale(locale, 'test')).not.toThrow()
+  })
+})
+
 describe('edge cases - exhaustive', () => {
   it('isRTL Pashto (ps)', () => {
     expect(isRTL('ps')).toBe(true)

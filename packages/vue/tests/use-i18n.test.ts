@@ -173,6 +173,36 @@ describe('useI18n', () => {
       expect(ctx!.loadedLocales).toBeDefined()
     })
 
+    it('concurrent setLocale calls — last one wins', async () => {
+      const plugin = createFluenti({
+        locale: 'en',
+        messages: {
+          en: { hello: 'Hello' },
+          ja: { hello: 'こんにちは' },
+          'zh-CN': { hello: '你好' },
+        },
+      })
+
+      const Comp = defineComponent({
+        setup() {
+          const { t } = useI18n()
+          return () => h('div', t('hello'))
+        },
+      })
+
+      const wrapper = mount(Comp, {
+        global: { plugins: [plugin] },
+      })
+
+      expect(wrapper.text()).toBe('Hello')
+
+      plugin.global.setLocale('ja')
+      plugin.global.setLocale('zh-CN')
+      await nextTick()
+
+      expect(wrapper.text()).toBe('你好')
+    })
+
     it('context is same as plugin.global instance', () => {
       const plugin = createFluenti({
         locale: 'en',

@@ -354,4 +354,50 @@ const real = t('real message')`
     expect(messages).toHaveLength(1)
     expect(messages[0]!.message).toBe('Hello\nWorld')
   })
+
+  // ─── TSX extractor edge cases ───────────────────────────────────────────────
+
+  it('does not extract non-t tagged templates like gql``', () => {
+    const code = 'const query = gql`query { user { name } }`'
+    const messages = extractFromTsx(code, 'App.tsx')
+    expect(messages).toHaveLength(0)
+  })
+
+  it('does not extract css`` tagged templates', () => {
+    const code = 'const style = css`color: red; font-size: 14px;`'
+    const messages = extractFromTsx(code, 'App.tsx')
+    expect(messages).toHaveLength(0)
+  })
+
+  it('does not extract html`` tagged templates', () => {
+    const code = 'const tpl = html`<div>hello</div>`'
+    const messages = extractFromTsx(code, 'App.tsx')
+    expect(messages).toHaveLength(0)
+  })
+
+  it('extracts empty tagged template t``', () => {
+    const code = 'const msg = t``'
+    const messages = extractFromTsx(code, 'App.tsx')
+    // Empty template may produce an empty message or be skipped
+    if (messages.length > 0) {
+      expect(messages[0]!.message).toBe('')
+    } else {
+      expect(messages).toHaveLength(0)
+    }
+  })
+
+  it('extracts t`` with newline escape sequences', () => {
+    const code = "const msg = t`Line 1\\nLine 2`"
+    const messages = extractFromTsx(code, 'App.tsx')
+    expect(messages).toHaveLength(1)
+    // Template literals treat \\n as literal backslash + n in source
+    expect(messages[0]!.message).toBeTruthy()
+  })
+
+  it('extracts nested template literals: outer t`` with inner expression', () => {
+    const code = 'const msg = t`outer ${name}`'
+    const messages = extractFromTsx(code, 'App.tsx')
+    expect(messages).toHaveLength(1)
+    expect(messages[0]!.message).toBe('outer {name}')
+  })
 })

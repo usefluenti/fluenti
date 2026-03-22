@@ -307,6 +307,113 @@ msgstr ""
     })
   })
 
+  describe('PO format edge cases', () => {
+    it('handles malformed Plural-Forms header (missing nplurals)', () => {
+      const po = `
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\\n"
+"Plural-Forms: plural=n != 1;\\n"
+
+msgid "Hello"
+msgstr "Hola"
+`
+      const catalog = readPoCatalog(po)
+      expect(catalog[key('Hello')]).toBeDefined()
+      expect(catalog[key('Hello')]!.translation).toBe('Hola')
+    })
+
+    it('handles empty msgstr with non-empty msgid', () => {
+      const po = `
+msgid ""
+msgstr "Content-Type: text/plain; charset=UTF-8\\n"
+
+msgid "Untranslated message"
+msgstr ""
+`
+      const catalog = readPoCatalog(po)
+      expect(catalog[key('Untranslated message')]).toBeDefined()
+      expect(catalog[key('Untranslated message')]!.message).toBe('Untranslated message')
+      expect(catalog[key('Untranslated message')]!.translation).toBeUndefined()
+    })
+
+    it('handles multiline msgstr with different indentation', () => {
+      const po = `
+msgid ""
+msgstr "Content-Type: text/plain; charset=UTF-8\\n"
+
+msgid "Multiline"
+msgstr ""
+"  First line "
+"    second line"
+`
+      const catalog = readPoCatalog(po)
+      expect(catalog[key('Multiline')]).toBeDefined()
+      expect(catalog[key('Multiline')]!.translation).toBe('  First line     second line')
+    })
+
+    it('handles Unicode characters in msgid and msgstr (emoji, CJK, Arabic)', () => {
+      const po = `
+msgid ""
+msgstr "Content-Type: text/plain; charset=UTF-8\\n"
+
+msgid "Welcome"
+msgstr "ようこそ"
+
+msgid "Goodbye"
+msgstr "مع السلامة"
+
+msgid "Status"
+msgstr "🎉 完了"
+`
+      const catalog = readPoCatalog(po)
+      expect(catalog[key('Welcome')]!.translation).toBe('ようこそ')
+      expect(catalog[key('Goodbye')]!.translation).toBe('مع السلامة')
+      expect(catalog[key('Status')]!.translation).toBe('🎉 完了')
+    })
+
+    it('handles PO file with only header and no entries', () => {
+      const po = `
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\\n"
+`
+      const catalog = readPoCatalog(po)
+      expect(Object.keys(catalog)).toHaveLength(0)
+    })
+
+    it('handles PO entry with context (msgctxt)', () => {
+      const po = `
+msgid ""
+msgstr "Content-Type: text/plain; charset=UTF-8\\n"
+
+msgctxt "menu"
+msgid "File"
+msgstr "Fichier"
+`
+      const catalog = readPoCatalog(po)
+      const entry = catalog[key('File', 'menu')]
+      expect(entry).toBeDefined()
+      expect(entry!.message).toBe('File')
+      expect(entry!.context).toBe('menu')
+      expect(entry!.translation).toBe('Fichier')
+    })
+
+    it('handles PO entry with context roundtrip', () => {
+      const original: CatalogData = {
+        [key('Open', 'menu')]: { message: 'Open', context: 'menu', translation: 'Ouvrir' },
+      }
+      const po = writePoCatalog(original)
+      expect(po).toContain('msgctxt')
+      const restored = readPoCatalog(po)
+      const entry = restored[key('Open', 'menu')]
+      expect(entry).toBeDefined()
+      expect(entry!.context).toBe('menu')
+      expect(entry!.translation).toBe('Ouvrir')
+    })
+  })
+
   describe('PO roundtrip edge cases', () => {
     it('preserves all data through write and read cycle', () => {
       const original: CatalogData = {

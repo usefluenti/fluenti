@@ -1151,3 +1151,66 @@ describe('edge cases - exhaustive', () => {
     expect(plugin.global.loadedLocales.value.has('en')).toBe(true)
   })
 })
+
+describe('plugin double install', () => {
+  it('installing the plugin twice on same app does not throw or duplicate state', () => {
+    const plugin = createFluenti({
+      locale: 'en',
+      messages: { en: { hello: 'Hello' } },
+    })
+
+    const app = createApp({ render: () => h('div') })
+
+    expect(() => {
+      app.use(plugin)
+      app.use(plugin)
+    }).not.toThrow()
+
+    // Plugin still works correctly after double install
+    expect(plugin.global.t('hello')).toBe('Hello')
+    expect(app.component('Trans')).toBeDefined()
+  })
+
+  it('multiple app instances with same plugin configuration', () => {
+    const plugin = createFluenti({
+      locale: 'en',
+      messages: { en: { hello: 'Hello' } },
+    })
+
+    const app1 = createApp({ render: () => h('div') })
+    const app2 = createApp({ render: () => h('div') })
+
+    expect(() => {
+      app1.use(plugin)
+      app2.use(plugin)
+    }).not.toThrow()
+
+    // Both apps have global components registered
+    expect(app1.component('Trans')).toBeDefined()
+    expect(app2.component('Trans')).toBeDefined()
+
+    // Plugin global state is shared
+    expect(plugin.global.t('hello')).toBe('Hello')
+  })
+})
+
+describe('concurrent setLocale', () => {
+  it('calling setLocale twice in succession results in last locale winning', async () => {
+    const plugin = createFluenti({
+      locale: 'en',
+      messages: {
+        en: { hello: 'Hello' },
+        ja: { hello: 'こんにちは' },
+        'zh-CN': { hello: '你好' },
+      },
+    })
+
+    plugin.global.setLocale('ja')
+    plugin.global.setLocale('zh-CN')
+
+    await nextTick()
+
+    expect(plugin.global.locale.value).toBe('zh-CN')
+    expect(plugin.global.t('hello')).toBe('你好')
+  })
+})

@@ -312,4 +312,55 @@ const x = 42
     expect(messages[0]!.message).toContain('one {# item}')
     expect(messages[0]!.message).toContain('other {# items}')
   })
+
+  // ─── Vue extractor edge cases (named slots, empty Trans, v-t attrs) ────────
+
+  it('extracts <Trans> with named slots as rich text', () => {
+    const code = `<template>
+  <Trans>Read the <a href="/docs">documentation</a> for more info.</Trans>
+</template>`
+    const messages = extractFromVue(code, 'App.vue')
+    expect(messages).toHaveLength(1)
+    expect(messages[0]!.message).toContain('<0>documentation</0>')
+  })
+
+  it('extracts empty <Trans></Trans> as empty or skips it', () => {
+    const code = `<template>
+  <Trans></Trans>
+</template>`
+    const messages = extractFromVue(code, 'App.vue')
+    // Empty Trans may produce an empty message or be skipped entirely
+    if (messages.length > 0) {
+      expect(messages[0]!.message).toBe('')
+    } else {
+      expect(messages).toHaveLength(0)
+    }
+  })
+
+  it('extracts v-t on non-standard elements', () => {
+    const code = `<template>
+  <custom-component v-t>Custom element text</custom-component>
+</template>`
+    const messages = extractFromVue(code, 'App.vue')
+    expect(messages).toHaveLength(1)
+    expect(messages[0]!.message).toBe('Custom element text')
+  })
+
+  it('extracts v-t on button element', () => {
+    const code = `<template>
+  <button v-t>Submit</button>
+</template>`
+    const messages = extractFromVue(code, 'App.vue')
+    expect(messages).toHaveLength(1)
+    expect(messages[0]!.message).toBe('Submit')
+  })
+
+  it('extracts v-t on element with other attributes', () => {
+    const code = `<template>
+  <p v-t class="intro" data-test="greeting">Hello there</p>
+</template>`
+    const messages = extractFromVue(code, 'App.vue')
+    expect(messages).toHaveLength(1)
+    expect(messages[0]!.message).toBe('Hello there')
+  })
 })

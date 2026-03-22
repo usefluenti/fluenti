@@ -349,6 +349,79 @@ describe('edge cases - exhaustive', () => {
   })
 })
 
+// ─── formatRelativeTime edge cases ────────────────────────────────────────
+
+describe('formatRelativeTime edge cases', () => {
+  it('zero difference (same time)', () => {
+    const result = formatRelativeTime(Date.now(), 'en')
+    expect(result).toBeTruthy()
+    expect(typeof result).toBe('string')
+  })
+
+  it('all unit types via explicit offsets', () => {
+    const now = Date.now()
+    // second
+    const secResult = formatRelativeTime(now - 5 * 1000, 'en')
+    expect(secResult.toLowerCase()).toContain('second')
+
+    // minute
+    const minResult = formatRelativeTime(now - 3 * 60 * 1000, 'en')
+    expect(minResult.toLowerCase()).toContain('minute')
+
+    // hour
+    const hrResult = formatRelativeTime(now - 2 * 60 * 60 * 1000, 'en')
+    expect(hrResult.toLowerCase()).toContain('hour')
+
+    // day
+    const dayResult = formatRelativeTime(now - 3 * 24 * 60 * 60 * 1000, 'en')
+    expect(dayResult.toLowerCase()).toContain('day')
+
+    // week
+    const weekResult = formatRelativeTime(now - 10 * 24 * 60 * 60 * 1000, 'en')
+    expect(weekResult.toLowerCase()).toContain('week')
+
+    // month
+    const monthResult = formatRelativeTime(now - 45 * 24 * 60 * 60 * 1000, 'en')
+    expect(monthResult.toLowerCase()).toContain('month')
+
+    // year
+    const yearResult = formatRelativeTime(now - 400 * 24 * 60 * 60 * 1000, 'en')
+    expect(yearResult.toLowerCase()).toContain('year')
+  })
+
+  it('negative values (past)', () => {
+    const past = Date.now() - 14 * 24 * 60 * 60 * 1000
+    const result = formatRelativeTime(past, 'en')
+    // 2 weeks ago — numeric: 'auto' should produce "2 weeks ago"
+    expect(result).toContain('2')
+    expect(result.toLowerCase()).toContain('week')
+    expect(result.toLowerCase()).toContain('ago')
+  })
+
+  it('positive values (future)', () => {
+    const future = Date.now() + 14 * 24 * 60 * 60 * 1000
+    const result = formatRelativeTime(future, 'en')
+    // in 2 weeks — numeric: 'auto' should produce "in 2 weeks"
+    expect(result).toContain('2')
+    expect(result.toLowerCase()).toContain('week')
+    expect(result.toLowerCase()).toContain('in')
+  })
+
+  it('formats in Japanese locale', () => {
+    const past = Date.now() - 2 * 24 * 60 * 60 * 1000
+    const result = formatRelativeTime(past, 'ja')
+    expect(result).toBeTruthy()
+    expect(typeof result).toBe('string')
+  })
+
+  it('formats in zh-CN locale', () => {
+    const past = Date.now() - 2 * 24 * 60 * 60 * 1000
+    const result = formatRelativeTime(past, 'zh-CN')
+    expect(result).toBeTruthy()
+    expect(typeof result).toBe('string')
+  })
+})
+
 // ─── Edge cases — error recovery and boundaries ──────────────────────────
 
 describe('edge cases — error recovery and boundaries', () => {

@@ -76,4 +76,64 @@ describe('Plural', () => {
 
     expect(screen.getByText('りんご 5 個')).toBeDefined()
   })
+
+  it('negative value does not crash and selects a plural form', () => {
+    // CLDR treats abs(-1) as "one" for English, so -1 maps to the "one" form
+    render(
+      <I18nProvider locale="en" messages={{ en: {} }}>
+        <Plural value={-1} zero="No items" one="# item" other="# items" />
+      </I18nProvider>,
+    )
+    expect(screen.getByText('-1 item')).toBeDefined()
+  })
+
+  it('fractional value uses "other" form', () => {
+    render(
+      <I18nProvider locale="en" messages={{ en: {} }}>
+        <Plural value={0.5} zero="No items" one="# item" other="# items" />
+      </I18nProvider>,
+    )
+    expect(screen.getByText('0.5 items')).toBeDefined()
+  })
+
+  it('NaN value does not crash', () => {
+    const { container } = render(
+      <I18nProvider locale="en" messages={{ en: {} }}>
+        <Plural value={NaN} zero="No items" one="# item" other="# items" />
+      </I18nProvider>,
+    )
+    expect(container.innerHTML).toBeDefined()
+  })
+
+  it('Infinity value does not crash', () => {
+    const { container } = render(
+      <I18nProvider locale="en" messages={{ en: {} }}>
+        <Plural value={Infinity} zero="No items" one="# item" other="# items" />
+      </I18nProvider>,
+    )
+    expect(container.innerHTML).toBeDefined()
+  })
+
+  it('only "other" prop works for all counts', () => {
+    const { rerender } = render(
+      <I18nProvider locale="en" messages={{ en: {} }}>
+        <Plural value={0} other="# items" />
+      </I18nProvider>,
+    )
+    expect(screen.getByText('0 items')).toBeDefined()
+
+    rerender(
+      <I18nProvider locale="en" messages={{ en: {} }}>
+        <Plural value={1} other="# items" />
+      </I18nProvider>,
+    )
+    expect(screen.getByText('1 items')).toBeDefined()
+
+    rerender(
+      <I18nProvider locale="en" messages={{ en: {} }}>
+        <Plural value={42} other="# items" />
+      </I18nProvider>,
+    )
+    expect(screen.getByText('42 items')).toBeDefined()
+  })
 })

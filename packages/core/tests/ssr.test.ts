@@ -249,6 +249,68 @@ describe('getHydratedLocale', () => {
   })
 })
 
+// ─── Accept-Language edge cases ─────────────────────────────────────────
+
+describe('Accept-Language edge cases', () => {
+  const available = ['en', 'fr', 'zh-CN', 'ja', 'de']
+
+  it('malformed q-value (non-numeric) treated as 0', () => {
+    const result = detectLocale({
+      headers: { 'accept-language': 'en;q=abc, ja;q=0.5' },
+      available,
+      fallback: 'de',
+    })
+    // parseFloat('abc') => NaN => filtered to 0, ja has q=0.5 so ja wins
+    expect(result).toBe('ja')
+  })
+
+  it('q-value > 1.0 is still parsed', () => {
+    const result = detectLocale({
+      headers: { 'accept-language': 'en;q=1.5' },
+      available,
+      fallback: 'fr',
+    })
+    // parseFloat('1.5') => 1.5, en is matched
+    expect(result).toBe('en')
+  })
+
+  it('very long Accept-Language header (1000+ locales)', () => {
+    const parts = Array.from({ length: 1200 }, (_, i) => `lang${i};q=0.${String(i % 10)}`)
+    const header = parts.join(',')
+    expect(() => detectLocale({
+      headers: { 'accept-language': header },
+      available,
+      fallback: 'en',
+    })).not.toThrow()
+    // None of the fake locales match, should fall back
+    const result = detectLocale({
+      headers: { 'accept-language': header },
+      available,
+      fallback: 'en',
+    })
+    expect(result).toBe('en')
+  })
+
+  it('duplicate locales with different q values — highest q wins position', () => {
+    const result = detectLocale({
+      headers: { 'accept-language': 'en;q=0.5, en;q=0.9, ja;q=0.8' },
+      available,
+      fallback: 'fr',
+    })
+    // After sort: en(0.9), ja(0.8), en(0.5). First match is en.
+    expect(result).toBe('en')
+  })
+
+  it('empty Accept-Language header', () => {
+    const result = detectLocale({
+      headers: { 'accept-language': '' },
+      available,
+      fallback: 'en',
+    })
+    expect(result).toBe('en')
+  })
+})
+
 describe('edge cases - exhaustive', () => {
   // ─── detectLocale ───────────────────────────────────────────────────
 

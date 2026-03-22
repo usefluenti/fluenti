@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, afterEach } from 'vitest'
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
 import { useState } from 'react'
 import { render, screen, act, waitFor, cleanup } from '@testing-library/react'
 import { I18nProvider, useI18n } from '../src'
@@ -439,5 +439,173 @@ describe('I18nProvider', () => {
     })
 
     expect(screen.getByTestId('text').textContent).toBe('Bonjour')
+  })
+})
+
+describe('locale switch race conditions', () => {
+  afterEach(cleanup)
+
+  it('rapid sequential setLocale calls — only final locale wins', async () => {
+    const loadMessages = vi.fn(async (locale: string) => {
+      const catalog: Record<string, Record<string, string>> = {
+        ja: { hello: 'こんにちは' },
+        fr: { hello: 'Bonjour' },
+        de: { hello: 'Hallo' },
+      }
+      return catalog[locale] ?? {}
+    })
+
+    function Switcher() {
+      const { setLocale, i18n, locale } = useI18n()
+      return (
+        <div>
+          <span data-testid="text">{i18n.t('hello')}</span>
+          <span data-testid="locale">{locale}</span>
+          <button data-testid="rapid" onClick={() => {
+            setLocale('ja')
+            setLocale('fr')
+            setLocale('de')
+          }}>Rapid</button>
+        </div>
+      )
+    }
+
+    render(
+      <I18nProvider
+        locale="en"
+        messages={{ en: { hello: 'Hello' } }}
+        loadMessages={loadMessages}
+      >
+        <Switcher />
+      </I18nProvider>,
+    )
+
+    await act(async () => {
+      screen.getByTestId('rapid').click()
+    })
+
+    await waitFor(() => {
+      expect(screen.getByTestId('locale').textContent).toBe('de')
+    })
+    expect(screen.getByTestId('text').textContent).toBe('Hallo')
+  })
+
+  it('out-of-order async responses — latest request wins over stale', async () => {
+    let jaResolve: (msgs: Record<string, string>) => void
+    let frResolve: (msgs: Record<string, string>) => void
+
+    const loadMessages = vi.fn((locale: string) => {
+      if (locale === 'ja') {
+        return new Promise<Record<string, string>>((resolve) => { jaResolve = resolve })
+      }
+      if (locale === 'fr') {
+        return new Promise<Record<string, string>>((resolve) => { frResolve = resolve })
+      }
+      return Promise.resolve({})
+    })
+
+    function Switcher() {
+      const { setLocale, i18n, locale } = useI18n()
+      return (
+        <div>
+          <span data-testid="text">{i18n.t('hello')}</span>
+          <span data-testid="locale">{locale}</span>
+          <button data-testid="ja" onClick={() => setLocale('ja')}>JA</button>
+          <button data-testid="fr" onClick={() => setLocale('fr')}>FR</button>
+        </div>
+      )
+    }
+
+    render(
+      <I18nProvider
+        locale="en"
+        messages={{ en: { hello: 'Hello' } }}
+        loadMessages={loadMessages}
+      >
+        <Switcher />
+      </I18nProvider>,
+    )
+
+    // Start slow 'ja' load
+    await act(async () => {
+      screen.getByTestId('ja').click()
+    })
+
+    // Start 'fr' load (supersedes 'ja')
+    await act(async () => {
+      screen.getByTestId('fr').click()
+    })
+
+    // Resolve 'fr' first (50ms equivalent — it's the latest request)
+    await act(async () => {
+      frResolve!({ hello: 'Bonjour' })
+    })
+
+    await waitFor(() => {
+      expect(screen.getByTestId('locale').textContent).toBe('fr')
+    })
+    expect(screen.getByTestId('text').textContent).toBe('Bonjour')
+
+    // Now resolve stale 'ja' — should be discarded
+    await act(async () => {
+      jaResolve!({ hello: 'こんにちは' })
+    })
+
+    // Still 'fr', not 'ja'
+    expect(screen.getByTestId('locale').textContent).toBe('fr')
+    expect(screen.getByTestId('text').textContent).toBe('Bonjour')
+  })
+})
+
+describe('split runtime edge cases', () => {
+  const SPLIT_RUNTIME_KEY = Symbol.for('fluenti.runtime.react.v1')
+
+  afterEach(() => {
+    cleanup()
+    delete (globalThis as Record<PropertyKey, unknown>)[SPLIT_RUNTIME_KEY]
+  })
+
+  it('rejected __switchLocale promise does not crash the app', async () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    ;(globalThis as Record<PropertyKey, unknown>)[SPLIT_RUNTIME_KEY] = {
+      __switchLocale: vi.fn().mockRejectedValue(new Error('split runtime failure')),
+    }
+
+    const loadMessages = vi.fn(async (locale: string) => {
+      if (locale === 'fr') return { hello: 'Bonjour' }
+      return {}
+    })
+
+    function Switcher() {
+      const { setLocale, i18n } = useI18n()
+      return (
+        <div>
+          <span data-testid="text">{i18n.t('hello')}</span>
+          <button onClick={() => setLocale('fr')}>Switch</button>
+        </div>
+      )
+    }
+
+    render(
+      <I18nProvider
+        locale="en"
+        messages={{ en: { hello: 'Hello' } }}
+        loadMessages={loadMessages}
+      >
+        <Switcher />
+      </I18nProvider>,
+    )
+
+    await act(async () => {
+      screen.getByText('Switch').click()
+    })
+
+    // The error should be caught and logged, not crash the app
+    await waitFor(() => {
+      expect(errorSpy).toHaveBeenCalled()
+    })
+
+    errorSpy.mockRestore()
   })
 })

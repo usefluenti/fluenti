@@ -136,6 +136,53 @@ describe('Catalog', () => {
     })
   })
 
+  // ─── Catalog key edge cases ────────────────────────────────────────────
+
+  describe('catalog key edge cases', () => {
+    it('overwrite existing key with new value', () => {
+      const catalog = new Catalog()
+      catalog.set('en', { greeting: 'Hello' })
+      expect(catalog.get('en', 'greeting')).toBe('Hello')
+      catalog.set('en', { greeting: 'Hi there' })
+      expect(catalog.get('en', 'greeting')).toBe('Hi there')
+    })
+
+    it('key with dots (namespace-like)', () => {
+      const catalog = new Catalog()
+      catalog.set('en', { 'common.greeting': 'Hello' })
+      expect(catalog.get('en', 'common.greeting')).toBe('Hello')
+      expect(catalog.has('en', 'common.greeting')).toBe(true)
+    })
+
+    it('key that is empty string', () => {
+      const catalog = new Catalog()
+      catalog.set('en', { '': 'empty key message' })
+      expect(catalog.get('en', '')).toBe('empty key message')
+      expect(catalog.has('en', '')).toBe(true)
+    })
+
+    it('key with spaces', () => {
+      const catalog = new Catalog()
+      catalog.set('en', { 'key with spaces': 'spaced' })
+      expect(catalog.get('en', 'key with spaces')).toBe('spaced')
+      expect(catalog.has('en', 'key with spaces')).toBe(true)
+    })
+
+    it('key with slashes', () => {
+      const catalog = new Catalog()
+      catalog.set('en', { 'key/with/slashes': 'slashed' })
+      expect(catalog.get('en', 'key/with/slashes')).toBe('slashed')
+      expect(catalog.has('en', 'key/with/slashes')).toBe(true)
+    })
+
+    it('get from non-existent locale', () => {
+      const catalog = new Catalog()
+      catalog.set('en', { greeting: 'Hello' })
+      expect(catalog.get('zz', 'greeting')).toBeUndefined()
+      expect(catalog.has('zz', 'greeting')).toBe(false)
+    })
+  })
+
   // ─── Exhaustive edge cases ─────────────────────────────────────────────
 
   describe('edge cases - exhaustive', () => {

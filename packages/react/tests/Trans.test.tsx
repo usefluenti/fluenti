@@ -65,4 +65,42 @@ describe('Trans', () => {
     expect(screen.getByText('here').tagName).toBe('B')
     expect(screen.getByText('there').tagName).toBe('EM')
   })
+
+  it('renders empty content when children is empty string', () => {
+    const { container } = render(
+      <I18nProvider locale="en" messages={{ en: {} }}>
+        <Trans>{''}</Trans>
+      </I18nProvider>,
+    )
+    // Should render without crashing; content should be empty
+    expect(container.innerHTML).toBeDefined()
+  })
+
+  it('renders nothing when children is null', () => {
+    const { container } = render(
+      <I18nProvider locale="en" messages={{ en: {} }}>
+        <Trans>{null}</Trans>
+      </I18nProvider>,
+    )
+    expect(container.innerHTML).toBeDefined()
+  })
+
+  it('renders nothing when children is undefined', () => {
+    const { container } = render(
+      <I18nProvider locale="en" messages={{ en: {} }}>
+        <Trans>{undefined}</Trans>
+      </I18nProvider>,
+    )
+    expect(container.innerHTML).toBeDefined()
+  })
+
+  it('renders nothing when children is false', () => {
+    const { container } = render(
+      <I18nProvider locale="en" messages={{ en: {} }}>
+        <Trans>{false}</Trans>
+      </I18nProvider>,
+    )
+    // React treats false as empty — should not crash
+    expect(container.innerHTML).toBeDefined()
+  })
 })

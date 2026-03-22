@@ -94,4 +94,33 @@ describe('Select', () => {
     expect(bold.tagName).toBe('B')
     expect(screen.getAllByText((_, node) => node?.textContent === 'アクセス権: 管理者').length).toBeGreaterThan(0)
   })
+
+  it('string value "0" matches option key "0"', () => {
+    render(
+      <I18nProvider locale="en" messages={{ en: {} }}>
+        <Select
+          value="0"
+          options={{ '0': 'Zero selected' }}
+          other="Other selected"
+        />
+      </I18nProvider>,
+    )
+    expect(screen.getByText('Zero selected')).toBeDefined()
+  })
+
+  it('unmatched value without explicit "other" text falls back gracefully', () => {
+    // "other" is required by types but test that empty string doesn't crash
+    const { container } = render(
+      <I18nProvider locale="en" messages={{ en: {} }}>
+        <Select
+          value="unknown"
+          male="He"
+          female="She"
+          other=""
+        />
+      </I18nProvider>,
+    )
+    // Should not crash — renders something (possibly empty)
+    expect(container.innerHTML).toBeDefined()
+  })
 })

@@ -337,4 +337,64 @@ describe('useI18n reactivity', () => {
 
     expect(getByTestId('output').textContent).toBe('Bonjour')
   })
+
+  // ─── Context signal edge cases ──────────────────────────────────────────────
+
+  it('multiple concurrent setLocale calls — final one wins', async () => {
+    const extMessages = {
+      en: { hello: 'Hello' },
+      fr: { hello: 'Bonjour' },
+      ja: { hello: 'こんにちは' },
+    }
+
+    let changeLocale: (l: string) => void
+
+    function Child() {
+      const { t, setLocale } = useI18n()
+      changeLocale = setLocale
+      return <span data-testid="result">{t('hello')}</span>
+    }
+
+    const { getByTestId } = render(() => (
+      <I18nProvider locale="en" messages={extMessages}>
+        <Child />
+      </I18nProvider>
+    ))
+
+    expect(getByTestId('result').textContent).toBe('Hello')
+
+    // Fire two setLocale calls in quick succession
+    changeLocale!('fr')
+    changeLocale!('ja')
+    await Promise.resolve()
+
+    expect(getByTestId('result').textContent).toBe('こんにちは')
+  })
+
+  it('calling t() during locale transition does not crash', async () => {
+    let changeLocale: (l: string) => void
+    let translate: (key: string) => string
+
+    function Child() {
+      const { t, setLocale } = useI18n()
+      changeLocale = setLocale
+      translate = t
+      return <span data-testid="output">{t('hello')}</span>
+    }
+
+    render(() => (
+      <I18nProvider locale="en" messages={messages}>
+        <Child />
+      </I18nProvider>
+    ))
+
+    // Call setLocale and immediately call t() — should not throw
+    changeLocale!('fr')
+    expect(() => translate!('hello')).not.toThrow()
+
+    await Promise.resolve()
+
+    // After reactivity settles, t() should return the new locale's value
+    expect(translate!('hello')).toBe('Bonjour')
+  })
 })

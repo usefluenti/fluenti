@@ -362,6 +362,78 @@ describe('custom formatters', () => {
   })
 })
 
+// ─── Custom formatter error handling ─────────────────────────────────────
+
+describe('custom formatter error handling', () => {
+  it('formatter returns null — handles gracefully', () => {
+    const formatters = {
+      myFmt: () => null as unknown as string,
+    }
+    // customFn returns null, which is truthy-ish but not a string.
+    // The return value of customFn is passed through directly.
+    const result = interpolate('{v, myFmt}', { v: 'test' }, 'en', formatters)
+    // null is returned as-is from the custom formatter, then String() is NOT called on it
+    // because renderFunction returns the result of customFn directly
+    expect(result).toBe('null')
+  })
+
+  it('formatter returns undefined — handles gracefully', () => {
+    const formatters = {
+      myFmt: () => undefined as unknown as string,
+    }
+    const result = interpolate('{v, myFmt}', { v: 'test' }, 'en', formatters)
+    expect(result).toBe('undefined')
+  })
+
+  it('formatter returns a number (non-string) — stringifies', () => {
+    const formatters = {
+      myFmt: () => 42 as unknown as string,
+    }
+    const result = interpolate('{v, myFmt}', { v: 'test' }, 'en', formatters)
+    expect(result).toBe('42')
+  })
+
+  it('formatter returns empty string — valid', () => {
+    const formatters = {
+      myFmt: () => '',
+    }
+    const result = interpolate('{v, myFmt}', { v: 'test' }, 'en', formatters)
+    expect(result).toBe('')
+  })
+})
+
+// ─── Interpolation cache edge cases ─────────────────────────────────────
+
+describe('interpolation cache edge cases', () => {
+  it('message with null byte', () => {
+    const result = interpolate('Hello\0World')
+    expect(result).toBe('Hello\0World')
+  })
+
+  it('Unicode NFC vs NFD — treated as different cache keys', () => {
+    // precomposed e-acute (NFC)
+    const nfc = 'caf\u00E9 {name}'
+    // decomposed e + combining acute (NFD)
+    const nfd = 'cafe\u0301 {name}'
+    const resultNFC = interpolate(nfc, { name: 'test' })
+    const resultNFD = interpolate(nfd, { name: 'test' })
+    // They produce visually similar but technically different strings
+    expect(resultNFC).toBe('caf\u00E9 test')
+    expect(resultNFD).toBe('cafe\u0301 test')
+    // They are different strings (different cache keys)
+    expect(resultNFC).not.toBe(resultNFD)
+  })
+
+  it('empty string message', () => {
+    expect(interpolate('')).toBe('')
+  })
+
+  it('message with only whitespace', () => {
+    expect(interpolate('   ')).toBe('   ')
+    expect(interpolate('\t\n')).toBe('\t\n')
+  })
+})
+
 describe('LRU cache — key re-insertion', () => {
   it('re-inserting existing key moves it to end (not duplicated)', () => {
     // Access a cached message twice to trigger the "key already exists" path in set()

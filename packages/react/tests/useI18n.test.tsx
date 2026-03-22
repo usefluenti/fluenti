@@ -44,4 +44,45 @@ describe('useI18n', () => {
       'useI18n() must be used within an <I18nProvider>',
     )
   })
+
+  it('throws with helpful message mentioning I18nProvider', () => {
+    function BadChild() {
+      useI18n()
+      return null
+    }
+
+    expect(() => render(<BadChild />)).toThrow('<I18nProvider>')
+  })
+
+  it('nested providers — inner provider context is used by inner components', () => {
+    function Display() {
+      const { locale, i18n } = useI18n()
+      return (
+        <span data-testid="inner">
+          {locale}:{i18n.t('hello')}
+        </span>
+      )
+    }
+
+    function OuterDisplay() {
+      const { locale, i18n } = useI18n()
+      return (
+        <span data-testid="outer">
+          {locale}:{i18n.t('hello')}
+        </span>
+      )
+    }
+
+    render(
+      <I18nProvider locale="en" messages={{ en: { hello: 'Hello' } }}>
+        <OuterDisplay />
+        <I18nProvider locale="fr" messages={{ fr: { hello: 'Bonjour' } }}>
+          <Display />
+        </I18nProvider>
+      </I18nProvider>,
+    )
+
+    expect(screen.getByTestId('outer').textContent).toBe('en:Hello')
+    expect(screen.getByTestId('inner').textContent).toBe('fr:Bonjour')
+  })
 })
