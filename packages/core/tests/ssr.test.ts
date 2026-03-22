@@ -360,3 +360,74 @@ describe('edge cases - exhaustive', () => {
     expect(result).toBe('en')
   })
 })
+
+// ─── Edge cases — SSR error recovery and boundaries ──────────────────────
+
+describe('edge cases — SSR error recovery and boundaries', () => {
+  const available = ['en', 'fr', 'zh-CN', 'ja', 'de']
+
+  it('mixed-case "En-Us" matches "en"', () => {
+    const result = detectLocale({
+      cookie: 'En-Us',
+      available,
+      fallback: 'ja',
+    })
+    // 'En-Us' should case-insensitively match 'en'
+    expect(result).toBe('en')
+  })
+
+  it('Headers.get() returning null falls back to fallback', () => {
+    // Create a Headers-like object where get() returns null
+    const headers = {
+      get: () => null,
+    } as unknown as Headers
+    const result = detectLocale({
+      headers,
+      available,
+      fallback: 'en',
+    })
+    expect(result).toBe('en')
+  })
+
+  it('empty quality q= results in NaN filtered to 0', () => {
+    // q= with nothing after it → parseFloat('') → NaN → filtered to 0
+    const result = detectLocale({
+      headers: { 'accept-language': 'fr;q=,en;q=0.8' },
+      available,
+      fallback: 'ja',
+    })
+    // fr has q=0 (NaN filtered), en has q=0.8 → en wins
+    expect(result).toBe('en')
+  })
+
+  it('empty locale string in Accept-Language is filtered', () => {
+    // A leading comma creates an empty locale entry which should be filtered
+    const result = detectLocale({
+      headers: { 'accept-language': ',,,en;q=0.5' },
+      available,
+      fallback: 'ja',
+    })
+    expect(result).toBe('en')
+  })
+
+  it('control characters in SSR locale key are rejected', () => {
+    // Control characters should fail BCP 47 validation
+    expect(() => getSSRLocaleScript('en\x00')).toThrow('locale must be a valid BCP 47 tag')
+    expect(() => getSSRLocaleScript('en\x1F')).toThrow('locale must be a valid BCP 47 tag')
+    expect(() => getSSRLocaleScript('\ten')).toThrow('locale must be a valid BCP 47 tag')
+  })
+
+  it('XSS escaping all special chars combined', () => {
+    // All these should be rejected by validateLocale before reaching the escape logic
+    const xssPayloads = [
+      '<script>alert(1)</script>',
+      '"><img onerror=alert(1)>',
+      "';alert(1)//",
+      '&amp;<test>',
+      'en<>"\'/&',
+    ]
+    for (const payload of xssPayloads) {
+      expect(() => getSSRLocaleScript(payload)).toThrow()
+    }
+  })
+})
