@@ -360,7 +360,7 @@ export function createServerI18n(config: ServerI18nConfig): ServerI18n {
     if (config.numberFormats !== undefined) fluentConfig.numberFormats = config.numberFormats
     if (config.missing !== undefined) fluentConfig.missing = config.missing
 
-    store.instance = createFluent(fluentConfig)
+    store.instance = createFluentiRuntime(fluentConfig)
     return store.instance
   }
 
