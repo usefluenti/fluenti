@@ -2,7 +2,8 @@ import type { CustomFormatter, Locale } from './types'
 import { parse } from './parser'
 import { compile } from './compile'
 
-const LRU_MAX = 500
+/** Default LRU cache size for compiled messages. */
+export const DEFAULT_MESSAGE_CACHE_SIZE = 500
 
 /**
  * Simple LRU cache backed by a Map.
@@ -48,7 +49,26 @@ class LRUCache<K, V> {
 
 type CompiledFn = string | ((values?: Record<string, unknown>) => string)
 
-const compiledCache = new LRUCache<string, CompiledFn>(LRU_MAX)
+let compiledCache = new LRUCache<string, CompiledFn>(DEFAULT_MESSAGE_CACHE_SIZE)
+
+/**
+ * Clear the compiled-message LRU cache.
+ *
+ * Useful for long-running Node.js servers to reclaim memory.
+ */
+export function clearInterpolationCache(): void {
+  compiledCache.clear()
+}
+
+/**
+ * Resize the compiled-message LRU cache.
+ * Clears existing entries when the size changes.
+ *
+ * @param maxSize - New maximum number of cached compiled messages
+ */
+export function setMessageCacheSize(maxSize: number): void {
+  compiledCache = new LRUCache<string, CompiledFn>(maxSize)
+}
 
 /**
  * Parse, compile, and execute an ICU message with the given values and locale.

@@ -5,6 +5,17 @@ import { LOCALE_CURRENCY_MAP } from './formatters/number'
 const nfCache = new Map<string, Intl.NumberFormat>()
 const dtfCache = new Map<string, Intl.DateTimeFormat>()
 
+/**
+ * Clear the internal Intl.NumberFormat and Intl.DateTimeFormat caches
+ * used by the ICU compiler.
+ *
+ * Useful for long-running Node.js servers to reclaim memory.
+ */
+export function clearCompileCache(): void {
+  nfCache.clear()
+  dtfCache.clear()
+}
+
 function getCachedNumberFormat(locale: string, options?: Intl.NumberFormatOptions): Intl.NumberFormat {
   const key = `${locale}:${JSON.stringify(options ?? {})}`
   let fmt = nfCache.get(key)

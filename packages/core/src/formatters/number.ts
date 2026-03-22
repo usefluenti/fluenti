@@ -2,6 +2,15 @@ import type { Locale } from '../types'
 
 const formatCache = new Map<string, Intl.NumberFormat>()
 
+/**
+ * Clear the cached `Intl.NumberFormat` instances used by `formatNumber()`.
+ *
+ * Useful for long-running Node.js servers to reclaim memory.
+ */
+export function clearNumberFormatCache(): void {
+  formatCache.clear()
+}
+
 /** Map locale → default currency code */
 export const LOCALE_CURRENCY_MAP: Record<string, string> = {
   'en': 'USD', 'en-US': 'USD', 'en-GB': 'GBP', 'en-AU': 'AUD', 'en-CA': 'CAD',

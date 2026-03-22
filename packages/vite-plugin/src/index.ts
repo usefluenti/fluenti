@@ -324,6 +324,14 @@ export function createFluentiPlugins(
     },
   }
 
+  // Plugin order matters:
+  // 1. virtualPlugin       — resolves virtual:fluenti/* module IDs (must be first)
+  // 2. frameworkPlugins     — framework-specific template transforms (e.g., Vue v-t directive)
+  //                           must run after virtual resolution but before script transforms
+  // 3. scriptTransformPlugin — t()/t`` scope transforms + <Trans> optimization (enforce: 'pre')
+  // 4. buildCompilePlugin   — triggers extract+compile before the build starts
+  // 5. buildSplitPlugin     — rewrites t() calls to catalog refs + emits per-route chunks
+  // 6. devPlugin            — file watcher + HMR for dev mode (must be last)
   return [virtualPlugin, ...frameworkPlugins, scriptTransformPlugin, buildCompilePlugin, buildSplitPlugin, devPlugin]
 }
 

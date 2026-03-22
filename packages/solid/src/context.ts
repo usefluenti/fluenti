@@ -64,7 +64,7 @@ export interface I18nContext {
   /** Whether a locale chunk is currently being loaded */
   isLoading: Accessor<boolean>
   /** Set of locales whose messages have been loaded */
-  loadedLocales: Accessor<Set<string>>
+  loadedLocales: Accessor<ReadonlySet<string>>
   /** Preload a locale in the background without switching to it */
   preloadLocale(locale: string): Promise<void>
   /** Check if a translation key exists in the catalog */

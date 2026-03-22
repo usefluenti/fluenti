@@ -3,6 +3,15 @@ import { formatRelativeTime } from './relative'
 
 const formatCache = new Map<string, Intl.DateTimeFormat>()
 
+/**
+ * Clear the cached `Intl.DateTimeFormat` instances used by `formatDate()`.
+ *
+ * Useful for long-running Node.js servers to reclaim memory.
+ */
+export function clearDateFormatCache(): void {
+  formatCache.clear()
+}
+
 /** Built-in date format styles. Used when no custom styles are provided. */
 export const DEFAULT_DATE_FORMATS: Record<string, Intl.DateTimeFormatOptions | 'relative'> = {
   default: { year: 'numeric', month: 'short', day: 'numeric' },
