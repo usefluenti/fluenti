@@ -12,7 +12,10 @@ import type {
   FluentInstanceExtended,
 } from '@fluenti/core'
 
-export interface I18nContextValue {
+/** @deprecated Use `FluentiContext` instead */
+export type I18nContextValue = FluentiContext
+
+export interface FluentiContext {
   /** The underlying Fluent instance (escape hatch for advanced use) */
   i18n: FluentInstanceExtended
   /** Translate a message by id with optional interpolation values */
@@ -42,9 +45,12 @@ export interface I18nContextValue {
   preloadLocale: (locale: string) => Promise<void>
 }
 
-export interface I18nProviderProps {
-  /** Active locale code */
-  locale: string
+/** @deprecated Use `FluentiProviderProps` instead */
+export type I18nProviderProps = FluentiProviderProps
+
+export interface FluentiProviderProps {
+  /** Active locale code (required when not using `instance`) */
+  locale?: string
   /** Fallback locale when translation is missing */
   fallbackLocale?: string
   /** Static message catalogs */
@@ -59,9 +65,21 @@ export interface I18nProviderProps {
   numberFormats?: NumberFormatOptions
   /** Missing message handler */
   missing?: (locale: Locale, id: string) => string | undefined
+  /**
+   * Pre-created Fluenti instance from `createFluenti()`.
+   * When provided, all other config props (locale, messages, loadMessages, etc.)
+   * are ignored — the instance manages its own state.
+   */
+  instance?: import('./create-fluenti').FluentiInstance
   /** App content */
   children: ReactNode
 }
+
+/** @deprecated Use `FluentiInstanceExtended` instead */
+export type { FluentInstanceExtended }
+
+/** Alias for the core FluentInstanceExtended with Fluenti naming */
+export type FluentiInstanceExtended = FluentInstanceExtended
 
 export type {
   Locale,
@@ -73,5 +91,4 @@ export type {
   CompileTimeT,
   DateFormatOptions,
   NumberFormatOptions,
-  FluentInstanceExtended,
 }

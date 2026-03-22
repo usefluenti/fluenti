@@ -4,7 +4,10 @@ import { I18nContext } from '../context'
 import { PLURAL_CATEGORIES, type PluralCategory } from './plural-core'
 import { buildICUPluralMessage, renderRichTranslation, serializeRichForms } from './icu-rich'
 
-export interface PluralProps {
+/** @deprecated Use `FluentiPluralProps` instead */
+export type PluralProps = FluentiPluralProps
+
+export interface FluentiPluralProps {
   /** The count value */
   value: number
   /** Override the auto-generated synthetic ICU message id */
@@ -49,7 +52,7 @@ export const Plural = memo(function Plural({
   many,
   other,
   offset,
-}: PluralProps) {
+}: FluentiPluralProps) {
   const ctx = useContext(I18nContext)
   if (!ctx) {
     throw new Error('[fluenti] <Plural> must be used within an <I18nProvider>')

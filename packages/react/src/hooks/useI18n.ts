@@ -1,6 +1,6 @@
 import { useContext } from 'react'
 import { I18nContext } from '../context'
-import type { I18nContextValue } from '../types'
+import type { FluentiContext } from '../types'
 
 /**
  * Primary hook for accessing i18n functions.
@@ -10,7 +10,7 @@ import type { I18nContextValue } from '../types'
  *
  * @throws If used outside of `<I18nProvider>`
  */
-export function useI18n(): I18nContextValue {
+export function useI18n(): FluentiContext {
   const ctx = useContext(I18nContext)
   if (!ctx) {
     throw new Error(
