@@ -15,6 +15,8 @@ import { deriveRouteName, parseCompiledCatalog, buildChunkModule, readCatalogSou
 import { scopeTransform } from './scope-transform'
 import { transformTransComponents } from './trans-transform'
 export type { FluentiPluginOptions, FluentiCoreOptions, RuntimeGenerator, RuntimeGeneratorOptions, IdGenerator } from './types'
+export { createRuntimeGenerator } from './runtime-template'
+export type { RuntimePrimitives } from './runtime-template'
 export { resolveVirtualSplitId, loadVirtualSplitModule } from './virtual-modules'
 export { setResolvedMode, isBuildMode, getPluginEnvironment } from './mode-detect'
 
