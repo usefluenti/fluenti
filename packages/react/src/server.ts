@@ -1,8 +1,8 @@
 import { cache } from 'react'
-import { createFluent, hashMessage as hashSyntheticMessage } from '@fluenti/core'
+import { createFluentiCore, hashMessage as hashSyntheticMessage } from '@fluenti/core'
 import type {
-  FluentInstanceExtended,
-  FluentConfigExtended,
+  FluentiCoreInstanceFull,
+  FluentiCoreConfigFull,
   Locale,
   Messages,
   DateFormatOptions,
@@ -160,7 +160,7 @@ export interface ServerI18n {
    * return <h1>{t('welcome')}</h1>
    * ```
    */
-  getI18n: () => Promise<FluentInstanceExtended & { locale: string }>
+  getI18n: () => Promise<FluentiCoreInstanceFull & { locale: string }>
 
   /**
    * `<Trans>` for React Server Components.
@@ -218,7 +218,7 @@ export interface ServerI18n {
    * Used internally by @fluenti/next webpack loader.
    * @internal
    */
-  __getSyncInstance: () => FluentInstanceExtended & { locale: string }
+  __getSyncInstance: () => FluentiCoreInstanceFull & { locale: string }
 }
 
 /**
@@ -269,7 +269,7 @@ export function createServerI18n(config: ServerI18nConfig): ServerI18n {
   // Each server request gets its own isolated state
   const getRequestStore = cache((): {
     locale: string | null
-    instance: (FluentInstanceExtended & { locale: string }) | null
+    instance: (FluentiCoreInstanceFull & { locale: string }) | null
   } => ({
     locale: null,
     instance: null,
@@ -280,7 +280,7 @@ export function createServerI18n(config: ServerI18nConfig): ServerI18n {
 
   // Module-level fallback for server actions where React.cache()
   // may not share state with the page render.
-  let _lastInstance: (FluentInstanceExtended & { locale: string }) | null = null
+  let _lastInstance: (FluentiCoreInstanceFull & { locale: string }) | null = null
   let _requestId = 0
   let _lastRequestId = 0
 
@@ -305,7 +305,7 @@ export function createServerI18n(config: ServerI18nConfig): ServerI18n {
     return messages
   }
 
-  async function getI18n(): Promise<FluentInstanceExtended & { locale: string }> {
+  async function getI18n(): Promise<FluentiCoreInstanceFull & { locale: string }> {
     const store = getRequestStore()
 
     // If setLocale() was never called (e.g. Server Action — independent request
@@ -337,7 +337,7 @@ export function createServerI18n(config: ServerI18nConfig): ServerI18n {
       allMessages[config.fallbackLocale] = await loadLocaleMessages(config.fallbackLocale)
     }
 
-    const fluentConfig: FluentConfigExtended = {
+    const fluentConfig: FluentiCoreConfigFull = {
       locale,
       messages: allMessages,
     }
@@ -347,7 +347,7 @@ export function createServerI18n(config: ServerI18nConfig): ServerI18n {
     if (config.numberFormats !== undefined) fluentConfig.numberFormats = config.numberFormats
     if (config.missing !== undefined) fluentConfig.missing = config.missing
 
-    store.instance = createFluent(fluentConfig)
+    store.instance = createFluentiCore(fluentConfig)
     _lastInstance = store.instance
     _lastRequestId = _requestId
     return store.instance
@@ -481,7 +481,7 @@ export function createServerI18n(config: ServerI18nConfig): ServerI18n {
    * Throws if getI18n() hasn't been called yet in this request.
    * @internal
    */
-  function __getSyncInstance(): FluentInstanceExtended & { locale: string } {
+  function __getSyncInstance(): FluentiCoreInstanceFull & { locale: string } {
     const store = getRequestStore()
     if (store.instance) {
       return store.instance
@@ -507,14 +507,14 @@ export function createServerI18n(config: ServerI18nConfig): ServerI18n {
       if (fallback) messages[config.fallbackLocale] = fallback
     }
 
-    const fluentConfig: FluentConfigExtended = { locale, messages }
+    const fluentConfig: FluentiCoreConfigFull = { locale, messages }
     if (config.fallbackLocale !== undefined) fluentConfig.fallbackLocale = config.fallbackLocale
     if (config.fallbackChain !== undefined) fluentConfig.fallbackChain = config.fallbackChain
     if (config.dateFormats !== undefined) fluentConfig.dateFormats = config.dateFormats
     if (config.numberFormats !== undefined) fluentConfig.numberFormats = config.numberFormats
     if (config.missing !== undefined) fluentConfig.missing = config.missing
 
-    store.instance = createFluent(fluentConfig)
+    store.instance = createFluentiCore(fluentConfig)
     return store.instance
   }
 

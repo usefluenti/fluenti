@@ -1,10 +1,10 @@
-import { createFluentVue } from '@fluenti/vue'
+import { createFluenti } from '@fluenti/vue'
 
 const en = {
   'Welcome to Fluenti': 'Welcome to Fluenti',
 }
 
-export const vueCodeSplitting = createFluentVue({
+export const vueCodeSplitting = createFluenti({
   locale: 'en',
   messages: { en },
   lazyLocaleLoading: true,

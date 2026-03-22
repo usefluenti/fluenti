@@ -32,10 +32,10 @@ export type {
   Locale,
   DateFormatOptions,
   NumberFormatOptions,
-  FluentInstanceExtended,
+  FluentiCoreInstanceFull,
 } from './types'
 export type { TransProps } from './components/Trans'
 export type { PluralProps } from './components/Plural'
 export type { SelectProps } from './components/Select'
 export type { DateTimeProps } from './components/DateTime'
-export type { NumberProps } from './components/Number'
+export type { NumberFormatProps } from './components/Number'

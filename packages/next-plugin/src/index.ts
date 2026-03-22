@@ -30,7 +30,7 @@ export type { WithFluentConfig, I18nProviderProps } from './types'
 // errors if `withFluenti()` is not configured.
 
 import type { ReactNode, ReactElement } from 'react'
-import type { CompileTimeT, FluentInstanceExtended } from '@fluenti/core'
+import type { CompileTimeT, FluentiCoreInstanceFull } from '@fluenti/core'
 
 const NOT_CONFIGURED =
   '[fluenti] `withFluenti()` must be configured in next.config.ts before importing from "@fluenti/next".'
@@ -42,7 +42,7 @@ function throwNotConfigured(): never {
 /** @see Generated module for the real implementation. */
 export const setLocale: (locale: string) => void = throwNotConfigured
 /** @see Generated module for the real implementation. */
-export const getI18n: () => Promise<FluentInstanceExtended & { locale: string }> = throwNotConfigured as () => Promise<FluentInstanceExtended & { locale: string }>
+export const getI18n: () => Promise<FluentiCoreInstanceFull & { locale: string }> = throwNotConfigured as () => Promise<FluentiCoreInstanceFull & { locale: string }>
 /** @see Generated module for the real implementation. */
 export const t: CompileTimeT = throwNotConfigured as unknown as CompileTimeT
 /** @see Generated module for the real implementation. */

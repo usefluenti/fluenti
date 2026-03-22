@@ -1,7 +1,7 @@
-import { createFluent } from '@fluenti/core'
+import { createFluentiCore } from '@fluenti/core'
 import type {
-  FluentInstanceExtended,
-  FluentConfigExtended,
+  FluentiCoreInstanceFull,
+  FluentiCoreConfigFull,
   Locale,
   Messages,
   DateFormatOptions,
@@ -58,7 +58,7 @@ export interface ServerI18n {
    * Get a fully configured i18n instance for the current request.
    * Messages are loaded lazily and cached.
    */
-  getI18n: () => Promise<FluentInstanceExtended & { locale: string }>
+  getI18n: () => Promise<FluentiCoreInstanceFull & { locale: string }>
 }
 
 /**
@@ -92,7 +92,7 @@ export interface ServerI18n {
  */
 export function createServerI18n(config: ServerI18nConfig): ServerI18n {
   let currentLocale: string | null = null
-  let cachedInstance: (FluentInstanceExtended & { locale: string }) | null = null
+  let cachedInstance: (FluentiCoreInstanceFull & { locale: string }) | null = null
   const messageCache = new Map<string, Messages>()
 
   function setLocale(locale: string): void {
@@ -114,7 +114,7 @@ export function createServerI18n(config: ServerI18nConfig): ServerI18n {
     return messages
   }
 
-  async function getI18n(): Promise<FluentInstanceExtended & { locale: string }> {
+  async function getI18n(): Promise<FluentiCoreInstanceFull & { locale: string }> {
     // If setLocale() was never called, try the resolveLocale fallback.
     if (!currentLocale && config.resolveLocale) {
       currentLocale = await config.resolveLocale()
@@ -143,7 +143,7 @@ export function createServerI18n(config: ServerI18nConfig): ServerI18n {
       allMessages[config.fallbackLocale] = await loadLocaleMessages(config.fallbackLocale)
     }
 
-    const fluentConfig: FluentConfigExtended = {
+    const fluentConfig: FluentiCoreConfigFull = {
       locale,
       messages: allMessages,
     }
@@ -153,7 +153,7 @@ export function createServerI18n(config: ServerI18nConfig): ServerI18n {
     if (config.numberFormats !== undefined) fluentConfig.numberFormats = config.numberFormats
     if (config.missing !== undefined) fluentConfig.missing = config.missing
 
-    cachedInstance = createFluent(fluentConfig)
+    cachedInstance = createFluentiCore(fluentConfig)
     return cachedInstance
   }
 

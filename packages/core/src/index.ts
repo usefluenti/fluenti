@@ -5,10 +5,10 @@ export type {
   CompiledMessage,
   Messages,
   AllMessages,
-  FluentConfig,
-  FluentInstance,
-  FluentInstanceExtended,
-  FluentConfigExtended,
+  FluentiCoreConfig,
+  FluentiCoreInstance,
+  FluentiCoreInstanceFull,
+  FluentiCoreConfigFull,
   CustomFormatter,
   ASTNode,
   TextNode,
@@ -52,8 +52,8 @@ export { formatRelativeTime } from './formatters/relative'
 export { defineConfig } from './define-config'
 
 import type {
-  FluentConfigExtended,
-  FluentInstanceExtended,
+  FluentiCoreConfigFull,
+  FluentiCoreInstanceFull,
   LocalizedString,
   Locale,
   Messages,
@@ -71,11 +71,11 @@ import { validateLocale } from './locale'
  * Create a Fluenti instance with full i18n support.
  *
  * @param config - Configuration including locale, messages, and optional formatters
- * @returns A fully configured `FluentInstanceExtended`
+ * @returns A fully configured `FluentiCoreInstanceFull`
  *
  * @example
  * ```ts
- * const i18n = createFluent({
+ * const i18n = createFluentiCore({
  *   locale: 'en',
  *   messages: {
  *     en: { greeting: 'Hello {name}!' },
@@ -85,8 +85,8 @@ import { validateLocale } from './locale'
  * i18n.t('greeting', { name: 'World' }) // 'Hello World!'
  * ```
  */
-export function createFluent(config: FluentConfigExtended): FluentInstanceExtended {
-  validateLocale(config.locale, 'createFluent')
+export function createFluentiCore(config: FluentiCoreConfigFull): FluentiCoreInstanceFull {
+  validateLocale(config.locale, 'createFluentiCore')
   let currentLocale: Locale = config.locale
   const catalog = new Catalog()
 
@@ -189,7 +189,7 @@ export function createFluent(config: FluentConfigExtended): FluentInstanceExtend
     return (devWarningsEnabled ? `[!] ${id}` : id) as LocalizedString
   }
 
-  const instance: FluentInstanceExtended = {
+  const instance: FluentiCoreInstanceFull = {
     get locale() {
       return currentLocale
     },

@@ -72,14 +72,14 @@ export type CompiledMessage = string | ((values?: Record<string, unknown>) => st
 export type Messages = Record<string, CompiledMessage>
 export type AllMessages = Record<Locale, Messages>
 
-export interface FluentConfig {
+export interface FluentiCoreConfig {
   locale: Locale
   fallbackLocale?: Locale
   messages: AllMessages
   missing?: (locale: Locale, id: string) => string | undefined
 }
 
-export interface FluentInstance {
+export interface FluentiCoreInstance {
   locale: Locale
   /**
    * Translate by id or descriptor.
@@ -108,8 +108,6 @@ export interface FluentInstance {
   loadMessages(locale: Locale, messages: Messages): void
   getLocales(): Locale[]
 }
-
-export type CreateFluent = (config: FluentConfig) => FluentInstance
 
 // ---- ICU Parser AST ----
 
@@ -310,9 +308,9 @@ export type FormatNumberFn = (value: number, style?: string) => FluentiTypeConfi
  */
 export type CustomFormatter = (value: unknown, style: string, locale: Locale) => string
 
-// ---- Extended FluentConfig ----
+// ---- Extended FluentiCoreConfig ----
 
-export interface FluentConfigExtended extends FluentConfig {
+export interface FluentiCoreConfigFull extends FluentiCoreConfig {
   namespaceMapping?: NamespaceMapping
   dateFormats?: DateFormatOptions
   numberFormats?: NumberFormatOptions
@@ -353,9 +351,9 @@ export interface FluentConfigExtended extends FluentConfig {
   devWarnings?: boolean
 }
 
-// ---- Extended FluentInstance ----
+// ---- Extended FluentiCoreInstance ----
 
-export interface FluentInstanceExtended extends FluentInstance {
+export interface FluentiCoreInstanceFull extends FluentiCoreInstance {
   d: FormatDateFn
   n: FormatNumberFn
   /** Format an ICU message string directly (no catalog lookup) */

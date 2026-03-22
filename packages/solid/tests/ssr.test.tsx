@@ -2,7 +2,7 @@
  * @vitest-environment node
  */
 import { describe, it, expect, vi } from 'vitest'
-import { createI18nContext, createI18n, resetGlobalI18nContext } from '../src/context'
+import { createFluentiContext, createFluenti, resetGlobalI18nContext } from '../src/context'
 
 const messages = {
   en: { hello: 'Hello', greeting: 'Hi {name}' },
@@ -10,20 +10,20 @@ const messages = {
 }
 
 describe('SSR', () => {
-  it('createI18nContext works in a non-browser environment', () => {
-    const ctx = createI18nContext({ locale: 'en', messages })
+  it('createFluentiContext works in a non-browser environment', () => {
+    const ctx = createFluentiContext({ locale: 'en', messages })
 
     expect(ctx.t('hello')).toBe('Hello')
     expect(ctx.t('greeting', { name: 'World' })).toBe('Hi World')
   })
 
   it('locale accessor returns current locale', () => {
-    const ctx = createI18nContext({ locale: 'en', messages })
+    const ctx = createFluentiContext({ locale: 'en', messages })
     expect(ctx.locale()).toBe('en')
   })
 
   it('setLocale changes the active locale', () => {
-    const ctx = createI18nContext({ locale: 'en', messages })
+    const ctx = createFluentiContext({ locale: 'en', messages })
     expect(ctx.t('hello')).toBe('Hello')
 
     ctx.setLocale('fr')
@@ -31,15 +31,15 @@ describe('SSR', () => {
   })
 
   it('per-context isolation — two contexts are independent', () => {
-    const ctxEn = createI18nContext({ locale: 'en', messages })
-    const ctxFr = createI18nContext({ locale: 'fr', messages })
+    const ctxEn = createFluentiContext({ locale: 'en', messages })
+    const ctxFr = createFluentiContext({ locale: 'fr', messages })
 
     expect(ctxEn.t('hello')).toBe('Hello')
     expect(ctxFr.t('hello')).toBe('Bonjour')
   })
 
   it('fallback works in SSR context', () => {
-    const ctx = createI18nContext({
+    const ctx = createFluentiContext({
       locale: 'fr',
       fallbackLocale: 'en',
       messages: {
@@ -52,32 +52,32 @@ describe('SSR', () => {
   })
 
   it('format() interpolates in SSR context', () => {
-    const ctx = createI18nContext({ locale: 'en', messages })
+    const ctx = createFluentiContext({ locale: 'en', messages })
     const result = ctx.format('Hello {name}', { name: 'SSR' })
     expect(result).toBe('Hello SSR')
   })
 
   it('getLocales returns available locale codes', () => {
-    const ctx = createI18nContext({ locale: 'en', messages })
+    const ctx = createFluentiContext({ locale: 'en', messages })
     const locales = ctx.getLocales()
     expect(locales).toContain('en')
     expect(locales).toContain('fr')
   })
 
   it('loadMessages adds messages in SSR context', () => {
-    const ctx = createI18nContext({ locale: 'en', messages: { en: {} } })
+    const ctx = createFluentiContext({ locale: 'en', messages: { en: {} } })
     ctx.loadMessages('en', { dynamic: 'Dynamic value' })
     expect(ctx.t('dynamic')).toBe('Dynamic value')
   })
 
-  it('createI18n() warns about SSR singleton in non-browser environment', () => {
+  it('createFluenti() warns about SSR singleton in non-browser environment', () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
     resetGlobalI18nContext()
 
-    const ctx = createI18n({ locale: 'en', messages })
+    const ctx = createFluenti({ locale: 'en', messages })
 
     expect(warnSpy).toHaveBeenCalledWith(
-      '[fluenti] createI18n() detected SSR environment. ' +
+      '[fluenti] createFluenti() detected SSR environment. ' +
       'Use <I18nProvider> for per-request isolation in SSR.',
     )
     expect(ctx.t('hello')).toBe('Hello')
@@ -89,8 +89,8 @@ describe('SSR', () => {
   // ─── Edge cases ──────────────────────────────────────────────────────
 
   it('per-request isolation — two contexts do not interfere', () => {
-    const ctxA = createI18nContext({ locale: 'en', messages })
-    const ctxB = createI18nContext({ locale: 'fr', messages })
+    const ctxA = createFluentiContext({ locale: 'en', messages })
+    const ctxB = createFluentiContext({ locale: 'fr', messages })
 
     // Changing ctxA should not affect ctxB
     ctxA.setLocale('fr')
@@ -103,7 +103,7 @@ describe('SSR', () => {
   })
 
   it('locale signal is reactive in SSR context', () => {
-    const ctx = createI18nContext({ locale: 'en', messages })
+    const ctx = createFluentiContext({ locale: 'en', messages })
 
     expect(ctx.locale()).toBe('en')
     expect(ctx.t('hello')).toBe('Hello')

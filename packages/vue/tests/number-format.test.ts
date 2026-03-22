@@ -1,15 +1,15 @@
 import { describe, it, expect } from 'vitest'
 import { defineComponent, h, nextTick } from 'vue'
 import { mount } from '@vue/test-utils'
-import { createFluentVue } from '../src/plugin'
+import { createFluenti } from '../src/plugin'
 import { NumberFormat } from '../src/components/NumberFormat'
 
 describe('NumberFormat', () => {
   function mountWithPlugin(
     component: ReturnType<typeof defineComponent>,
-    options: Parameters<typeof createFluentVue>[0] = { locale: 'en', messages: { en: {} } },
+    options: Parameters<typeof createFluenti>[0] = { locale: 'en', messages: { en: {} } },
   ) {
-    const plugin = createFluentVue(options)
+    const plugin = createFluenti(options)
     return mount(component, { global: { plugins: [plugin] } })
   }
 
@@ -186,7 +186,7 @@ describe('NumberFormat', () => {
         return () => h(NumberFormat, { value: 42 })
       },
     })
-    expect(() => mount(Comp)).toThrow('useI18n() requires createFluentVue plugin')
+    expect(() => mount(Comp)).toThrow('useI18n() requires createFluenti plugin')
   })
 
   it('renders with custom tag', () => {
@@ -242,7 +242,7 @@ describe('NumberFormat', () => {
     })
 
     it('re-renders on locale switch', async () => {
-      const plugin = createFluentVue({
+      const plugin = createFluenti({
         locale: 'en',
         messages: { en: {}, de: {} },
       })
