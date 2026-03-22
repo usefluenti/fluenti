@@ -1,5 +1,5 @@
 import { type App, type InjectionKey, type Ref, ref, shallowReactive } from 'vue'
-import type { AllMessages, Locale, LocalizedString, Messages, CompiledMessage, MessageDescriptor } from '@fluenti/core'
+import type { AllMessages, Locale, LocalizedString, Messages, CompiledMessage, MessageDescriptor, DiagnosticsConfig } from '@fluenti/core'
 import { interpolate, formatDate, formatNumber, buildICUMessage, resolveDescriptorId } from '@fluenti/core'
 import { Trans } from './components/Trans'
 import { Plural } from './components/Plural'
@@ -112,6 +112,11 @@ export interface FluentVueOptions {
    * @default true
    */
   injectGlobalProperties?: boolean
+  /**
+   * Runtime diagnostics configuration for development-time i18n issue reporting.
+   * Forwarded to `@fluenti/core` — no Vue-specific logic.
+   */
+  diagnostics?: DiagnosticsConfig
 }
 
 /** Return value of `createFluentVue()` */

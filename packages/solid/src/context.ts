@@ -1,6 +1,6 @@
 import { createSignal, createRoot, type Accessor } from 'solid-js'
 import { formatDate, formatNumber, interpolate as coreInterpolate, buildICUMessage, resolveDescriptorId } from '@fluenti/core'
-import type { FluentConfig, Locale, LocalizedString, Messages, CompiledMessage, MessageDescriptor, DateFormatOptions, NumberFormatOptions } from '@fluenti/core'
+import type { FluentConfig, Locale, LocalizedString, Messages, CompiledMessage, MessageDescriptor, DateFormatOptions, NumberFormatOptions, DiagnosticsConfig } from '@fluenti/core'
 
 /** Chunk loader for lazy locale loading */
 export type ChunkLoader = (
@@ -41,6 +41,8 @@ export interface I18nConfig extends FluentConfig {
   dateFormats?: DateFormatOptions
   /** Named number format styles */
   numberFormats?: NumberFormatOptions
+  /** Runtime diagnostics configuration (forwarded to core) */
+  diagnostics?: DiagnosticsConfig
 }
 
 /** Reactive i18n context holding locale signal and translation utilities */

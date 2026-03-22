@@ -10,6 +10,7 @@ import type {
   DateFormatOptions,
   NumberFormatOptions,
   FluentInstanceExtended,
+  DiagnosticsConfig,
 } from '@fluenti/core'
 
 export interface I18nContextValue {
@@ -59,6 +60,8 @@ export interface I18nProviderProps {
   numberFormats?: NumberFormatOptions
   /** Missing message handler */
   missing?: (locale: Locale, id: string) => string | undefined
+  /** Runtime diagnostics configuration (forwarded to core) */
+  diagnostics?: DiagnosticsConfig
   /** App content */
   children: ReactNode
 }
@@ -74,4 +77,5 @@ export type {
   DateFormatOptions,
   NumberFormatOptions,
   FluentInstanceExtended,
+  DiagnosticsConfig,
 }

@@ -351,6 +351,14 @@ export interface FluentConfigExtended extends FluentConfig {
    * `FLUENTI_DEBUG` environment variable.
    */
   devWarnings?: boolean
+  /**
+   * Runtime diagnostics configuration for development-time i18n issue reporting.
+   *
+   * When provided, the runtime emits diagnostic events for missing keys,
+   * fallback locale usage, parse errors, and format errors.
+   * No-op in production builds (tree-shakeable).
+   */
+  diagnostics?: import('./diagnostics').DiagnosticsConfig
 }
 
 // ---- Extended FluentInstance ----

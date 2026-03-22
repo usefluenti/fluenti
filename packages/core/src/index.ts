@@ -50,6 +50,8 @@ export { formatRelativeTime } from './formatters/relative'
 // Config loading (loadConfig, loadConfigSync) is exported from '@fluenti/core/config'
 // subpath to avoid pulling jiti + node:* modules into client bundles.
 export { defineConfig } from './define-config'
+export { createDiagnostics, __DEV__ } from './diagnostics'
+export type { DiagnosticsConfig, DiagnosticEvent, Diagnostics } from './diagnostics'
 
 import type {
   FluentConfigExtended,
@@ -66,6 +68,8 @@ import { formatDate } from './formatters/date'
 import { buildICUMessage } from './msg'
 import { createMessageId, resolveDescriptorId } from './identity'
 import { validateLocale } from './locale'
+import { createDiagnostics as createDiagnosticsImpl, __DEV__ as DEV_FLAG } from './diagnostics'
+import type { Diagnostics } from './diagnostics'
 
 /**
  * Create a Fluenti instance with full i18n support.
@@ -89,6 +93,10 @@ export function createFluent(config: FluentConfigExtended): FluentInstanceExtend
   validateLocale(config.locale, 'createFluent')
   let currentLocale: Locale = config.locale
   const catalog = new Catalog()
+
+  const diagnostics: Diagnostics | undefined = DEV_FLAG && config.diagnostics
+    ? createDiagnosticsImpl(config.diagnostics)
+    : undefined
 
   const customFormatters = config.formatters
 
@@ -122,6 +130,9 @@ export function createFluent(config: FluentConfigExtended): FluentInstanceExtend
     if (config.fallbackLocale) {
       const fallbackMsg = catalog.get(config.fallbackLocale, id)
       if (fallbackMsg !== undefined) {
+        if (DEV_FLAG && diagnostics) {
+          diagnostics.fallbackUsed(currentLocale, config.fallbackLocale, id)
+        }
         if (typeof fallbackMsg === 'string') {
           return applyTransform(interp(fallbackMsg, values, config.fallbackLocale), id)
         }
@@ -135,6 +146,9 @@ export function createFluent(config: FluentConfigExtended): FluentInstanceExtend
       for (const chainLocale of chainLocales) {
         const chainMsg = catalog.get(chainLocale, id)
         if (chainMsg !== undefined) {
+          if (DEV_FLAG && diagnostics) {
+            diagnostics.fallbackUsed(currentLocale, chainLocale, id)
+          }
           if (typeof chainMsg === 'string') {
             return applyTransform(interp(chainMsg, values, chainLocale), id)
           }
@@ -186,6 +200,9 @@ export function createFluent(config: FluentConfigExtended): FluentInstanceExtend
     }
 
     warnMissing(id)
+    if (DEV_FLAG && diagnostics) {
+      diagnostics.missingKey(currentLocale, id)
+    }
     return (devWarningsEnabled ? `[!] ${id}` : id) as LocalizedString
   }
 
