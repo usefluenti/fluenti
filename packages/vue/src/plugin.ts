@@ -44,9 +44,9 @@ export interface FluentVueContext {
   /** Get all locales that have loaded messages */
   getLocales(): Locale[]
   /** Format a date value according to locale */
-  d(value: Date | number, style?: string): LocalizedString
+  d(value: Date | number, style?: string, locale?: string): LocalizedString
   /** Format a number according to locale */
-  n(value: number, style?: string): LocalizedString
+  n(value: number, style?: string, locale?: string): LocalizedString
   /** Format an ICU message string directly (no catalog lookup) */
   format(message: string, values?: Record<string, unknown>): LocalizedString
   /** Whether a locale chunk is currently being loaded */
@@ -307,13 +307,13 @@ export function createFluentVue(options: FluentVueOptions): FluentVuePlugin {
     return Object.keys(catalogs)
   }
 
-  function d(value: Date | number, style?: string): LocalizedString {
-    const currentLocale = locale.value
+  function d(value: Date | number, style?: string, loc?: string): LocalizedString {
+    const currentLocale = loc ?? locale.value
     return formatDate(value, currentLocale, style, options.dateFormats) as LocalizedString
   }
 
-  function n(value: number, style?: string): LocalizedString {
-    const currentLocale = locale.value
+  function n(value: number, style?: string, loc?: string): LocalizedString {
+    const currentLocale = loc ?? locale.value
     return formatNumber(value, currentLocale, style, options.numberFormats) as LocalizedString
   }
 

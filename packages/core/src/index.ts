@@ -53,6 +53,9 @@ export { detectLocale, getSSRLocaleScript, getHydratedLocale } from './ssr'
 export { formatNumber, DEFAULT_NUMBER_FORMATS, LOCALE_CURRENCY_MAP, clearNumberFormatCache } from './formatters/number'
 export { formatDate, DEFAULT_DATE_FORMATS, clearDateFormatCache } from './formatters/date'
 export { formatRelativeTime, clearRelativeTimeFormatCache } from './formatters/relative'
+export { LRUCache, stableCacheKey } from './lru'
+export { createLocaleLoader } from './locale-loader'
+export type { LocaleLoaderOptions, LocaleLoaderState } from './locale-loader'
 // Config loading (loadConfig, loadConfigSync) is exported from '@fluenti/core/config'
 // subpath to avoid pulling jiti + node:* modules into client bundles.
 export { defineConfig } from './define-config'
@@ -306,11 +309,11 @@ export function createFluent(config: FluentRuntimeConfigFull): FluentInstanceExt
     setLocale(locale: Locale): void { changeLocale(locale, 'setLocale') },
     loadMessages(locale: Locale, messages: Messages): void { catalog.set(locale, messages) },
     getLocales(): Locale[] { return catalog.getLocales() },
-    d(value: Date | number, style?: string): LocalizedString {
-      return formatDate(value, currentLocale, style, config.dateFormats) as LocalizedString
+    d(value: Date | number, style?: string, locale?: Locale): LocalizedString {
+      return formatDate(value, locale ?? currentLocale, style, config.dateFormats) as LocalizedString
     },
-    n(value: number, style?: string): LocalizedString {
-      return formatNumber(value, currentLocale, style, config.numberFormats) as LocalizedString
+    n(value: number, style?: string, locale?: Locale): LocalizedString {
+      return formatNumber(value, locale ?? currentLocale, style, config.numberFormats) as LocalizedString
     },
     format(message: string, values?: Record<string, unknown>): LocalizedString {
       return interp(message, values, currentLocale) as LocalizedString

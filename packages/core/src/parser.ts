@@ -8,6 +8,7 @@ const MAX_NESTING_DEPTH = 10
 /**
  * Error thrown when parsing an ICU MessageFormat string fails.
  * Includes offset and source excerpt for Rust-style diagnostics.
+ * @internal Low-level API — most users should use `createFluent()` instead.
  */
 export class FluentParseError extends Error {
   constructor(
@@ -29,6 +30,7 @@ export class FluentParseError extends Error {
  *
  * Supports: text, variables `{name}`, plural, select, function calls,
  * nested messages, `#` inside plural, and `'` escaping.
+ * @internal Low-level API — most users should use `createFluent()` instead.
  */
 export function parse(message: string): ASTNode[] {
   let pos = 0

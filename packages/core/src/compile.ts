@@ -1,9 +1,10 @@
 import type { ASTNode, CompiledMessage, CustomFormatter, FunctionNode, Locale, PluralNode, SelectNode } from './types'
 import { resolvePluralCategory } from './plural'
 import { LOCALE_CURRENCY_MAP } from './formatters/number'
+import { LRUCache, stableCacheKey } from './lru'
 
-const nfCache = new Map<string, Intl.NumberFormat>()
-const dtfCache = new Map<string, Intl.DateTimeFormat>()
+const nfCache = new LRUCache<string, Intl.NumberFormat>(200)
+const dtfCache = new LRUCache<string, Intl.DateTimeFormat>(200)
 
 /**
  * Clear the internal Intl.NumberFormat and Intl.DateTimeFormat caches
@@ -17,7 +18,7 @@ export function clearCompileCache(): void {
 }
 
 function getCachedNumberFormat(locale: string, options?: Intl.NumberFormatOptions): Intl.NumberFormat {
-  const key = `${locale}:${JSON.stringify(options ?? {})}`
+  const key = stableCacheKey(locale, options as Record<string, unknown>)
   let fmt = nfCache.get(key)
   if (!fmt) {
     fmt = new Intl.NumberFormat(locale, options)
@@ -27,7 +28,7 @@ function getCachedNumberFormat(locale: string, options?: Intl.NumberFormatOption
 }
 
 function getCachedDateTimeFormat(locale: string, options?: Intl.DateTimeFormatOptions): Intl.DateTimeFormat {
-  const key = `${locale}:${JSON.stringify(options ?? {})}`
+  const key = stableCacheKey(locale, options as Record<string, unknown>)
   let fmt = dtfCache.get(key)
   if (!fmt) {
     fmt = new Intl.DateTimeFormat(locale, options)
@@ -43,6 +44,7 @@ function getCachedDateTimeFormat(locale: string, options?: Intl.DateTimeFormatOp
  * - Otherwise returns a function `(values?) => string`.
  * - Plural nodes use `Intl.PluralRules` with exact matches checked first.
  * - `#` inside plural branches is substituted with the numeric value (minus offset).
+ * @internal
  */
 export function compile(
   ast: ASTNode[],

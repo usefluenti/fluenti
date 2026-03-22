@@ -735,4 +735,33 @@ describe('createFluent', () => {
       expect(() => { i18n.locale = '' }).toThrow('non-empty string')
     })
   })
+
+  describe('d() and n() locale override', () => {
+    const i18n = createFluent({
+      locale: 'en',
+      messages: { en: {}, ja: {}, de: {} },
+    })
+
+    it('d() uses current locale by default', () => {
+      const result = i18n.d(new Date(2024, 0, 15))
+      expect(result).toContain('2024')
+    })
+
+    it('d() accepts locale override', () => {
+      const result = i18n.d(new Date(2024, 0, 15), undefined, 'ja')
+      expect(typeof result).toBe('string')
+      expect(result.length).toBeGreaterThan(0)
+    })
+
+    it('n() uses current locale by default', () => {
+      const result = i18n.n(1234.5)
+      expect(result).toContain('1')
+    })
+
+    it('n() accepts locale override', () => {
+      const result = i18n.n(1234.5, undefined, 'de')
+      expect(typeof result).toBe('string')
+      expect(result.length).toBeGreaterThan(0)
+    })
+  })
 })

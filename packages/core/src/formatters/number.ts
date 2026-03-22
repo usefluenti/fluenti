@@ -1,6 +1,7 @@
 import type { Locale } from '../types'
+import { LRUCache, stableCacheKey } from '../lru'
 
-const formatCache = new Map<string, Intl.NumberFormat>()
+const formatCache = new LRUCache<string, Intl.NumberFormat>(200)
 
 /**
  * Clear the cached `Intl.NumberFormat` instances used by `formatNumber()`.
@@ -11,7 +12,7 @@ export function clearNumberFormatCache(): void {
   formatCache.clear()
 }
 
-/** Map locale → default currency code */
+/** @internal Map locale → default currency code */
 export const LOCALE_CURRENCY_MAP: Record<string, string> = {
   'en': 'USD', 'en-US': 'USD', 'en-GB': 'GBP', 'en-AU': 'AUD', 'en-CA': 'CAD',
   'zh-CN': 'CNY', 'zh-TW': 'TWD', 'zh-HK': 'HKD',
@@ -24,7 +25,7 @@ export const LOCALE_CURRENCY_MAP: Record<string, string> = {
   'it': 'EUR', 'ru': 'RUB', 'ar': 'SAR', 'hi': 'INR',
 }
 
-/** Built-in number format styles. Used when no custom styles are provided. */
+/** @internal Built-in number format styles. Used when no custom styles are provided. */
 export const DEFAULT_NUMBER_FORMATS: Record<string, Intl.NumberFormatOptions | ((locale: Locale) => Intl.NumberFormatOptions)> = {
   default: {},
   currency: (locale: string) => ({
@@ -62,7 +63,7 @@ export function formatNumber(
     options = typeof styleDef === 'function' ? styleDef(locale) : styleDef
   }
 
-  const cacheKey = `${locale}:${JSON.stringify(options)}`
+  const cacheKey = stableCacheKey(locale, options as Record<string, unknown>)
   let formatter = formatCache.get(cacheKey)
   if (!formatter) {
     formatter = new Intl.NumberFormat(locale, options)

@@ -5,6 +5,7 @@ import type { CompiledMessage, Locale, Messages } from './types'
  *
  * Supports namespace-aware message IDs (e.g. `'common:greeting'`),
  * locale enumeration, and message lookup with get/set/has operations.
+ * @internal
  */
 export class Catalog {
   private readonly _catalogs: Record<Locale, Messages> = Object.create(null) as Record<Locale, Messages>

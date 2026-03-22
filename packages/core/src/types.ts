@@ -126,18 +126,22 @@ export type CreateFluent = (config: FluentRuntimeConfig) => FluentInstance
 
 // ---- ICU Parser AST ----
 
+/** @internal Only needed for custom parser/compiler work. */
 export type ASTNode = TextNode | VariableNode | PluralNode | SelectNode | FunctionNode
 
+/** @internal Only needed for custom parser/compiler work. */
 export interface TextNode {
   type: 'text'
   value: string
 }
 
+/** @internal Only needed for custom parser/compiler work. */
 export interface VariableNode {
   type: 'variable'
   name: string
 }
 
+/** @internal Only needed for custom parser/compiler work. */
 export interface PluralNode {
   type: 'plural'
   variable: string
@@ -146,12 +150,14 @@ export interface PluralNode {
   options: Record<string, ASTNode[]>
 }
 
+/** @internal Only needed for custom parser/compiler work. */
 export interface SelectNode {
   type: 'select'
   variable: string
   options: Record<string, ASTNode[]>
 }
 
+/** @internal Only needed for custom parser/compiler work. */
 export interface FunctionNode {
   type: 'function'
   variable: string
@@ -311,8 +317,8 @@ export interface NumberFormatOptions {
     | ((locale: Locale) => Intl.NumberFormatOptions)
 }
 
-export type FormatDateFn = (value: Date | number, style?: string) => FluentiTypeConfig['localizedString']
-export type FormatNumberFn = (value: number, style?: string) => FluentiTypeConfig['localizedString']
+export type FormatDateFn = (value: Date | number, style?: string, locale?: Locale) => FluentiTypeConfig['localizedString']
+export type FormatNumberFn = (value: number, style?: string, locale?: Locale) => FluentiTypeConfig['localizedString']
 
 // ---- Custom Formatter ----
 
@@ -377,9 +383,9 @@ export interface FluentInstanceExtended extends FluentInstance {
 
 // ---- Deprecated Aliases (backward compatibility) ----
 
-/** @deprecated Use FluentRuntimeConfig instead */
+/** @internal Deprecated alias. @deprecated Use FluentRuntimeConfig instead */
 export type FluentConfig = FluentRuntimeConfig
-/** @deprecated Use FluentRuntimeConfigFull instead */
+/** @internal Deprecated alias. @deprecated Use FluentRuntimeConfigFull instead */
 export type FluentConfigExtended = FluentRuntimeConfigFull
-/** @deprecated Use FluentiBuildConfig instead */
+/** @internal Deprecated alias. @deprecated Use FluentiBuildConfig instead */
 export type FluentiConfig = FluentiBuildConfig

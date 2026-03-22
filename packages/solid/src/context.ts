@@ -56,9 +56,9 @@ export interface I18nContext {
   /** Return all locale codes that have loaded messages */
   getLocales(): Locale[]
   /** Format a date value for the current locale */
-  d(value: Date | number, style?: string): LocalizedString
+  d(value: Date | number, style?: string, locale?: string): LocalizedString
   /** Format a number value for the current locale */
-  n(value: number, style?: string): LocalizedString
+  n(value: number, style?: string, locale?: string): LocalizedString
   /** Format an ICU message string directly (no catalog lookup) */
   format(message: string, values?: Record<string, unknown>): LocalizedString
   /** Whether a locale chunk is currently being loaded */
@@ -283,11 +283,11 @@ export function createI18nContext(config: FluentRuntimeConfig | I18nConfig): I18
 
   const getLocales = (): Locale[] => Object.keys(messages)
 
-  const d = (value: Date | number, style?: string): LocalizedString =>
-    formatDate(value, locale(), style, i18nConfig.dateFormats) as LocalizedString
+  const d = (value: Date | number, style?: string, loc?: string): LocalizedString =>
+    formatDate(value, loc ?? locale(), style, i18nConfig.dateFormats) as LocalizedString
 
-  const n = (value: number, style?: string): LocalizedString =>
-    formatNumber(value, locale(), style, i18nConfig.numberFormats) as LocalizedString
+  const n = (value: number, style?: string, loc?: string): LocalizedString =>
+    formatNumber(value, loc ?? locale(), style, i18nConfig.numberFormats) as LocalizedString
 
   const format = (message: string, values?: Record<string, unknown>): LocalizedString => {
     return coreInterpolate(message, values, locale()) as LocalizedString

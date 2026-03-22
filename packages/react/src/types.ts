@@ -20,9 +20,9 @@ export interface I18nContextValue {
     (strings: TemplateStringsArray, ...exprs: unknown[]): LocalizedString
   }
   /** Format a date value for the current locale */
-  d: (value: Date | number, style?: string) => LocalizedString
+  d: (value: Date | number, style?: string, locale?: string) => LocalizedString
   /** Format a number value for the current locale */
-  n: (value: number, style?: string) => LocalizedString
+  n: (value: number, style?: string, locale?: string) => LocalizedString
   /** Format an ICU message string directly (no catalog lookup) */
   format: (message: string, values?: Record<string, unknown>) => LocalizedString
   /** Merge additional messages into a locale catalog at runtime */
