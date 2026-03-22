@@ -18,7 +18,7 @@ const dateTimeProps = {
   tag: { type: String, default: 'span' },
 } as const
 
-export type DateTimeProps = Readonly<ExtractPropTypes<typeof dateTimeProps>>
+export type FluentiDateTimeProps = Readonly<ExtractPropTypes<typeof dateTimeProps>>
 
 export const DateTime = defineComponent({
   name: 'DateTime',

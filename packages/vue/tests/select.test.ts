@@ -1,11 +1,11 @@
 import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { h } from 'vue'
-import { createFluentVue } from '../src/plugin'
+import { createFluenti } from '../src/plugin'
 import { Select } from '../src/components/Select'
 
 function createPlugin() {
-  return createFluentVue({
+  return createFluenti({
     locale: 'en',
     messages: { en: {} },
   })
@@ -158,7 +158,7 @@ describe('Select component', () => {
     })
 
     it('uses catalog translation for string options', () => {
-      const plugin = createFluentVue({
+      const plugin = createFluenti({
         locale: 'ja',
         messages: {
           ja: {
@@ -329,7 +329,7 @@ describe('Select component', () => {
     })
 
     it('translates rich slot content without the build plugin', () => {
-      const plugin = createFluentVue({
+      const plugin = createFluenti({
         locale: 'ja',
         messages: {
           ja: {

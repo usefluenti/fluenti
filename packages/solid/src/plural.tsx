@@ -38,7 +38,7 @@ function buildICUPluralMessage(
 }
 
 /** Props for the `<Plural>` component */
-export interface PluralProps {
+export interface FluentiPluralProps {
   /** The numeric value to pluralise */
   value: number
   /** Override the auto-generated synthetic ICU message id */
@@ -90,7 +90,7 @@ export interface PluralProps {
  * <Plural value={count()} zero="No items" one="# item" other="# items" />
  * ```
  */
-export const Plural: Component<PluralProps> = (props) => {
+export const Plural: Component<FluentiPluralProps> = (props) => {
   const { t } = useI18n()
 
   /** Resolve a category prop value — handles string, accessor function, and JSX */

@@ -1,25 +1,25 @@
 import { describe, expectTypeOf, it } from 'vitest'
 import type {
-  DateTimeProps,
-  NumberFormatProps,
-  PluralProps,
-  SelectProps,
-  TransProps,
+  FluentiDateTimeProps,
+  FluentiNumberProps,
+  FluentiPluralProps,
+  FluentiSelectProps,
+  FluentiTransProps,
 } from '../src'
 
 describe('public type exports', () => {
   it('exports Vue component prop types from the package entrypoint', () => {
-    expectTypeOf<TransProps>().toMatchTypeOf<{
+    expectTypeOf<FluentiTransProps>().toMatchTypeOf<{
       id?: string
       context?: string
       comment?: string
       tag?: string
     }>()
 
-    expectTypeOf<PluralProps['value']>().toEqualTypeOf<number>()
-    expectTypeOf<PluralProps['offset']>().toEqualTypeOf<number | undefined>()
-    expectTypeOf<SelectProps['options']>().toEqualTypeOf<Record<string, string> | undefined>()
-    expectTypeOf<DateTimeProps['value']>().toEqualTypeOf<number | Date>()
-    expectTypeOf<NumberFormatProps['value']>().toEqualTypeOf<number>()
+    expectTypeOf<FluentiPluralProps['value']>().toEqualTypeOf<number>()
+    expectTypeOf<FluentiPluralProps['offset']>().toEqualTypeOf<number | undefined>()
+    expectTypeOf<FluentiSelectProps['options']>().toEqualTypeOf<Record<string, string> | undefined>()
+    expectTypeOf<FluentiDateTimeProps['value']>().toEqualTypeOf<number | Date>()
+    expectTypeOf<FluentiNumberProps['value']>().toEqualTypeOf<number>()
   })
 })

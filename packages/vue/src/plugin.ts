@@ -40,7 +40,7 @@ function resolveChunkMessages(
 }
 
 /** Context object returned by `useI18n()` and available as `$t` etc. on globalProperties */
-export interface FluentVueContext {
+export interface FluentiContext {
   /** Translate a message by id or MessageDescriptor, with optional interpolation values */
   t(id: string | MessageDescriptor, values?: Record<string, unknown>): LocalizedString
   /** Tagged template form: t`Hello ${name}` */
@@ -72,10 +72,10 @@ export interface FluentVueContext {
 }
 
 /** Injection key for providing/injecting fluenti context */
-export const FLUENTI_KEY: InjectionKey<FluentVueContext> = Symbol('fluenti')
+export const FLUENTI_KEY: InjectionKey<FluentiContext> = Symbol('fluenti')
 
-/** Options for creating the FluentVue plugin */
-export interface FluentVueOptions {
+/** Options for creating the Fluenti Vue plugin */
+export interface FluentiConfig {
   locale: string
   fallbackLocale?: string
   messages: AllMessages
@@ -114,12 +114,12 @@ export interface FluentVueOptions {
   injectGlobalProperties?: boolean
 }
 
-/** Return value of `createFluentVue()` */
-export interface FluentVuePlugin {
+/** Return value of `createFluenti()` */
+export interface FluentiPlugin {
   /** Vue plugin install method */
   install(app: App): void
   /** The global fluenti context (same as what useI18n returns) */
-  global: FluentVueContext
+  global: FluentiContext
 }
 
 /**
@@ -150,9 +150,9 @@ function getModifierAttr(modifiers: Partial<Record<string, boolean>>): string | 
  * Each invocation creates entirely fresh state — no module-level singletons —
  * so it is safe to call once per SSR request.
  */
-export function createFluentVue(options: FluentVueOptions): FluentVuePlugin {
+export function createFluenti(options: FluentiConfig): FluentiPlugin {
   const lazyLocaleLoading = options.lazyLocaleLoading
-    ?? (options as FluentVueOptions & { splitting?: boolean }).splitting
+    ?? (options as FluentiConfig & { splitting?: boolean }).splitting
     ?? false
   const locale = ref(options.locale)
   // Intentional mutation: Vue's shallowReactive API requires in-place property assignment for reactivity
@@ -393,7 +393,7 @@ export function createFluentVue(options: FluentVueOptions): FluentVuePlugin {
     return lookup(targetLocale, key)
   }
 
-  const context: FluentVueContext = {
+  const context: FluentiContext = {
     t,
     locale,
     setLocale,

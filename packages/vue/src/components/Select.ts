@@ -56,7 +56,7 @@ const selectProps = {
   tag: { type: String, default: 'span' },
 } as const
 
-export type SelectProps = Readonly<ExtractPropTypes<typeof selectProps>>
+export type FluentiSelectProps = Readonly<ExtractPropTypes<typeof selectProps>>
 
 export const Select = defineComponent({
   name: 'Select',

@@ -8,11 +8,11 @@ import {
   selectContract,
   transContract,
 } from '../../core/tests/fixtures/cross-framework-contract'
-import { createFluentVue } from '../src/plugin'
+import { createFluenti } from '../src/plugin'
 import { Plural, Select, Trans } from '../src'
 
 function createPlugin() {
-  return createFluentVue({
+  return createFluenti({
     locale: contractLocale,
     messages: contractMessages,
   })

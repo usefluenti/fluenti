@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import { createI18nContext } from '../src/context'
-import type { I18nConfig } from '../src/context'
+import type { FluentiConfig } from '../src/context'
 
 function createSplitContext(chunkLoader: (locale: string) => Promise<Record<string, any>>) {
   return createI18nContext({
@@ -8,7 +8,7 @@ function createSplitContext(chunkLoader: (locale: string) => Promise<Record<stri
     messages: { en: { hello: 'Hello', bye: 'Goodbye' } },
     lazyLocaleLoading: true,
     chunkLoader,
-  } as I18nConfig)
+  } as FluentiConfig)
 }
 
 describe('splitting mode', () => {

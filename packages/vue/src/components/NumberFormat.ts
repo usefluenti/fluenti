@@ -18,7 +18,7 @@ const numberFormatProps = {
   tag: { type: String, default: 'span' },
 } as const
 
-export type NumberFormatProps = Readonly<ExtractPropTypes<typeof numberFormatProps>>
+export type FluentiNumberProps = Readonly<ExtractPropTypes<typeof numberFormatProps>>
 
 export const NumberFormat = defineComponent({
   name: 'NumberFormat',
