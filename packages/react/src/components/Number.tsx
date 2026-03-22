@@ -21,5 +21,5 @@ export const NumberFormat = memo(function NumberFormat({ value, style }: NumberP
   if (!ctx) {
     throw new Error('[fluenti] <Number> must be used within an <I18nProvider>')
   }
-  return <>{ctx.i18n.n(value, style)}</>
+  return <>{ctx.n(value, style)}</>
 })

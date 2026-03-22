@@ -86,6 +86,6 @@ export const Plural = memo(function Plural({
     ...(comment !== undefined ? { comment } : {}),
   }
 
-  const result = renderRichTranslation(descriptor, { count: value }, (desc, values) => ctx.i18n.t(desc, values), components)
+  const result = renderRichTranslation(descriptor, { count: value }, (desc, values) => ctx.t(desc, values), components)
   return tag ? createElement(tag, null, result) : <>{result}</>
 })

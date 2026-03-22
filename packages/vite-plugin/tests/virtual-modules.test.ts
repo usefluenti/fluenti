@@ -1,6 +1,43 @@
 import { describe, it, expect } from 'vitest'
 import { resolveVirtualSplitId, loadVirtualSplitModule } from '../src/virtual-modules'
+import { createRuntimeGenerator } from '../src/runtime-template'
 import type { VirtualModuleOptions } from '../src/virtual-modules'
+
+const mockVueGenerator = createRuntimeGenerator({
+  imports: `import { shallowReactive, ref } from 'vue'`,
+  catalogInit: 'const __catalog = shallowReactive({ ...__defaultMsgs })',
+  localeInit: (defaultLocale) => `const __currentLocale = ref('${defaultLocale}')`,
+  loadingInit: 'const __loading = ref(false)',
+  catalogUpdate: (msgs) => `Object.assign(__catalog, ${msgs})`,
+  localeUpdate: (locale) => `__currentLocale.value = ${locale}`,
+  loadingUpdate: (value) => `__loading.value = ${value}`,
+  localeRead: '__currentLocale.value',
+  runtimeKey: 'fluenti.runtime.vue.v1',
+})
+
+const mockSolidGenerator = createRuntimeGenerator({
+  imports: `import { createSignal } from 'solid-js'\nimport { createStore, reconcile } from 'solid-js/store'`,
+  catalogInit: 'const [__catalog, __setCatalog] = createStore({ ...__defaultMsgs })',
+  localeInit: (defaultLocale) => `const [__currentLocale, __setCurrentLocale] = createSignal('${defaultLocale}')`,
+  loadingInit: 'const [__loading, __setLoading] = createSignal(false)',
+  catalogUpdate: (msgs) => `__setCatalog(reconcile(${msgs}))`,
+  localeUpdate: (locale) => `__setCurrentLocale(${locale})`,
+  loadingUpdate: (value) => `__setLoading(${value})`,
+  localeRead: '__currentLocale()',
+  runtimeKey: 'fluenti.runtime.solid.v1',
+})
+
+const mockReactGenerator = createRuntimeGenerator({
+  imports: '',
+  catalogInit: 'const __catalog = { ...__defaultMsgs }',
+  localeInit: (defaultLocale) => `let __currentLocale = '${defaultLocale}'`,
+  loadingInit: 'let __loading = false',
+  catalogUpdate: (msgs) => `Object.assign(__catalog, ${msgs})`,
+  localeUpdate: (locale) => `__currentLocale = ${locale}`,
+  loadingUpdate: (value) => `__loading = ${value}`,
+  localeRead: '__currentLocale',
+  runtimeKey: 'fluenti.runtime.react.v1',
+})
 
 const defaultOptions: VirtualModuleOptions = {
   rootDir: '/test/project',
@@ -10,6 +47,7 @@ const defaultOptions: VirtualModuleOptions = {
   sourceLocale: 'en',
   defaultBuildLocale: 'en',
   framework: 'vue',
+  runtimeGenerator: mockVueGenerator,
 }
 
 describe('resolveVirtualSplitId', () => {
@@ -52,9 +90,9 @@ describe('loadVirtualSplitModule', () => {
     it('includes only non-default locale loaders', () => {
       const code = loadVirtualSplitModule('\0virtual:fluenti/runtime', defaultOptions)!
 
-      expect(code).not.toContain('"en": () => import(')
-      expect(code).toContain('"fr": () => import(')
-      expect(code).toContain('"ja": () => import(')
+      expect(code).not.toContain("'en': () => import(")
+      expect(code).toContain("'fr': () => import(")
+      expect(code).toContain("'ja': () => import(")
     })
 
     it('exports switchLocale and preloadLocale functions', () => {
@@ -62,7 +100,7 @@ describe('loadVirtualSplitModule', () => {
 
       expect(code).toContain('__switchLocale')
       expect(code).toContain('__preloadLocale')
-      expect(code).toContain('globalThis[Symbol.for("fluenti.runtime.vue.v1")]')
+      expect(code).toContain("globalThis[Symbol.for('fluenti.runtime.vue.v1')]")
     })
 
     it('exports loading state', () => {
@@ -78,6 +116,7 @@ describe('loadVirtualSplitModule', () => {
       const code = loadVirtualSplitModule('\0virtual:fluenti/runtime', {
         ...defaultOptions,
         framework: 'solid',
+        runtimeGenerator: mockSolidGenerator,
       })
 
       expect(code).toContain('createStore')
@@ -125,9 +164,9 @@ describe('loadVirtualSplitModule', () => {
     it('includes only non-default locale loaders', () => {
       const code = loadVirtualSplitModule('\0virtual:fluenti/route-runtime', defaultOptions)!
 
-      expect(code).not.toContain('"en": () => import(')
-      expect(code).toContain('"fr": () => import(')
-      expect(code).toContain('"ja": () => import(')
+      expect(code).not.toContain("'en': () => import(")
+      expect(code).toContain("'fr': () => import(")
+      expect(code).toContain("'ja': () => import(")
     })
   })
 
@@ -136,6 +175,7 @@ describe('loadVirtualSplitModule', () => {
       const code = loadVirtualSplitModule('\0virtual:fluenti/route-runtime', {
         ...defaultOptions,
         framework: 'solid',
+        runtimeGenerator: mockSolidGenerator,
       })
 
       expect(code).toContain('createStore')
@@ -150,6 +190,7 @@ describe('loadVirtualSplitModule', () => {
       const code = loadVirtualSplitModule('\0virtual:fluenti/runtime', {
         ...defaultOptions,
         framework: 'react',
+        runtimeGenerator: mockReactGenerator,
       })
 
       expect(code).toContain('__catalog')
@@ -166,12 +207,13 @@ describe('loadVirtualSplitModule', () => {
       const code = loadVirtualSplitModule('\0virtual:fluenti/runtime', {
         ...defaultOptions,
         framework: 'react',
+        runtimeGenerator: mockReactGenerator,
       })!
 
-      expect(code).not.toContain('"en": () => import(')
-      expect(code).toContain('"fr": () => import(')
-      expect(code).toContain('"ja": () => import(')
-      expect(code).toContain('globalThis[Symbol.for("fluenti.runtime.react.v1")]')
+      expect(code).not.toContain("'en': () => import(")
+      expect(code).toContain("'fr': () => import(")
+      expect(code).toContain("'ja': () => import(")
+      expect(code).toContain("globalThis[Symbol.for('fluenti.runtime.react.v1')]")
     })
   })
 
@@ -199,6 +241,7 @@ describe('loadVirtualSplitModule', () => {
       const code = loadVirtualSplitModule('\0virtual:fluenti/route-runtime', {
         ...defaultOptions,
         framework: 'solid',
+        runtimeGenerator: mockSolidGenerator,
       })!
 
       expect(code).toContain('createStore')
@@ -227,9 +270,9 @@ describe('loadVirtualSplitModule', () => {
         locales,
       })!
 
-      expect(code).not.toContain('"en": () => import(')
+      expect(code).not.toContain("'en': () => import(")
       for (const locale of locales.filter((locale) => locale !== 'en')) {
-        expect(code).toContain(`"${locale}": () => import(`)
+        expect(code).toContain(`'${locale}': () => import(`)
       }
     })
   })
@@ -347,9 +390,8 @@ describe('loadVirtualSplitModule', () => {
     it('generated code uses safe string literals for locale values', () => {
       const code = loadVirtualSplitModule('\0virtual:fluenti/runtime', defaultOptions)!
 
-      // The default locale value in the generated code should be safely escaped
-      // It should appear as a JSON.stringify'd value (double-quoted)
-      expect(code).toContain('"en"')
+      // The default locale value in the generated code should be safely quoted
+      expect(code).toContain("'en'")
     })
   })
 })

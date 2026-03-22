@@ -4,16 +4,13 @@ import type {
   Locale,
   LocalizedString,
   Messages,
-  CompiledMessage,
   MessageDescriptor,
   DateFormatOptions,
   NumberFormatOptions,
+  ChunkLoader,
 } from '@fluenti/core'
 
-/** Chunk loader for lazy locale loading */
-export type ChunkLoader = (
-  locale: string,
-) => Promise<Record<string, CompiledMessage> | { default: Record<string, CompiledMessage> }>
+export type { ChunkLoader } from '@fluenti/core'
 
 /** Extended config with lazy locale loading support */
 export interface I18nConfig extends FluentRuntimeConfig {

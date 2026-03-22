@@ -1,16 +1,6 @@
 import { createSignal, createRoot, type Accessor } from 'solid-js'
 import { formatDate, formatNumber, interpolate as coreInterpolate, buildICUMessage, resolveDescriptorId } from '@fluenti/core'
-import type { FluentRuntimeConfig, Locale, LocalizedString, Messages, CompiledMessage, MessageDescriptor, DateFormatOptions, NumberFormatOptions } from '@fluenti/core'
-
-/** Chunk loader for lazy locale loading */
-export type ChunkLoader = (
-  locale: string,
-) => Promise<Record<string, CompiledMessage> | { default: Record<string, CompiledMessage> }>
-
-interface SplitRuntimeModule {
-  __switchLocale?: (locale: string) => Promise<void>
-  __preloadLocale?: (locale: string) => Promise<void>
-}
+import type { FluentRuntimeConfig, Locale, LocalizedString, Messages, CompiledMessage, MessageDescriptor, DateFormatOptions, NumberFormatOptions, ChunkLoader, SplitRuntimeModule } from '@fluenti/core'
 
 const SPLIT_RUNTIME_KEY = Symbol.for('fluenti.runtime.solid.v1')
 

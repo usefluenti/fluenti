@@ -28,7 +28,7 @@ export interface PluralProps {
   many?: string | JSX.Element
   /** Fallback message when no category-specific prop matches */
   other: string | JSX.Element
-  /** Wrapper element tag name (default: `'span'`) */
+  /** Wrapper element tag name. Defaults to no wrapper (Fragment). */
   tag?: string
 }
 
@@ -98,6 +98,10 @@ export const Plural: Component<PluralProps> = (props) => {
       { count: props.value },
     )
 
-    return (<Dynamic component={props.tag ?? 'span'}>{components.length > 0 ? reconstruct(translated, components) : translated}</Dynamic>) as JSX.Element
+    const result = components.length > 0 ? reconstruct(translated, components) : translated
+    if (props.tag) {
+      return (<Dynamic component={props.tag}>{result}</Dynamic>) as JSX.Element
+    }
+    return (<>{result}</>) as JSX.Element
   }) as unknown as JSX.Element
 }

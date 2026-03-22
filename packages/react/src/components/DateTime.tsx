@@ -21,5 +21,5 @@ export const DateTime = memo(function DateTime({ value, style }: DateTimeProps) 
   if (!ctx) {
     throw new Error('[fluenti] <DateTime> must be used within an <I18nProvider>')
   }
-  return <>{ctx.i18n.d(value, style)}</>
+  return <>{ctx.d(value, style)}</>
 })

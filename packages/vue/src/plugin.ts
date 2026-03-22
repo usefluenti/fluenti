@@ -1,5 +1,5 @@
 import { type App, type InjectionKey, type Ref, ref, shallowReactive } from 'vue'
-import type { AllMessages, Locale, LocalizedString, Messages, CompiledMessage, MessageDescriptor } from '@fluenti/core'
+import type { AllMessages, Locale, LocalizedString, Messages, CompiledMessage, MessageDescriptor, ChunkLoader, SplitRuntimeModule } from '@fluenti/core'
 import { interpolate, formatDate, formatNumber, buildICUMessage, resolveDescriptorId } from '@fluenti/core'
 import { Trans } from './components/Trans'
 import { Plural } from './components/Plural'
@@ -10,16 +10,6 @@ import { NumberFormat } from './components/NumberFormat'
 /** Escape HTML special characters to prevent XSS. @internal */
 function escapeHtml(str: string): string {
   return str.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-}
-
-/** Compiled message chunk loader for lazy locale loading */
-export type ChunkLoader = (
-  locale: string,
-) => Promise<Record<string, CompiledMessage> | { default: Record<string, CompiledMessage> }>
-
-interface SplitRuntimeModule {
-  __switchLocale?: (locale: string) => Promise<void>
-  __preloadLocale?: (locale: string) => Promise<void>
 }
 
 const SPLIT_RUNTIME_KEY = Symbol.for('fluenti.runtime.vue.v1')

@@ -24,7 +24,7 @@ export interface SelectProps {
    * @example `{ male: 'He', female: 'She' }`
    */
   options?: Record<string, string | JSX.Element>
-  /** Wrapper element tag name (default: `span`) */
+  /** Wrapper element tag name. Defaults to no wrapper (Fragment). */
   tag?: string
   /** Additional key/message pairs for matching (attrs fallback) */
   [key: string]: unknown
@@ -54,8 +54,6 @@ export interface SelectProps {
  */
 export const SelectComp: Component<SelectProps> = (props) => {
   const { t } = useI18n()
-
-  const resolvedTag = () => props.tag ?? 'span'
 
   const content = () => {
     const forms: Record<string, unknown> = props.options !== undefined
@@ -87,5 +85,10 @@ export const SelectComp: Component<SelectProps> = (props) => {
     return components.length > 0 ? reconstruct(translated, components) : translated
   }
 
-  return (<Dynamic component={resolvedTag()}>{content()}</Dynamic>) as JSX.Element
+  return (() => {
+    if (props.tag) {
+      return (<Dynamic component={props.tag}>{content()}</Dynamic>) as JSX.Element
+    }
+    return (<>{content()}</>) as JSX.Element
+  }) as unknown as JSX.Element
 }

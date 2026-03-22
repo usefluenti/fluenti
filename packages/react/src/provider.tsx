@@ -1,13 +1,8 @@
 import { useState, useCallback, useEffect, useMemo, useRef } from 'react'
 import { createFluent } from '@fluenti/core'
-import type { Messages } from '@fluenti/core'
+import type { Messages, SplitRuntimeModule } from '@fluenti/core'
 import { I18nContext } from './context'
 import type { I18nProviderProps } from './types'
-
-interface SplitRuntimeModule {
-  __switchLocale?: (locale: string) => Promise<void>
-  __preloadLocale?: (locale: string) => Promise<void>
-}
 
 function unwrapMessages(allMessages: Record<string, unknown>): Record<string, Messages> {
   const result: Record<string, Messages> = {}
@@ -179,6 +174,7 @@ export function I18nProvider({
 
   const ctx = useMemo(
     () => ({
+      /** @internal — not exposed in I18nContextValue type, used by __useI18n hook */
       i18n,
       t: i18n.t.bind(i18n),
       d: i18n.d.bind(i18n),

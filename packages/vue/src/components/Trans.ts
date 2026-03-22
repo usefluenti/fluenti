@@ -27,8 +27,8 @@ const transProps = {
   context: String,
   /** Translator-facing note preserved in extraction catalogs */
   comment: String,
-  /** Wrapper element tag name (default: `span`) */
-  tag: { type: String, default: 'span' },
+  /** Wrapper element tag name. Defaults to no wrapper (Fragment). */
+  tag: { type: String, default: undefined },
 } as const
 
 export type TransProps = Readonly<ExtractPropTypes<typeof transProps>>
@@ -51,7 +51,8 @@ export const Trans = defineComponent({
       })
       const result = components.length > 0 ? reconstruct(translated, components) : translated
       if (Array.isArray(result)) {
-        return result.length === 1 ? result[0]! : h(props.tag, null, result)
+        if (result.length === 1) return result[0]!
+        return props.tag ? h(props.tag, null, result) : result
       }
       return result
     }

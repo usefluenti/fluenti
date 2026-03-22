@@ -72,6 +72,19 @@ export type CompiledMessage = string | ((values?: Record<string, unknown>) => st
 export type Messages = Record<string, CompiledMessage>
 export type AllMessages = Record<Locale, Messages>
 
+// ---- Shared Runtime Types ----
+
+/** Compiled message chunk loader for lazy locale loading */
+export type ChunkLoader = (
+  locale: string,
+) => Promise<Record<string, CompiledMessage> | { default: Record<string, CompiledMessage> }>
+
+/** Runtime module injected by the Vite plugin for locale switching */
+export interface SplitRuntimeModule {
+  __switchLocale?: (locale: string) => Promise<void>
+  __preloadLocale?: (locale: string) => Promise<void>
+}
+
 export interface FluentRuntimeConfig {
   locale: Locale
   fallbackLocale?: Locale
@@ -310,7 +323,7 @@ export type FormatNumberFn = (value: number, style?: string) => FluentiTypeConfi
  */
 export type CustomFormatter = (value: unknown, style: string, locale: Locale) => string
 
-// ---- Extended FluentConfig ----
+// ---- Extended Runtime Config ----
 
 export interface FluentRuntimeConfigFull extends FluentRuntimeConfig {
   namespaceMapping?: NamespaceMapping

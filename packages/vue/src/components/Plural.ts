@@ -49,11 +49,11 @@ const pluralProps = {
   /** Text for many (maps to `many`) */
   many: String,
   /** Text for the default/other category */
-  other: { type: String, default: undefined },
+  other: { type: String, required: true },
   /** Offset from value before selecting form */
   offset: Number,
-  /** Wrapper element tag name (default: `span`) */
-  tag: { type: String, default: 'span' },
+  /** Wrapper element tag name. Defaults to no wrapper (Fragment). */
+  tag: { type: String, default: undefined },
 } as const
 
 export type PluralProps = Readonly<ExtractPropTypes<typeof pluralProps>>
@@ -71,7 +71,7 @@ export const Plural = defineComponent({
         two: props.two,
         few: props.few,
         many: props.many,
-        other: props.other ?? '',
+        other: props.other,
       }
 
       for (const cat of PLURAL_CATEGORIES) {
@@ -104,7 +104,8 @@ export const Plural = defineComponent({
       )
 
       const result = components.length > 0 ? reconstruct(translated, components) : translated
-      return h(props.tag, undefined, result ?? undefined)
+      if (props.tag) return h(props.tag, undefined, result ?? undefined)
+      return result ?? null
     }
   },
 })

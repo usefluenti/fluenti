@@ -64,7 +64,7 @@ describe('Trans component', () => {
     expect(wrapper.html()).toBe('')
   })
 
-  it('uses default span tag for multiple children', () => {
+  it('renders multiple children as fragment (no wrapper) by default', () => {
     const plugin = createPlugin()
     const wrapper = mount(Trans, {
       global: { plugins: [plugin] },
@@ -73,8 +73,11 @@ describe('Trans component', () => {
       },
     })
 
-    expect(wrapper.element.tagName).toBe('SPAN')
-    expect(wrapper.text()).toBe('Hello world')
+    // No span wrapper — renders as fragment
+    expect(wrapper.find('span').exists()).toBe(false)
+    expect(wrapper.find('em').text()).toBe('world')
+    expect(wrapper.text()).toContain('Hello')
+    expect(wrapper.text()).toContain('world')
   })
 
   it('renders nested elements in default slot', () => {

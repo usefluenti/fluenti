@@ -19,5 +19,6 @@ export function __useI18n(): FluentInstanceExtended {
         'This is an internal hook used by the Vite plugin — ensure your app is wrapped with <I18nProvider>.',
     )
   }
-  return ctx.i18n
+  // i18n is present on the context object but not exposed in the public type
+  return (ctx as unknown as { i18n: FluentInstanceExtended }).i18n
 }

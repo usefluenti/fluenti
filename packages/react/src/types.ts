@@ -14,8 +14,6 @@ import type {
 } from '@fluenti/core'
 
 export interface I18nContextValue {
-  /** The underlying Fluent instance (escape hatch for advanced use) */
-  i18n: FluentInstanceExtended
   /** Translate a message by id with optional interpolation values */
   t: {
     (id: string | MessageDescriptor, values?: Record<string, unknown>): LocalizedString

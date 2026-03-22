@@ -68,7 +68,7 @@ export const Trans = memo(function Trans({
     [id, __id, message, context],
   )
 
-  const translated = ctx.i18n.t(
+  const translated = ctx.t(
     {
       id: messageId,
       message,

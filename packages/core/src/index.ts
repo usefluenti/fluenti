@@ -30,6 +30,8 @@ export type {
   CompileTimeT,
   TypedCompileTimeT,
   FluentiTypeConfig,
+  ChunkLoader,
+  SplitRuntimeModule,
   // Deprecated aliases (backward compatibility)
   FluentConfig,
   FluentConfigExtended,

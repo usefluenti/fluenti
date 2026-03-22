@@ -359,7 +359,9 @@ describe('Plural component', () => {
         global: { plugins: [plugin] },
       })
 
-      expect(wrapper.html()).toContain('<strong>No items</strong> left')
+      expect(wrapper.find('strong').text()).toBe('No items')
+      expect(wrapper.text()).toContain('No items')
+      expect(wrapper.text()).toContain('left')
     })
 
     it('renders slot for matching category (one)', () => {
@@ -373,7 +375,8 @@ describe('Plural component', () => {
         global: { plugins: [plugin] },
       })
 
-      expect(wrapper.html()).toContain('<em>1</em> item remaining')
+      expect(wrapper.find('em').text()).toBe('1')
+      expect(wrapper.text()).toContain('item remaining')
     })
 
     it('renders slot for matching category (other)', () => {
@@ -387,7 +390,8 @@ describe('Plural component', () => {
         global: { plugins: [plugin] },
       })
 
-      expect(wrapper.html()).toContain('<strong>many</strong> items')
+      expect(wrapper.find('strong').text()).toBe('many')
+      expect(wrapper.text()).toContain('items')
     })
 
     it('passes scoped slot props with count', () => {
@@ -481,7 +485,8 @@ describe('Plural component', () => {
         global: { plugins: [plugin] },
       })
 
-      expect(wrapper.html()).toContain('<em>kilka</em> elementów')
+      expect(wrapper.find('em').text()).toBe('kilka')
+      expect(wrapper.text()).toContain('elementów')
     })
 
     it('uses correct wrapper tag with slots', () => {

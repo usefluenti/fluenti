@@ -73,7 +73,7 @@ export const Select = memo(function Select(props: SelectProps) {
   const result = renderRichTranslation(
     descriptor,
     { value: normalized.valueMap[value] ?? 'other' },
-    (desc, values) => ctx.i18n.t(desc, values),
+    (desc, values) => ctx.t(desc, values),
     components,
   )
   return tag ? createElement(tag, null, result) : <>{result}</>
