@@ -207,19 +207,18 @@ function InlineProvider({
   )
 
   const te = useCallback(
-    (id: string): boolean => {
-      const msgs = loadedMessagesRef.current[currentLocale]
-      return msgs !== undefined && id in msgs
+    (key: string, loc?: string): boolean => {
+      const msgs = loadedMessagesRef.current[loc ?? currentLocale]
+      return msgs !== undefined && key in msgs
     },
     [currentLocale],
   )
 
   const tm = useCallback(
-    (id: string): string | undefined => {
-      const msgs = loadedMessagesRef.current[currentLocale]
+    (key: string, loc?: string): Messages[string] | undefined => {
+      const msgs = loadedMessagesRef.current[loc ?? currentLocale]
       if (!msgs) return undefined
-      const val = msgs[id]
-      return typeof val === 'string' ? val : typeof val === 'function' ? id : undefined
+      return msgs[key]
     },
     [currentLocale],
   )

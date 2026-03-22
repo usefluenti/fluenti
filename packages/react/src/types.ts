@@ -4,6 +4,7 @@ import type {
   LocalizedString,
   Messages,
   AllMessages,
+  CompiledMessage,
   MessageDescriptor,
   CompileTimeMessageDescriptor,
   CompileTimeT,
@@ -37,10 +38,10 @@ export interface FluentiContext {
   loadedLocales: string[]
   /** Preload a locale in the background without switching to it */
   preloadLocale: (locale: string) => Promise<void>
-  /** Check if a translation key exists for the current locale */
-  te: (id: string) => boolean
-  /** Get the raw compiled message without interpolation */
-  tm: (id: string) => string | undefined
+  /** Check if a translation key exists for the given or current locale */
+  te: (key: string, locale?: string) => boolean
+  /** Get the raw compiled message for a key without interpolation */
+  tm: (key: string, locale?: string) => CompiledMessage | undefined
 }
 
 export interface I18nProviderProps {

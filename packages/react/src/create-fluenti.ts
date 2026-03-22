@@ -57,10 +57,10 @@ export interface FluentiInstance {
   isLoading: boolean
   /** Preload a locale in the background without switching to it */
   preloadLocale: (locale: string) => Promise<void>
-  /** Check whether a translation key exists */
-  te: (id: string) => boolean
-  /** Return the raw message (untranslated) for a key */
-  tm: (id: string) => string | undefined
+  /** Check whether a translation key exists for the given or current locale */
+  te: (key: string, locale?: string) => boolean
+  /** Get the raw compiled message for a key without interpolation */
+  tm: (key: string, locale?: string) => Messages[string] | undefined
   /** The underlying Fluent instance (escape hatch for advanced use) */
   i18n: FluentInstanceExtended
   /** Format an ICU message string directly (no catalog lookup) */
@@ -217,19 +217,18 @@ export function createFluenti(config: FluentiConfig): FluentiInstance {
   )
 
   const te = useCallback(
-    (id: string): boolean => {
-      const msgs = loadedMessages[currentLocale]
-      return msgs !== undefined && id in msgs
+    (key: string, loc?: string): boolean => {
+      const msgs = loadedMessages[loc ?? currentLocale]
+      return msgs !== undefined && key in msgs
     },
     [loadedMessages, currentLocale],
   )
 
   const tm = useCallback(
-    (id: string): string | undefined => {
-      const msgs = loadedMessages[currentLocale]
+    (key: string, loc?: string): Messages[string] | undefined => {
+      const msgs = loadedMessages[loc ?? currentLocale]
       if (!msgs) return undefined
-      const val = msgs[id]
-      return typeof val === 'string' ? val : typeof val === 'function' ? id : undefined
+      return msgs[key]
     },
     [loadedMessages, currentLocale],
   )

@@ -200,7 +200,7 @@ export interface FluentiConfig {
   /** Default locale for build-time static strategy */
   defaultBuildLocale?: Locale
   /** File extension for compiled catalog files (default: '.js') */
-  catalogExtension?: string
+  catalogExtension?: '.js' | '.ts'
   /** Custom message ID generator */
   idGenerator?: (message: string, context?: string) => string
 
