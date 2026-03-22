@@ -155,7 +155,7 @@ describe('splitting mode', () => {
   })
 
   describe('edge cases', () => {
-    it('setLocale during another setLocale (race condition)', async () => {
+    it('setLocale during another setLocale — latest request wins', async () => {
       let resolveFirst: (v: any) => void
       let resolveSecond: (v: any) => void
       const firstPromise = new Promise((r) => { resolveFirst = r })
@@ -174,18 +174,52 @@ describe('splitting mode', () => {
 
       expect(ctx.isLoading.value).toBe(true)
 
-      // Resolve second first
+      // Resolve second (latest) first
       resolveSecond!({ hello: 'Hallo' })
       await p2
 
-      // Resolve first after
+      expect(ctx.locale.value).toBe('de')
+
+      // Resolve first (stale) after — should NOT overwrite locale to 'fr'
       resolveFirst!({ hello: 'Bonjour' })
       await p1
 
-      // Both should complete without error; last one to resolve sets state
+      // Locale must remain 'de' — the latest user intent
+      expect(ctx.locale.value).toBe('de')
       expect(ctx.isLoading.value).toBe(false)
+      // Messages for both locales should be cached (usable later)
       expect(ctx.loadedLocales.value.has('fr')).toBe(true)
       expect(ctx.loadedLocales.value.has('de')).toBe(true)
+    })
+
+    it('stale setLocale does not flip isLoading off prematurely', async () => {
+      let resolveFirst: (v: any) => void
+      let resolveSecond: (v: any) => void
+      const firstPromise = new Promise((r) => { resolveFirst = r })
+      const secondPromise = new Promise((r) => { resolveSecond = r })
+
+      const loader = vi.fn()
+        .mockReturnValueOnce(firstPromise)
+        .mockReturnValueOnce(secondPromise)
+
+      const plugin = createSplitPlugin(loader)
+      const { global: ctx } = plugin
+
+      const p1 = ctx.setLocale('fr')
+      const p2 = ctx.setLocale('de')
+
+      // Resolve stale request first
+      resolveFirst!({ hello: 'Bonjour' })
+      await p1
+
+      // isLoading should remain true because the latest request (de) is still pending
+      expect(ctx.isLoading.value).toBe(true)
+
+      resolveSecond!({ hello: 'Hallo' })
+      await p2
+
+      expect(ctx.isLoading.value).toBe(false)
+      expect(ctx.locale.value).toBe('de')
     })
 
     it('chunk loader throws -> isLoading resets', async () => {
@@ -200,7 +234,7 @@ describe('splitting mode', () => {
       expect(ctx.locale.value).toBe('en')
     })
 
-    it('same locale multiple preload (dedup)', async () => {
+    it('same locale multiple preload (dedup after completion)', async () => {
       const loader = vi.fn().mockResolvedValue({ hello: 'Bonjour' })
       const plugin = createSplitPlugin(loader)
       const { global: ctx } = plugin
@@ -213,6 +247,25 @@ describe('splitting mode', () => {
       await new Promise((r) => setTimeout(r, 0))
 
       expect(loader).toHaveBeenCalledTimes(1)
+    })
+
+    it('concurrent preloadLocale calls for same locale only load once', async () => {
+      let resolveLoader: (v: any) => void
+      const loaderPromise = new Promise((r) => { resolveLoader = r })
+      const loader = vi.fn().mockReturnValue(loaderPromise)
+      const plugin = createSplitPlugin(loader)
+      const { global: ctx } = plugin
+
+      // Two rapid preload calls before the first completes
+      ctx.preloadLocale('fr')
+      ctx.preloadLocale('fr')
+
+      resolveLoader!({ hello: 'Bonjour' })
+      await new Promise((r) => setTimeout(r, 0))
+
+      // Loader should only be called once
+      expect(loader).toHaveBeenCalledTimes(1)
+      expect(ctx.loadedLocales.value.has('fr')).toBe(true)
     })
 
     it('setLocale to current locale (no-op)', async () => {
