@@ -183,9 +183,10 @@ export interface ExtractedMessage {
   origin: { file: string; line: number; column?: number }
 }
 
-export interface FluentiConfig {
-  /** Path to parent config to inherit from (relative to this config file's directory) */
-  extends?: string
+// ---- Nested Config Structure ----
+
+/** Source-related configuration (locales, catalogs, file patterns) */
+export interface FluentiSourceConfig {
   sourceLocale: Locale
   locales: LocaleDefinition[]
   /** Default locale for routing/detection (defaults to sourceLocale) */
@@ -195,8 +196,10 @@ export interface FluentiConfig {
   include: string[]
   exclude?: string[]
   compileOutDir: string
+}
 
-  // Build options
+/** Build-time compilation options */
+export interface FluentiBuildOptions {
   /** Code splitting strategy: 'dynamic' | 'static' | false */
   splitting?: 'dynamic' | 'static' | false
   /** Default locale for build-time static strategy */
@@ -205,34 +208,186 @@ export interface FluentiConfig {
   catalogExtension?: string
   /** Custom message ID generator */
   idGenerator?: (message: string, context?: string) => string
-
-  // Dev options
-  /** Auto extract+compile in dev mode (default: true) */
-  devAutoCompile?: boolean
   /** Auto extract+compile before production build (default: true) */
-  buildAutoCompile?: boolean
-  /** Debounce delay in ms for dev auto-compile (default: 500) */
-  devAutoCompileDelay?: number
+  autoCompile?: boolean
   /** Enable parallel compilation across locales using worker threads (default: false) */
-  parallelCompile?: boolean
+  parallel?: boolean
+  /** Enable strict build mode */
+  strict?: boolean
+  /** Minimum coverage threshold for strict build (0-1) */
+  strictThreshold?: number
+}
 
-  // Compile lifecycle hooks
+/** Development-mode options */
+export interface FluentiDevOptions {
+  /** Auto extract+compile in dev mode (default: true) */
+  autoCompile?: boolean
+  /** Debounce delay in ms for dev auto-compile (default: 500) */
+  autoCompileDelay?: number
+  /** Enable development warnings for missing translations */
+  warnings?: boolean
+}
+
+/** Runtime i18n options (fallbacks, formatting) */
+export interface FluentiRuntimeOptions {
+  /** Fallback locale chain per locale */
+  fallbackChain?: Record<string, Locale[]>
+  /** Date format style definitions */
+  dateFormats?: DateFormatOptions
+  /** Number format style definitions */
+  numberFormats?: NumberFormatOptions
+  /** External catalog packages to merge */
+  externalCatalogs?: Array<{ package: string; catalogDir: string }>
+}
+
+/** Compile lifecycle hooks */
+export interface FluentiHooksConfig {
   /** Called before auto-compile runs. Return false to skip compilation. */
   onBeforeCompile?: () => boolean | void | Promise<boolean | void>
   /** Called after auto-compile completes successfully */
   onAfterCompile?: () => void | Promise<void>
+}
 
-  // Runtime options
+/**
+ * Fluenti configuration — nested structure.
+ *
+ * Used in `fluenti.config.ts` via `defineConfig()`.
+ * Groups related options into `source`, `build`, `dev`, `runtime`, and `hooks`.
+ */
+export interface FluentiConfig extends FluentiSourceConfig {
+  /** Path to parent config to inherit from (relative to this config file's directory) */
+  extends?: string
+
+  /** Build-time compilation options */
+  build?: FluentiBuildOptions
+  /** Development-mode options */
+  dev?: FluentiDevOptions
+  /** Runtime i18n options (fallbacks, formatting) */
+  runtime?: FluentiRuntimeOptions
+  /** Compile lifecycle hooks */
+  hooks?: FluentiHooksConfig
+
+  // ---- Legacy flat fields (backward-compatible, mapped by normalizeConfig) ----
+
+  /** @deprecated Use `build.splitting` instead */
+  splitting?: 'dynamic' | 'static' | false
+  /** @deprecated Use `build.defaultBuildLocale` instead */
+  defaultBuildLocale?: Locale
+  /** @deprecated Use `build.catalogExtension` instead */
+  catalogExtension?: string
+  /** @deprecated Use `build.idGenerator` instead */
+  idGenerator?: (message: string, context?: string) => string
+  /** @deprecated Use `dev.autoCompile` instead */
+  devAutoCompile?: boolean
+  /** @deprecated Use `build.autoCompile` instead */
+  buildAutoCompile?: boolean
+  /** @deprecated Use `dev.autoCompileDelay` instead */
+  devAutoCompileDelay?: number
+  /** @deprecated Use `build.parallel` instead */
+  parallelCompile?: boolean
+  /** @deprecated Use `hooks.onBeforeCompile` instead */
+  onBeforeCompile?: () => boolean | void | Promise<boolean | void>
+  /** @deprecated Use `hooks.onAfterCompile` instead */
+  onAfterCompile?: () => void | Promise<void>
+  /** @deprecated Use `dev.warnings` instead */
   devWarnings?: boolean
+  /** @deprecated Use `runtime.fallbackChain` instead */
   fallbackChain?: Record<string, Locale[]>
+  /** @deprecated Use `runtime.dateFormats` instead */
   dateFormats?: DateFormatOptions
+  /** @deprecated Use `runtime.numberFormats` instead */
   numberFormats?: NumberFormatOptions
-  namespaceMapping?: Record<string, string>
+  /** @deprecated Use `runtime.externalCatalogs` instead */
   externalCatalogs?: Array<{ package: string; catalogDir: string }>
-
-  // Legacy / strict build
+  /** @deprecated Use `build.strict` instead */
   strictBuild?: boolean
+  /** @deprecated Use `build.strictThreshold` instead */
   strictThreshold?: number
+}
+
+/**
+ * @deprecated Use `FluentiConfig` instead. This alias exists for backward compatibility.
+ *
+ * The flat config structure is still accepted by `defineConfig()` and `loadConfig()`.
+ * All flat fields are automatically normalized into the nested structure.
+ */
+export type FluentiConfigLegacy = FluentiConfig
+
+/**
+ * Normalize a config that may use flat (legacy) fields into the nested structure.
+ *
+ * Flat fields are mapped into their nested equivalents. If both flat and nested
+ * fields are present, nested fields take precedence. Flat fields are also
+ * populated from nested values for backward compatibility with existing consumers.
+ *
+ * Returns a new config object — the input is never mutated.
+ */
+export function normalizeConfig(raw: FluentiConfig): FluentiConfig {
+  // ── Build nested groups (nested takes precedence over flat) ───────────
+  const build: FluentiBuildOptions = { ...raw.build }
+  if (raw.splitting !== undefined && build.splitting === undefined) build.splitting = raw.splitting
+  if (raw.defaultBuildLocale !== undefined && build.defaultBuildLocale === undefined) build.defaultBuildLocale = raw.defaultBuildLocale
+  if (raw.catalogExtension !== undefined && build.catalogExtension === undefined) build.catalogExtension = raw.catalogExtension
+  if (raw.idGenerator !== undefined && build.idGenerator === undefined) build.idGenerator = raw.idGenerator
+  if (raw.buildAutoCompile !== undefined && build.autoCompile === undefined) build.autoCompile = raw.buildAutoCompile
+  if (raw.parallelCompile !== undefined && build.parallel === undefined) build.parallel = raw.parallelCompile
+  if (raw.strictBuild !== undefined && build.strict === undefined) build.strict = raw.strictBuild
+  if (raw.strictThreshold !== undefined && build.strictThreshold === undefined) build.strictThreshold = raw.strictThreshold
+
+  const dev: FluentiDevOptions = { ...raw.dev }
+  if (raw.devAutoCompile !== undefined && dev.autoCompile === undefined) dev.autoCompile = raw.devAutoCompile
+  if (raw.devAutoCompileDelay !== undefined && dev.autoCompileDelay === undefined) dev.autoCompileDelay = raw.devAutoCompileDelay
+  if (raw.devWarnings !== undefined && dev.warnings === undefined) dev.warnings = raw.devWarnings
+
+  const runtime: FluentiRuntimeOptions = { ...raw.runtime }
+  if (raw.fallbackChain !== undefined && runtime.fallbackChain === undefined) runtime.fallbackChain = raw.fallbackChain
+  if (raw.dateFormats !== undefined && runtime.dateFormats === undefined) runtime.dateFormats = raw.dateFormats
+  if (raw.numberFormats !== undefined && runtime.numberFormats === undefined) runtime.numberFormats = raw.numberFormats
+  if (raw.externalCatalogs !== undefined && runtime.externalCatalogs === undefined) runtime.externalCatalogs = raw.externalCatalogs
+
+  const hooks: FluentiHooksConfig = { ...raw.hooks }
+  if (raw.onBeforeCompile !== undefined && hooks.onBeforeCompile === undefined) hooks.onBeforeCompile = raw.onBeforeCompile
+  if (raw.onAfterCompile !== undefined && hooks.onAfterCompile === undefined) hooks.onAfterCompile = raw.onAfterCompile
+
+  // ── Build result with both nested + flat fields for backward compat ───
+  const result: FluentiConfig = {
+    sourceLocale: raw.sourceLocale,
+    locales: raw.locales,
+    catalogDir: raw.catalogDir,
+    format: raw.format,
+    include: raw.include,
+    compileOutDir: raw.compileOutDir,
+    build,
+    dev,
+    runtime,
+    hooks,
+  }
+
+  // Preserve optional source fields
+  if (raw.extends !== undefined) result.extends = raw.extends
+  if (raw.defaultLocale !== undefined) result.defaultLocale = raw.defaultLocale
+  if (raw.exclude !== undefined) result.exclude = raw.exclude
+
+  // ── Populate flat fields from nested (backward compat for consumers) ──
+  if (build.splitting !== undefined) result.splitting = build.splitting
+  if (build.defaultBuildLocale !== undefined) result.defaultBuildLocale = build.defaultBuildLocale
+  if (build.catalogExtension !== undefined) result.catalogExtension = build.catalogExtension
+  if (build.idGenerator !== undefined) result.idGenerator = build.idGenerator
+  if (build.autoCompile !== undefined) result.buildAutoCompile = build.autoCompile
+  if (build.parallel !== undefined) result.parallelCompile = build.parallel
+  if (build.strict !== undefined) result.strictBuild = build.strict
+  if (build.strictThreshold !== undefined) result.strictThreshold = build.strictThreshold
+  if (dev.autoCompile !== undefined) result.devAutoCompile = dev.autoCompile
+  if (dev.autoCompileDelay !== undefined) result.devAutoCompileDelay = dev.autoCompileDelay
+  if (dev.warnings !== undefined) result.devWarnings = dev.warnings
+  if (runtime.fallbackChain !== undefined) result.fallbackChain = runtime.fallbackChain
+  if (runtime.dateFormats !== undefined) result.dateFormats = runtime.dateFormats
+  if (runtime.numberFormats !== undefined) result.numberFormats = runtime.numberFormats
+  if (runtime.externalCatalogs !== undefined) result.externalCatalogs = runtime.externalCatalogs
+  if (hooks.onBeforeCompile !== undefined) result.onBeforeCompile = hooks.onBeforeCompile
+  if (hooks.onAfterCompile !== undefined) result.onAfterCompile = hooks.onAfterCompile
+
+  return result
 }
 
 // ---- SSR Utilities ----
@@ -280,12 +435,6 @@ export interface TypedCompileTimeT<
   (strings: TemplateStringsArray, ...exprs: unknown[]): FluentiTypeConfig['localizedString']
 }
 
-// ---- Namespace ----
-
-export interface NamespaceMapping {
-  [globPattern: string]: string
-}
-
 // ---- Formatting ----
 
 export interface DateFormatOptions {
@@ -313,7 +462,6 @@ export type CustomFormatter = (value: unknown, style: string, locale: Locale) =>
 // ---- Extended FluentConfig ----
 
 export interface FluentConfigExtended extends FluentConfig {
-  namespaceMapping?: NamespaceMapping
   dateFormats?: DateFormatOptions
   numberFormats?: NumberFormatOptions
   fallbackChain?: Record<string, Locale[]>

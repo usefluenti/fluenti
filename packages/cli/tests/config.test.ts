@@ -19,7 +19,6 @@ describe('defineConfig', () => {
       compileOutDir: './src/locales/compiled',
       devWarnings: true,
       strictBuild: false,
-      namespaceMapping: { common: './src/common' },
       fallbackChain: { ja: ['en'] },
       externalCatalogs: [{ package: '@acme/i18n', catalogDir: './locales' }],
       strictThreshold: 0.9,

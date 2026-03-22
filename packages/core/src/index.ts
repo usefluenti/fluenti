@@ -18,6 +18,12 @@ export type {
   FunctionNode,
   ExtractedMessage,
   FluentiConfig,
+  FluentiConfigLegacy,
+  FluentiSourceConfig,
+  FluentiBuildOptions,
+  FluentiDevOptions,
+  FluentiRuntimeOptions,
+  FluentiHooksConfig,
   LocaleObject,
   LocaleDefinition,
   DetectLocaleOptions,
@@ -25,14 +31,13 @@ export type {
   NumberFormatOptions,
   FormatDateFn,
   FormatNumberFn,
-  NamespaceMapping,
   CompileTimeMessageDescriptor,
   CompileTimeT,
   TypedCompileTimeT,
   FluentiTypeConfig,
 } from './types'
 
-export { resolveLocaleCodes } from './types'
+export { resolveLocaleCodes, normalizeConfig } from './types'
 
 export { parse, FluentParseError } from './parser'
 export { compile } from './compile'

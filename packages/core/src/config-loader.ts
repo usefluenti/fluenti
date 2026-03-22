@@ -1,6 +1,7 @@
 import { existsSync } from 'node:fs'
 import { resolve, dirname, relative, isAbsolute } from 'node:path'
 import type { FluentiConfig } from './types'
+import { normalizeConfig } from './types'
 
 const defaultConfig: FluentiConfig = {
   sourceLocale: 'en',
@@ -83,12 +84,13 @@ export async function loadConfig(configPath?: string, cwd?: string): Promise<Flu
   const base = cwd ?? process.cwd()
   const configFilePath = findConfigFile(configPath, base)
 
-  if (!configFilePath) return { ...defaultConfig }
+  if (!configFilePath) return normalizeConfig({ ...defaultConfig })
 
   const { createJiti } = await import('jiti')
   const jiti = createJiti(import.meta.url)
 
-  return resolveConfigChain(configFilePath, jiti, new Set())
+  const resolved = await resolveConfigChain(configFilePath, jiti, new Set())
+  return normalizeConfig(resolved)
 }
 
 async function resolveConfigChain(
@@ -151,7 +153,7 @@ export function loadConfigSync(configPath?: string, cwd?: string): FluentiConfig
   const base = cwd ?? process.cwd()
   const configFilePath = findConfigFile(configPath, base)
 
-  if (!configFilePath) return { ...defaultConfig }
+  if (!configFilePath) return normalizeConfig({ ...defaultConfig })
 
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -162,12 +164,13 @@ export function loadConfigSync(configPath?: string, cwd?: string): FluentiConfig
       ) => (path: string) => unknown
     }
 
-    return resolveConfigChainSync(configFilePath, createJiti, new Set())
+    const resolved = resolveConfigChainSync(configFilePath, createJiti, new Set())
+    return normalizeConfig(resolved)
   } catch (err) {
     if (typeof process !== 'undefined' && process.env?.['NODE_ENV'] !== 'production') {
       console.warn('[fluenti] Failed to load config, using defaults:', err)
     }
-    return { ...defaultConfig }
+    return normalizeConfig({ ...defaultConfig })
   }
 }
 
