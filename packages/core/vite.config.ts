@@ -1,40 +1,16 @@
-import { defineConfig } from 'vitest/config'
-import dts from 'vite-plugin-dts'
+import { createPackageConfig } from '../../scripts/vite-config-factory'
 
-export default defineConfig({
-  build: {
-    lib: {
-      entry: {
-        index: 'src/index.ts',
-        internal: 'src/internal.ts',
-        'internal-browser': 'src/internal-browser.ts',
-        config: 'src/config.ts',
-      },
-      formats: ['es', 'cjs'],
-    },
-    rollupOptions: {
-      external: [/^node:/, 'jiti'],
-    },
-    sourcemap: true,
-    minify: false,
-    emptyOutDir: true,
+export default createPackageConfig({
+  entry: {
+    index: 'src/index.ts',
+    internal: 'src/internal.ts',
+    'internal-browser': 'src/internal-browser.ts',
+    config: 'src/config.ts',
   },
-  plugins: [
-    dts({ rollupTypes: false }),
-  ],
-  test: {
-    coverage: {
-      provider: 'v8',
-      reporter: ['text', 'lcov'],
-      thresholds: {
-        lines: 90,
-        branches: 85,
-        functions: 90,
-        statements: 90,
-      },
-    },
-    benchmark: {
-      include: ['bench/**/*.bench.ts'],
-    },
+  external: [/^node:/, 'jiti'],
+  coverage: { lines: 90, branches: 85, functions: 90, statements: 90 },
+  minify: false,
+  testOverrides: {
+    benchmark: { include: ['bench/**/*.bench.ts'] },
   },
 })
