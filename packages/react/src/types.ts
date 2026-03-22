@@ -1,30 +1,29 @@
 import type { ReactNode } from 'react'
 import type {
-  CompiledMessage,
   Locale,
   LocalizedString,
   Messages,
   AllMessages,
   MessageDescriptor,
-  MissingKeyEvent,
   CompileTimeMessageDescriptor,
   CompileTimeT,
   DateFormatOptions,
   NumberFormatOptions,
-  FluentInstanceExtended,
-  DiagnosticsConfig,
+  FluentiCoreInstanceFull,
 } from '@fluenti/core'
 
 export interface I18nContextValue {
+  /** The underlying Fluent instance (escape hatch for advanced use) */
+  i18n: FluentiCoreInstanceFull
   /** Translate a message by id with optional interpolation values */
   t: {
     (id: string | MessageDescriptor, values?: Record<string, unknown>): LocalizedString
     (strings: TemplateStringsArray, ...exprs: unknown[]): LocalizedString
   }
   /** Format a date value for the current locale */
-  d: (value: Date | number, style?: string, locale?: string) => LocalizedString
+  d: (value: Date | number, style?: string) => LocalizedString
   /** Format a number value for the current locale */
-  n: (value: number, style?: string, locale?: string) => LocalizedString
+  n: (value: number, style?: string) => LocalizedString
   /** Format an ICU message string directly (no catalog lookup) */
   format: (message: string, values?: Record<string, unknown>) => LocalizedString
   /** Merge additional messages into a locale catalog at runtime */
@@ -38,13 +37,9 @@ export interface I18nContextValue {
   /** Whether a locale is currently being loaded */
   isLoading: boolean
   /** Set of locales whose messages have been loaded */
-  loadedLocales: ReadonlySet<string>
+  loadedLocales: string[]
   /** Preload a locale in the background without switching to it */
   preloadLocale: (locale: string) => Promise<void>
-  /** Check if a translation key exists in the catalog */
-  te: (key: string, locale?: string) => boolean
-  /** Get the raw compiled message without interpolation */
-  tm: (key: string, locale?: string) => CompiledMessage | undefined
 }
 
 export interface I18nProviderProps {
@@ -62,15 +57,8 @@ export interface I18nProviderProps {
   dateFormats?: DateFormatOptions
   /** Number format styles */
   numberFormats?: NumberFormatOptions
-  /** @deprecated Use `onMissingKey` instead. Will be removed in a future major version. */
+  /** Missing message handler */
   missing?: (locale: Locale, id: string) => string | undefined
-  /** Runtime diagnostics configuration (forwarded to core) */
-  diagnostics?: DiagnosticsConfig
-  /**
-   * Unified missing key handler. Called when a translation is missing or a fallback locale is used.
-   * Returning a string uses it as the translation. Returning undefined/void uses default behavior.
-   */
-  onMissingKey?: (event: MissingKeyEvent) => string | undefined | void
   /** App content */
   children: ReactNode
 }
@@ -81,11 +69,9 @@ export type {
   Messages,
   AllMessages,
   MessageDescriptor,
-  MissingKeyEvent,
   CompileTimeMessageDescriptor,
   CompileTimeT,
   DateFormatOptions,
   NumberFormatOptions,
-  FluentInstanceExtended,
-  DiagnosticsConfig,
+  FluentiCoreInstanceFull,
 }

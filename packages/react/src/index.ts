@@ -32,7 +32,7 @@ export type {
   Locale,
   DateFormatOptions,
   NumberFormatOptions,
-  FluentInstanceExtended,
+  FluentiCoreInstanceFull,
 } from './types'
 export type { TransProps } from './components/Trans'
 export type { PluralProps } from './components/Plural'

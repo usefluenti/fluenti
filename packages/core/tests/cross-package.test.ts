@@ -5,7 +5,7 @@
  * when used together (e.g., hash IDs match, compiled catalogs are consumable).
  */
 import { describe, it, expect } from 'vitest'
-import { msg, parse, compile, interpolate, createFluentiRuntime, detectLocale, hashMessage, getDirection } from '../src/index'
+import { msg, parse, compile, interpolate, createFluentiCore, detectLocale, hashMessage, getDirection } from '../src/index'
 
 describe('cross-package: hash consistency', () => {
   it('core msg() ID matches cli hashMessage()', () => {
@@ -27,8 +27,8 @@ describe('cross-package: hash consistency', () => {
   })
 })
 
-describe('cross-package: compiled catalog consumed by core createFluentiRuntime', () => {
-  it('compiled function messages can be consumed by core createFluentiRuntime', () => {
+describe('cross-package: compiled catalog consumed by core createFluentiCore', () => {
+  it('compiled function messages can be consumed by core createFluentiCore', () => {
     // Simulate the output of @fluenti/cli compileCatalog:
     // compiled catalogs produce either plain strings or functions
     const messages: Record<string, string | ((v?: any) => string)> = {
@@ -36,7 +36,7 @@ describe('cross-package: compiled catalog consumed by core createFluentiRuntime'
       farewell: 'Goodbye',
     }
 
-    const fluent = createFluentiRuntime({ locale: 'en', messages: { en: messages } })
+    const fluent = createFluentiCore({ locale: 'en', messages: { en: messages } })
 
     expect(fluent.t('greeting', { name: 'World' })).toBe('Hello World!')
     expect(fluent.t('farewell')).toBe('Goodbye')
@@ -90,8 +90,8 @@ describe('cross-package: core parse > compile > interpolate pipeline', () => {
   })
 })
 
-describe('cross-package: SSR locale detection feeds into createFluentiRuntime', () => {
-  it('detectLocale result can be used to initialize createFluentiRuntime', () => {
+describe('cross-package: SSR locale detection feeds into createFluentiCore', () => {
+  it('detectLocale result can be used to initialize createFluentiCore', () => {
     const detected = detectLocale({
       available: ['en', 'ja', 'zh-CN'],
       fallback: 'en',
@@ -100,7 +100,7 @@ describe('cross-package: SSR locale detection feeds into createFluentiRuntime', 
 
     expect(detected).toBe('ja')
 
-    const fluent = createFluentiRuntime({
+    const fluent = createFluentiCore({
       locale: detected,
       messages: {
         en: { greeting: 'Hello' },
@@ -112,7 +112,7 @@ describe('cross-package: SSR locale detection feeds into createFluentiRuntime', 
     expect(fluent.t('greeting')).toBe('こんにちは')
   })
 
-  it('detectLocale falls back correctly and createFluentiRuntime uses fallback locale', () => {
+  it('detectLocale falls back correctly and createFluentiCore uses fallback locale', () => {
     const detected = detectLocale({
       available: ['en', 'fr'],
       fallback: 'en',
@@ -122,7 +122,7 @@ describe('cross-package: SSR locale detection feeds into createFluentiRuntime', 
     // de is not available, so should fall back to 'en'
     expect(detected).toBe('en')
 
-    const fluent = createFluentiRuntime({
+    const fluent = createFluentiCore({
       locale: detected,
       messages: {
         en: { greeting: 'Hello' },
@@ -143,10 +143,10 @@ describe('complex languages: end-to-end', () => {
   //   2. CLI extracts → PO catalog with message "{name} shared {count} photos with you"
   //   3. Translator writes complex ICU in target locale PO
   //   4. CLI compiles PO → JS functions
-  //   5. createFluentiRuntime loads compiled catalogs → t() produces correct output
+  //   5. createFluentiCore loads compiled catalogs → t() produces correct output
   //
   // These tests use `interpolate()` to verify step 3→5 as a pipeline,
-  // plus `createFluentiRuntime` with pre-compiled functions to verify the runtime path.
+  // plus `createFluentiCore` with pre-compiled functions to verify the runtime path.
 
   const SOURCE_MSG = '{name} shared {count} photos with you'
 
@@ -176,7 +176,7 @@ describe('complex languages: end-to-end', () => {
         .toBe('شارك أحمد 100 صورة معك')
     })
 
-    it('createFluentiRuntime: same message ID, different locale catalogs', () => {
+    it('createFluentiCore: same message ID, different locale catalogs', () => {
       const msgId = 'photo-shared'
 
       // Simulate compiled catalogs (what CLI produces)
@@ -185,7 +185,7 @@ describe('complex languages: end-to-end', () => {
       const arAst = parse(arTranslation)
       const arCompiled = compile(arAst, 'ar')
 
-      const fluent = createFluentiRuntime({
+      const fluent = createFluentiCore({
         locale: 'ar',
         fallbackLocale: 'en',
         messages: {
@@ -245,13 +245,13 @@ describe('complex languages: end-to-end', () => {
         .toBe('Пришёл 21 человек')
     })
 
-    it('createFluentiRuntime: locale switch between en and ru', () => {
+    it('createFluentiCore: locale switch between en and ru', () => {
       const msgId = 'people-arrived'
       const enCompiled = (v: any) => `${v.count} people arrived`
       const ruAst = parse(ruTranslation)
       const ruCompiled = compile(ruAst, 'ru')
 
-      const fluent = createFluentiRuntime({
+      const fluent = createFluentiCore({
         locale: 'ru',
         fallbackLocale: 'en',
         messages: {
@@ -281,14 +281,14 @@ describe('complex languages: end-to-end', () => {
         .toBe('田中さんが写真を100枚共有しました')
     })
 
-    it('createFluentiRuntime: same message ID across en/ja/ar', () => {
+    it('createFluentiCore: same message ID across en/ja/ar', () => {
       const msgId = 'photo-shared'
       const enCompiled = (v: any) =>
         `${v.name} shared ${v.count === 1 ? '1 photo' : `${v.count} photos`} with you`
       const jaCompiled = (v: any) =>
         `${v.name}さんが写真を${v.count}枚共有しました`
 
-      const fluent = createFluentiRuntime({
+      const fluent = createFluentiCore({
         locale: 'ja',
         fallbackLocale: 'en',
         messages: {
@@ -405,7 +405,7 @@ describe('complex languages: end-to-end', () => {
         'other {{name} поделился # фото с вами}}'
       )
 
-      const fluent = createFluentiRuntime({
+      const fluent = createFluentiCore({
         locale: 'en',
         messages: {
           en: { [msgId]: compile(enAst, 'en') },

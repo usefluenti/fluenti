@@ -1,9 +1,13 @@
 import { useState, useCallback, useEffect, useMemo, useRef } from 'react'
-import { createFluentiRuntime } from '@fluenti/core'
-import type { Messages, SplitRuntimeModule } from '@fluenti/core'
+import { createFluentiCore } from '@fluenti/core'
+import type { Messages } from '@fluenti/core'
 import { I18nContext } from './context'
-import { setGlobalI18n } from './global-registry'
 import type { I18nProviderProps } from './types'
+
+interface SplitRuntimeModule {
+  __switchLocale?: (locale: string) => Promise<void>
+  __preloadLocale?: (locale: string) => Promise<void>
+}
 
 function unwrapMessages(allMessages: Record<string, unknown>): Record<string, Messages> {
   const result: Record<string, Messages> = {}
@@ -33,8 +37,6 @@ export function I18nProvider({
   dateFormats,
   numberFormats,
   missing,
-  diagnostics,
-  onMissingKey,
   children,
 }: I18nProviderProps) {
   const [currentLocale, setCurrentLocale] = useState(locale)
@@ -42,10 +44,9 @@ export function I18nProvider({
   const [loadedMessages, setLoadedMessages] = useState<Record<string, Messages>>(
     messages ? unwrapMessages(messages) : {},
   )
-  const [loadedLocalesArr, setLoadedLocalesArr] = useState<string[]>(
+  const [loadedLocales, setLoadedLocales] = useState<string[]>(
     messages ? Object.keys(messages) : [],
   )
-  const loadedLocales = useMemo(() => new Set(loadedLocalesArr) as ReadonlySet<string>, [loadedLocalesArr])
 
   // Use ref to avoid stale closures in callbacks
   const loadedMessagesRef = useRef(loadedMessages)
@@ -55,7 +56,7 @@ export function I18nProvider({
   const localeRequestRef = useRef(0)
 
   const i18n = useMemo(() => {
-    const config: Parameters<typeof createFluentiRuntime>[0] = {
+    const config: Parameters<typeof createFluentiCore>[0] = {
       locale: currentLocale,
       messages: loadedMessages,
     }
@@ -64,15 +65,8 @@ export function I18nProvider({
     if (dateFormats !== undefined) config.dateFormats = dateFormats
     if (numberFormats !== undefined) config.numberFormats = numberFormats
     if (missing !== undefined) config.missing = missing
-    if (diagnostics !== undefined) config.diagnostics = diagnostics
-    if (onMissingKey !== undefined) config.onMissingKey = onMissingKey
-    return createFluentiRuntime(config)
-  }, [currentLocale, loadedMessages, fallbackLocale, fallbackChain, dateFormats, numberFormats, missing, diagnostics, onMissingKey])
-
-  // Register instance in global registry for webpack loader / vite plugin access
-  useEffect(() => {
-    setGlobalI18n(i18n)
-  }, [i18n])
+    return createFluentiCore(config)
+  }, [currentLocale, loadedMessages, fallbackLocale, fallbackChain, dateFormats, numberFormats, missing])
 
   // Sync external locale prop changes
   useEffect(() => {
@@ -123,7 +117,7 @@ export function I18nProvider({
             ? (msgs as { default: Messages }).default
             : (msgs as Messages)
         setLoadedMessages((prev) => ({ ...prev, [newLocale]: resolved }))
-        setLoadedLocalesArr((prev) => [...new Set([...prev, newLocale])])
+        setLoadedLocales((prev) => [...new Set([...prev, newLocale])])
         if (splitRuntime?.__switchLocale) {
           await splitRuntime.__switchLocale(newLocale)
         }
@@ -153,7 +147,7 @@ export function I18nProvider({
             ? (msgs as { default: Messages }).default
             : (msgs as Messages)
         setLoadedMessages((prev) => ({ ...prev, [loc]: resolved }))
-        setLoadedLocalesArr((prev) => [...new Set([...prev, loc])])
+        setLoadedLocales((prev) => [...new Set([...prev, loc])])
         if (splitRuntime?.__preloadLocale) {
           await splitRuntime.__preloadLocale(loc)
         }
@@ -164,27 +158,8 @@ export function I18nProvider({
     [loadMessages],
   )
 
-  const te = useCallback(
-    (key: string, loc?: string) => {
-      const targetLocale = loc ?? currentLocale
-      const msgs = loadedMessagesRef.current[targetLocale]
-      return msgs !== undefined && key in msgs
-    },
-    [currentLocale],
-  )
-
-  const tm = useCallback(
-    (key: string, loc?: string) => {
-      const targetLocale = loc ?? currentLocale
-      const msgs = loadedMessagesRef.current[targetLocale]
-      return msgs?.[key]
-    },
-    [currentLocale],
-  )
-
   const ctx = useMemo(
     () => ({
-      /** @internal — not exposed in I18nContextValue type, used by __useI18n hook */
       i18n,
       t: i18n.t.bind(i18n),
       d: i18n.d.bind(i18n),
@@ -197,10 +172,8 @@ export function I18nProvider({
       isLoading,
       loadedLocales,
       preloadLocale,
-      te,
-      tm,
     }),
-    [i18n, currentLocale, handleSetLocale, isLoading, loadedLocales, preloadLocale, te, tm],
+    [i18n, currentLocale, handleSetLocale, isLoading, loadedLocales, preloadLocale],
   )
 
   return <I18nContext.Provider value={ctx}>{children}</I18nContext.Provider>

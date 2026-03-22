@@ -1,6 +1,16 @@
 import { createSignal, createRoot, type Accessor } from 'solid-js'
 import { formatDate, formatNumber, interpolate as coreInterpolate, buildICUMessage, resolveDescriptorId } from '@fluenti/core'
-import type { FluentiRuntimeConfig, Locale, LocalizedString, Messages, CompiledMessage, MessageDescriptor, MissingKeyEvent, DateFormatOptions, NumberFormatOptions, ChunkLoader, SplitRuntimeModule, DiagnosticsConfig } from '@fluenti/core'
+import type { FluentiCoreConfig, Locale, LocalizedString, Messages, CompiledMessage, MessageDescriptor, DateFormatOptions, NumberFormatOptions } from '@fluenti/core'
+
+/** Chunk loader for lazy locale loading */
+export type ChunkLoader = (
+  locale: string,
+) => Promise<Record<string, CompiledMessage> | { default: Record<string, CompiledMessage> }>
+
+interface SplitRuntimeModule {
+  __switchLocale?: (locale: string) => Promise<void>
+  __preloadLocale?: (locale: string) => Promise<void>
+}
 
 const SPLIT_RUNTIME_KEY = Symbol.for('fluenti.runtime.solid.v1')
 
@@ -20,18 +30,10 @@ function resolveChunkMessages(
 }
 
 /** Extended config with lazy locale loading support */
-export interface I18nConfig extends FluentiRuntimeConfig {
-  /**
-   * Async message loader for lazy locale loading.
-   * Preferred over `chunkLoader` (which is deprecated).
-   */
-  loadMessages?: ChunkLoader
-  /**
-   * Async chunk loader for lazy locale loading.
-   * @deprecated Use `loadMessages` instead.
-   */
+export interface I18nConfig extends FluentiCoreConfig {
+  /** Async chunk loader for lazy locale loading */
   chunkLoader?: ChunkLoader
-  /** Enable lazy locale loading through loadMessages/chunkLoader */
+  /** Enable lazy locale loading through chunkLoader */
   lazyLocaleLoading?: boolean
   /** Locale-specific fallback chains */
   fallbackChain?: Record<string, Locale[]>
@@ -39,13 +41,6 @@ export interface I18nConfig extends FluentiRuntimeConfig {
   dateFormats?: DateFormatOptions
   /** Named number format styles */
   numberFormats?: NumberFormatOptions
-  /** Runtime diagnostics configuration (forwarded to core) */
-  diagnostics?: DiagnosticsConfig
-  /**
-   * Unified missing key handler. Called when a translation is missing or a fallback locale is used.
-   * Returning a string uses it as the translation. Returning undefined/void uses default behavior.
-   */
-  onMissingKey?: (event: MissingKeyEvent) => string | undefined | void
 }
 
 /** Reactive i18n context holding locale signal and translation utilities */
@@ -63,21 +58,17 @@ export interface I18nContext {
   /** Return all locale codes that have loaded messages */
   getLocales(): Locale[]
   /** Format a date value for the current locale */
-  d(value: Date | number, style?: string, locale?: string): LocalizedString
+  d(value: Date | number, style?: string): LocalizedString
   /** Format a number value for the current locale */
-  n(value: number, style?: string, locale?: string): LocalizedString
+  n(value: number, style?: string): LocalizedString
   /** Format an ICU message string directly (no catalog lookup) */
   format(message: string, values?: Record<string, unknown>): LocalizedString
   /** Whether a locale chunk is currently being loaded */
   isLoading: Accessor<boolean>
   /** Set of locales whose messages have been loaded */
-  loadedLocales: Accessor<ReadonlySet<string>>
+  loadedLocales: Accessor<Set<string>>
   /** Preload a locale in the background without switching to it */
-  preloadLocale(locale: string): Promise<void>
-  /** Check if a translation key exists in the catalog */
-  te(key: string, locale?: string): boolean
-  /** Get the raw compiled message without interpolation */
-  tm(key: string, locale?: string): CompiledMessage | undefined
+  preloadLocale(locale: string): void
 }
 
 /**
@@ -86,14 +77,13 @@ export interface I18nContext {
  * The returned `t()` reads the internal `locale()` signal, so any
  * Solid computation that calls `t()` will re-run when the locale changes.
  */
-export function createI18nContext(config: FluentiRuntimeConfig | I18nConfig): I18nContext {
+export function createI18nContext(config: FluentiCoreConfig | I18nConfig): I18nContext {
   const [locale, setLocaleSignal] = createSignal<Locale>(config.locale)
   const [isLoading, setIsLoading] = createSignal(false)
   const loadedLocalesSet = new Set<string>([config.locale])
   const [loadedLocales, setLoadedLocales] = createSignal(new Set(loadedLocalesSet))
   const messages: Record<string, Messages> = { ...config.messages }
   const i18nConfig = config as I18nConfig
-  const chunkLoaderFn = i18nConfig.loadMessages ?? i18nConfig.chunkLoader
   const lazyLocaleLoading = i18nConfig.lazyLocaleLoading
     ?? (config as I18nConfig & { splitting?: boolean }).splitting
     ?? false
@@ -124,16 +114,11 @@ export function createI18nContext(config: FluentiRuntimeConfig | I18nConfig): I1
     return String(msg) as LocalizedString
   }
 
-  interface LookupResult {
-    text: LocalizedString
-    resolvedLocale: Locale
-  }
-
   function lookupWithFallbacks(
     id: string,
     loc: Locale,
     values?: Record<string, unknown>,
-  ): LookupResult | undefined {
+  ): LocalizedString | undefined {
     const localesToTry: Locale[] = [loc]
     const seen = new Set(localesToTry)
 
@@ -155,25 +140,10 @@ export function createI18nContext(config: FluentiRuntimeConfig | I18nConfig): I1
     for (const targetLocale of localesToTry) {
       const result = lookupCatalog(id, targetLocale, values)
       if (result !== undefined) {
-        return { text: result, resolvedLocale: targetLocale }
+        return result
       }
     }
 
-    return undefined
-  }
-
-  /** Fire `onMissingKey` and return a fallback string if provided. */
-  function fireOnMissingKey(id: string, loc: Locale, fallbackUsed?: Locale): string | undefined {
-    if (!i18nConfig.onMissingKey) return undefined
-    try {
-      const event: MissingKeyEvent = fallbackUsed !== undefined
-        ? { locale: loc, id, fallbackUsed }
-        : { locale: loc, id }
-      const result = i18nConfig.onMissingKey(event)
-      if (typeof result === 'string') return result
-    } catch {
-      // Handler threw — fall through
-    }
     return undefined
   }
 
@@ -181,20 +151,14 @@ export function createI18nContext(config: FluentiRuntimeConfig | I18nConfig): I1
     id: string,
     loc: Locale,
   ): LocalizedString | undefined {
-    // Legacy handler (deprecated)
-    if (config.missing) {
-      const result = config.missing(loc, id)
-      if (result !== undefined) {
-        return result as LocalizedString
-      }
+    if (!config.missing) {
+      return undefined
     }
 
-    // Unified handler
-    const onMissingResult = fireOnMissingKey(id, loc)
-    if (onMissingResult !== undefined) {
-      return onMissingResult as LocalizedString
+    const result = config.missing(loc, id)
+    if (result !== undefined) {
+      return result as LocalizedString
     }
-
     return undefined
   }
 
@@ -203,16 +167,9 @@ export function createI18nContext(config: FluentiRuntimeConfig | I18nConfig): I1
     loc: Locale,
     values?: Record<string, unknown>,
   ): LocalizedString {
-    const lookupResult = lookupWithFallbacks(id, loc, values)
-    if (lookupResult !== undefined) {
-      // If resolved from a fallback locale, fire onMissingKey with fallbackUsed
-      if (lookupResult.resolvedLocale !== loc) {
-        const override = fireOnMissingKey(id, loc, lookupResult.resolvedLocale)
-        if (override !== undefined) {
-          return override as LocalizedString
-        }
-      }
-      return lookupResult.text
+    const catalogResult = lookupWithFallbacks(id, loc, values)
+    if (catalogResult !== undefined) {
+      return catalogResult
     }
 
     const missingResult = resolveMissing(id, loc)
@@ -244,15 +201,9 @@ export function createI18nContext(config: FluentiRuntimeConfig | I18nConfig): I1
     if (typeof id === 'object' && id !== null) {
       const messageId = resolveDescriptorId(id)
       if (messageId) {
-        const lookupResult = lookupWithFallbacks(messageId, currentLocale, values)
-        if (lookupResult !== undefined) {
-          if (lookupResult.resolvedLocale !== currentLocale) {
-            const override = fireOnMissingKey(messageId, currentLocale, lookupResult.resolvedLocale)
-            if (override !== undefined) {
-              return override as LocalizedString
-            }
-          }
-          return lookupResult.text
+        const catalogResult = lookupWithFallbacks(messageId, currentLocale, values)
+        if (catalogResult !== undefined) {
+          return catalogResult
         }
 
         const missingResult = resolveMissing(messageId, currentLocale)
@@ -279,7 +230,7 @@ export function createI18nContext(config: FluentiRuntimeConfig | I18nConfig): I1
   }
 
   const setLocale = async (newLocale: Locale): Promise<void> => {
-    if (!lazyLocaleLoading || !chunkLoaderFn) {
+    if (!lazyLocaleLoading || !i18nConfig.chunkLoader) {
       setLocaleSignal(newLocale)
       return
     }
@@ -296,7 +247,7 @@ export function createI18nContext(config: FluentiRuntimeConfig | I18nConfig): I1
 
     setIsLoading(true)
     try {
-      const loaded = resolveChunkMessages(await chunkLoaderFn(newLocale))
+      const loaded = resolveChunkMessages(await i18nConfig.chunkLoader(newLocale))
       // Intentional mutation: messages record is locally scoped to this context closure
       messages[newLocale] = { ...messages[newLocale], ...loaded }
       loadedLocalesSet.add(newLocale)
@@ -310,65 +261,41 @@ export function createI18nContext(config: FluentiRuntimeConfig | I18nConfig): I1
     }
   }
 
-  const preloadLocale = async (loc: string): Promise<void> => {
-    if (!lazyLocaleLoading || loadedLocalesSet.has(loc) || !chunkLoaderFn) return
+  const preloadLocale = (loc: string): void => {
+    if (!lazyLocaleLoading || loadedLocalesSet.has(loc) || !i18nConfig.chunkLoader) return
     const splitRuntime = getSplitRuntimeModule()
-    try {
-      const loaded = resolveChunkMessages(await chunkLoaderFn(loc))
+    i18nConfig.chunkLoader(loc).then(async (loaded) => {
+      const resolved = resolveChunkMessages(loaded)
       // Intentional mutation: messages record is locally scoped to this context closure
-      messages[loc] = { ...messages[loc], ...loaded }
+      messages[loc] = { ...messages[loc], ...resolved }
       loadedLocalesSet.add(loc)
       setLoadedLocales(new Set(loadedLocalesSet))
       if (splitRuntime?.__preloadLocale) {
         await splitRuntime.__preloadLocale(loc)
       }
-    } catch (e: unknown) {
+    }).catch((e: unknown) => {
       console.warn('[fluenti] preload failed:', loc, e)
-    }
+    })
   }
 
   const getLocales = (): Locale[] => Object.keys(messages)
 
-  const d = (value: Date | number, style?: string, loc?: string): LocalizedString =>
-    formatDate(value, loc ?? locale(), style, i18nConfig.dateFormats) as LocalizedString
+  const d = (value: Date | number, style?: string): LocalizedString =>
+    formatDate(value, locale(), style, i18nConfig.dateFormats) as LocalizedString
 
-  const n = (value: number, style?: string, loc?: string): LocalizedString =>
-    formatNumber(value, loc ?? locale(), style, i18nConfig.numberFormats) as LocalizedString
+  const n = (value: number, style?: string): LocalizedString =>
+    formatNumber(value, locale(), style, i18nConfig.numberFormats) as LocalizedString
 
   const format = (message: string, values?: Record<string, unknown>): LocalizedString => {
     return coreInterpolate(message, values, locale()) as LocalizedString
   }
 
-  const te = (key: string, loc?: string): boolean => {
-    const targetLocale = loc ?? locale()
-    const catalog = messages[targetLocale]
-    return catalog !== undefined && key in catalog
-  }
-
-  const tm = (key: string, loc?: string): CompiledMessage | undefined => {
-    const targetLocale = loc ?? locale()
-    return messages[targetLocale]?.[key]
-  }
-
-  return { locale, setLocale, t, loadMessages, getLocales, d, n, format, isLoading, loadedLocales, preloadLocale, te, tm }
+  return { locale, setLocale, t, loadMessages, getLocales, d, n, format, isLoading, loadedLocales, preloadLocale }
 }
 
 // ─── Module-level singleton ─────────────────────────────────────────────────
 
 let globalCtx: I18nContext | undefined
-
-function isHMR(): boolean {
-  try {
-    const g = globalThis as Record<string, unknown>
-    // import.meta.hot is also truthy in Vitest; use a global flag for testability
-    if (typeof g['__fluenti_hmr__'] !== 'undefined') {
-      return !!g['__fluenti_hmr__']
-    }
-    return !!(import.meta as unknown as Record<string, unknown>)['hot']
-  } catch {
-    return false
-  }
-}
 
 /**
  * Initialize the global i18n singleton.
@@ -378,37 +305,22 @@ function isHMR(): boolean {
  *
  * Returns the context for convenience, but `useI18n()` will also find it.
  */
-export function createFluenti(config: FluentiRuntimeConfig | I18nConfig): I18nContext {
-  if (typeof window !== 'undefined' && globalCtx !== undefined) {
-    if (isHMR()) {
-      console.warn('[fluenti] HMR: replacing global i18n instance')
-    } else {
-      throw new Error(
-        '[fluenti] createFluenti() has already been called. '
-        + 'Use <I18nProvider> for multiple i18n instances, '
-        + 'or call resetGlobalI18nContext() first (testing only).',
-      )
-    }
-  }
-
+export function createI18n(config: FluentiCoreConfig | I18nConfig): I18nContext {
   const ctx = createRoot(() => createI18nContext(config))
 
+  // Only set global singleton in browser (client-side).
+  // In SSR, each request should use <I18nProvider> for per-request isolation.
   if (typeof window !== 'undefined') {
     globalCtx = ctx
   } else {
     console.warn(
-      '[fluenti] createFluenti() detected SSR environment. '
-      + 'Use <I18nProvider> for per-request isolation in SSR.',
+      '[fluenti] createI18n() detected SSR environment. ' +
+      'Use <I18nProvider> for per-request isolation in SSR.',
     )
   }
 
   return ctx
 }
-
-/** @deprecated Use {@link createFluenti} instead */
-export const createFluentiSolid = createFluenti
-/** @deprecated Use {@link createFluenti} instead */
-export const createI18n = createFluenti
 
 /** @internal — used by useI18n and I18nProvider */
 export function getGlobalI18nContext(): I18nContext | undefined {
@@ -417,12 +329,6 @@ export function getGlobalI18nContext(): I18nContext | undefined {
 
 /** @internal — used by I18nProvider to set context without createRoot wrapper */
 export function setGlobalI18nContext(ctx: I18nContext): void {
-  if (globalCtx !== undefined) {
-    throw new Error(
-      '[fluenti] setGlobalI18nContext() has already been called. '
-      + 'Use <I18nProvider> for multiple i18n instances.',
-    )
-  }
   globalCtx = ctx
 }
 

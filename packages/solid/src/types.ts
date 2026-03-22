@@ -1,19 +1,22 @@
 import type { Accessor } from 'solid-js'
 import type {
-  FluentRuntimeConfig,
+  FluentiCoreConfig,
   Locale,
   LocalizedString,
   Messages,
+  CompiledMessage,
   MessageDescriptor,
   DateFormatOptions,
   NumberFormatOptions,
-  ChunkLoader,
 } from '@fluenti/core'
 
-export type { ChunkLoader } from '@fluenti/core'
+/** Chunk loader for lazy locale loading */
+export type ChunkLoader = (
+  locale: string,
+) => Promise<Record<string, CompiledMessage> | { default: Record<string, CompiledMessage> }>
 
 /** Extended config with lazy locale loading support */
-export interface I18nConfig extends FluentRuntimeConfig {
+export interface I18nConfig extends FluentiCoreConfig {
   /** Async chunk loader for lazy locale loading */
   chunkLoader?: ChunkLoader
   /** Enable lazy locale loading through chunkLoader */
@@ -47,7 +50,7 @@ export interface I18nContext {
   /** Whether a locale chunk is currently being loaded */
   isLoading: Accessor<boolean>
   /** Set of locales whose messages have been loaded */
-  loadedLocales: Accessor<ReadonlySet<string>>
+  loadedLocales: Accessor<Set<string>>
   /** Preload a locale in the background without switching to it */
-  preloadLocale(locale: string): Promise<void>
+  preloadLocale(locale: string): void
 }

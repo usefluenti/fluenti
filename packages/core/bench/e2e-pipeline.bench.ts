@@ -1,12 +1,12 @@
 import { bench, describe } from 'vitest'
-import { createFluentiRuntime } from '../src/index'
+import { createFluentiCore } from '../src/index'
 import { MESSAGES, VALUES, generateCatalog } from './_helpers'
 
 // Pre-compiled function message
 const compiledFn = ((values?: Record<string, unknown>) =>
   `Hello ${values?.name ?? 'World'}!`) as unknown as string
 
-const i18n = createFluentiRuntime({
+const i18n = createFluentiCore({
   locale: 'en',
   fallbackLocale: 'en',
   fallbackChain: { '*': ['en'] },
@@ -25,7 +25,7 @@ const i18n = createFluentiRuntime({
   missing: (_locale, id) => `[missing: ${id}]`,
 })
 
-describe('e2e pipeline — createFluentiRuntime().t()', () => {
+describe('e2e pipeline — createFluentiCore().t()', () => {
   bench('pre-compiled static string', () => {
     i18n.t('static')
   })

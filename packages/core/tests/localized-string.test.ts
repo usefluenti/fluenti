@@ -1,9 +1,9 @@
 import { describe, it, expect, expectTypeOf } from 'vitest'
-import { createFluentiRuntime } from '../src/index'
+import { createFluentiCore } from '../src/index'
 import type { LocalizedString } from '../src/types'
 
 describe('LocalizedString branded type', () => {
-  const i18n = createFluentiRuntime({
+  const i18n = createFluentiCore({
     locale: 'en',
     messages: {
       en: { greeting: 'Hello World' },

@@ -1,9 +1,8 @@
 import { cache } from 'react'
-import { createFluentiRuntime, hashMessage as hashSyntheticMessage } from '@fluenti/core'
+import { createFluentiCore, hashMessage as hashSyntheticMessage } from '@fluenti/core'
 import type {
-  CompiledMessage,
-  FluentInstanceExtended,
-  FluentRuntimeConfigFull,
+  FluentiCoreInstanceFull,
+  FluentiCoreConfigFull,
   Locale,
   Messages,
   DateFormatOptions,
@@ -161,7 +160,7 @@ export interface ServerI18n {
    * return <h1>{t('welcome')}</h1>
    * ```
    */
-  getI18n: () => Promise<FluentInstanceExtended & { locale: string }>
+  getI18n: () => Promise<FluentiCoreInstanceFull & { locale: string }>
 
   /**
    * `<Trans>` for React Server Components.
@@ -215,31 +214,11 @@ export interface ServerI18n {
   NumberFormat: ServerNumberComponent
 
   /**
-   * Check if a translation key exists in the catalog for the current (or specified) locale.
-   *
-   * @example
-   * ```tsx
-   * if (await te('welcome')) { ... }
-   * ```
-   */
-  te: (key: string, locale?: string) => Promise<boolean>
-
-  /**
-   * Get the raw compiled message without interpolation.
-   *
-   * @example
-   * ```tsx
-   * const msg = await tm('welcome')
-   * ```
-   */
-  tm: (key: string, locale?: string) => Promise<CompiledMessage | undefined>
-
-  /**
    * Synchronous accessor for the cached i18n instance.
    * Used internally by @fluenti/next webpack loader.
    * @internal
    */
-  __getSyncInstance: () => FluentInstanceExtended & { locale: string }
+  __getSyncInstance: () => FluentiCoreInstanceFull & { locale: string }
 }
 
 /**
@@ -290,7 +269,7 @@ export function createServerI18n(config: ServerI18nConfig): ServerI18n {
   // Each server request gets its own isolated state
   const getRequestStore = cache((): {
     locale: string | null
-    instance: (FluentInstanceExtended & { locale: string }) | null
+    instance: (FluentiCoreInstanceFull & { locale: string }) | null
   } => ({
     locale: null,
     instance: null,
@@ -299,8 +278,16 @@ export function createServerI18n(config: ServerI18nConfig): ServerI18n {
   // Cache loaded messages per-request to avoid redundant imports
   const getMessageCache = cache((): Map<string, Messages> => new Map())
 
+  // Module-level fallback for server actions where React.cache()
+  // may not share state with the page render.
+  let _lastInstance: (FluentiCoreInstanceFull & { locale: string }) | null = null
+  let _requestId = 0
+  let _lastRequestId = 0
+
   function setLocale(locale: string): void {
     getRequestStore().locale = locale
+    _requestId++
+    _lastInstance = null
   }
 
   async function loadLocaleMessages(locale: string): Promise<Messages> {
@@ -318,7 +305,7 @@ export function createServerI18n(config: ServerI18nConfig): ServerI18n {
     return messages
   }
 
-  async function getI18n(): Promise<FluentInstanceExtended & { locale: string }> {
+  async function getI18n(): Promise<FluentiCoreInstanceFull & { locale: string }> {
     const store = getRequestStore()
 
     // If setLocale() was never called (e.g. Server Action — independent request
@@ -350,7 +337,7 @@ export function createServerI18n(config: ServerI18nConfig): ServerI18n {
       allMessages[config.fallbackLocale] = await loadLocaleMessages(config.fallbackLocale)
     }
 
-    const fluentConfig: FluentRuntimeConfigFull = {
+    const fluentConfig: FluentiCoreConfigFull = {
       locale,
       messages: allMessages,
     }
@@ -360,22 +347,10 @@ export function createServerI18n(config: ServerI18nConfig): ServerI18n {
     if (config.numberFormats !== undefined) fluentConfig.numberFormats = config.numberFormats
     if (config.missing !== undefined) fluentConfig.missing = config.missing
 
-    store.instance = createFluentiRuntime(fluentConfig)
+    store.instance = createFluentiCore(fluentConfig)
+    _lastInstance = store.instance
+    _lastRequestId = _requestId
     return store.instance
-  }
-
-  async function te(key: string, locale?: string): Promise<boolean> {
-    const i18n = await getI18n()
-    const targetLocale = locale ?? i18n.locale
-    const msgs = await loadLocaleMessages(targetLocale)
-    return key in msgs
-  }
-
-  async function tm(key: string, locale?: string): Promise<CompiledMessage | undefined> {
-    const i18n = await getI18n()
-    const targetLocale = locale ?? i18n.locale
-    const msgs = await loadLocaleMessages(targetLocale)
-    return msgs[key]
   }
 
   // ─── Async Server Components ─────────────────────────────────────────────
@@ -506,19 +481,42 @@ export function createServerI18n(config: ServerI18nConfig): ServerI18n {
    * Throws if getI18n() hasn't been called yet in this request.
    * @internal
    */
-  function __getSyncInstance(): FluentInstanceExtended & { locale: string } {
+  function __getSyncInstance(): FluentiCoreInstanceFull & { locale: string } {
     const store = getRequestStore()
     if (store.instance) {
       return store.instance
     }
 
-    throw new Error(
-      '[fluenti] __getSyncInstance() called but no i18n instance is available. ' +
-        'getI18n() must be called (and awaited) earlier in the request before ' +
-        'using the synchronous accessor. Ensure your layout or page awaits getI18n() ' +
-        'before any component that uses the t`` tag template.',
-    )
+    // Module-level fallback for server actions where React.cache()
+    // may not share state across different call contexts.
+    // Only use within the same request (tracked by _requestId).
+    if (_lastInstance && _lastRequestId === _requestId) {
+      return _lastInstance
+    }
+
+    // Final fallback: create instance synchronously with the default locale.
+    // This handles Suspense boundaries and streamed components where
+    // the React.cache store may not have been populated yet.
+    const locale = store.locale ?? config.fallbackLocale ?? 'en'
+    const messageCache = getMessageCache()
+    const messages: Record<string, Messages> = {}
+    const cached = messageCache.get(locale)
+    if (cached) messages[locale] = cached
+    if (config.fallbackLocale && config.fallbackLocale !== locale) {
+      const fallback = messageCache.get(config.fallbackLocale)
+      if (fallback) messages[config.fallbackLocale] = fallback
+    }
+
+    const fluentConfig: FluentiCoreConfigFull = { locale, messages }
+    if (config.fallbackLocale !== undefined) fluentConfig.fallbackLocale = config.fallbackLocale
+    if (config.fallbackChain !== undefined) fluentConfig.fallbackChain = config.fallbackChain
+    if (config.dateFormats !== undefined) fluentConfig.dateFormats = config.dateFormats
+    if (config.numberFormats !== undefined) fluentConfig.numberFormats = config.numberFormats
+    if (config.missing !== undefined) fluentConfig.missing = config.missing
+
+    store.instance = createFluentiCore(fluentConfig)
+    return store.instance
   }
 
-  return { setLocale, getI18n, te, tm, __getSyncInstance, Trans, Plural, Select, DateTime, NumberFormat }
+  return { setLocale, getI18n, __getSyncInstance, Trans, Plural, Select, DateTime, NumberFormat }
 }
