@@ -1,4 +1,4 @@
-import type { FluentInstanceExtended } from '@fluenti/core'
+import type { FluentiCoreInstanceFull } from '@fluenti/core'
 
 /**
  * Global i18n instance registry.
@@ -10,16 +10,16 @@ import type { FluentInstanceExtended } from '@fluenti/core'
 
 declare global {
   // eslint-disable-next-line no-var
-  var __fluenti_i18n: FluentInstanceExtended | undefined
+  var __fluenti_i18n: FluentiCoreInstanceFull | undefined
 }
 
 /** Get the global i18n instance (set by `<I18nProvider>`). */
-export function getGlobalI18n(): FluentInstanceExtended | undefined {
+export function getGlobalI18n(): FluentiCoreInstanceFull | undefined {
   return globalThis.__fluenti_i18n
 }
 
 /** Set the global i18n instance. Called by `<I18nProvider>` on mount. */
-export function setGlobalI18n(instance: FluentInstanceExtended): void {
+export function setGlobalI18n(instance: FluentiCoreInstanceFull): void {
   globalThis.__fluenti_i18n = instance
 }
 

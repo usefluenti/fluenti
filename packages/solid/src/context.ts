@@ -1,6 +1,6 @@
 import { createSignal, createRoot, type Accessor } from 'solid-js'
 import { formatDate, formatNumber, interpolate as coreInterpolate, buildICUMessage, resolveDescriptorId } from '@fluenti/core'
-import type { FluentConfig, Locale, LocalizedString, Messages, CompiledMessage, MessageDescriptor, DateFormatOptions, NumberFormatOptions } from '@fluenti/core'
+import type { FluentiCoreConfig, Locale, LocalizedString, Messages, CompiledMessage, MessageDescriptor, DateFormatOptions, NumberFormatOptions } from '@fluenti/core'
 
 /** Chunk loader for lazy locale loading */
 export type ChunkLoader = (
@@ -30,7 +30,7 @@ function resolveChunkMessages(
 }
 
 /** Extended config with lazy locale loading support */
-export interface I18nConfig extends FluentConfig {
+export interface I18nConfig extends FluentiCoreConfig {
   /** Async chunk loader for lazy locale loading */
   chunkLoader?: ChunkLoader
   /** Enable lazy locale loading through chunkLoader */
@@ -77,7 +77,7 @@ export interface I18nContext {
  * The returned `t()` reads the internal `locale()` signal, so any
  * Solid computation that calls `t()` will re-run when the locale changes.
  */
-export function createI18nContext(config: FluentConfig | I18nConfig): I18nContext {
+export function createI18nContext(config: FluentiCoreConfig | I18nConfig): I18nContext {
   const [locale, setLocaleSignal] = createSignal<Locale>(config.locale)
   const [isLoading, setIsLoading] = createSignal(false)
   const loadedLocalesSet = new Set<string>([config.locale])
@@ -305,7 +305,7 @@ let globalCtx: I18nContext | undefined
  *
  * Returns the context for convenience, but `useI18n()` will also find it.
  */
-export function createI18n(config: FluentConfig | I18nConfig): I18nContext {
+export function createI18n(config: FluentiCoreConfig | I18nConfig): I18nContext {
   const ctx = createRoot(() => createI18nContext(config))
 
   // Only set global singleton in browser (client-side).

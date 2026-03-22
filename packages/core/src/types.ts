@@ -72,14 +72,14 @@ export type CompiledMessage = string | ((values?: Record<string, unknown>) => st
 export type Messages = Record<string, CompiledMessage>
 export type AllMessages = Record<Locale, Messages>
 
-export interface FluentConfig {
+export interface FluentiCoreConfig {
   locale: Locale
   fallbackLocale?: Locale
   messages: AllMessages
   missing?: (locale: Locale, id: string) => string | undefined
 }
 
-export interface FluentInstance {
+export interface FluentiCoreInstance {
   locale: Locale
   /**
    * Translate by id or descriptor.
@@ -109,7 +109,7 @@ export interface FluentInstance {
   getLocales(): Locale[]
 }
 
-export type CreateFluent = (config: FluentConfig) => FluentInstance
+export type CreateFluentiCore = (config: FluentiCoreConfig) => FluentiCoreInstance
 
 // ---- ICU Parser AST ----
 
@@ -196,16 +196,6 @@ export interface FluentiConfig {
   exclude?: string[]
   compileOutDir: string
 
-  // Build options
-  /** Code splitting strategy: 'dynamic' | 'static' | false */
-  splitting?: 'dynamic' | 'static' | false
-  /** Default locale for build-time static strategy */
-  defaultBuildLocale?: Locale
-  /** File extension for compiled catalog files (default: '.js') */
-  catalogExtension?: string
-  /** Custom message ID generator */
-  idGenerator?: (message: string, context?: string) => string
-
   // Dev options
   /** Auto extract+compile in dev mode (default: true) */
   devAutoCompile?: boolean
@@ -213,12 +203,8 @@ export interface FluentiConfig {
   buildAutoCompile?: boolean
   /** Debounce delay in ms for dev auto-compile (default: 500) */
   devAutoCompileDelay?: number
-  /** Enable parallel compilation across locales using worker threads (default: false) */
-  parallelCompile?: boolean
 
   // Compile lifecycle hooks
-  /** Called before auto-compile runs. Return false to skip compilation. */
-  onBeforeCompile?: () => boolean | void | Promise<boolean | void>
   /** Called after auto-compile completes successfully */
   onAfterCompile?: () => void | Promise<void>
 
@@ -310,9 +296,9 @@ export type FormatNumberFn = (value: number, style?: string) => FluentiTypeConfi
  */
 export type CustomFormatter = (value: unknown, style: string, locale: Locale) => string
 
-// ---- Extended FluentConfig ----
+// ---- Extended FluentiCoreConfig ----
 
-export interface FluentConfigExtended extends FluentConfig {
+export interface FluentiCoreConfigFull extends FluentiCoreConfig {
   namespaceMapping?: NamespaceMapping
   dateFormats?: DateFormatOptions
   numberFormats?: NumberFormatOptions
@@ -353,9 +339,9 @@ export interface FluentConfigExtended extends FluentConfig {
   devWarnings?: boolean
 }
 
-// ---- Extended FluentInstance ----
+// ---- Extended FluentiCoreInstance ----
 
-export interface FluentInstanceExtended extends FluentInstance {
+export interface FluentiCoreInstanceFull extends FluentiCoreInstance {
   d: FormatDateFn
   n: FormatNumberFn
   /** Format an ICU message string directly (no catalog lookup) */

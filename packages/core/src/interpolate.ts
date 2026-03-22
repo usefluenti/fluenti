@@ -71,7 +71,7 @@ export function interpolate(
   const effectiveLocale = locale ?? 'en'
 
   // When custom formatters are provided, skip the shared cache since
-  // different createFluent instances may register different formatters.
+  // different createFluentiCore instances may register different formatters.
   if (formatters) {
     const ast = parse(message)
     const compiled = compile(ast, effectiveLocale, formatters)

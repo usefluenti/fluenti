@@ -1,6 +1,6 @@
 import { useContext } from 'react'
 import { I18nContext } from '../context'
-import type { FluentInstanceExtended } from '../types'
+import type { FluentiCoreInstanceFull } from '../types'
 
 /**
  * Internal hook used by the Vite plugin's compiled output.
@@ -11,7 +11,7 @@ import type { FluentInstanceExtended } from '../types'
  *
  * @internal
  */
-export function __useI18n(): FluentInstanceExtended {
+export function __useI18n(): FluentiCoreInstanceFull {
   const ctx = useContext(I18nContext)
   if (!ctx) {
     throw new Error(

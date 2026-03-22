@@ -13,8 +13,6 @@ const defaultConfig: FluentiConfig = {
   devAutoCompile: true,
   buildAutoCompile: true,
   devAutoCompileDelay: 500,
-  parallelCompile: false,
-  catalogExtension: '.js',
 }
 
 const MAX_EXTENDS_DEPTH = 10
