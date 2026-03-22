@@ -53,8 +53,10 @@ export function extractWatchDirs(cwd: string, include?: string[]): string[] {
  * @returns A cleanup function that stops the watcher.
  */
 export function startDevWatcher(options: DevWatcherOptions): () => void {
-  // Prevent duplicate watchers (applyFluenti may be called multiple times)
-  if (activeWatcher) return activeWatcher
+  // Clean up previous watcher if one exists (e.g., dev server reload)
+  if (activeWatcher) {
+    activeWatcher()
+  }
 
   const { cwd, compiledDir, delay = 1000, include, exclude, parallelCompile } = options
   const compiledDirResolved = resolve(cwd, compiledDir)

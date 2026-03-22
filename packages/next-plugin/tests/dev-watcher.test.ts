@@ -197,19 +197,45 @@ describe('startDevWatcher', () => {
     cleanup()
   })
 
-  it('prevents duplicate watchers on multiple calls', () => {
+  it('cleans up old watcher and creates fresh one on repeated calls', () => {
     const cleanup1 = createAndCleanup()
-    const callCount = vi.mocked(watch).mock.calls.length
+    const firstWatchCount = vi.mocked(watch).mock.calls.length
+    const firstCloseCallbacks = [...mockCloseCallbacks]
 
     const cleanup2 = startDevWatcher({
       cwd: '/project',
       compiledDir: './locales/compiled',
     })
 
-    // Should not create a second watcher
-    expect(vi.mocked(watch).mock.calls.length).toBe(callCount)
-    expect(cleanup1).toBe(cleanup2)
+    // Old watchers should have been closed
+    for (const close of firstCloseCallbacks) {
+      expect(close).toHaveBeenCalled()
+    }
 
-    cleanup1()
+    // A new watcher should have been created
+    expect(vi.mocked(watch).mock.calls.length).toBeGreaterThan(firstWatchCount)
+
+    // cleanup2 should be a new function (not the old one)
+    expect(cleanup2).not.toBe(cleanup1)
+
+    cleanup2()
+  })
+
+  it('starts fresh watcher with new options on reload', () => {
+    const cleanup1 = createAndCleanup({ include: ['./src/**/*.tsx'] })
+    expect(vi.mocked(watch).mock.calls[0]![0]).toBe('/project/src')
+
+    // Simulate dev server reload with different options
+    const cleanup2 = startDevWatcher({
+      cwd: '/project',
+      compiledDir: './locales/compiled',
+      include: ['./app/**/*.tsx'],
+    })
+
+    // New watcher should watch the new directory
+    const lastCall = vi.mocked(watch).mock.calls.at(-1)
+    expect(lastCall![0]).toBe('/project/app')
+
+    cleanup2()
   })
 })
