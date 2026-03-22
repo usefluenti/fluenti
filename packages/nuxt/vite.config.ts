@@ -14,7 +14,7 @@ export default createPackageConfig({
     'runtime/define-i18n-route': 'src/runtime/define-i18n-route.ts',
     'runtime/detectors/domain': 'src/runtime/detectors/domain.ts',
   },
-  external: ['vue', 'vue-router', 'nuxt', 'nuxt/app', '#app', '#components', '#imports', '@nuxt/kit', '@fluenti/core', '@fluenti/vue', '@fluenti/vue/vite-plugin', '@fluenti/vite-plugin', 'h3', /^node:/],
+  external: ['vue', 'vue-router', 'nuxt', 'nuxt/app', '#app', '#components', '#imports', '@nuxt/kit', /^@fluenti\/core/, /^@fluenti\/vue/, '@fluenti/vite-plugin', 'h3', /^node:/],
   testEnv: 'node',
   coverage: { lines: 70, branches: 65, functions: 70, statements: 70 },
 })
