@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect, useMemo, useRef } from 'react'
 import { createFluentiRuntime } from '@fluenti/core'
 import type { Messages, SplitRuntimeModule } from '@fluenti/core'
 import { I18nContext } from './context'
+import { setGlobalI18n } from './global-registry'
 import type { I18nProviderProps } from './types'
 
 function unwrapMessages(allMessages: Record<string, unknown>): Record<string, Messages> {
@@ -67,6 +68,11 @@ export function I18nProvider({
     if (onMissingKey !== undefined) config.onMissingKey = onMissingKey
     return createFluentiRuntime(config)
   }, [currentLocale, loadedMessages, fallbackLocale, fallbackChain, dateFormats, numberFormats, missing, diagnostics, onMissingKey])
+
+  // Register instance in global registry for webpack loader / vite plugin access
+  useEffect(() => {
+    setGlobalI18n(i18n)
+  }, [i18n])
 
   // Sync external locale prop changes
   useEffect(() => {

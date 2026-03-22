@@ -205,4 +205,23 @@ describe('createServerI18n', () => {
       expect(i18n1).toBe(i18n2)
     })
   })
+
+  // ─── __getSyncInstance ──────────────────────────────────────────────
+
+  describe('__getSyncInstance', () => {
+    it('should return cached instance after getI18n has been called', async () => {
+      const { setLocale, getI18n, __getSyncInstance } = createServerI18n({ loadMessages })
+      setLocale('en')
+      const asyncInstance = await getI18n()
+      const syncInstance = __getSyncInstance()
+
+      expect(syncInstance).toBe(asyncInstance)
+    })
+
+    it('should throw a descriptive error when getI18n has not been called', () => {
+      const { __getSyncInstance } = createServerI18n({ loadMessages })
+
+      expect(() => __getSyncInstance()).toThrow(/getI18n\(\).*must be called/i)
+    })
+  })
 })
