@@ -10,7 +10,8 @@ import { readPoCatalog, writePoCatalog } from './po-format'
 import { ExtractCache } from './extract-cache'
 import { loadConfig } from './config-loader'
 import type { ExtractedMessage } from '@fluenti/core'
-import { resolveLocaleCodes } from '@fluenti/core'
+import { resolveLocaleCodes, createPluginRunner } from '@fluenti/core'
+import type { PluginExtractContext } from '@fluenti/core'
 
 function deriveProjectId(cwd: string): string {
   return createHash('md5').update(cwd).digest('hex').slice(0, 8)
@@ -83,6 +84,25 @@ export async function runExtract(cwd: string, options?: RunExtractOptions): Prom
   if (cache) {
     cache.prune(new Set(files.map((f) => resolve(cwd, f))))
     cache.save()
+  }
+
+  // Run onAfterExtract plugin hooks
+  const pluginRunner = config.plugins?.length
+    ? createPluginRunner(config.plugins)
+    : undefined
+
+  if (pluginRunner) {
+    const messageMap = new Map<string, ExtractedMessage>()
+    for (const msg of allMessages) {
+      messageMap.set(msg.id, msg)
+    }
+    const extractContext: PluginExtractContext = {
+      messages: messageMap,
+      sourceLocale: config.sourceLocale,
+      targetLocales: localeCodes.filter((l) => l !== config.sourceLocale),
+      config,
+    }
+    await pluginRunner.runAfterExtract(extractContext)
   }
 
   const ext = config.format === 'json' ? '.json' : '.po'

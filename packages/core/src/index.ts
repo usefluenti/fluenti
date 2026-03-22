@@ -18,6 +18,9 @@ export type {
   FunctionNode,
   ExtractedMessage,
   FluentiBuildConfig,
+  FluentiPlugin,
+  PluginExtractContext,
+  PluginCompileContext,
   LocaleObject,
   LocaleDefinition,
   DetectLocaleOptions,
@@ -73,6 +76,10 @@ export {
   offsetIndices,
 } from './icu-builders'
 export type { PluralCategory } from './icu-builders'
+export { createPluginRunner } from './plugin'
+export type { PluginRunner, ExtractedMessages } from './plugin'
+export { pseudoLocalePlugin, pseudoLocalize } from './plugins/pseudo-locale'
+export { messageValidatorPlugin } from './plugins/message-validator'
 
 import type {
   FluentiRuntimeConfigFull,
