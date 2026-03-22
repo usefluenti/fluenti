@@ -29,6 +29,9 @@ export interface FluentiTransProps {
   __components?: Record<string, RichComponent>
 }
 
+/** @deprecated Use `FluentiTransProps` instead */
+export type TransProps = FluentiTransProps
+
 /**
  * A token from parsing the message string.
  * Either a plain text segment or a tag with inner content.

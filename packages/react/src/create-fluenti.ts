@@ -133,7 +133,7 @@ export function createFluenti(config: FluentiConfig): FluentiInstance {
   const localeRequestRef = useRef(0)
 
   const i18n = useMemo(() => {
-    const cfg: Parameters<typeof createFluent>[0] = {
+    const cfg: Parameters<typeof createFluentiCore>[0] = {
       locale: currentLocale,
       messages: loadedMessages,
     }

@@ -29,6 +29,9 @@ export interface FluentiSelectProps {
   [key: string]: unknown
 }
 
+/** @deprecated Use `FluentiSelectProps` instead */
+export type SelectProps = FluentiSelectProps
+
 /**
  * Render a message selected by matching `value` against prop keys.
  *
