@@ -63,7 +63,7 @@ The following fields are accepted when passing an inline config object. All fiel
 | `exclude` | `string[]` | `['**/*.test.*', '**/*.spec.*', '**/__tests__/**', '**/*.d.ts']` | File patterns excluded from dev watcher |
 | `devAutoCompile` | `boolean` | `true` | Auto extract+compile on file change during dev |
 | `buildAutoCompile` | `boolean` | `true` | Auto extract+compile before production build |
-| `devAutoCompileDelay` | `number` | `500` | Debounce delay (ms) for dev auto-compile |
+| `devAutoCompileDelay` | `number` | `300` | Debounce delay (ms) for dev auto-compile |
 | `parallelCompile` | `boolean` | `false` | Use worker threads for compilation (effective with 5+ locales) |
 | `catalogExtension` | `string` | `'.js'` | File extension for compiled catalog files (e.g. `'.mjs'`, `'.json'`) |
 | `idGenerator` | `(message: string, context?: string) => string` | built-in FNV-1a | Custom message ID generator. Replaces the default hash-based ID strategy |
