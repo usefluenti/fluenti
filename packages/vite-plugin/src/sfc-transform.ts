@@ -2,7 +2,7 @@
 // Used when the nodeTransform can't be injected into @vitejs/plugin-vue
 // Uses @vue/compiler-sfc AST instead of regex for robust template parsing.
 
-import { hashMessage } from '@fluenti/core'
+import { hashMessage } from '@fluenti/core/internal'
 import { parse as parseSFC } from '@vue/compiler-sfc'
 
 // Vue compiler AST node types

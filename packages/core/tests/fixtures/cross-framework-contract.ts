@@ -1,4 +1,4 @@
-import { hashMessage } from '../../src'
+import { hashMessage } from '../../src/internal'
 
 export const contractLocale = 'ja' as const
 

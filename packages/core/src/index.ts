@@ -1,3 +1,4 @@
+// ---- Public types ----
 export type {
   Locale,
   LocalizedString,
@@ -10,13 +11,6 @@ export type {
   FluentiCoreInstanceFull,
   FluentiCoreConfigFull,
   CustomFormatter,
-  ASTNode,
-  TextNode,
-  VariableNode,
-  PluralNode,
-  SelectNode,
-  FunctionNode,
-  ExtractedMessage,
   FluentiConfig,
   LocaleObject,
   LocaleDefinition,
@@ -29,40 +23,25 @@ export type {
   CompileTimeT,
   TypedCompileTimeT,
   FluentiTypeConfig,
-  FluentiBuildConfig,
-  SplitRuntimeModule,
-  SSRLocaleScriptOptions,
-  HydratedLocaleOptions,
 } from './types'
 
-export { resolveLocaleCodes, normalizeConfig } from './types'
-
+// ---- Public functions ----
 export { parse, FluentParseError } from './parser'
-export { compile, clearCompileCache } from './compile'
-export { interpolate, clearInterpolationCache, setMessageCacheSize, DEFAULT_MESSAGE_CACHE_SIZE } from './interpolate'
-export { resolvePlural, resolvePluralCategory, clearPluralCache } from './plural'
+export { compile } from './compile'
+export { interpolate } from './interpolate'
 export { Catalog } from './catalog'
 export { negotiateLocale, parseLocale, isRTL, getDirection, validateLocale } from './locale'
 export type { ParsedLocale } from './locale'
-export { msg, buildICUMessage } from './msg'
-export { resolveDescriptorId, hashMessage } from './identity'
+export { msg } from './msg'
 export { detectLocale, getSSRLocaleScript, getHydratedLocale } from './ssr'
-export { formatNumber, DEFAULT_NUMBER_FORMATS, LOCALE_CURRENCY_MAP, clearNumberFormatCache } from './formatters/number'
-export { formatDate, DEFAULT_DATE_FORMATS, clearDateFormatCache } from './formatters/date'
-export { formatRelativeTime, clearRelativeTimeFormatCache } from './formatters/relative'
+export { formatNumber, DEFAULT_NUMBER_FORMATS } from './formatters/number'
+export { formatDate, DEFAULT_DATE_FORMATS } from './formatters/date'
+export { formatRelativeTime } from './formatters/relative'
 // Config loading (loadConfig, loadConfigSync) is exported from '@fluenti/core/config'
 // subpath to avoid pulling jiti + node:* modules into client bundles.
 export { createLocaleLoader } from './locale-loader'
 export type { LocaleLoaderOptions, LocaleLoaderState } from './locale-loader'
 export { defineConfig } from './define-config'
-export {
-  PLURAL_CATEGORIES,
-  buildICUPluralMessage,
-  buildICUSelectMessage,
-  normalizeSelectForms,
-  offsetIndices,
-} from './icu-builders'
-export type { PluralCategory } from './icu-builders'
 
 import { clearCompileCache } from './compile'
 import { clearInterpolationCache } from './interpolate'

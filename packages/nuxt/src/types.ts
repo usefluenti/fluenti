@@ -1,7 +1,8 @@
-import type { FluentiBuildConfig } from '@fluenti/core'
+import type { FluentiBuildConfig } from '@fluenti/core/internal'
+import { resolveLocaleCodes } from '@fluenti/core/internal'
 // Re-export core types for backwards compatibility
 export type { LocaleObject, LocaleDefinition } from '@fluenti/core'
-export { resolveLocaleCodes } from '@fluenti/core'
+export { resolveLocaleCodes }
 
 // Import core types needed locally
 import type { LocaleDefinition, LocaleObject } from '@fluenti/core'

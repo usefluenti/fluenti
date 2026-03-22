@@ -3,6 +3,7 @@ import { createPackageConfig } from '../../scripts/vite-config-factory'
 export default createPackageConfig({
   entry: {
     index: 'src/index.ts',
+    internal: 'src/internal.ts',
     transform: 'src/transform.ts',
     'transform-browser': 'src/transform-browser.ts',
     config: 'src/config.ts',

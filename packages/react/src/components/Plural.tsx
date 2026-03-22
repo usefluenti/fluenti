@@ -1,5 +1,5 @@
 import { memo, useContext, type ReactNode } from 'react'
-import { hashMessage } from '@fluenti/core'
+import { hashMessage } from '@fluenti/core/internal'
 import { I18nContext } from '../context'
 import { PLURAL_CATEGORIES, type PluralCategory } from './plural-core'
 import { buildICUPluralMessage, renderRichTranslation, serializeRichForms } from './icu-rich'

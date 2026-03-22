@@ -5,7 +5,7 @@
  * Strategy 'static': rewrites to direct named imports from compiled locale modules.
  */
 
-import { hashMessage as defaultHashMessage } from '@fluenti/core'
+import { hashMessage as defaultHashMessage } from '@fluenti/core/internal'
 import { parseSourceModule, walkSourceAst, type SourceNode } from '@fluenti/core/transform'
 
 export type HashFunction = (message: string, context?: string) => string

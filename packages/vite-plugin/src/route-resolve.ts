@@ -8,7 +8,7 @@
 
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { hashMessage } from '@fluenti/core'
+import { hashMessage } from '@fluenti/core/internal'
 
 /**
  * Derive a stable route name from a Rollup chunk filename.

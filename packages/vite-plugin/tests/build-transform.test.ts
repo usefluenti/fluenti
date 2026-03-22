@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { transformForDynamicSplit, transformForStaticSplit, injectCatalogImport } from '../src/build-transform'
-import { hashMessage } from '@fluenti/core'
+import { hashMessage } from '@fluenti/core/internal'
 
 function catalogIdForSource(message: string): string {
   return hashMessage(message)

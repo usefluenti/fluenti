@@ -3,7 +3,7 @@ import { mkdirSync, writeFileSync, rmSync, existsSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { tmpdir } from 'node:os'
 import { ExtractCache } from '../src/extract-cache'
-import type { ExtractedMessage } from '@fluenti/core'
+import type { ExtractedMessage } from '@fluenti/core/internal'
 
 const TEST_DIR = resolve(tmpdir(), 'fluenti-extract-cache-test-' + Date.now())
 

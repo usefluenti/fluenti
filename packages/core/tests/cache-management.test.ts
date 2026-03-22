@@ -1,22 +1,24 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import {
+  clearAllCaches,
+  formatNumber,
+  formatDate,
+  formatRelativeTime,
+  compile,
+  parse,
+} from '../src'
+import {
   interpolate,
   clearInterpolationCache,
   setMessageCacheSize,
-  clearAllCaches,
   clearCompileCache,
   clearPluralCache,
   clearNumberFormatCache,
   clearDateFormatCache,
   clearRelativeTimeFormatCache,
   DEFAULT_MESSAGE_CACHE_SIZE,
-  formatNumber,
-  formatDate,
-  formatRelativeTime,
   resolvePlural,
-  compile,
-  parse,
-} from '../src'
+} from '../src/internal'
 
 describe('DEFAULT_MESSAGE_CACHE_SIZE', () => {
   it('is 500', () => {

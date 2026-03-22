@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Plugin } from 'vite'
-import { hashMessage } from '@fluenti/core'
+import { hashMessage } from '@fluenti/core/internal'
 import fluentiVue from '../src/vite-plugin'
 
 function getPlugin(name: string, options?: Parameters<typeof fluentiVue>[0]): Plugin {

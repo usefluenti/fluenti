@@ -25,6 +25,10 @@
       "import": { "types": "./dist/index.d.ts", "default": "./dist/index.js" },
       "require": { "types": "./dist/index.d.ts", "default": "./dist/index.cjs" }
     },
+    "./internal": {
+      "import": { "types": "./dist/internal.d.ts", "default": "./dist/internal.js" },
+      "require": { "types": "./dist/internal.d.ts", "default": "./dist/internal.cjs" }
+    },
     "./transform": {
       "import": { "types": "./dist/transform.d.ts", "default": "./dist/transform.js" },
       "require": { "types": "./dist/transform.d.ts", "default": "./dist/transform.cjs" }

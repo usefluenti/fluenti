@@ -17,10 +17,8 @@ pnpm add @fluenti/core @fluenti/solid @fluenti/vite-plugin
 
 ## Public Exports
 
-- `createI18n`
-- `createFluenti`
+- `createFluentiContext`
 - `I18nProvider`
-- `I18nCtx`
 - `useI18n`
 - `t`
 - `Trans`
@@ -32,21 +30,17 @@ pnpm add @fluenti/core @fluenti/solid @fluenti/vite-plugin
 
 Types:
 
-- `I18nContext`
-- `I18nConfig`
+- `FluentiContext`
+- `FluentiConfig`
 - `TransProps`
 - `PluralProps`
 - `SelectProps`
 
 ## Context model
 
-### `createI18n(config)`
+### `createFluentiContext(config)`
 
-Creates an app-level singleton context, intended for SPA startup code.
-
-### `createFluenti(config)`
-
-Creates an isolated reactive context without registering a global singleton.
+Creates an isolated reactive context backed by Solid signals. This is the factory used internally by `<I18nProvider>` and can also be used directly for advanced setups.
 
 ### `I18nProvider`
 
@@ -54,10 +48,7 @@ Creates and provides the nearest Solid context boundary for its subtree.
 
 ### `useI18n()`
 
-Resolution order:
-
-1. nearest `<I18nProvider>`
-2. singleton created by `createI18n()`
+Returns the context from the nearest `<I18nProvider>`. Throws if no provider is found.
 
 This is the public runtime API for translations, locale switching, and formatting.
 
@@ -127,6 +118,8 @@ Fields added on top of the core runtime:
 - `getLocales()`
 - `isLoading()`
 - `loadedLocales()`
+- `te(key, locale?)`
+- `tm(key, locale?)`
 - `preloadLocale(locale)`
 
 Any reactive computation that reads `t()` re-runs when `locale()` changes.
@@ -166,12 +159,14 @@ Cross-framework contract highlights:
 ## Lazy locale loading
 
 ```tsx
-const i18n = createI18n({
-  locale: 'en',
-  messages: { en },
-  lazyLocaleLoading: true,
-  chunkLoader: (locale) => import(`./locales/compiled/${locale}.js`),
-})
+<I18nProvider
+  locale="en"
+  messages={{ en }}
+  lazyLocaleLoading={true}
+  chunkLoader={(locale) => import(`./locales/compiled/${locale}.js`)}
+>
+  <App />
+</I18nProvider>
 ```
 
 Behavior:

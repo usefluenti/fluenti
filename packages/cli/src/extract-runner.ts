@@ -9,9 +9,9 @@ import { readJsonCatalog, writeJsonCatalog } from './json-format'
 import { readPoCatalog, writePoCatalog } from './po-format'
 import { ExtractCache } from './extract-cache'
 import { loadConfig } from './config-loader'
-import type { ExtractedMessage } from '@fluenti/core'
-import { resolveLocaleCodes, createPluginRunner } from '@fluenti/core'
-import type { PluginExtractContext } from '@fluenti/core'
+import type { ExtractedMessage } from '@fluenti/core/internal'
+import { resolveLocaleCodes, createPluginRunner } from '@fluenti/core/internal'
+import type { PluginExtractContext } from '@fluenti/core/internal'
 
 function deriveProjectId(cwd: string): string {
   return createHash('md5').update(cwd).digest('hex').slice(0, 8)

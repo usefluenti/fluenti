@@ -1,6 +1,7 @@
 import { createSignal, type Accessor } from 'solid-js'
-import { formatDate, formatNumber, interpolate as coreInterpolate, buildICUMessage, resolveDescriptorId } from '@fluenti/core'
+import { formatDate, formatNumber } from '@fluenti/core'
 import type { FluentiCoreConfig, Locale, LocalizedString, Messages, CompiledMessage, MessageDescriptor, DateFormatOptions, NumberFormatOptions } from '@fluenti/core'
+import { interpolate as coreInterpolate, buildICUMessage, resolveDescriptorId } from '@fluenti/core/internal'
 
 /** Chunk loader for lazy locale loading */
 export type ChunkLoader = (

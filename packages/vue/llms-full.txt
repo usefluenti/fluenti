@@ -202,6 +202,13 @@ Behavior:
 - `setLocale()` becomes async when loading is required
 - `preloadLocale()` fetches a locale without switching
 
+## Server Subpath: `@fluenti/vue/server`
+
+Server-side utilities for SSR:
+
+- `createServerI18n(config)` — creates request-scoped runtime helpers for server rendering
+- Re-exports from `@fluenti/core`: `detectLocale`, `getSSRLocaleScript`, `getHydratedLocale`, `isRTL`, `getDirection`
+
 ## Build plugin relationship
 
 `@fluenti/vue` is the runtime layer. `@fluenti/vite-plugin` provides compile-time transforms for:

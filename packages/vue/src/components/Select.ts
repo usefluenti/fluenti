@@ -1,8 +1,7 @@
 import { defineComponent, h } from 'vue'
 import type { ExtractPropTypes, PropType, SetupContext, VNodeChild } from 'vue'
-import { hashMessage } from '@fluenti/core'
+import { hashMessage, buildICUSelectMessage, normalizeSelectForms } from '@fluenti/core/internal'
 import { useI18n } from '../use-i18n'
-import { buildICUSelectMessage, normalizeSelectForms } from '@fluenti/core'
 import { reconstruct, serializeRichForms } from './rich-text'
 
 /**

@@ -3,7 +3,7 @@ import { h } from 'vue'
 import { mount } from '@vue/test-utils'
 import { createFluenti } from '../src/plugin'
 import { Trans } from '../src/components/Trans'
-import { hashMessage } from '@fluenti/core'
+import { hashMessage } from '@fluenti/core/internal'
 
 function createPlugin(messages: Record<string, string> = {}) {
   return createFluenti({

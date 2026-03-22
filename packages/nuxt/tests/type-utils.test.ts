@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { resolveLocaleCodes } from '@fluenti/core'
+import { resolveLocaleCodes } from '@fluenti/core/internal'
 import { resolveLocaleProperties, resolveDomainConfigs } from '../src/types'
 import type { LocaleDefinition } from '@fluenti/core'
 

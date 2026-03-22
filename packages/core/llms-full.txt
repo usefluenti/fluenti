@@ -55,8 +55,6 @@ i18n.t('greeting', { name: 'World' }) // "こんにちは World！"
 | `missing` | `(locale, id) => string \| undefined` | No | Handler for missing translations; return undefined to fall through to ID |
 | `dateFormats` | `DateFormatOptions` | No | Custom named date format styles, merged over defaults |
 | `numberFormats` | `NumberFormatOptions` | No | Custom named number format styles, merged over defaults |
-| `namespaceMapping` | `NamespaceMapping` | No | Glob-pattern to namespace mapping |
-| `externalCatalogs` | `Array<{ package, catalogDir }>` | No | External catalog sources |
 
 ### Instance: FluentInstanceExtended
 
@@ -70,8 +68,6 @@ i18n.t('greeting', { name: 'World' }) // "こんにちは World！"
 | `loadMessages(locale, messages)` | `(Locale, Messages) => void` | Load or merge messages for a locale at runtime |
 | `getLocales()` | `() => Locale[]` | List all locales with loaded messages |
 | `locale` | `Locale` (getter/setter) | Get or set the current locale |
-
-The deprecated `tRaw()` method is an alias for `format()` and will be removed in a future major version.
 
 ### Message Resolution Order
 
@@ -255,33 +251,6 @@ Parameters:
 - `values?: Record<string, unknown>` -- Interpolation values
 - `locale?: Locale` -- BCP 47 locale string (defaults to `'en'`)
 
-## resolvePlural(count, options, locale, ordinal?)
-
-Resolve the correct plural category for a count value. Checks exact matches (`=0`, `=1`, etc.) first, then falls back to CLDR plural categories via `Intl.PluralRules`.
-
-```ts
-import { resolvePlural } from '@fluenti/core'
-
-resolvePlural(0, { '=0': 'none', one: 'item', other: 'items' }, 'en')
-// '=0' (exact match takes priority)
-
-resolvePlural(1, { one: 'item', other: 'items' }, 'en')
-// 'one' (CLDR category)
-
-resolvePlural(5, { one: 'item', other: 'items' }, 'en')
-// 'other'
-
-// Ordinal plurals
-resolvePlural(1, { one: 'st', two: 'nd', few: 'rd', other: 'th' }, 'en', true)
-// 'one'
-```
-
-### resolvePluralCategory(count, options, locale, ordinal?)
-
-Same as `resolvePlural` but skips exact match checking. Used internally when exact matches need the raw count but CLDR categories need the offset-adjusted count.
-
-Both functions use cached `Intl.PluralRules` instances per locale+type combination.
-
 ## formatDate(value, locale, style?, styles?)
 
 Format dates using named styles backed by `Intl.DateTimeFormat`. Formatter instances are cached.
@@ -336,13 +305,7 @@ formatNumber(1234.5, 'en', 'decimal')               // "1,234.50" (2 decimal pla
 | `percent` | `{ style: 'percent' }` |
 | `decimal` | `{ minimumFractionDigits: 2, maximumFractionDigits: 2 }` |
 
-The `currency` style auto-detects the currency code from the locale via `LOCALE_CURRENCY_MAP`. Falls back to `USD` for unmapped locales.
-
-### LOCALE_CURRENCY_MAP
-
-Maps locales to default currency codes:
-
-`en` / `en-US` -> `USD`, `en-GB` -> `GBP`, `en-AU` -> `AUD`, `en-CA` -> `CAD`, `zh-CN` -> `CNY`, `zh-TW` -> `TWD`, `zh-HK` -> `HKD`, `ja` / `ja-JP` -> `JPY`, `ko` / `ko-KR` -> `KRW`, `de` / `fr` / `es` / `it` -> `EUR`, `pt-BR` -> `BRL`, `ru` -> `RUB`, `ar` -> `SAR`, `hi` -> `INR`.
+The `currency` style auto-detects the currency code from the locale (via an internal locale-to-currency map). Falls back to `USD` for unmapped locales.
 
 ### Custom Number Styles
 
@@ -584,11 +547,9 @@ interface FluentConfig {
 }
 
 interface FluentConfigExtended extends FluentConfig {
-  namespaceMapping?: NamespaceMapping
   dateFormats?: DateFormatOptions
   numberFormats?: NumberFormatOptions
   fallbackChain?: Record<string, Locale[]>
-  externalCatalogs?: Array<{ package: string; catalogDir: string }>
 }
 
 // --- Instance ---
@@ -605,8 +566,6 @@ interface FluentInstanceExtended extends FluentInstance {
   d: (value: Date | number, style?: string) => string
   n: (value: number, style?: string) => string
   format(message: string, values?: Record<string, unknown>): string
-  /** @deprecated Use format() instead */
-  tRaw(message: string, values?: Record<string, unknown>): string
 }
 
 // --- Messages ---
@@ -687,10 +646,6 @@ interface ParsedLocale {
   region?: string
 }
 
-interface NamespaceMapping {
-  [globPattern: string]: string
-}
-
 // --- Lazy Messages ---
 
 type MsgTaggedTemplate = (strings: TemplateStringsArray, ...exprs: unknown[]) => MessageDescriptor
@@ -707,15 +662,33 @@ interface FluentiConfig {
   exclude?: string[]
   compileOutDir: string
   devWarnings?: boolean
-  strictBuild?: boolean
-  namespaceMapping?: Record<string, string>
   fallbackChain?: Record<string, Locale[]>
-  externalCatalogs?: Array<{ package: string; catalogDir: string }>
-  strictThreshold?: number
   splitting?: 'dynamic' | 'static' | false
   defaultBuildLocale?: Locale
 }
 ```
+
+## Subpath Exports
+
+- `@fluenti/core` — main public API
+- `@fluenti/core/internal` — internal APIs for framework authors (see below)
+- `@fluenti/core/transform` — AST transform utilities
+- `@fluenti/core/config` — config loading utilities (`loadConfig`, `loadConfigSync`)
+
+## Internal API (`@fluenti/core/internal`)
+
+These exports are implementation details for framework packages (`@fluenti/vue`, `@fluenti/react`, `@fluenti/solid`). Not intended for application code.
+
+- `buildICUMessage` — build ICU message string from tagged template parts
+- `resolveDescriptorId` — resolve message ID from a `MessageDescriptor`
+- `hashMessage` — generate FNV-1a hash from message + context
+- `resolvePlural`, `resolvePluralCategory`, `clearPluralCache` — plural resolution internals
+- `buildICUPluralMessage`, `buildICUSelectMessage`, `normalizeSelectForms`, `offsetIndices` — ICU message builders
+- `PLURAL_CATEGORIES` — CLDR plural category list
+- `clearCompileCache`, `clearInterpolationCache`, `clearNumberFormatCache`, `clearDateFormatCache`, `clearRelativeTimeFormatCache` — cache management
+- `setMessageCacheSize`, `DEFAULT_MESSAGE_CACHE_SIZE` — interpolation cache tuning
+- `LOCALE_CURRENCY_MAP` — locale-to-currency mapping
+- `normalizeConfig`, `resolveLocaleCodes` — config normalization utilities
 
 ## Documentation
 

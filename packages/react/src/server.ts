@@ -1,5 +1,5 @@
 import { cache } from 'react'
-import { createFluentiCore, hashMessage as hashSyntheticMessage } from '@fluenti/core'
+import { createFluentiCore } from '@fluenti/core'
 import type {
   FluentiCoreInstanceFull,
   FluentiCoreConfigFull,
@@ -8,6 +8,7 @@ import type {
   DateFormatOptions,
   NumberFormatOptions,
 } from '@fluenti/core'
+import { hashMessage as hashSyntheticMessage } from '@fluenti/core/internal'
 import { createElement, Fragment, type ReactNode, type ReactElement } from 'react'
 import { hashMessage, extractMessage, reconstruct } from './components/trans-core'
 import { PLURAL_CATEGORIES, type PluralCategory } from './components/plural-core'

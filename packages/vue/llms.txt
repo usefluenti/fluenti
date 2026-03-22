@@ -69,6 +69,13 @@ app.use(fluent)
 
 ❌ AVOID: `t('some.key')` as the default — this is a legacy i18n pattern.
 
+## Server Subpath: `@fluenti/vue/server`
+
+Server-side utilities for SSR:
+
+- `createServerI18n(config)` — request-scoped runtime helpers for server rendering
+- Re-exports from `@fluenti/core`: `detectLocale`, `getSSRLocaleScript`, `getHydratedLocale`, `isRTL`, `getDirection`
+
 ## Docs
 
 - Full docs: https://fluenti.dev

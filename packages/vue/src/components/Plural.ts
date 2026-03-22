@@ -1,6 +1,6 @@
 import { defineComponent, h } from 'vue'
 import type { ExtractPropTypes, SetupContext, VNodeChild } from 'vue'
-import { hashMessage, buildICUPluralMessage, PLURAL_CATEGORIES, type PluralCategory } from '@fluenti/core'
+import { hashMessage, buildICUPluralMessage, PLURAL_CATEGORIES, type PluralCategory } from '@fluenti/core/internal'
 import { useI18n } from '../use-i18n'
 import { reconstruct, serializeRichForms } from './rich-text'
 

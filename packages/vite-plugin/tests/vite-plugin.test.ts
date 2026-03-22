@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { Plugin } from 'vite'
-import { hashMessage } from '@fluenti/core'
-import type { FluentiBuildConfig } from '@fluenti/core'
+import { hashMessage } from '@fluenti/core/internal'
+import type { FluentiBuildConfig } from '@fluenti/core/internal'
 import { createFluentiPlugins } from '../src/index'
 import type { FluentiCoreOptions } from '../src/types'
 

@@ -1,6 +1,6 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync, statSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
-import type { ExtractedMessage } from '@fluenti/core'
+import type { ExtractedMessage } from '@fluenti/core/internal'
 
 /** Cache format version — bump when the structure changes */
 const CACHE_VERSION = '1'

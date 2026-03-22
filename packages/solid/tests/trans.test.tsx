@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { render } from '@solidjs/testing-library'
 import type { Component, JSX } from 'solid-js'
-import { hashMessage } from '@fluenti/core'
+import { hashMessage } from '@fluenti/core/internal'
 import { I18nProvider, Trans } from '../src'
 
 describe('Trans component', () => {

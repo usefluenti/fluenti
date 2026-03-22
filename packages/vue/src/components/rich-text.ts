@@ -1,5 +1,5 @@
 import { Comment, Text, h, isVNode, type VNode, type VNodeChild } from 'vue'
-import { offsetIndices } from '@fluenti/core'
+import { offsetIndices } from '@fluenti/core/internal'
 
 export function extractMessage(children: VNodeChild | VNodeChild[] | undefined): {
   message: string

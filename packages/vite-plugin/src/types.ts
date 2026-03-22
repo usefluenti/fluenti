@@ -1,4 +1,4 @@
-import type { FluentiBuildConfig } from '@fluenti/core'
+import type { FluentiBuildConfig } from '@fluenti/core/internal'
 
 export type { RuntimeGeneratorOptions, RuntimeGenerator } from '@fluenti/core/transform'
 

@@ -1,6 +1,7 @@
 import { writeFileSync, mkdirSync, existsSync } from 'node:fs'
 import { resolve, relative } from 'node:path'
-import { validateLocale, resolveLocaleCodes } from '@fluenti/core'
+import { validateLocale } from '@fluenti/core'
+import { resolveLocaleCodes } from '@fluenti/core/internal'
 import type { ResolvedFluentConfig } from './types'
 
 /**

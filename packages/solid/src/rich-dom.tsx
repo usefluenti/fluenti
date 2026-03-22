@@ -11,7 +11,7 @@ function resolveValue(value: unknown): unknown {
   return value
 }
 
-import { offsetIndices } from '@fluenti/core'
+import { offsetIndices } from '@fluenti/core/internal'
 
 export function extractMessage(value: unknown): {
   message: string

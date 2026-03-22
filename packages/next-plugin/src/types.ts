@@ -1,4 +1,4 @@
-import type { FluentiBuildConfig } from '@fluenti/core'
+import type { FluentiBuildConfig } from '@fluenti/core/internal'
 
 /**
  * Configuration for `withFluenti()`.

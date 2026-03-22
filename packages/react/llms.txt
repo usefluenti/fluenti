@@ -28,7 +28,7 @@ Main entry (`@fluenti/react`):
 
 Type re-exports from `@fluenti/react`:
 
-- `FluentiContext`, `I18nProviderProps`, `Messages`, `AllMessages`, `MessageDescriptor`, `CompileTimeMessageDescriptor`, `CompileTimeT`, `Locale`, `DateFormatOptions`, `NumberFormatOptions`, `FluentInstanceExtended`
+- `FluentiContext`, `I18nProviderProps`, `Messages`, `AllMessages`, `MessageDescriptor`, `CompileTimeMessageDescriptor`, `CompileTimeT`, `Locale`, `DateFormatOptions`, `NumberFormatOptions`
 - `TransProps`, `PluralProps`, `SelectProps`, `DateTimeProps`, `NumberProps` — component prop types
 
 Server entry (`@fluenti/react/server`):

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { deriveRouteName, parseCompiledCatalog, buildChunkModule } from '../src/route-resolve'
-import { hashMessage } from '@fluenti/core'
+import { hashMessage } from '@fluenti/core/internal'
 
 describe('deriveRouteName', () => {
   it('strips directory and hash from chunk filename', () => {

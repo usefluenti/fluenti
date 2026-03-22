@@ -75,7 +75,8 @@ Returns the full client runtime API:
 - `isLoading`
 - `loadedLocales`
 - `preloadLocale(locale)`
-- `i18n` as the underlying escape hatch
+- `te(id)` — check if a translation key exists
+- `tm(id)` — get the raw compiled message without interpolation
 
 ## Compile-time `t`
 

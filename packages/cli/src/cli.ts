@@ -22,8 +22,8 @@ import { runMigrate } from './migrate'
 import { runInit } from './init'
 import { loadConfig } from './config-loader'
 import { createHash } from 'node:crypto'
-import type { ExtractedMessage } from '@fluenti/core'
-import { resolveLocaleCodes } from '@fluenti/core'
+import type { ExtractedMessage } from '@fluenti/core/internal'
+import { resolveLocaleCodes } from '@fluenti/core/internal'
 
 function deriveProjectId(cwd: string): string {
   return createHash('md5').update(cwd).digest('hex').slice(0, 8)

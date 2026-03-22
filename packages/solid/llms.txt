@@ -16,19 +16,27 @@ pnpm add @fluenti/core @fluenti/solid @fluenti/vite-plugin
 
 ## Main Exports
 
-- `createI18n(config)` — app-level singleton bootstrap
-- `createFluenti(config)` — explicit context factory
+- `createFluentiContext(config)` — context factory (creates a reactive i18n context)
 - `I18nProvider` — provider component
-- `useI18n()` — access the nearest provider or fallback singleton
+- `useI18n()` — access the nearest `<I18nProvider>` context
 - `t` — compile-time-only authoring API
 - `Trans`, `Plural`, `Select`, `DateTime`, `NumberFormat`
 - `msg`
-- `I18nCtx` — raw SolidJS context object (for advanced `useContext` usage)
 
 ### Type Exports
 
-- `I18nContext`, `I18nConfig` — context value and config types
+- `FluentiContext`, `FluentiConfig` — context value and config types
 - `TransProps`, `PluralProps`, `SelectProps` — component prop types
+
+## FluentiContext Methods
+
+The context returned by `useI18n()` provides:
+
+- `locale()`, `setLocale(locale)`, `t(id, values?)`, `d(value, style?)`, `n(value, style?)`
+- `format(message, values?)`, `loadMessages(locale, messages)`, `getLocales()`
+- `te(key, locale?)` — check if a translation key exists
+- `tm(key, locale?)` — get the raw compiled message without interpolation
+- `isLoading()`, `loadedLocales()`, `preloadLocale(locale)`
 
 ## Config Extensions
 

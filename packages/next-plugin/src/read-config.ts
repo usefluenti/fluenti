@@ -1,5 +1,5 @@
 import { loadConfigSync, DEFAULT_FLUENTI_CONFIG } from '@fluenti/core/config'
-import type { FluentiBuildConfig } from '@fluenti/core'
+import type { FluentiBuildConfig } from '@fluenti/core/internal'
 import type { WithFluentConfig, ResolvedFluentConfig } from './types'
 
 /**

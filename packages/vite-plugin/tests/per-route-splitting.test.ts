@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { Plugin } from 'vite'
-import { hashMessage } from '@fluenti/core'
+import { hashMessage } from '@fluenti/core/internal'
 import { createFluentiPlugins } from '../src/index'
 import { createRuntimeGenerator } from '../src/runtime-template'
 

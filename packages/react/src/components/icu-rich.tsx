@@ -1,10 +1,10 @@
+import type { MessageDescriptor } from '@fluenti/core'
 import {
-  type MessageDescriptor,
   buildICUPluralMessage,
   buildICUSelectMessage,
   normalizeSelectForms,
   offsetIndices,
-} from '@fluenti/core'
+} from '@fluenti/core/internal'
 import type { ReactElement, ReactNode } from 'react'
 import { extractMessage, reconstruct } from './trans-core'
 
