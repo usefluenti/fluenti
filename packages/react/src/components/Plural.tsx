@@ -1,4 +1,4 @@
-import { memo, useContext, type ReactNode } from 'react'
+import { createElement, memo, useContext, type ReactNode } from 'react'
 import { hashMessage } from '@fluenti/core'
 import { I18nContext } from '../context'
 import { PLURAL_CATEGORIES, type PluralCategory } from './plural-core'
@@ -27,6 +27,8 @@ export interface PluralProps {
   other: ReactNode
   /** Offset from value before selecting form */
   offset?: number
+  /** Wrapper element tag name (e.g. 'span', 'div'). Defaults to Fragment (no wrapper). */
+  tag?: keyof React.JSX.IntrinsicElements
 }
 
 /**
@@ -49,6 +51,7 @@ export const Plural = memo(function Plural({
   many,
   other,
   offset,
+  tag,
 }: PluralProps) {
   const ctx = useContext(I18nContext)
   if (!ctx) {
@@ -83,5 +86,6 @@ export const Plural = memo(function Plural({
     ...(comment !== undefined ? { comment } : {}),
   }
 
-  return <>{renderRichTranslation(descriptor, { count: value }, (desc, values) => ctx.i18n.t(desc, values), components)}</>
+  const result = renderRichTranslation(descriptor, { count: value }, (desc, values) => ctx.i18n.t(desc, values), components)
+  return tag ? createElement(tag, null, result) : <>{result}</>
 })

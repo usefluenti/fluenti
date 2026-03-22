@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import type {
+  CompiledMessage,
   Locale,
   LocalizedString,
   Messages,
@@ -37,9 +38,13 @@ export interface I18nContextValue {
   /** Whether a locale is currently being loaded */
   isLoading: boolean
   /** Set of locales whose messages have been loaded */
-  loadedLocales: string[]
+  loadedLocales: ReadonlySet<string>
   /** Preload a locale in the background without switching to it */
   preloadLocale: (locale: string) => Promise<void>
+  /** Check if a translation key exists in the catalog */
+  te: (key: string, locale?: string) => boolean
+  /** Get the raw compiled message without interpolation */
+  tm: (key: string, locale?: string) => CompiledMessage | undefined
 }
 
 export interface I18nProviderProps {

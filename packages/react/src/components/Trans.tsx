@@ -1,4 +1,5 @@
 import {
+  createElement,
   memo,
   useContext,
   useMemo,
@@ -17,6 +18,8 @@ export interface TransProps {
   context?: string
   /** Context comment for translators */
   comment?: string
+  /** Wrapper element tag name (e.g. 'span', 'div'). Defaults to Fragment (no wrapper). */
+  tag?: keyof React.JSX.IntrinsicElements
   /** Custom render wrapper */
   render?: (translation: ReactNode) => ReactNode
   /** @internal Pre-computed message ID from build plugin */
@@ -40,6 +43,7 @@ export const Trans = memo(function Trans({
   id,
   context,
   comment,
+  tag,
   render,
   __id,
   __message,
@@ -74,5 +78,6 @@ export const Trans = memo(function Trans({
   )
 
   const result = reconstruct(translated, components)
-  return render ? render(result) : <>{result}</>
+  if (render) return render(result)
+  return tag ? createElement(tag, null, result) : <>{result}</>
 })

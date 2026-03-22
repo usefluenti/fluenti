@@ -1,4 +1,4 @@
-import { memo, useContext, type ReactNode } from 'react'
+import { createElement, memo, useContext, type ReactNode } from 'react'
 import { hashMessage } from '@fluenti/core'
 import { I18nContext } from '../context'
 import { buildICUSelectMessage, normalizeSelectForms, renderRichTranslation, serializeRichForms } from './icu-rich'
@@ -16,8 +16,10 @@ export interface SelectProps {
   other: ReactNode
   /** Type-safe named options. Takes precedence over direct case props. */
   options?: Record<string, ReactNode>
+  /** Wrapper element tag name (e.g. 'span', 'div'). Defaults to Fragment (no wrapper). */
+  tag?: keyof React.JSX.IntrinsicElements
   /** Named cases — any string key maps to a ReactNode */
-  [key: string]: ReactNode | Record<string, ReactNode> | undefined
+  [key: string]: ReactNode | Record<string, ReactNode> | keyof React.JSX.IntrinsicElements | undefined
 }
 
 /**
@@ -39,11 +41,11 @@ export const Select = memo(function Select(props: SelectProps) {
     throw new Error('[fluenti] <Select> must be used within an <I18nProvider>')
   }
 
-  const { value, id, context, comment, other, options, ...cases } = props
+  const { value, id, context, comment, other, options, tag, ...cases } = props
   const forms: Record<string, ReactNode | undefined> = options === undefined
     ? {
       ...Object.fromEntries(
-        Object.entries(cases).filter(([key]) => !['value', 'id', 'context', 'comment', 'options', 'other'].includes(key)),
+        Object.entries(cases).filter(([key]) => !['value', 'id', 'context', 'comment', 'options', 'other', 'tag'].includes(key)),
       ),
       other,
     }
@@ -68,10 +70,11 @@ export const Select = memo(function Select(props: SelectProps) {
     ...(comment !== undefined ? { comment } : {}),
   }
 
-  return <>{renderRichTranslation(
+  const result = renderRichTranslation(
     descriptor,
     { value: normalized.valueMap[value] ?? 'other' },
     (desc, values) => ctx.i18n.t(desc, values),
     components,
-  )}</>
+  )
+  return tag ? createElement(tag, null, result) : <>{result}</>
 })

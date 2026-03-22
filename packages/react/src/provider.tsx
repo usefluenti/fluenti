@@ -44,9 +44,10 @@ export function I18nProvider({
   const [loadedMessages, setLoadedMessages] = useState<Record<string, Messages>>(
     messages ? unwrapMessages(messages) : {},
   )
-  const [loadedLocales, setLoadedLocales] = useState<string[]>(
+  const [loadedLocalesArr, setLoadedLocalesArr] = useState<string[]>(
     messages ? Object.keys(messages) : [],
   )
+  const loadedLocales = useMemo(() => new Set(loadedLocalesArr) as ReadonlySet<string>, [loadedLocalesArr])
 
   // Use ref to avoid stale closures in callbacks
   const loadedMessagesRef = useRef(loadedMessages)
@@ -117,7 +118,7 @@ export function I18nProvider({
             ? (msgs as { default: Messages }).default
             : (msgs as Messages)
         setLoadedMessages((prev) => ({ ...prev, [newLocale]: resolved }))
-        setLoadedLocales((prev) => [...new Set([...prev, newLocale])])
+        setLoadedLocalesArr((prev) => [...new Set([...prev, newLocale])])
         if (splitRuntime?.__switchLocale) {
           await splitRuntime.__switchLocale(newLocale)
         }
@@ -147,7 +148,7 @@ export function I18nProvider({
             ? (msgs as { default: Messages }).default
             : (msgs as Messages)
         setLoadedMessages((prev) => ({ ...prev, [loc]: resolved }))
-        setLoadedLocales((prev) => [...new Set([...prev, loc])])
+        setLoadedLocalesArr((prev) => [...new Set([...prev, loc])])
         if (splitRuntime?.__preloadLocale) {
           await splitRuntime.__preloadLocale(loc)
         }
@@ -156,6 +157,24 @@ export function I18nProvider({
       }
     },
     [loadMessages],
+  )
+
+  const te = useCallback(
+    (key: string, loc?: string) => {
+      const targetLocale = loc ?? currentLocale
+      const msgs = loadedMessagesRef.current[targetLocale]
+      return msgs !== undefined && key in msgs
+    },
+    [currentLocale],
+  )
+
+  const tm = useCallback(
+    (key: string, loc?: string) => {
+      const targetLocale = loc ?? currentLocale
+      const msgs = loadedMessagesRef.current[targetLocale]
+      return msgs?.[key]
+    },
+    [currentLocale],
   )
 
   const ctx = useMemo(
@@ -172,8 +191,10 @@ export function I18nProvider({
       isLoading,
       loadedLocales,
       preloadLocale,
+      te,
+      tm,
     }),
-    [i18n, currentLocale, handleSetLocale, isLoading, loadedLocales, preloadLocale],
+    [i18n, currentLocale, handleSetLocale, isLoading, loadedLocales, preloadLocale, te, tm],
   )
 
   return <I18nContext.Provider value={ctx}>{children}</I18nContext.Provider>

@@ -31,9 +31,17 @@ function resolveChunkMessages(
 
 /** Extended config with lazy locale loading support */
 export interface I18nConfig extends FluentConfig {
-  /** Async chunk loader for lazy locale loading */
+  /**
+   * Async message loader for lazy locale loading.
+   * Preferred over `chunkLoader` (which is deprecated).
+   */
+  loadMessages?: ChunkLoader
+  /**
+   * Async chunk loader for lazy locale loading.
+   * @deprecated Use `loadMessages` instead.
+   */
   chunkLoader?: ChunkLoader
-  /** Enable lazy locale loading through chunkLoader */
+  /** Enable lazy locale loading through loadMessages/chunkLoader */
   lazyLocaleLoading?: boolean
   /** Locale-specific fallback chains */
   fallbackChain?: Record<string, Locale[]>
@@ -68,7 +76,11 @@ export interface I18nContext {
   /** Set of locales whose messages have been loaded */
   loadedLocales: Accessor<Set<string>>
   /** Preload a locale in the background without switching to it */
-  preloadLocale(locale: string): void
+  preloadLocale(locale: string): Promise<void>
+  /** Check if a translation key exists in the catalog */
+  te(key: string, locale?: string): boolean
+  /** Get the raw compiled message without interpolation */
+  tm(key: string, locale?: string): CompiledMessage | undefined
 }
 
 /**
@@ -84,6 +96,7 @@ export function createI18nContext(config: FluentConfig | I18nConfig): I18nContex
   const [loadedLocales, setLoadedLocales] = createSignal(new Set(loadedLocalesSet))
   const messages: Record<string, Messages> = { ...config.messages }
   const i18nConfig = config as I18nConfig
+  const chunkLoaderFn = i18nConfig.loadMessages ?? i18nConfig.chunkLoader
   const lazyLocaleLoading = i18nConfig.lazyLocaleLoading
     ?? (config as I18nConfig & { splitting?: boolean }).splitting
     ?? false
@@ -230,7 +243,7 @@ export function createI18nContext(config: FluentConfig | I18nConfig): I18nContex
   }
 
   const setLocale = async (newLocale: Locale): Promise<void> => {
-    if (!lazyLocaleLoading || !i18nConfig.chunkLoader) {
+    if (!lazyLocaleLoading || !chunkLoaderFn) {
       setLocaleSignal(newLocale)
       return
     }
@@ -247,7 +260,7 @@ export function createI18nContext(config: FluentConfig | I18nConfig): I18nContex
 
     setIsLoading(true)
     try {
-      const loaded = resolveChunkMessages(await i18nConfig.chunkLoader(newLocale))
+      const loaded = resolveChunkMessages(await chunkLoaderFn(newLocale))
       // Intentional mutation: messages record is locally scoped to this context closure
       messages[newLocale] = { ...messages[newLocale], ...loaded }
       loadedLocalesSet.add(newLocale)
@@ -261,21 +274,21 @@ export function createI18nContext(config: FluentConfig | I18nConfig): I18nContex
     }
   }
 
-  const preloadLocale = (loc: string): void => {
-    if (!lazyLocaleLoading || loadedLocalesSet.has(loc) || !i18nConfig.chunkLoader) return
+  const preloadLocale = async (loc: string): Promise<void> => {
+    if (!lazyLocaleLoading || loadedLocalesSet.has(loc) || !chunkLoaderFn) return
     const splitRuntime = getSplitRuntimeModule()
-    i18nConfig.chunkLoader(loc).then(async (loaded) => {
-      const resolved = resolveChunkMessages(loaded)
+    try {
+      const loaded = resolveChunkMessages(await chunkLoaderFn(loc))
       // Intentional mutation: messages record is locally scoped to this context closure
-      messages[loc] = { ...messages[loc], ...resolved }
+      messages[loc] = { ...messages[loc], ...loaded }
       loadedLocalesSet.add(loc)
       setLoadedLocales(new Set(loadedLocalesSet))
       if (splitRuntime?.__preloadLocale) {
         await splitRuntime.__preloadLocale(loc)
       }
-    }).catch((e: unknown) => {
+    } catch (e: unknown) {
       console.warn('[fluenti] preload failed:', loc, e)
-    })
+    }
   }
 
   const getLocales = (): Locale[] => Object.keys(messages)
@@ -290,7 +303,18 @@ export function createI18nContext(config: FluentConfig | I18nConfig): I18nContex
     return coreInterpolate(message, values, locale()) as LocalizedString
   }
 
-  return { locale, setLocale, t, loadMessages, getLocales, d, n, format, isLoading, loadedLocales, preloadLocale }
+  const te = (key: string, loc?: string): boolean => {
+    const targetLocale = loc ?? locale()
+    const catalog = messages[targetLocale]
+    return catalog !== undefined && key in catalog
+  }
+
+  const tm = (key: string, loc?: string): CompiledMessage | undefined => {
+    const targetLocale = loc ?? locale()
+    return messages[targetLocale]?.[key]
+  }
+
+  return { locale, setLocale, t, loadMessages, getLocales, d, n, format, isLoading, loadedLocales, preloadLocale, te, tm }
 }
 
 // ─── Module-level singleton ─────────────────────────────────────────────────
