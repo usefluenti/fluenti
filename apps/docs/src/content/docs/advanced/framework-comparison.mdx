@@ -1,0 +1,120 @@
+---
+title: "Framework API Comparison"
+description: "Side-by-side comparison of Fluenti APIs across Vue, React, and SolidJS — provider setup, useI18n return values, component props, and reactivity models."
+---
+
+Fluenti provides a consistent API across Vue, React, and SolidJS. This page highlights what is identical and what differs due to framework-specific patterns.
+
+## Provider Setup
+
+| | Vue | React | Solid |
+|---|---|---|---|
+| **Init function** | `createFluentVue(options)` | — | — |
+| **Provider** | `app.use(i18n)` plugin | `<I18nProvider>` component | `<I18nProvider>` component |
+| **Access hook** | `useI18n()` composable | `useI18n()` hook | `useI18n()` hook |
+
+Vue uses a plugin-based approach (`app.use()`), while React and Solid use a context provider component wrapping the tree.
+
+## `useI18n()` Return Values
+
+All three frameworks return the same core translation functions with identical signatures:
+
+| Property | Vue | React | Solid | Identical? |
+|----------|-----|-------|-------|:----------:|
+| `t(id, values?)` | `LocalizedString` | `LocalizedString` | `LocalizedString` | ✅ |
+| `` t`Hello ${name}` `` | ✅ | ✅ | ✅ | ✅ |
+| `d(value, style?)` | `LocalizedString` | `LocalizedString` | `LocalizedString` | ✅ |
+| `n(value, style?)` | `LocalizedString` | `LocalizedString` | `LocalizedString` | ✅ |
+| `format(message, values?)` | `LocalizedString` | `LocalizedString` | `LocalizedString` | ✅ |
+| `setLocale(locale)` | `Promise<void>` | `Promise<void>` | `Promise<void>` | ✅ |
+| `loadMessages(locale, msgs)` | ✅ | ✅ | ✅ | ✅ |
+| `getLocales()` | `string[]` | `string[]` | `string[]` | ✅ |
+| `preloadLocale(locale)` | `Promise<void>` | `Promise<void>` | `Promise<void>` | ✅ |
+| `te(key, locale?)` | `boolean` | `boolean` | `boolean` | ✅ |
+| `tm(key, locale?)` | `CompiledMessage?` | `CompiledMessage?` | `CompiledMessage?` | ✅ |
+
+### Reactive state types
+
+These properties expose the same data but use framework-native reactivity types:
+
+| Property | Vue | React | Solid |
+|----------|-----|-------|-------|
+| `locale` | `Ref<string>` | `string` | `Accessor<string>` |
+| `isLoading` | `Ref<boolean>` | `boolean` | `Accessor<boolean>` |
+| `loadedLocales` | `Ref<ReadonlySet<string>>` | `ReadonlySet<string>` | `Accessor<Set<string>>` |
+
+- **Vue**: Use `.value` to read (e.g., `locale.value`)
+- **React**: Plain values that trigger re-renders via `useState`
+- **Solid**: Call as functions (e.g., `locale()`)
+
+## Component Props
+
+`<Trans>`, `<Plural>`, and `<Select>` share the same props across all frameworks:
+
+### `<Trans>`
+
+| Prop | Type | Required | Notes |
+|------|------|:--------:|-------|
+| `id` | `string` | No | Override auto-generated hash ID |
+| `context` | `string` | No | Message context for disambiguation |
+| `comment` | `string` | No | Translator-facing note |
+| `tag` | `string` | No | Wrapper element. Default: **no wrapper** (Fragment) |
+| `children` | — | Yes | Content to translate |
+| `render` | `(node) => node` | No | React only — custom render wrapper |
+
+### `<Plural>`
+
+| Prop | Type | Required | Notes |
+|------|------|:--------:|-------|
+| `value` | `number` | Yes | Numeric value for plural selection |
+| `other` | `string` | **Yes** | Required fallback form |
+| `zero` / `one` / `two` / `few` / `many` | `string` | No | CLDR plural category forms |
+| `offset` | `number` | No | Offset before selecting form |
+| `tag` | `string` | No | Wrapper element. Default: Fragment |
+
+### `<Select>`
+
+| Prop | Type | Required | Notes |
+|------|------|:--------:|-------|
+| `value` | `string` | Yes | Value to match against cases |
+| `other` | `string` | **Yes** | Required fallback case |
+| `options` | `Record<string, string>` | No | Named case options |
+| `tag` | `string` | No | Wrapper element. Default: Fragment |
+
+## Reactivity Model
+
+Each framework uses its native reactivity system internally:
+
+| Aspect | Vue | React | Solid |
+|--------|-----|-------|-------|
+| **State** | `ref()`, `shallowReactive()` | `useState()`, `useRef()` | `createSignal()` |
+| **Tracking** | Automatic dependency tracking via Proxy | Re-render on state change | Fine-grained signal tracking |
+| **Memoization** | Automatic | `useMemo()`, `useCallback()` | Not needed (fine-grained) |
+| **Race protection** | Not needed (synchronous reactive graph) | `localeRequestRef` counter | Not needed (synchronous signals) |
+
+## Lazy Loading Configuration
+
+| | Vue | React | Solid |
+|---|---|---|---|
+| **Loader prop** | `chunkLoader` | `loadMessages` | `chunkLoader` |
+| **Enable flag** | `lazyLocaleLoading: true` | Automatic (when `loadMessages` provided) | `lazyLocaleLoading: true` |
+| **Loader signature** | `(locale) => Promise<Messages>` | `(locale) => Promise<Messages>` | `(locale) => Promise<Messages>` |
+
+Vue and Solid use `chunkLoader` + explicit `lazyLocaleLoading` flag. React infers lazy loading automatically when `loadMessages` is provided.
+
+## Vite Plugin
+
+Each framework has its own Vite plugin that wraps `@fluenti/vite-plugin`:
+
+```typescript
+// Vue
+import fluentiVue from '@fluenti/vue/vite-plugin'
+
+// React
+import fluentiReact from '@fluenti/react/vite-plugin'
+
+// Solid
+import fluentiSolid from '@fluenti/solid/vite-plugin'
+```
+
+All three accept the same `FluentiPluginOptions` (optional `config` field). The framework plugin handles scope transforms, virtual module generation, and component compilation automatically.

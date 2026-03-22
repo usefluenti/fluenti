@@ -367,3 +367,119 @@ Usage: `n(1234567, 'compact')` → "1.2M"
 
 </TabItem>
 </Tabs>
+
+---
+
+## ICU Custom Formatters
+
+Beyond the built-in `d()` and `n()` helpers, you can register custom ICU function formatters that handle `{variable, functionName, style}` syntax inside messages.
+
+### How it works
+
+When the ICU compiler encounters `{variable, functionName}` or `{variable, functionName, style}`, it checks formatters in this order:
+
+1. **Custom formatters** (registered via `formatters` config) — checked first
+2. **Built-in formatters** (`number`, `date`, `time`) — fallback
+
+This means custom formatters can **override** built-in behavior if you register a formatter with the same name (e.g., a custom `number` formatter replaces the default `Intl.NumberFormat` handling).
+
+### Signature
+
+```typescript
+type CustomFormatter = (value: unknown, style: string, locale: string) => string
+```
+
+| Parameter | Description |
+|-----------|-------------|
+| `value` | The interpolated variable value |
+| `style` | The style argument from the ICU syntax (e.g., `short` in `{x, date, short}`). Empty string if omitted. |
+| `locale` | The current locale code |
+
+### Registration
+
+<Tabs>
+<TabItem label="Vue">
+
+```typescript
+const i18n = createFluentVue({
+  locale: 'en',
+  messages,
+  formatters: {
+    uppercase: (value) => String(value).toUpperCase(),
+    list: (value, style, locale) =>
+      new Intl.ListFormat(locale, { type: style || 'conjunction' })
+        .format(value as string[]),
+  },
+})
+```
+
+</TabItem>
+<TabItem label="React">
+
+```tsx
+<I18nProvider
+  locale="en"
+  messages={messages}
+  formatters={{
+    uppercase: (value) => String(value).toUpperCase(),
+    list: (value, style, locale) =>
+      new Intl.ListFormat(locale, { type: style || 'conjunction' })
+        .format(value as string[]),
+  }}
+>
+  <App />
+</I18nProvider>
+```
+
+</TabItem>
+<TabItem label="Solid">
+
+```tsx
+<I18nProvider
+  locale="en"
+  messages={messages}
+  formatters={{
+    uppercase: (value) => String(value).toUpperCase(),
+    list: (value, style, locale) =>
+      new Intl.ListFormat(locale, { type: style || 'conjunction' })
+        .format(value as string[]),
+  }}
+>
+  <App />
+</I18nProvider>
+```
+
+</TabItem>
+</Tabs>
+
+### Usage in ICU messages
+
+```
+Welcome, {name, uppercase}!
+→ "Welcome, ALICE!"
+
+Items: {items, list, disjunction}
+→ "Items: apples, bananas, or cherries"
+```
+
+### Overriding built-in formatters
+
+Register a formatter named `number`, `date`, or `time` to replace the default behavior:
+
+```typescript
+formatters: {
+  // Custom number formatter with accounting notation
+  number: (value, style, locale) => {
+    if (style === 'accounting') {
+      const n = Number(value)
+      return n < 0
+        ? `(${Math.abs(n).toLocaleString(locale)})`
+        : n.toLocaleString(locale)
+    }
+    // Fall back to default Intl formatting for other styles
+    return new Intl.NumberFormat(locale).format(Number(value))
+  },
+}
+```
+
+Usage: `{amount, number, accounting}` with value `-1234` → `"(1,234)"`

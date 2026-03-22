@@ -150,6 +150,7 @@ export default defineConfig({
             { label: 'Fallback Chains', slug: 'advanced/fallback-chains' },
             { label: 'Complex Languages', slug: 'advanced/complex-languages' },
             { label: 'Best Practices', slug: 'advanced/best-practices' },
+            { label: 'Framework Comparison', slug: 'advanced/framework-comparison' },
             { label: 'Troubleshooting', slug: 'advanced/troubleshooting' },
           ],
         },
