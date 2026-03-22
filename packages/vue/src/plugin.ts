@@ -74,7 +74,7 @@ export interface FluentiContext {
 /** Injection key for providing/injecting fluenti context */
 export const FLUENTI_KEY: InjectionKey<FluentiContext> = Symbol('fluenti')
 
-/** Options for creating the Fluenti Vue plugin */
+/** Options for creating the FluentVue plugin */
 export interface FluentiConfig {
   locale: string
   fallbackLocale?: string
@@ -114,7 +114,7 @@ export interface FluentiConfig {
   injectGlobalProperties?: boolean
 }
 
-/** Return value of `createFluenti()` */
+/** Return value of `createFluentVue()` */
 export interface FluentiPlugin {
   /** Vue plugin install method */
   install(app: App): void
@@ -151,9 +151,7 @@ function getModifierAttr(modifiers: Partial<Record<string, boolean>>): string | 
  * so it is safe to call once per SSR request.
  */
 export function createFluenti(options: FluentiConfig): FluentiPlugin {
-  const lazyLocaleLoading = options.lazyLocaleLoading
-    ?? (options as FluentiConfig & { splitting?: boolean }).splitting
-    ?? false
+  const lazyLocaleLoading = options.lazyLocaleLoading ?? false
   const locale = ref(options.locale)
   // Intentional mutation: Vue's shallowReactive API requires in-place property assignment for reactivity
   const catalogs = shallowReactive<AllMessages>({ ...options.messages })
@@ -457,3 +455,15 @@ export function createFluenti(options: FluentiConfig): FluentiPlugin {
     global: context,
   }
 }
+
+/** @deprecated Use `createFluenti` instead */
+export const createFluentVue = createFluenti
+
+/** @deprecated Use `FluentiContext` instead */
+export type FluentVueContext = FluentiContext
+
+/** @deprecated Use `FluentiConfig` instead */
+export type FluentVueOptions = FluentiConfig
+
+/** @deprecated Use `FluentiPlugin` instead */
+export type FluentVuePlugin = FluentiPlugin

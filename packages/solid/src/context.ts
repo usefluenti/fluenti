@@ -77,16 +77,14 @@ export interface FluentiContext {
  * The returned `t()` reads the internal `locale()` signal, so any
  * Solid computation that calls `t()` will re-run when the locale changes.
  */
-export function createI18nContext(config: FluentConfig | FluentiConfig): FluentiContext {
+export function createFluenti(config: FluentConfig | FluentiConfig): FluentiContext {
   const [locale, setLocaleSignal] = createSignal<Locale>(config.locale)
   const [isLoading, setIsLoading] = createSignal(false)
   const loadedLocalesSet = new Set<string>([config.locale])
   const [loadedLocales, setLoadedLocales] = createSignal(new Set(loadedLocalesSet))
   const messages: Record<string, Messages> = { ...config.messages }
   const i18nConfig = config as FluentiConfig
-  const lazyLocaleLoading = i18nConfig.lazyLocaleLoading
-    ?? (config as FluentiConfig & { splitting?: boolean }).splitting
-    ?? false
+  const lazyLocaleLoading = i18nConfig.lazyLocaleLoading ?? false
 
   function lookupCatalog(
     id: string,
@@ -305,8 +303,8 @@ let globalCtx: FluentiContext | undefined
  *
  * Returns the context for convenience, but `useI18n()` will also find it.
  */
-export function createFluenti(config: FluentConfig | FluentiConfig): FluentiContext {
-  const ctx = createRoot(() => createI18nContext(config))
+export function createI18n(config: FluentConfig | FluentiConfig): FluentiContext {
+  const ctx = createRoot(() => createFluenti(config))
 
   // Only set global singleton in browser (client-side).
   // In SSR, each request should use <I18nProvider> for per-request isolation.
@@ -314,7 +312,7 @@ export function createFluenti(config: FluentConfig | FluentiConfig): FluentiCont
     globalCtx = ctx
   } else {
     console.warn(
-      '[fluenti] createFluenti() detected SSR environment. ' +
+      '[fluenti] createI18n() detected SSR environment. ' +
       'Use <I18nProvider> for per-request isolation in SSR.',
     )
   }
@@ -336,3 +334,12 @@ export function setGlobalFluentiContext(ctx: FluentiContext): void {
 export function resetGlobalFluentiContext(): void {
   globalCtx = undefined
 }
+
+/** @deprecated Use `createFluenti` instead */
+export const createI18nContext = createFluenti
+
+/** @deprecated Use `FluentiContext` instead */
+export type I18nContext = FluentiContext
+
+/** @deprecated Use `FluentiConfig` instead */
+export type I18nConfig = FluentiConfig

@@ -471,6 +471,7 @@ export default defineConfig({
 | `defaultBuildLocale` | `string?` | — | Locale embedded in the initial bundle |
 | `devWarnings` | `boolean?` | — | Warn on missing translations in dev |
 | `strictBuild` | `boolean?` | — | Fail build on missing translations |
+| `namespaceMapping` | `Record<string, string>?` | — | Map namespace prefixes to catalog subdirectories |
 | `externalCatalogs` | `Array<{ package, catalogDir }>?` | — | Load catalogs from npm packages |
 | `strictThreshold` | `number?` | — | Min translation % for `fluenti stats` |
 
@@ -638,7 +639,7 @@ Tagged template for lazy message descriptors with auto-generated FNV-1a hash IDs
 
 Compile-time tagged template — the primary authoring API. Write natural language: t\`Hello {name}\` — compiled to direct catalog lookups at build time.
 
-### createFluentiRuntime(config)
+### createFluentiCore(config)
 
 Create a full i18n instance with `t()`, `d()`, `n()`, `format()`, locale switching.
 

@@ -25,7 +25,7 @@ pnpm add @fluenti/vue-i18n-compat @fluenti/core @fluenti/vue
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `vueI18n` | `VueI18nInstance` | — | The vue-i18n instance from `createI18n()` |
-| `fluenti` | `FluentVuePlugin` | — | The Fluenti plugin from `createFluenti()` |
+| `fluenti` | `FluentiPlugin` | — | The Fluenti plugin from `createFluenti()` |
 | `priority` | `'fluenti-first' \| 'vue-i18n-first'` | `'fluenti-first'` | Which library to check first for translations |
 
 ## BridgeContext (returned by useI18n())

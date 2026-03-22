@@ -35,7 +35,7 @@ With this config, when locale is `zh-TW`:
 Instead of duplicating an entire catalog for `en-GB`, let it fall back to `en` and only translate the differences:
 
 ```ts
-createFluentiRuntime({
+createFluentiCore({
   locale: 'en-GB',
   fallbackLocale: 'en',
   fallbackChain: {

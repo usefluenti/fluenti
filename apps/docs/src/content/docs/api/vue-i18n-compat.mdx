@@ -31,7 +31,7 @@ app.use(bridge)
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
 | `vueI18n` | `VueI18nInstance` | required | vue-i18n instance from `createI18n()` |
-| `fluenti` | `FluentVuePlugin` | required | Fluenti plugin from `createFluenti()` |
+| `fluenti` | `FluentiPlugin` | required | Fluenti plugin from `createFluenti()` |
 | `priority` | `BridgePriority` | `'fluenti-first'` | Which library to check first |
 
 ### `BridgePriority`
@@ -84,7 +84,7 @@ The context object available via `useI18n()` or `bridge.global`.
 
 | Property | Type | Description |
 |----------|------|-------------|
-| `fluenti` | `FluentVueContext` | Direct access to the Fluenti context |
+| `fluenti` | `FluentiContext` | Direct access to the Fluenti context |
 | `vueI18n` | `VueI18nGlobal` | Direct access to the vue-i18n global composer |
 
 ## `useI18n()`

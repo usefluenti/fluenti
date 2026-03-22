@@ -705,14 +705,14 @@ describe('createFluentiCore', () => {
   // ─── input validation ──────────────────────────────────────────────
 
   describe('input validation', () => {
-    it('throws on empty locale in createFluentiCore', () => {
+    it('throws on empty locale in createFluent', () => {
       expect(() => createFluentiCore({
         locale: '',
         messages: {},
       })).toThrow('non-empty string')
     })
 
-    it('throws on whitespace-only locale in createFluentiCore', () => {
+    it('throws on whitespace-only locale in createFluent', () => {
       expect(() => createFluentiCore({
         locale: '  ',
         messages: {},

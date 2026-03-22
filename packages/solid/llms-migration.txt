@@ -25,10 +25,10 @@ pnpm add -D @fluenti/cli
 
 Before (@solid-primitives/i18n):
 ```tsx
-import { I18nContext, createI18nContext } from '@solid-primitives/i18n'
+import { I18nContext, createFluenti } from '@solid-primitives/i18n'
 
 const dict = { en: { hello: 'Hello!' }, ja: { hello: 'こんにちは！' } }
-const value = createI18nContext(dict, 'en')
+const value = createFluenti(dict, 'en')
 
 <I18nContext.Provider value={value}>
   <App />
@@ -126,7 +126,7 @@ pnpm remove @solid-primitives/i18n
 
 | @solid-primitives/i18n | Fluenti |
 |------------------------|---------|
-| `createI18nContext(dict, locale)` | `createI18nContext(config)` or `<I18nProvider>` |
+| `createFluenti(dict, locale)` | `createFluenti(config)` or `<I18nProvider>` |
 | `I18nContext.Provider` | `I18nProvider` |
 | `useI18n()` → `[t, { locale, add }]` | `useI18n()` → `{ i18n, locale, setLocale, isLoading }` |
 | `t('key')` | `i18n.t('key')` |

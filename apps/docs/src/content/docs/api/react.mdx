@@ -32,8 +32,7 @@ import zhCN from './locales/compiled/zh-CN'
 | `fallbackChain` | `Record<string, string[]>?` | Locale fallback chains |
 | `dateFormats` | `DateFormatOptions?` | Custom date format presets |
 | `numberFormats` | `NumberFormatOptions?` | Custom number format presets |
-| `missing` | `(locale, id) => string?` | **Deprecated.** Use `onMissingKey` instead |
-| `onMissingKey` | `(event: MissingKeyEvent) => string \| undefined \| void` | Called when a translation is missing or fallback locale is used |
+| `missing` | `(locale, id) => string?` | Missing message handler |
 
 ### Lazy loading
 
@@ -71,14 +70,12 @@ function MyComponent() {
 | `format` | `(message, values?) => string` | Direct ICU interpolation (no catalog lookup) |
 | `loadMessages` | `(locale, messages) => void` | Merge messages into a locale catalog at runtime |
 | `getLocales` | `() => string[]` | Return all locale codes with loaded messages |
-| `i18n` | `FluentiInstanceExtended` | Core instance (escape hatch for advanced use) |
+| `i18n` | `FluentInstanceExtended` | Core instance (escape hatch for advanced use) |
 | `locale` | `string` | Current locale |
 | `setLocale` | `(locale) => Promise<void>` | Change locale (async if loading is needed) |
 | `isLoading` | `boolean` | Whether a locale is being loaded |
 | `loadedLocales` | `string[]` | Array of loaded locale codes |
 | `preloadLocale` | `(locale) => Promise<void>` | Preload a locale without switching |
-| `te` | `(key, locale?) => boolean` | Check if a translation key exists in the catalog |
-| `tm` | `(key, locale?) => CompiledMessage \| undefined` | Get the raw compiled message without interpolation |
 
 ## `t` (compile-time import)
 
@@ -299,22 +296,19 @@ export const { setLocale, getI18n, Trans, Plural, Select, DateTime, NumberFormat
 | `fallbackChain` | `Record<string, string[]>?` | Custom fallback chains per locale |
 | `dateFormats` | `DateFormatOptions?` | Custom date format presets |
 | `numberFormats` | `NumberFormatOptions?` | Custom number format presets |
-| `missing` | `(locale, id) => string?` | **Deprecated.** Use `onMissingKey` instead |
-| `onMissingKey` | `(event: MissingKeyEvent) => string \| undefined \| void` | Called when a translation is missing or fallback locale is used |
+| `missing` | `(locale, id) => string?` | Missing message handler |
 
 #### Returns
 
 | Property | Type | Description |
 |----------|------|-------------|
 | `setLocale` | `(locale: string) => void` | Set locale for the current request |
-| `getI18n` | `() => Promise<FluentiInstanceExtended>` | Get the i18n instance |
+| `getI18n` | `() => Promise<FluentInstanceExtended>` | Get the i18n instance |
 | `Trans` | async component | Rich text with component interpolation |
 | `Plural` | async component | Locale-aware pluralization |
 | `Select` | async component | Locale-aware categorical selection |
 | `DateTime` | async component | Date formatting |
 | `NumberFormat` | async component | Number formatting |
-| `te` | `(key, locale?) => Promise<boolean>` | Check if a translation key exists (async) |
-| `tm` | `(key, locale?) => Promise<CompiledMessage \| undefined>` | Get raw compiled message (async) |
 
 ### `setLocale(locale)`
 
@@ -423,8 +417,8 @@ Re-exported from `@fluenti/core` for convenience:
 | Export | Description |
 |--------|-------------|
 | `detectLocale(options)` | Detect locale from cookie, header, query, etc. |
-| `getSSRLocaleScript(locale, options?)` | Generate `<script>` tag to inject locale into HTML. Pass `{ key }` for custom variable |
-| `getHydratedLocale(fallback?, options?)` | Read the injected locale on the client. Pass `{ key }` to match custom variable |
+| `getSSRLocaleScript(locale)` | Generate `<script>` tag to inject locale into HTML |
+| `getHydratedLocale(fallback)` | Read the injected locale on the client |
 | `isRTL(locale)` | Check if a locale is right-to-left |
 | `getDirection(locale)` | Return `'rtl'` or `'ltr'` |
 
@@ -435,7 +429,7 @@ Re-exported from `@fluenti/core` for convenience:
 React's re-render cycle handles reactivity automatically. When `setLocale()` is called:
 
 1. The provider updates its internal state
-2. A new `createFluentiRuntime()` instance is created with the new locale
+2. A new `createFluentiCore()` instance is created with the new locale
 3. All child components re-render with updated translations
 
 Since `t()` is an O(1) hash lookup, calling it directly in JSX is efficient — no `useMemo` needed.

@@ -52,9 +52,9 @@ createApp(App).use(fluent).mount('#app')
 
 Types:
 
-- `FluentVueOptions`
-- `FluentVuePlugin`
-- `FluentVueContext`
+- `FluentiConfig`
+- `FluentiPlugin`
+- `FluentiContext`
 - `TransProps`
 - `PluralProps`
 - `SelectProps`
