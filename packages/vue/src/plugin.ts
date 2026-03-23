@@ -1,6 +1,6 @@
 import { type App, type InjectionKey, type Ref, ref, shallowReactive } from 'vue'
-import type { AllMessages, Locale, LocalizedString, Messages, CompiledMessage, MessageDescriptor } from '@fluenti/core'
-import { formatDate, formatNumber } from '@fluenti/core'
+import type { AllMessages, Locale, LocalizedString, Messages, CompiledMessage, MessageDescriptor, DiagnosticsConfig } from '@fluenti/core'
+import { createDiagnostics, formatDate, formatNumber } from '@fluenti/core'
 import { interpolate, buildICUMessage, resolveDescriptorId } from '@fluenti/core/internal'
 import { Trans } from './components/Trans'
 import { Plural } from './components/Plural'
@@ -113,6 +113,8 @@ export interface FluentiConfig {
    * @default true
    */
   injectGlobalProperties?: boolean
+  /** Runtime diagnostics configuration */
+  diagnostics?: DiagnosticsConfig
 }
 
 /** Return value of `createFluenti()` */
@@ -155,6 +157,7 @@ export function createFluenti(options: FluentiConfig): FluentiPlugin {
   const lazyLocaleLoading = options.lazyLocaleLoading
     ?? (options as FluentiConfig & { splitting?: boolean }).splitting
     ?? false
+  const diagnostics = options.diagnostics ? createDiagnostics(options.diagnostics) : undefined
   const locale = ref(options.locale)
   // Intentional mutation: Vue's shallowReactive API requires in-place property assignment for reactivity
   const catalogs = shallowReactive<AllMessages>({ ...options.messages })
@@ -224,9 +227,15 @@ export function createFluenti(options: FluentiConfig): FluentiPlugin {
     for (const loc of chain) {
       const compiled = lookup(loc, messageId)
       if (compiled !== undefined) {
+        if (loc !== currentLocale) {
+          diagnostics?.fallbackUsed(currentLocale, loc, messageId)
+        }
         return resolveMessage(compiled, values, loc)
       }
     }
+
+    // Report missing key via diagnostics
+    diagnostics?.missingKey(currentLocale, messageId)
 
     // Try the missing handler
     if (options.missing) {

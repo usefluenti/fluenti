@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import { createDiagnostics } from '../src/diagnostics'
+import { createFluentiCore } from '../src'
 import type { DiagnosticEvent } from '../src/diagnostics'
 
 describe('createDiagnostics', () => {
@@ -208,5 +209,82 @@ describe('edge cases — error recovery and boundaries', () => {
     expect(events[3]!.error).toBeInstanceOf(Error)
     expect(events[2]!.error!.message).toBe('parse')
     expect(events[3]!.error!.message).toBe('format')
+  })
+})
+
+// ─── Integration with createFluentiCore ──────────────────────────────────
+
+describe('diagnostics integration', () => {
+  it('fires missingKey event when translation is not found', () => {
+    const reporter = vi.fn()
+    const i18n = createFluentiCore({
+      locale: 'en',
+      fallbackLocale: 'en',
+      messages: { en: {} },
+      diagnostics: { warnMissing: true, reporter },
+    })
+
+    i18n.t('nonexistent')
+    expect(reporter).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'missing-key',
+        locale: 'en',
+        messageId: 'nonexistent',
+      }),
+    )
+  })
+
+  it('fires fallbackUsed event when falling back to another locale', () => {
+    const reporter = vi.fn()
+    const i18n = createFluentiCore({
+      locale: 'ja',
+      fallbackLocale: 'en',
+      messages: {
+        en: { hello: 'Hello' },
+        ja: {},
+      },
+      diagnostics: { warnFallback: true, reporter },
+    })
+
+    i18n.t('hello')
+    expect(reporter).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'fallback-used',
+        locale: 'ja',
+        fallbackLocale: 'en',
+        messageId: 'hello',
+      }),
+    )
+  })
+
+  it('does not fire when diagnostics is not configured', () => {
+    const i18n = createFluentiCore({
+      locale: 'en',
+      fallbackLocale: 'en',
+      messages: { en: {} },
+    })
+    // Should not throw
+    expect(() => i18n.t('nonexistent')).not.toThrow()
+  })
+
+  it('exposes diagnostics instance on the returned object', () => {
+    const reporter = vi.fn()
+    const i18n = createFluentiCore({
+      locale: 'en',
+      messages: { en: {} },
+      diagnostics: { reporter },
+    })
+
+    expect(i18n.diagnostics).toBeDefined()
+    expect(i18n.diagnostics!.enabled).toBe(true)
+  })
+
+  it('diagnostics is undefined when not configured', () => {
+    const i18n = createFluentiCore({
+      locale: 'en',
+      messages: { en: {} },
+    })
+
+    expect(i18n.diagnostics).toBeUndefined()
   })
 })

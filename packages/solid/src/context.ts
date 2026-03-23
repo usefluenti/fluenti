@@ -1,6 +1,6 @@
 import { createSignal, type Accessor } from 'solid-js'
-import { formatDate, formatNumber } from '@fluenti/core'
-import type { FluentiCoreConfig, Locale, LocalizedString, Messages, CompiledMessage, MessageDescriptor, DateFormatOptions, NumberFormatOptions } from '@fluenti/core'
+import { createDiagnostics, formatDate, formatNumber } from '@fluenti/core'
+import type { FluentiCoreConfig, Locale, LocalizedString, Messages, CompiledMessage, MessageDescriptor, DateFormatOptions, NumberFormatOptions, DiagnosticsConfig } from '@fluenti/core'
 import { interpolate as coreInterpolate, buildICUMessage, resolveDescriptorId } from '@fluenti/core/internal'
 
 /** Chunk loader for lazy locale loading */
@@ -42,6 +42,8 @@ export interface FluentiConfig extends FluentiCoreConfig {
   dateFormats?: DateFormatOptions
   /** Named number format styles */
   numberFormats?: NumberFormatOptions
+  /** Runtime diagnostics configuration */
+  diagnostics?: DiagnosticsConfig
 }
 
 /** Reactive i18n context holding locale signal and translation utilities */
@@ -89,6 +91,7 @@ export function createFluentiContext(config: FluentiCoreConfig | FluentiConfig):
   const [loadedLocales, setLoadedLocales] = createSignal(new Set(loadedLocalesSet))
   const messages: Record<string, Messages> = { ...config.messages }
   const i18nConfig = config as FluentiConfig
+  const diagnostics = i18nConfig.diagnostics ? createDiagnostics(i18nConfig.diagnostics) : undefined
   const lazyLocaleLoading = i18nConfig.lazyLocaleLoading
     ?? (config as FluentiConfig & { splitting?: boolean }).splitting
     ?? false
@@ -145,6 +148,9 @@ export function createFluentiContext(config: FluentiCoreConfig | FluentiConfig):
     for (const targetLocale of localesToTry) {
       const result = lookupCatalog(id, targetLocale, values)
       if (result !== undefined) {
+        if (targetLocale !== loc) {
+          diagnostics?.fallbackUsed(loc, targetLocale, id)
+        }
         return result
       }
     }
@@ -176,6 +182,8 @@ export function createFluentiContext(config: FluentiCoreConfig | FluentiConfig):
     if (catalogResult !== undefined) {
       return catalogResult
     }
+
+    diagnostics?.missingKey(loc, id)
 
     const missingResult = resolveMissing(id, loc)
     if (missingResult !== undefined) {

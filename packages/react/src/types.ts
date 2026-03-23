@@ -10,6 +10,7 @@ import type {
   CompileTimeT,
   DateFormatOptions,
   NumberFormatOptions,
+  DiagnosticsConfig,
 } from '@fluenti/core'
 
 export interface FluentiContext {
@@ -61,6 +62,8 @@ export interface I18nProviderProps {
   numberFormats?: NumberFormatOptions
   /** Missing message handler */
   missing?: (locale: Locale, id: string) => string | undefined
+  /** Runtime diagnostics configuration */
+  diagnostics?: DiagnosticsConfig
   /** App content */
   children: ReactNode
   /** Pre-created FluentiInstance (alternative to inline config) */

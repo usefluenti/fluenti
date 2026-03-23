@@ -42,6 +42,8 @@ export { formatDate, DEFAULT_DATE_FORMATS } from './formatters/date'
 export { formatRelativeTime } from './formatters/relative'
 // Config loading (loadConfig, loadConfigSync) is exported from '@fluenti/core/config'
 // subpath to avoid pulling jiti + node:* modules into client bundles.
+export { createDiagnostics, __DEV__ } from './diagnostics'
+export type { DiagnosticEvent, DiagnosticsConfig, Diagnostics } from './diagnostics'
 export { createLocaleLoader } from './locale-loader'
 export type { LocaleLoaderOptions, LocaleLoaderState } from './locale-loader'
 export { defineConfig } from './define-config'
@@ -78,6 +80,7 @@ import { formatDate } from './formatters/date'
 import { buildICUMessage } from './msg'
 import { createMessageId, resolveDescriptorId } from './identity'
 import { validateLocale } from './locale'
+import { createDiagnostics as createDiag } from './diagnostics'
 
 /**
  * Create a Fluenti instance with full i18n support.
@@ -101,6 +104,8 @@ export function createFluentiCore(config: FluentiCoreConfigFull): FluentiCoreIns
   validateLocale(config.locale, 'createFluentiCore')
   let currentLocale: Locale = config.locale
   const catalog = new Catalog()
+
+  const diagnostics = config.diagnostics ? createDiag(config.diagnostics) : undefined
 
   const customFormatters = config.formatters
 
@@ -134,6 +139,7 @@ export function createFluentiCore(config: FluentiCoreConfigFull): FluentiCoreIns
     if (config.fallbackLocale) {
       const fallbackMsg = catalog.get(config.fallbackLocale, id)
       if (fallbackMsg !== undefined) {
+        diagnostics?.fallbackUsed(currentLocale, config.fallbackLocale, id)
         if (typeof fallbackMsg === 'string') {
           return applyTransform(interp(fallbackMsg, values, config.fallbackLocale), id)
         }
@@ -176,6 +182,7 @@ export function createFluentiCore(config: FluentiCoreConfigFull): FluentiCoreIns
     || (typeof process !== 'undefined' && process.env?.['FLUENTI_DEBUG'] === 'true')
 
   function warnMissing(id: string): void {
+    diagnostics?.missingKey(currentLocale, id)
     if (!devWarningsEnabled) return
     console.warn(`[fluenti] Missing translation for "${id}" in locale "${currentLocale}"`)
   }
@@ -289,6 +296,8 @@ export function createFluentiCore(config: FluentiCoreConfigFull): FluentiCoreIns
     format(message: string, values?: Record<string, unknown>): LocalizedString {
       return interp(message, values, currentLocale) as LocalizedString
     },
+
+    diagnostics,
   }
 
   return instance

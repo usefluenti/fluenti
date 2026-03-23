@@ -3,6 +3,8 @@
 // ALL AGENTS CODE AGAINST THESE TYPES
 // ============================================================
 
+import type { DiagnosticsConfig } from './diagnostics'
+
 export type Locale = string
 
 // ---- Branded String Type ----
@@ -338,6 +340,8 @@ export interface FluentiCoreConfigFull extends FluentiCoreConfig {
    * `FLUENTI_DEBUG` environment variable.
    */
   devWarnings?: boolean
+  /** Runtime diagnostics configuration */
+  diagnostics?: DiagnosticsConfig
 }
 
 // ---- Extended FluentiCoreInstance ----
@@ -347,6 +351,8 @@ export interface FluentiCoreInstanceFull extends FluentiCoreInstance {
   n: FormatNumberFn
   /** Format an ICU message string directly (no catalog lookup) */
   format(message: string, values?: Record<string, unknown>): FluentiTypeConfig['localizedString']
+  /** Runtime diagnostics instance (undefined when not configured) */
+  diagnostics?: import('./diagnostics').Diagnostics
 }
 
 // ---- Split Runtime ----
