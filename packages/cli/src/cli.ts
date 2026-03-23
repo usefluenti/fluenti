@@ -41,12 +41,16 @@ function writeCatalog(filePath: string, catalog: CatalogData, format: 'json' | '
   writeFileSync(filePath, content, 'utf-8')
 }
 
-async function extractFromFile(filePath: string, code: string): Promise<ExtractedMessage[]> {
+async function extractFromFile(
+  filePath: string,
+  code: string,
+  idGenerator?: (message: string, context?: string) => string,
+): Promise<ExtractedMessage[]> {
   const ext = extname(filePath)
   if (ext === '.vue') {
     try {
       const { extractFromVue } = await import('./vue-extractor')
-      return extractFromVue(code, filePath)
+      return extractFromVue(code, filePath, idGenerator)
     } catch {
       consola.warn(
         `Skipping ${filePath}: install @vue/compiler-sfc to extract from .vue files`,
@@ -54,7 +58,7 @@ async function extractFromFile(filePath: string, code: string): Promise<Extracte
       return []
     }
   }
-  return extractFromTsx(code, filePath)
+  return extractFromTsx(code, filePath, idGenerator)
 }
 
 const extract = defineCommand({
@@ -88,7 +92,7 @@ const extract = defineCommand({
       }
 
       const code = readFileSync(file, 'utf-8')
-      const messages = await extractFromFile(file, code)
+      const messages = await extractFromFile(file, code, config.idGenerator)
       allMessages.push(...messages)
 
       if (cache) {

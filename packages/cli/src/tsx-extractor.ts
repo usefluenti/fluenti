@@ -180,34 +180,42 @@ function createExtractedMessage(
   }
 }
 
-function descriptorFromStaticParts(parts: {
-  id?: string
-  message?: string
-  context?: string
-  comment?: string
-}): ExtractedDescriptor | undefined {
+function descriptorFromStaticParts(
+  parts: {
+    id?: string
+    message?: string
+    context?: string
+    comment?: string
+  },
+  idGenerator?: (message: string, context?: string) => string,
+): ExtractedDescriptor | undefined {
   if (!parts.message) {
     return undefined
   }
 
+  const generateId = idGenerator ?? createMessageId
+
   return {
-    id: parts.id ?? createMessageId(parts.message, parts.context),
+    id: parts.id ?? generateId(parts.message, parts.context),
     message: parts.message,
     ...(parts.context !== undefined ? { context: parts.context } : {}),
     ...(parts.comment !== undefined ? { comment: parts.comment } : {}),
   }
 }
 
-function extractDescriptorFromCallArgument(argument: SourceNode): ExtractedDescriptor | undefined {
+function extractDescriptorFromCallArgument(
+  argument: SourceNode,
+  idGenerator?: (message: string, context?: string) => string,
+): ExtractedDescriptor | undefined {
   if (argument.type === 'StringLiteral') {
-    return descriptorFromStaticParts({ message: (argument as StringLiteralNode).value })
+    return descriptorFromStaticParts({ message: (argument as StringLiteralNode).value }, idGenerator)
   }
 
   if (argument.type === 'TemplateLiteral') {
     const template = argument as TemplateLiteralNode
     if (template.expressions.length === 0) {
       const message = template.quasis.map((quasi) => quasi.value.cooked ?? quasi.value.raw).join('')
-      return descriptorFromStaticParts({ message })
+      return descriptorFromStaticParts({ message }, idGenerator)
     }
     return undefined
   }
@@ -235,7 +243,7 @@ function extractDescriptorFromCallArgument(argument: SourceNode): ExtractedDescr
     return undefined
   }
 
-  return descriptorFromStaticParts(staticParts)
+  return descriptorFromStaticParts(staticParts, idGenerator)
 }
 
 function buildPluralICU(props: Record<string, string>): string {
@@ -394,6 +402,7 @@ function extractPluralProps(
 function extractTaggedTemplateMessage(
   code: string,
   node: TaggedTemplateExpressionNode,
+  idGenerator?: (message: string, context?: string) => string,
 ): ExtractedDescriptor {
   const strings = node.quasi.quasis.map((quasi) => quasi.value.cooked ?? quasi.value.raw)
   const expressions = node.quasi.expressions.map((expression) => {
@@ -403,9 +412,10 @@ function extractTaggedTemplateMessage(
     return code.slice(expression.start, expression.end)
   })
   const message = buildICUFromTemplate(strings, expressions)
+  const generateId = idGenerator ?? createMessageId
 
   return {
-    id: createMessageId(message),
+    id: generateId(message),
     message,
   }
 }
@@ -430,7 +440,11 @@ function collectDirectBindings(ast: SourceNode): Map<string, 't' | 'msg'> {
   return bindings
 }
 
-export function extractFromTsx(code: string, filename: string): ExtractedMessage[] {
+export function extractFromTsx(
+  code: string,
+  filename: string,
+  idGenerator?: (message: string, context?: string) => string,
+): ExtractedMessage[] {
   const ast = parseSourceModule(code)
   if (!ast) {
     return []
@@ -446,7 +460,7 @@ export function extractFromTsx(code: string, filename: string): ExtractedMessage
         isIdentifier(tagged.tag)
         && (tagged.tag.name === 't' || directBindings.has(tagged.tag.name))
       ) {
-        const descriptor = extractTaggedTemplateMessage(code, tagged)
+        const descriptor = extractTaggedTemplateMessage(code, tagged, idGenerator)
         const bindingType = directBindings.get(tagged.tag.name)
         if (bindingType === 'msg') {
           descriptor.comment = 'msg tagged template'
@@ -470,7 +484,7 @@ export function extractFromTsx(code: string, filename: string): ExtractedMessage
         if (directBindings.has(call.callee.name) && call.arguments[0]?.type !== 'ObjectExpression') {
           return
         }
-        const descriptor = call.arguments[0] ? extractDescriptorFromCallArgument(call.arguments[0]) : undefined
+        const descriptor = call.arguments[0] ? extractDescriptorFromCallArgument(call.arguments[0], idGenerator) : undefined
         const extracted = descriptor
           ? createExtractedMessage(descriptor, filename, call)
           : undefined
@@ -501,13 +515,13 @@ export function extractFromTsx(code: string, filename: string): ExtractedMessage
             message: readStaticStringValue(messageAttr.value),
             context: contextAttr?.value ? readStaticStringValue(contextAttr.value) : undefined,
             comment: commentAttr?.value ? readStaticStringValue(commentAttr.value) : undefined,
-          })
+          }, idGenerator)
         : buildStaticTransDescriptor({
             id: idAttr?.value ? readStaticStringValue(idAttr.value) : undefined,
             message: extractRichTextMessage(element.children),
             context: contextAttr?.value ? readStaticStringValue(contextAttr.value) : undefined,
             comment: commentAttr?.value ? readStaticStringValue(commentAttr.value) : undefined,
-          })
+          }, idGenerator)
 
       const extracted = descriptor
         ? createExtractedMessage(descriptor, filename, element)
@@ -525,9 +539,10 @@ export function extractFromTsx(code: string, filename: string): ExtractedMessage
         return
       }
 
+      const generateId = idGenerator ?? createMessageId
       const extracted = createExtractedMessage(
         {
-          id: props['id'] ?? createMessageId(message),
+          id: props['id'] ?? generateId(message),
           message,
         },
         filename,
@@ -567,12 +582,15 @@ function readJsxElementName(node: SourceNode): string | undefined {
   return undefined
 }
 
-function buildStaticTransDescriptor(parts: {
-  id: string | undefined
-  message: string | undefined
-  context: string | undefined
-  comment: string | undefined
-}): ExtractedDescriptor | undefined {
+function buildStaticTransDescriptor(
+  parts: {
+    id: string | undefined
+    message: string | undefined
+    context: string | undefined
+    comment: string | undefined
+  },
+  idGenerator?: (message: string, context?: string) => string,
+): ExtractedDescriptor | undefined {
   const payload: {
     id?: string
     message?: string
@@ -585,7 +603,7 @@ function buildStaticTransDescriptor(parts: {
   if (parts.context !== undefined) payload.context = parts.context
   if (parts.comment !== undefined) payload.comment = parts.comment
 
-  return descriptorFromStaticParts(payload)
+  return descriptorFromStaticParts(payload, idGenerator)
 }
 
 function isIdentifier(node: unknown): node is IdentifierNode {

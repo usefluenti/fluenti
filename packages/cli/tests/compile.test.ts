@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { compileCatalog, compileIndex, collectAllIds, CATALOG_VERSION, extractMessageVariables, compileTypeDeclaration } from '../src/compile'
 import { hashMessage } from '@fluenti/core/internal'
 import type { CatalogData } from '../src/catalog'
+import { extractFromTsx } from '../src/tsx-extractor'
 
 describe('compileCatalog', () => {
   it('includes catalog version marker at the top', () => {
@@ -511,5 +512,35 @@ describe('compileTypeDeclaration', () => {
     const output = compileTypeDeclaration(allIds, catalogs, 'en')
 
     expect(output).toContain('count: number')
+  })
+})
+
+describe('custom idGenerator', () => {
+  it('uses custom idGenerator for message IDs during extraction', () => {
+    const customId = (msg: string) => `custom_${msg.replace(/\s/g, '_')}`
+    const code = `import { t } from '@fluenti/react'\nt\`Hello World\``
+    const result = extractFromTsx(code, 'test.tsx', customId)
+    expect(result[0]!.id).toBe('custom_Hello_World')
+  })
+
+  it('uses custom idGenerator for t() call extraction', () => {
+    const customId = (msg: string) => `prefix_${msg.length}`
+    const code = `import { t } from '@fluenti/react'\nt({ message: 'Goodbye' })`
+    const result = extractFromTsx(code, 'test.tsx', customId)
+    expect(result[0]!.id).toBe('prefix_7')
+  })
+
+  it('custom idGenerator receives context when available', () => {
+    const customId = (msg: string, ctx?: string) => `${ctx ?? 'none'}_${msg}`
+    const code = `import { t } from '@fluenti/react'\nt({ message: 'Save', context: 'button' })`
+    const result = extractFromTsx(code, 'test.tsx', customId)
+    expect(result[0]!.id).toBe('button_Save')
+  })
+
+  it('falls back to createMessageId when idGenerator is undefined', () => {
+    const code = `import { t } from '@fluenti/react'\nt\`Hello\``
+    const withDefault = extractFromTsx(code, 'test.tsx')
+    const withUndefined = extractFromTsx(code, 'test.tsx', undefined)
+    expect(withDefault[0]!.id).toBe(withUndefined[0]!.id)
   })
 })

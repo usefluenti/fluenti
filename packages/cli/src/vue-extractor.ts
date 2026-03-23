@@ -89,6 +89,7 @@ function walkTemplate(
   node: TemplateNode,
   filename: string,
   messages: ExtractedMessage[],
+  idGenerator?: (message: string, context?: string) => string,
 ): void {
   if (node.type === ELEMENT_NODE) {
     const vtDirective = node.props?.find(
@@ -113,7 +114,7 @@ function walkTemplate(
       if (isPlural) {
         const countVar = vtDirective.exp?.content ?? 'count'
         const message = buildPluralICUFromPipe(textContent, countVar)
-        const id = explicitId ?? createMessageId(message)
+        const id = explicitId ?? (idGenerator ?? createMessageId)(message)
         messages.push({
           id,
           message,
@@ -124,7 +125,7 @@ function walkTemplate(
           },
         })
       } else if (textContent) {
-        const id = explicitId ?? createMessageId(textContent)
+        const id = explicitId ?? (idGenerator ?? createMessageId)(textContent)
         messages.push({
           id,
           message: textContent,
@@ -156,7 +157,8 @@ function walkTemplate(
       if (messageProp?.value) {
         // Old API: <Trans message="..." />
         const message = messageProp.value.content
-        const id = idProp?.value?.content ?? createMessageId(message, context)
+        const generateId = idGenerator ?? createMessageId
+        const id = idProp?.value?.content ?? generateId(message, context)
         messages.push({
           id,
           message,
@@ -172,7 +174,8 @@ function walkTemplate(
         // New API: <Trans>content with <a>rich text</a></Trans>
         const richText = extractRichTextFromTemplateChildren(node.children)
         if (richText.message) {
-          const id = idProp?.value?.content ?? createMessageId(richText.message, context)
+          const generateId = idGenerator ?? createMessageId
+          const id = idProp?.value?.content ?? generateId(richText.message, context)
           messages.push({
             id,
             message: richText.message,
@@ -214,7 +217,7 @@ function walkTemplate(
         ...(offset !== undefined ? { offset } : {}),
       })
       if (pluralMessage) {
-        const id = propsMap['id'] ?? createMessageId(pluralMessage)
+        const id = propsMap['id'] ?? (idGenerator ?? createMessageId)(pluralMessage)
         messages.push({
           id,
           message: pluralMessage,
@@ -230,7 +233,7 @@ function walkTemplate(
 
   if (node.children) {
     for (const child of node.children) {
-      walkTemplate(child, filename, messages)
+      walkTemplate(child, filename, messages, idGenerator)
     }
   }
 }
@@ -268,6 +271,7 @@ function getPropName(prop: TemplateProp): string {
 function extractTemplateInterpolations(
   content: string,
   filename: string,
+  idGenerator?: (message: string, context?: string) => string,
 ): ExtractedMessage[] {
   const messages: ExtractedMessage[] = []
   const interpolationRegex = /\{\{([\s\S]*?)\}\}/g
@@ -277,7 +281,7 @@ function extractTemplateInterpolations(
     const expression = match[1]?.trim()
     if (!expression) continue
 
-    const extracted = extractFromTsx(expression, filename)
+    const extracted = extractFromTsx(expression, filename, idGenerator)
     if (extracted.length === 0) continue
 
     const lineOffset = content.slice(0, match.index).split('\n').length - 1
@@ -296,19 +300,23 @@ function extractTemplateInterpolations(
 }
 
 /** Extract messages from Vue SFC files */
-export function extractFromVue(code: string, filename: string): ExtractedMessage[] {
+export function extractFromVue(
+  code: string,
+  filename: string,
+  idGenerator?: (message: string, context?: string) => string,
+): ExtractedMessage[] {
   const messages: ExtractedMessage[] = []
 
   const { descriptor } = parseSFC(code, { filename })
 
   if (descriptor.template?.ast) {
-    walkTemplate(descriptor.template.ast as unknown as TemplateNode, filename, messages)
+    walkTemplate(descriptor.template.ast as unknown as TemplateNode, filename, messages, idGenerator)
   }
 
   // Also extract t() function calls from raw template source
   // (picks up t('source text') in template expressions like {{ t('...') }})
   if (descriptor.template?.content) {
-    const templateMessages = extractFromTsx(descriptor.template.content, filename)
+    const templateMessages = extractFromTsx(descriptor.template.content, filename, idGenerator)
     const templateLoc = descriptor.template.loc
     const lineOffset = templateLoc.start.line - 1
     const existingIds = new Set(messages.map((m) => m.id))
@@ -324,7 +332,7 @@ export function extractFromVue(code: string, filename: string): ExtractedMessage
       }
     }
 
-    const interpolationMessages = extractTemplateInterpolations(descriptor.template.content, filename)
+    const interpolationMessages = extractTemplateInterpolations(descriptor.template.content, filename, idGenerator)
     for (const msg of interpolationMessages) {
       if (!existingIds.has(msg.id)) {
         messages.push({
@@ -339,7 +347,7 @@ export function extractFromVue(code: string, filename: string): ExtractedMessage
   }
 
   if (descriptor.scriptSetup?.content) {
-    const scriptMessages = extractFromTsx(descriptor.scriptSetup.content, filename)
+    const scriptMessages = extractFromTsx(descriptor.scriptSetup.content, filename, idGenerator)
     const scriptLoc = descriptor.scriptSetup.loc
     const lineOffset = scriptLoc.start.line - 1
     for (const msg of scriptMessages) {
@@ -354,7 +362,7 @@ export function extractFromVue(code: string, filename: string): ExtractedMessage
   }
 
   if (descriptor.script?.content) {
-    const scriptMessages = extractFromTsx(descriptor.script.content, filename)
+    const scriptMessages = extractFromTsx(descriptor.script.content, filename, idGenerator)
     const scriptLoc = descriptor.script.loc
     const lineOffset = scriptLoc.start.line - 1
     for (const msg of scriptMessages) {
