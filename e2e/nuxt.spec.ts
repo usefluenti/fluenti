@@ -359,6 +359,7 @@ test.describe('Nuxt — Browser Back/Forward', () => {
     await jaBtn.click()
     await expect(page.locator('header h1')).toContainText('Fluenti Nuxt プレイグラウンド')
     await page.locator('nav a[href="/plurals"]').click()
+    await page.waitForLoadState('networkidle')
     await expect(page.locator('h2').first()).toContainText('複数形デモ')
     await page.goBack()
     await page.waitForLoadState('networkidle')

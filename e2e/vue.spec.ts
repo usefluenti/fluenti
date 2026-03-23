@@ -45,8 +45,8 @@ test.describe('Vue Playground', () => {
 
   test('t() interpolation renders correctly', async ({ page }) => {
     await page.goto('/')
-    await expect(page.locator('text=Hello, {arg0}!').first()).toBeVisible()
-    await expect(page.locator('text=Current locale: {arg0}').first()).toBeVisible()
+    await expect(page.locator('text=Hello, World!').first()).toBeVisible()
+    await expect(page.locator('text=Current locale: en').first()).toBeVisible()
   })
 
   test('format() renders ICU interpolated text', async ({ page }) => {
