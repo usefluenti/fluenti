@@ -23,6 +23,9 @@ export type {
   CompileTimeT,
   TypedCompileTimeT,
   FluentiTypeConfig,
+  FluentiPlugin,
+  PluginExtractContext,
+  PluginCompileContext,
 } from './types'
 
 // ---- Public functions ----

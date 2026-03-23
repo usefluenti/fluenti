@@ -24,6 +24,7 @@ import { loadConfig } from './config-loader'
 import { createHash } from 'node:crypto'
 import type { ExtractedMessage } from '@fluenti/core/internal'
 import { resolveLocaleCodes } from '@fluenti/core/internal'
+import type { FluentiPlugin, PluginCompileContext, FluentiBuildConfig } from '@fluenti/core/internal'
 
 function deriveProjectId(cwd: string): string {
   return createHash('md5').update(cwd).digest('hex').slice(0, 8)
@@ -134,8 +135,74 @@ const extract = defineCommand({
         `${locale}: ${result.added} added, ${result.unchanged} unchanged, ${obsoleteLabel}`,
       )
     }
+
+    // Run plugin onAfterExtract hooks
+    for (const plugin of config.plugins ?? []) {
+      await plugin.onAfterExtract?.({
+        messages: new Map(allMessages.map((m) => [m.id, m])),
+        sourceLocale: config.sourceLocale,
+        targetLocales: localeCodes.filter((l: string) => l !== config.sourceLocale),
+        config,
+      })
+    }
   },
 })
+
+/** Build a Record<string, string> of raw message strings from a catalog for transformMessages hooks */
+function catalogToRawMessages(catalog: CatalogData): Record<string, string> {
+  const result: Record<string, string> = {}
+  for (const [id, entry] of Object.entries(catalog)) {
+    if (entry.translation && entry.translation.length > 0) {
+      result[id] = entry.translation
+    } else if (entry.message) {
+      result[id] = entry.message
+    }
+  }
+  return result
+}
+
+/** Apply transformMessages hooks from all plugins and return an updated catalog */
+async function applyTransformMessages(
+  catalog: CatalogData,
+  locale: string,
+  plugins: readonly FluentiPlugin[],
+): Promise<CatalogData> {
+  let rawMessages = catalogToRawMessages(catalog)
+
+  for (const plugin of plugins) {
+    if (plugin.transformMessages) {
+      rawMessages = await plugin.transformMessages(rawMessages, locale)
+    }
+  }
+
+  // Build a new catalog with transformed translations
+  const updated: CatalogData = {}
+  for (const [id, entry] of Object.entries(catalog)) {
+    const transformed = rawMessages[id]
+    updated[id] = transformed !== undefined
+      ? { ...entry, translation: transformed }
+      : { ...entry }
+  }
+  return updated
+}
+
+/** Build a PluginCompileContext for hook invocation */
+function buildCompileContext(
+  locale: string,
+  catalog: CatalogData,
+  outDir: string,
+  config: FluentiBuildConfig,
+): PluginCompileContext {
+  const messages: Record<string, string> = {}
+  for (const [id, entry] of Object.entries(catalog)) {
+    if (entry.translation && entry.translation.length > 0) {
+      messages[id] = entry.translation
+    } else if (entry.message) {
+      messages[id] = entry.message
+    }
+  }
+  return { locale, messages, outDir, config }
+}
 
 const compile = defineCommand({
   meta: { name: 'compile', description: 'Compile message catalogs to JS modules' },
@@ -207,9 +274,24 @@ const compile = defineCommand({
 
     if (useParallel && localesToCompile.length > 1) {
       // Parallel compilation via worker threads
+      const plugins = config.plugins ?? []
+
+      // Apply onBeforeCompile and transformMessages hooks before parallel dispatch
+      const transformedCatalogs: Record<string, CatalogData> = {}
+      for (const locale of localesToCompile) {
+        for (const plugin of plugins) {
+          await plugin.onBeforeCompile?.(
+            buildCompileContext(locale, allCatalogs[locale]!, config.compileOutDir, config),
+          )
+        }
+        transformedCatalogs[locale] = plugins.length > 0
+          ? await applyTransformMessages(allCatalogs[locale]!, locale, plugins)
+          : allCatalogs[locale]!
+      }
+
       const tasks = localesToCompile.map((locale) => ({
         locale,
-        catalog: allCatalogs[locale]!,
+        catalog: transformedCatalogs[locale]!,
         allIds,
         sourceLocale: config.sourceLocale,
         options: { skipFuzzy },
@@ -236,17 +318,41 @@ const compile = defineCommand({
           consola.success(`Compiled ${result.locale}: ${result.stats.compiled} messages → ${outPath}`)
         }
       }
+
+      // onAfterCompile hooks after parallel results
+      for (const locale of localesToCompile) {
+        for (const plugin of plugins) {
+          await plugin.onAfterCompile?.(
+            buildCompileContext(locale, transformedCatalogs[locale]!, config.compileOutDir, config),
+          )
+        }
+      }
     } else {
       // Serial compilation
+      const plugins = config.plugins ?? []
+
       for (const locale of localesToCompile) {
+        const outPath = resolve(config.compileOutDir, `${locale}.js`)
+
+        // onBeforeCompile hooks
+        for (const plugin of plugins) {
+          await plugin.onBeforeCompile?.(
+            buildCompileContext(locale, allCatalogs[locale]!, config.compileOutDir, config),
+          )
+        }
+
+        // transformMessages hooks
+        const catalogForLocale = plugins.length > 0
+          ? await applyTransformMessages(allCatalogs[locale]!, locale, plugins)
+          : allCatalogs[locale]!
+
         const { code, stats } = compileCatalog(
-          allCatalogs[locale]!,
+          catalogForLocale,
           locale,
           allIds,
           config.sourceLocale,
           { skipFuzzy },
         )
-        const outPath = resolve(config.compileOutDir, `${locale}.js`)
         writeFileSync(outPath, code, 'utf-8')
 
         if (cache) {
@@ -262,6 +368,13 @@ const compile = defineCommand({
           }
         } else {
           consola.success(`Compiled ${locale}: ${stats.compiled} messages → ${outPath}`)
+        }
+
+        // onAfterCompile hooks
+        for (const plugin of plugins) {
+          await plugin.onAfterCompile?.(
+            buildCompileContext(locale, catalogForLocale, config.compileOutDir, config),
+          )
         }
       }
     }
