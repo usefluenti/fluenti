@@ -1,3 +1,4 @@
+import { AsyncLocalStorage } from 'node:async_hooks'
 import { createFluentiCore } from '@fluenti/core'
 import type {
   FluentiCoreInstanceFull,
@@ -59,45 +60,77 @@ export interface ServerI18n {
    * Messages are loaded lazily and cached.
    */
   getI18n: () => Promise<FluentiCoreInstanceFull & { locale: string }>
+
+  /**
+   * Run a callback with per-request locale isolation.
+   *
+   * Uses `AsyncLocalStorage` to scope locale and instance to the callback,
+   * preventing cross-request locale leakage in concurrent SSR environments.
+   *
+   * @example
+   * ```ts
+   * // In your SolidStart middleware
+   * export function middleware(event) {
+   *   const locale = detectLocaleFromEvent(event)
+   *   return withLocale(locale, () => handleRequest(event))
+   * }
+   * ```
+   */
+  withLocale: <T>(locale: string, fn: () => T | Promise<T>) => Promise<T>
+}
+
+/** Per-request store shape */
+interface RequestStore {
+  locale: string | null
+  instance: (FluentiCoreInstanceFull & { locale: string }) | null
 }
 
 /**
  * Create server-side i18n utilities for SolidStart.
  *
- * Unlike React's `createServerI18n` which uses `React.cache()` for RSC
- * per-request isolation, this version uses a simple module-level store
- * matching SolidStart's synchronous rendering model.
- *
- * For per-request isolation in SolidStart, use `getRequestEvent()` in
- * your `resolveLocale` callback, or call `setLocale()` in your
- * entry-server middleware.
- *
- * **⚠️ SSR Concurrency Warning**: This function uses module-level state for locale
- * and cached instance. In concurrent SSR environments (e.g. multiple simultaneous
- * requests), this can cause cross-request locale leakage. For per-request isolation:
- * - Use `getRequestEvent()` in SolidStart to scope locale per request
- * - Or create a separate `createServerI18n()` per request context
- * - Consider using AsyncLocalStorage for true per-request isolation (future)
+ * Uses `AsyncLocalStorage` for per-request isolation of locale state.
+ * Wrap each request in `withLocale(locale, fn)` for safe concurrent SSR,
+ * or use `setLocale()` / `getI18n()` directly if concurrency is not a concern.
  *
  * @example
  * ```ts
  * // lib/i18n.server.ts
  * import { createServerI18n } from '@fluenti/solid/server'
  *
- * export const { setLocale, getI18n } = createServerI18n({
+ * export const { setLocale, getI18n, withLocale } = createServerI18n({
  *   loadMessages: (locale) => import(`../locales/compiled/${locale}.ts`),
  *   fallbackLocale: 'en',
  * })
  * ```
+ *
+ * @example Per-request isolation (recommended for concurrent SSR):
+ * ```ts
+ * // src/middleware.ts
+ * import { withLocale } from './lib/i18n.server'
+ *
+ * export function middleware(event) {
+ *   const locale = detectLocaleFromEvent(event)
+ *   return withLocale(locale, () => handleRequest(event))
+ * }
+ * ```
  */
 export function createServerI18n(config: ServerI18nConfig): ServerI18n {
-  let currentLocale: string | null = null
-  let cachedInstance: (FluentiCoreInstanceFull & { locale: string }) | null = null
+  const als = new AsyncLocalStorage<RequestStore>()
+
+  // Module-level message cache — safe to share across requests (keyed by locale)
   const messageCache = new Map<string, Messages>()
 
+  // Module-level fallback store for when ALS context is not active
+  let fallbackStore: RequestStore = { locale: null, instance: null }
+
+  function getStore(): RequestStore {
+    return als.getStore() ?? fallbackStore
+  }
+
   function setLocale(locale: string): void {
-    currentLocale = locale
-    cachedInstance = null
+    const store = getStore()
+    store.locale = locale
+    store.instance = null
   }
 
   async function loadLocaleMessages(locale: string): Promise<Messages> {
@@ -114,28 +147,7 @@ export function createServerI18n(config: ServerI18nConfig): ServerI18n {
     return messages
   }
 
-  async function getI18n(): Promise<FluentiCoreInstanceFull & { locale: string }> {
-    // If setLocale() was never called, try the resolveLocale fallback.
-    if (!currentLocale && config.resolveLocale) {
-      currentLocale = await config.resolveLocale()
-    }
-
-    const locale = currentLocale
-
-    if (!locale) {
-      throw new Error(
-        '[fluenti] No locale set. Call setLocale(locale) in your entry-server or layout before using getI18n(), ' +
-          'or provide a resolveLocale function in createServerI18n config to auto-detect locale ' +
-          'in server functions and other contexts where the layout does not run.',
-      )
-    }
-
-    // Return cached instance if locale hasn't changed
-    if (cachedInstance && cachedInstance.locale === locale) {
-      return cachedInstance
-    }
-
-    // Load messages for current locale (and fallback if configured)
+  async function buildInstance(locale: string): Promise<FluentiCoreInstanceFull & { locale: string }> {
     const allMessages: Record<string, Messages> = {}
     allMessages[locale] = await loadLocaleMessages(locale)
 
@@ -153,9 +165,42 @@ export function createServerI18n(config: ServerI18nConfig): ServerI18n {
     if (config.numberFormats !== undefined) fluentConfig.numberFormats = config.numberFormats
     if (config.missing !== undefined) fluentConfig.missing = config.missing
 
-    cachedInstance = createFluentiCore(fluentConfig)
-    return cachedInstance
+    return createFluentiCore(fluentConfig)
   }
 
-  return { setLocale, getI18n }
+  async function getI18n(): Promise<FluentiCoreInstanceFull & { locale: string }> {
+    const store = getStore()
+
+    // If setLocale() was never called, try the resolveLocale fallback.
+    if (!store.locale && config.resolveLocale) {
+      store.locale = await config.resolveLocale()
+    }
+
+    const locale = store.locale
+
+    if (!locale) {
+      throw new Error(
+        '[fluenti] No locale set. Call setLocale(locale) in your entry-server or layout before using getI18n(), ' +
+          'or provide a resolveLocale function in createServerI18n config to auto-detect locale ' +
+          'in server functions and other contexts where the layout does not run.',
+      )
+    }
+
+    // Return cached instance if locale hasn't changed
+    if (store.instance && store.instance.locale === locale) {
+      return store.instance
+    }
+
+    store.instance = await buildInstance(locale)
+    return store.instance
+  }
+
+  async function withLocale<T>(locale: string, fn: () => T | Promise<T>): Promise<T> {
+    const store: RequestStore = { locale, instance: null }
+    return als.run(store, async () => {
+      return fn()
+    })
+  }
+
+  return { setLocale, getI18n, withLocale }
 }

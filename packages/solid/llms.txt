@@ -26,7 +26,7 @@ pnpm add @fluenti/core @fluenti/solid @fluenti/vite-plugin
 ### Type Exports
 
 - `FluentiContext`, `FluentiConfig` — context value and config types
-- `TransProps`, `PluralProps`, `SelectProps` — component prop types
+- `FluentiTransProps`, `FluentiPluralProps`, `FluentiSelectProps` — component prop types
 
 ## FluentiContext Methods
 

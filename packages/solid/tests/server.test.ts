@@ -225,4 +225,56 @@ describe('createServerI18n', () => {
       expect(i18n.t('greeting')).toBe('Hallo')
     })
   })
+
+  // ─── withLocale concurrency ────────────────────────────────────────
+  describe('withLocale', () => {
+    it('should isolate locale per request in concurrent SSR', async () => {
+      const { withLocale, getI18n } = createServerI18n({ loadMessages })
+
+      // Simulate two concurrent requests with different locales
+      const [result1, result2] = await Promise.all([
+        withLocale('en', async () => {
+          // Simulate async work between setLocale and getI18n
+          await new Promise((r) => setTimeout(r, 10))
+          const i18n = await getI18n()
+          return i18n.t('greeting')
+        }),
+        withLocale('de', async () => {
+          const i18n = await getI18n()
+          return i18n.t('greeting')
+        }),
+      ])
+
+      expect(result1).toBe('Hello')
+      expect(result2).toBe('Hallo')
+    })
+
+    it('should provide setLocale within withLocale context', async () => {
+      const { withLocale, setLocale, getI18n } = createServerI18n({ loadMessages })
+
+      const result = await withLocale('en', async () => {
+        // Override locale within the request context
+        setLocale('de')
+        const i18n = await getI18n()
+        return i18n.t('greeting')
+      })
+
+      expect(result).toBe('Hallo')
+    })
+
+    it('should not leak locale between withLocale contexts', async () => {
+      const { withLocale, getI18n } = createServerI18n({ loadMessages })
+
+      await withLocale('de', async () => {
+        const i18n = await getI18n()
+        expect(i18n.locale).toBe('de')
+      })
+
+      await withLocale('en', async () => {
+        const i18n = await getI18n()
+        expect(i18n.locale).toBe('en')
+        expect(i18n.t('greeting')).toBe('Hello')
+      })
+    })
+  })
 })

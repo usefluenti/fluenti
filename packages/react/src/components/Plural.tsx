@@ -4,9 +4,6 @@ import { I18nContext } from '../context'
 import { PLURAL_CATEGORIES, type PluralCategory } from './plural-core'
 import { buildICUPluralMessage, renderRichTranslation, serializeRichForms } from './icu-rich'
 
-/** @deprecated Use `FluentiPluralProps` instead */
-export type PluralProps = FluentiPluralProps
-
 export interface FluentiPluralProps {
   /** The count value */
   value: number

@@ -32,9 +32,9 @@ Types:
 
 - `FluentiContext`
 - `FluentiConfig`
-- `TransProps`
-- `PluralProps`
-- `SelectProps`
+- `FluentiTransProps`
+- `FluentiPluralProps`
+- `FluentiSelectProps`
 
 ## Context model
 

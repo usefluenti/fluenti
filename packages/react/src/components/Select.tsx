@@ -3,9 +3,6 @@ import { hashMessage } from '@fluenti/core/internal'
 import { I18nContext } from '../context'
 import { buildICUSelectMessage, normalizeSelectForms, renderRichTranslation, serializeRichForms } from './icu-rich'
 
-/** @deprecated Use `FluentiSelectProps` instead */
-export type SelectProps = FluentiSelectProps
-
 export interface FluentiSelectProps {
   /** The selector value */
   value: string

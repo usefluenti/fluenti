@@ -57,8 +57,6 @@ const pluralProps = {
 } as const
 
 export type FluentiPluralProps = Readonly<ExtractPropTypes<typeof pluralProps>>
-/** @deprecated Use `FluentiPluralProps` instead */
-export type PluralProps = FluentiPluralProps
 
 export const Plural = defineComponent({
   name: 'Plural',

@@ -35,11 +35,11 @@ Types:
 
 - `FluentiContext`
 - `I18nProviderProps`
-- `TransProps`
-- `PluralProps`
-- `SelectProps`
-- `DateTimeProps`
-- `NumberProps`
+- `FluentiTransProps`
+- `FluentiPluralProps`
+- `FluentiSelectProps`
+- `FluentiDateTimeProps`
+- `NumberFormatProps`
 - `CompileTimeT`
 
 ### `I18nProvider`

@@ -32,9 +32,6 @@ export interface FluentiPluralProps {
   tag?: string
 }
 
-/** @deprecated Use `FluentiPluralProps` instead */
-export type PluralProps = FluentiPluralProps
-
 /**
  * `<Plural>` component — shorthand for ICU plural patterns.
  *

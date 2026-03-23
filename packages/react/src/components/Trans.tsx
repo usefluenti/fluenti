@@ -9,9 +9,6 @@ import {
 import { I18nContext } from '../context'
 import { hashMessage, extractMessage, reconstruct } from './trans-core'
 
-/** @deprecated Use `FluentiTransProps` instead */
-export type TransProps = FluentiTransProps
-
 export interface FluentiTransProps {
   /** Source text with embedded components */
   children: ReactNode

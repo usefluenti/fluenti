@@ -1,9 +1,6 @@
 import { memo, useContext } from 'react'
 import { I18nContext } from '../context'
 
-/** @deprecated Use `FluentiDateTimeProps` instead */
-export type DateTimeProps = FluentiDateTimeProps
-
 export interface FluentiDateTimeProps {
   /** Date value to format */
   value: Date | number

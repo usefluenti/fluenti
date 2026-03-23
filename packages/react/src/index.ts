@@ -37,8 +37,8 @@ export type {
   DateFormatOptions,
   NumberFormatOptions,
 } from './types'
-export type { TransProps } from './components/Trans'
-export type { PluralProps } from './components/Plural'
-export type { SelectProps } from './components/Select'
-export type { DateTimeProps } from './components/DateTime'
+export type { FluentiTransProps } from './components/Trans'
+export type { FluentiPluralProps } from './components/Plural'
+export type { FluentiSelectProps } from './components/Select'
+export type { FluentiDateTimeProps } from './components/DateTime'
 export type { NumberFormatProps } from './components/Number'

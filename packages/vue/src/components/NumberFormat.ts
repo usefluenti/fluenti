@@ -19,8 +19,6 @@ const numberFormatProps = {
 } as const
 
 export type FluentiNumberFormatProps = Readonly<ExtractPropTypes<typeof numberFormatProps>>
-/** @deprecated Use `FluentiNumberFormatProps` instead */
-export type NumberFormatProps = FluentiNumberFormatProps
 
 export const NumberFormat = defineComponent({
   name: 'NumberFormat',

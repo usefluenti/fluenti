@@ -57,8 +57,6 @@ const selectProps = {
 } as const
 
 export type FluentiSelectProps = Readonly<ExtractPropTypes<typeof selectProps>>
-/** @deprecated Use `FluentiSelectProps` instead */
-export type SelectProps = FluentiSelectProps
 
 export const Select = defineComponent({
   name: 'Select',

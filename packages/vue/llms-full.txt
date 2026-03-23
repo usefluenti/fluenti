@@ -55,11 +55,11 @@ Types:
 - `FluentiConfig`
 - `FluentiPlugin`
 - `FluentiContext`
-- `TransProps`
-- `PluralProps`
-- `SelectProps`
-- `DateTimeProps`
-- `NumberFormatProps`
+- `FluentiTransProps`
+- `FluentiPluralProps`
+- `FluentiSelectProps`
+- `FluentiDateTimeProps`
+- `FluentiNumberFormatProps`
 
 ## `createFluenti(options)`
 
