@@ -29,7 +29,7 @@ test.describe('TanStack Start — Home Page Details', () => {
     const dateShort = page.getByTestId('date-short')
     await expect(dateDefault).toContainText('1/15/2025')
     await expect(dateLong).toContainText('January 15, 2025')
-    await expect(dateShort).toContainText('1/15/25')
+    await expect(dateShort).toContainText('1/15/2025')
     // Long format should be longer than short format
     const longText = await dateLong.textContent()
     const shortText = await dateShort.textContent()

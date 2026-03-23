@@ -16,7 +16,10 @@ const Link: Component<{ children?: JSX.Element }> = (props) => (
 
 const richComponents = { bold: Bold, italic: Italic, link: Link }
 
-const PAGE_TITLE = msg`Solid Playground Title`
+const ROLES = {
+  admin: msg`Administrator`,
+  user: msg`Regular User`,
+}
 
 const LanguageSwitcher: Component = () => {
   const { locale, setLocale, isLoading, preloadLocale } = useI18n()
@@ -113,7 +116,7 @@ export const App: Component = () => {
         {/* ── Home ── */}
         <div>
           <h1>{t`Welcome to Fluenti`}</h1>
-          <span data-testid="msg-title">{t(PAGE_TITLE)}</span>
+          <span data-testid="msg-title">{t(ROLES.admin)}</span>
           <p data-testid="fallback-only">{t`This key only exists in English`}</p>
           <p style={{ color: '#666', 'margin-bottom': '16px' }}>{t`A type-safe i18n library for Solid`}</p>
 

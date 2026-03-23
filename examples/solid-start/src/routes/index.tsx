@@ -3,7 +3,6 @@ import { useI18n } from '@fluenti/solid'
 export default function HomePage() {
   const { t, locale, d, n } = useI18n()
   const name = 'Developer'
-  const currentLocale = locale()
 
   return (
     <div>
@@ -16,7 +15,7 @@ export default function HomePage() {
         <h2 data-testid="greeting">{t`Hello, ${name}!`}</h2>
         <p>{t`This page is server-side rendered with per-request locale isolation.`}</p>
         <p style={{ 'margin-top': '8px', 'font-style': 'italic' }}>
-          <span data-testid="current-locale">{t`Current locale: ${currentLocale}`}</span></p>
+          <span data-testid="current-locale">{t`Current locale: ${locale()}`}</span></p>
       </section>
 
       <p data-testid="fallback-only">{t`This key only exists in English`}</p>

@@ -2,6 +2,12 @@
   "Welcome to Fluenti": {
     "message": "Welcome to Fluenti"
   },
+  "Hello, {name}!": {
+    "message": "Hello, {name}!"
+  },
+  "Current locale: {locale}": {
+    "message": "Current locale: {locale}"
+  },
   "docs-link": {
     "message": "Read the <0>documentation</0> for more info."
   },

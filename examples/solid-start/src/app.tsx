@@ -1,10 +1,10 @@
 import { Router } from '@solidjs/router'
 import { FileRoutes } from '@solidjs/start/router'
 import { Suspense, type Component, type JSX } from 'solid-js'
-import { isServer } from 'solid-js/web'
+import { getRequestEvent, isServer } from 'solid-js/web'
 import { I18nProvider, useI18n, t } from '@fluenti/solid'
 import { getDirection } from '@fluenti/core'
-import { allMessages, DEFAULT_LOCALE, getInitialLocale } from './lib/i18n'
+import { allMessages, DEFAULT_LOCALE, detectLocaleFromCookie, getInitialLocale } from './lib/i18n'
 
 const LanguageSwitcher: Component = () => {
   const { locale, setLocale, isLoading, preloadLocale } = useI18n()
@@ -80,8 +80,15 @@ const Layout: Component<{ children?: JSX.Element }> = (props) => {
   )
 }
 
+function getServerLocale(): string {
+  const event = getRequestEvent()
+  if (!event) return DEFAULT_LOCALE
+  const cookieHeader = event.request.headers.get('cookie')
+  return detectLocaleFromCookie(cookieHeader)
+}
+
 export default function App() {
-  const initialLocale = isServer ? DEFAULT_LOCALE : getInitialLocale()
+  const initialLocale = isServer ? getServerLocale() : getInitialLocale()
 
   if (!isServer) {
     document.documentElement.dir = getDirection(initialLocale)

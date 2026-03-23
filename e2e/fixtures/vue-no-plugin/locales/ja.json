@@ -3,6 +3,14 @@
     "message": "Welcome to Fluenti",
     "translation": "Fluenti へようこそ"
   },
+  "Hello, {name}!": {
+    "message": "Hello, {name}!",
+    "translation": "こんにちは、{name}さん！"
+  },
+  "Current locale: {locale}": {
+    "message": "Current locale: {locale}",
+    "translation": "現在のロケール：{locale}"
+  },
   "docs-link": {
     "message": "Read the <0>documentation</0> for more info.",
     "translation": "詳しくは<0>ドキュメント</0>をご覧ください。"

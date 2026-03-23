@@ -1,68 +1,158 @@
 msgid ""
 msgstr "Content-Type: text/plain; charset=utf-8\n"
 
+#: ./src/App.tsx:118
 msgid "Welcome to Fluenti"
 msgstr "مرحبًا بك في Fluenti"
 
+#: ./src/App.tsx:120
+msgid "This key only exists in English"
+msgstr ""
+
+#: ./src/App.tsx:121
 msgid "A type-safe i18n library for Solid"
 msgstr "مكتبة i18n آمنة الأنواع لـ Solid"
 
+#: ./src/App.tsx:124
 msgid "Hello, {developer}!"
 msgstr "مرحبًا، {developer}!"
 
+#: ./src/App.tsx:125
 msgid "This playground demonstrates the features of @fluenti/solid."
 msgstr "هذه الساحة توضح ميزات @fluenti/solid."
 
+#: ./src/App.tsx:191
 msgid "Current locale: {locale}"
 msgstr "اللغة الحالية: {locale}"
 
+#: ./src/App.tsx:136
 msgid "Username"
 msgstr "اسم المستخدم"
 
+#: ./src/App.tsx:140
 msgid "Email"
 msgstr "البريد الإلكتروني"
 
+#: ./src/App.tsx:144
 msgid "Password"
 msgstr "كلمة المرور"
 
-msgid "Submit"
-msgstr "إرسال"
-
-msgid "Cancel"
-msgstr "إلغاء"
-
+#: ./src/App.tsx:146
 msgid "This field is required"
 msgstr "هذا الحقل مطلوب"
 
+#: ./src/App.tsx:148
+msgid "Submit"
+msgstr "إرسال"
+
+#: ./src/App.tsx:149
+msgid "Cancel"
+msgstr "إلغاء"
+
+#: ./src/App.tsx:159
+msgid "Compile-Time Transforms"
+msgstr ""
+
+#: ./src/App.tsx:161
+msgid ""
+"These demos showcase compile-time features: function calls and tagged "
+"templates — all transformed at build time by the Vite plugin."
+msgstr ""
+
+#: ./src/App.tsx:209
+msgid "Hello, {name}!"
+msgstr ""
+
+#: ./src/App.tsx:184
+msgid "You have {compileCount} items."
+msgstr ""
+
+#: ./src/App.tsx:226
+msgid "You have {compileCount} items in your cart."
+msgstr ""
+
+#: ./src/App.tsx:240
+msgid "Total: {formattedPrice}"
+msgstr ""
+
+#: ./src/App.tsx:249
 msgid "Rich Text"
 msgstr "نص منسق"
 
+#: ./src/App.tsx:259
+msgid "Welcome to <bold>Fluenti</bold> for <italic>SolidJS</italic>!"
+msgstr ""
+
+#: ./src/App.tsx:269
+msgid "Supports <bold>bold</bold>, <italic>italic</italic>, and <link>links</link>."
+msgstr ""
+
+#: ./src/App.tsx:279
+msgid ""
+"You can even <bold>nest <italic>components</italic> inside</bold> each "
+"other."
+msgstr ""
+
+#: ./src/App.tsx:291
 msgid "Plurals"
 msgstr "الجمع"
 
-msgid "Reset"
-msgstr "إعادة تعيين"
-
+#: ./src/App.tsx:309
 msgid "Your cart is empty."
 msgstr "سلتك فارغة."
 
+#: ./src/App.tsx:310
 msgid "You have # item in your cart."
 msgstr "لديك # عنصر في سلتك."
 
+#: ./src/App.tsx:311
 msgid "You have # items in your cart."
 msgstr "لديك # عناصر في سلتك."
 
+#: ./src/App.tsx:378
+msgid "Reset"
+msgstr "إعادة تعيين"
+
+#: ./src/App.tsx:360
 msgid "Reactivity Demo"
 msgstr "عرض التفاعلية"
 
+#: ./src/App.tsx:362
+msgid "In SolidJS, the component body runs only once. Text nodes update reactively."
+msgstr ""
+
+#: ./src/App.tsx:368
+msgid "Counter value: {reactivityCount}"
+msgstr ""
+
+#: ./src/App.tsx:372
+msgid "Decrement"
+msgstr ""
+
+#: ./src/App.tsx:375
+msgid "Increment"
+msgstr ""
+
+#: ./src/App.tsx:406
+msgid "Formatting Showcase"
+msgstr "عرض التنسيق"
+
+#: ./src/App.tsx:527
 msgid "He liked this"
 msgstr "أعجبه هذا"
 
+#: ./src/App.tsx:528
 msgid "She liked this"
 msgstr "أعجبها هذا"
 
+#: ./src/App.tsx:530
 msgid "They liked this"
 msgstr "أعجبهم هذا"
 
-msgid "Formatting Showcase"
-msgstr "عرض التنسيق"
+#. msg`Administrator`
+msgid "Administrator"
+msgstr "المسؤول"
+
+#. msg`Regular User`
+msgid "Regular User"
+msgstr "مستخدم عادي"

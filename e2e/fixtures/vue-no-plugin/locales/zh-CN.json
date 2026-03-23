@@ -3,6 +3,14 @@
     "message": "Welcome to Fluenti",
     "translation": "欢迎使用 Fluenti"
   },
+  "Hello, {name}!": {
+    "message": "Hello, {name}!",
+    "translation": "你好，{name}！"
+  },
+  "Current locale: {locale}": {
+    "message": "Current locale: {locale}",
+    "translation": "当前语言：{locale}"
+  },
   "docs-link": {
     "message": "Read the <0>documentation</0> for more info.",
     "translation": "详情请阅读<0>文档</0>。"
