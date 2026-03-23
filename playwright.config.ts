@@ -33,6 +33,8 @@ const serverMap: Record<string, { command: string; port: number; timeout?: numbe
   'monorepo-a': { command: 'cd e2e/fixtures/monorepo-extends/packages/app-a && pnpm build && pnpm preview --port 5202', port: 5202, timeout: 120_000 },
   'monorepo-b': { command: 'cd e2e/fixtures/monorepo-extends/packages/app-b && pnpm build && pnpm preview --port 5203', port: 5203, timeout: 120_000 },
   'react-edge-cases': { command: 'cd e2e/fixtures/react-edge-cases && pnpm build && pnpm preview --port 5205', port: 5205, timeout: 120_000 },
+  'react-compiler': { command: 'cd e2e/fixtures/react-compiler && pnpm build && pnpm preview --port 5206', port: 5206, timeout: 120_000 },
+  'nextjs-compiler': { command: 'cd e2e/fixtures/nextjs-compiler && pnpm build && pnpm start -p 5207', port: 5207, timeout: 120_000 },
 }
 
 // Filter webServers to only those needed by the selected projects.
@@ -88,6 +90,8 @@ export default defineConfig({
     { name: 'monorepo-a', use: { baseURL: 'http://localhost:5202' }, testMatch: '**/monorepo-a.spec.ts' },
     { name: 'monorepo-b', use: { baseURL: 'http://localhost:5203' }, testMatch: '**/monorepo-b.spec.ts' },
     { name: 'react-edge-cases', use: { baseURL: 'http://localhost:5205' }, testMatch: '**/react-edge-cases.spec.ts' },
+    { name: 'react-compiler', use: { baseURL: 'http://localhost:5206' }, testMatch: '**/react-compiler.spec.ts' },
+    { name: 'nextjs-compiler', use: { baseURL: 'http://localhost:5207' }, testMatch: '**/nextjs-compiler.spec.ts' },
   ],
   webServer,
 })
