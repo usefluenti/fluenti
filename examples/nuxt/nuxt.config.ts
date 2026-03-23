@@ -9,7 +9,7 @@ export default defineNuxtConfig({
   modules: ['@fluenti/nuxt'],
 
   fluenti: {
-    locales: ['en', 'ja'],
+    locales: ['en', 'ja', 'ar'],
     defaultLocale: 'en',
     sourceLocale: 'en',
     catalogDir: 'locales/compiled',

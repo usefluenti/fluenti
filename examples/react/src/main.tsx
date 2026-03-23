@@ -4,12 +4,15 @@ import { useState } from 'react'
 import en from './locales/compiled/en.js'
 import zhCN from './locales/compiled/zh-CN.js'
 import ja from './locales/compiled/ja.js'
+import ar from './locales/compiled/ar.js'
 import { App } from './App'
 
-const messages = { en, 'zh-CN': zhCN, ja }
+const messages = { en, 'zh-CN': zhCN, ja, ar }
+
+const cookieLocale = document.cookie.match(/(?:^|;\s*)locale=([^;]+)/)?.[1]
 
 function Root() {
-  const [locale, setLocale] = useState('en')
+  const [locale, setLocale] = useState(cookieLocale || 'en')
 
   const handleMissing = (locale: string, id: string) => {
     console.warn(`[fluenti] Missing translation: locale="${locale}" id="${id}"`)

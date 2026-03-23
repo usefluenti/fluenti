@@ -1,0 +1,65 @@
+msgid ""
+msgstr "Content-Type: text/plain; charset=utf-8\n"
+
+msgid "Fluenti React Playground"
+msgstr "ساحة Fluenti React"
+
+msgid "Write text. Fluenti translates it. Zero config."
+msgstr "اكتب النص. Fluenti يترجمه. بدون إعداد."
+
+msgid "Home"
+msgstr "الرئيسية"
+
+msgid "Plurals"
+msgstr "الجمع"
+
+msgid "Rich Text"
+msgstr "نص منسق"
+
+msgid "Welcome to Fluenti"
+msgstr "مرحبًا بك في Fluenti"
+
+msgid "A modern i18n library for React"
+msgstr "مكتبة i18n حديثة لـ React"
+
+msgid "Hello, {name}!"
+msgstr "مرحبًا، {name}!"
+
+msgid "You have {itemCount} items in your cart."
+msgstr "لديك {itemCount} عناصر في سلتك."
+
+msgid "Current locale: {locale}"
+msgstr "اللغة الحالية: {locale}"
+
+msgid "Features"
+msgstr "الميزات"
+
+msgid "Reactive locale switching"
+msgstr "تبديل اللغة التفاعلي"
+
+msgid "Rich text with React components"
+msgstr "نص منسق مع مكونات React"
+
+msgid "Built-in plural support"
+msgstr "دعم الجمع المدمج"
+
+msgid "Type-safe message catalogs"
+msgstr "كتالوجات رسائل آمنة الأنواع"
+
+msgid "Built with Fluenti and React"
+msgstr "مبني بـ Fluenti و React"
+
+msgid "Add"
+msgstr "إضافة"
+
+msgid "Remove"
+msgstr "إزالة"
+
+msgid "Reset"
+msgstr "إعادة تعيين"
+
+msgid "Administrator"
+msgstr "مدير"
+
+msgid "Regular User"
+msgstr "مستخدم عادي"

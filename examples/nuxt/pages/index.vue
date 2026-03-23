@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { useI18n } from '@fluenti/vue'
+import { msg } from '@fluenti/core'
 
 const { t, locale } = useI18n()
+
+const PAGE_SUBTITLE = msg`A modern i18n framework`
 </script>
 
 <template>
@@ -60,6 +63,8 @@ const { t, locale } = useI18n()
         <div>{{ $n(1234.5, 'decimal') }}</div>
       </div>
     </div>
+
+    <p data-testid="msg-subtitle">{{ t(PAGE_SUBTITLE) }}</p>
 
     <p data-testid="fallback-only">{{ t('This key only exists in English') }}</p>
 

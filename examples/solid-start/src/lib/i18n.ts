@@ -2,13 +2,15 @@ import type { Locale, Messages } from '@fluenti/core'
 import { getHydratedLocale } from '@fluenti/core'
 import en from '../locales/compiled/en.js'
 import ja from '../locales/compiled/ja.js'
+import ar from '../locales/compiled/ar.js'
 
-export const AVAILABLE_LOCALES: Locale[] = ['en', 'ja']
+export const AVAILABLE_LOCALES: Locale[] = ['en', 'ja', 'ar']
 export const DEFAULT_LOCALE: Locale = 'en'
 
 export const allMessages: Record<string, Messages> = {
   en,
   ja,
+  ar,
 }
 
 /**

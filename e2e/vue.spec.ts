@@ -183,3 +183,45 @@ test.describe('Vue Playground', () => {
     await expect(page.locator('header h1')).not.toContainText('Fluenti Vue Playground')
   })
 })
+
+test.describe('Vue RTL support', () => {
+  test('Arabic locale sets dir=rtl on html element', async ({ page }) => {
+    await page.goto('/')
+    await page.locator('.lang-buttons button:has-text("العربية")').click()
+    await expect(page.locator('html')).toHaveAttribute('dir', 'rtl')
+  })
+
+  test('switching back to English sets dir=ltr', async ({ page }) => {
+    await page.goto('/')
+    await page.locator('.lang-buttons button:has-text("العربية")').click()
+    await expect(page.locator('html')).toHaveAttribute('dir', 'rtl')
+    await page.locator('.lang-buttons button:has-text("English")').click()
+    await expect(page.locator('html')).toHaveAttribute('dir', 'ltr')
+  })
+
+  test('Arabic locale renders Arabic translations', async ({ page }) => {
+    await page.goto('/')
+    await page.locator('.lang-buttons button:has-text("العربية")').click()
+    await expect(page.locator('header h1')).toContainText('ساحة Fluenti Vue')
+  })
+})
+
+test.describe('Vue Cookie persistence', () => {
+  test('locale persists after page reload via cookie', async ({ page }) => {
+    await page.goto('/')
+    await page.locator('.lang-buttons button:has-text("日本語")').click()
+    await expect(page.locator('header h1')).not.toContainText('Fluenti Vue Playground')
+    await page.reload()
+    // After reload, should still be in Japanese (not English)
+    await expect(page.locator('header h1')).not.toContainText('Fluenti Vue Playground')
+  })
+
+  test('Arabic locale persists after page reload', async ({ page }) => {
+    await page.goto('/')
+    await page.locator('.lang-buttons button:has-text("العربية")').click()
+    await expect(page.locator('html')).toHaveAttribute('dir', 'rtl')
+    await page.reload()
+    await expect(page.locator('html')).toHaveAttribute('dir', 'rtl')
+    await expect(page.locator('header h1')).toContainText('ساحة Fluenti Vue')
+  })
+})

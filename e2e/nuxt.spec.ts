@@ -365,6 +365,75 @@ test.describe('Nuxt — Browser Back/Forward', () => {
   })
 })
 
+test.describe('Nuxt — RTL support', () => {
+  test('Arabic locale sets dir=rtl', async ({ page }) => {
+    await page.goto('/')
+    await page.waitForLoadState('networkidle')
+    await page.locator('header button:has-text("العربية")').click()
+    expect(await page.locator('html').getAttribute('dir')).toBe('rtl')
+  })
+
+  test('switching back to English sets dir=ltr', async ({ page }) => {
+    await page.goto('/')
+    await page.waitForLoadState('networkidle')
+    await page.locator('header button:has-text("العربية")').click()
+    expect(await page.locator('html').getAttribute('dir')).toBe('rtl')
+    await page.locator('header button:has-text("English")').click()
+    expect(await page.locator('html').getAttribute('dir')).toBe('ltr')
+  })
+
+  test('Arabic locale shows Arabic translations', async ({ page }) => {
+    await page.goto('/')
+    await page.waitForLoadState('networkidle')
+    await page.locator('header button:has-text("العربية")').click()
+    await expect(page.locator('header h1')).toContainText('ملعب Fluenti Nuxt')
+    await expect(page.locator('h2:has-text("مرحباً بكم في Fluenti")')).toBeVisible()
+  })
+
+  test('SSR hydration preserves Arabic locale from cookie', async ({ page, context }) => {
+    await context.addCookies([
+      { name: 'fluenti_locale', value: 'ar', domain: 'localhost', path: '/' },
+    ])
+    await page.goto('/')
+    await page.waitForLoadState('networkidle')
+    await expect(page.locator('header h1')).toContainText('ملعب Fluenti Nuxt')
+    await context.clearCookies()
+  })
+})
+
+test.describe('Nuxt — msg`` lazy descriptors', () => {
+  test('msg tagged template renders subtitle', async ({ page }) => {
+    await page.goto('/')
+    await page.waitForLoadState('networkidle')
+    await expect(page.getByTestId('msg-subtitle')).toContainText('A modern i18n framework')
+  })
+
+  test('msg tagged template translates when locale switches to Japanese', async ({ page }) => {
+    await page.goto('/')
+    await page.waitForLoadState('networkidle')
+    await page.locator('header button:has-text("日本語")').click()
+    await expect(page.getByTestId('msg-subtitle')).toContainText('モダンな i18n フレームワーク')
+  })
+
+  test('msg tagged template translates when locale switches to Arabic', async ({ page }) => {
+    await page.goto('/')
+    await page.waitForLoadState('networkidle')
+    await page.locator('header button:has-text("العربية")').click()
+    await expect(page.getByTestId('msg-subtitle')).toContainText('إطار عمل i18n حديث')
+  })
+})
+
+test.describe('Nuxt — Preload on hover', () => {
+  test('preloading a locale on mouseenter does not change current locale', async ({ page }) => {
+    await page.goto('/')
+    await page.waitForLoadState('networkidle')
+    // Hover over Japanese button to trigger preload
+    await page.locator('header button:has-text("日本語")').hover()
+    // Current locale should still be English
+    await expect(page.locator('header h1')).toContainText('Fluenti Nuxt Playground')
+  })
+})
+
 test.describe('Nuxt — Fallback & Loading', () => {
   test('missing translation falls back gracefully', async ({ page }) => {
     await page.goto('/')

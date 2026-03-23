@@ -362,6 +362,27 @@ test.describe('Next.js App Router e2e', () => {
   })
 })
 
+test.describe('Next.js — Select component', () => {
+  test('select component renders default (other) form', async ({ page }) => {
+    await page.goto('/plurals')
+    await expect(page.getByTestId('select-result')).toContainText('They liked it')
+  })
+
+  test('select component renders correct gender form', async ({ page }) => {
+    await page.goto('/plurals')
+    await page.getByTestId('gender-male').click()
+    await expect(page.getByTestId('select-result')).toContainText('He liked it')
+  })
+
+  test('select component switches between gender forms', async ({ page }) => {
+    await page.goto('/plurals')
+    await page.getByTestId('gender-female').click()
+    await expect(page.getByTestId('select-result')).toContainText('She liked it')
+    await page.getByTestId('gender-male').click()
+    await expect(page.getByTestId('select-result')).toContainText('He liked it')
+  })
+})
+
 test.describe('Next.js — Concurrent Server Actions', () => {
   test('concurrent server action calls with different locales return correct translations', async ({ browser }) => {
     // User A has English locale

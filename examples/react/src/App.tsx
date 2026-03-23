@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useI18n, Trans, Plural, Select, DateTime, NumberFormat, msg } from '@fluenti/react'
+import { getDirection } from '@fluenti/core'
 
 // Lazy message descriptors — equivalent to Lingui's defineMessage/msg
 const ROLES = {
@@ -12,6 +13,12 @@ export function App({ onLocaleChange }: { onLocaleChange: (locale: string) => vo
   const [page, setPage] = useState<'home' | 'plurals' | 'richtext'>('home')
   const [count, setCount] = useState(0)
   const [gender, setGender] = useState('other')
+
+  // Set dir attribute on <html> and persist locale in cookie
+  useEffect(() => {
+    document.documentElement.dir = getDirection(locale)
+    document.cookie = `locale=${locale};path=/;max-age=31536000`
+  }, [locale])
 
   const handleSetLocale = async (loc: string) => {
     await setLocale(loc)
@@ -60,6 +67,12 @@ export function App({ onLocaleChange }: { onLocaleChange: (locale: string) => vo
           onMouseEnter={() => preloadLocale('ja')}
           onClick={() => handleSetLocale('ja')}
         >日本語</button>
+        <button
+          data-testid="lang-ar"
+          className={locale === 'ar' ? 'active' : ''}
+          onMouseEnter={() => preloadLocale('ar')}
+          onClick={() => handleSetLocale('ar')}
+        >العربية</button>
       </div>
 
       {isLoading && <p data-testid="loading">Loading...</p>}

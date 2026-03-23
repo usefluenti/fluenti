@@ -1,0 +1,59 @@
+msgid ""
+msgstr "Content-Type: text/plain; charset=utf-8\n"
+
+msgid "Fluenti Vue Playground"
+msgstr "ساحة Fluenti Vue"
+
+msgid "Write text. Fluenti translates it. Zero config."
+msgstr "اكتب النص. Fluenti يترجمه. بدون إعداد."
+
+msgid "Loading translations..."
+msgstr "جارٍ تحميل الترجمات..."
+
+msgid "Welcome to Fluenti"
+msgstr "مرحبًا بك في Fluenti"
+
+msgid "A modern i18n library for Vue 3"
+msgstr "مكتبة i18n حديثة لـ Vue 3"
+
+msgid "Features"
+msgstr "الميزات"
+
+msgid "Reactive locale switching"
+msgstr "تبديل اللغة التفاعلي"
+
+msgid "Rich text with Vue components"
+msgstr "نص منسق مع مكونات Vue"
+
+msgid "Built-in plural support"
+msgstr "دعم الجمع المدمج"
+
+msgid "Type-safe message catalogs"
+msgstr "كتالوجات رسائل آمنة الأنواع"
+
+msgid "Rich Text Demos"
+msgstr "عروض النص المنسق"
+
+msgid "Plural Demos"
+msgstr "عروض الجمع"
+
+msgid "Remove"
+msgstr "إزالة"
+
+msgid "Add"
+msgstr "إضافة"
+
+msgid "Reset"
+msgstr "إعادة تعيين"
+
+msgid "Built with Fluenti and Vue 3"
+msgstr "مبني بـ Fluenti و Vue 3"
+
+msgid "Hello, {name}!"
+msgstr "مرحبًا، {name}!"
+
+msgid "Current locale: {locale}"
+msgstr "اللغة الحالية: {locale}"
+
+msgid "You have {count} items in your cart."
+msgstr "لديك {count} عناصر في سلتك."

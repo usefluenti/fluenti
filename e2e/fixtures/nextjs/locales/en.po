@@ -150,3 +150,6 @@ msgstr "Rich Text Demos"
 
 msgid "Components for complex translations"
 msgstr "Components for complex translations"
+
+msgid "{gender, select, male {He liked it} female {She liked it} other {They liked it}}"
+msgstr ""

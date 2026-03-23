@@ -12,8 +12,9 @@ import type { ReactNode } from 'react'
 import en from '../locales/compiled/en.js'
 import zhCN from '../locales/compiled/zh-CN.js'
 import ja from '../locales/compiled/ja.js'
+import ar from '../locales/compiled/ar.js'
 
-const messages = { en, 'zh-CN': zhCN, ja }
+const messages = { en, 'zh-CN': zhCN, ja, ar }
 
 function getInitialLocale(): string {
   if (typeof document === 'undefined') return 'en'
@@ -78,7 +79,7 @@ function RootDocument({ locale, children }: { locale: string; children: ReactNod
 }
 
 function AppShell({ onLocaleChange }: { onLocaleChange: (l: string) => void }) {
-  const { t, i18n, locale, setLocale, preloadLocale } = useI18n()
+  const { t, i18n, locale, setLocale, preloadLocale, isLoading } = useI18n()
 
   const handleSwitch = async (loc: string) => {
     await setLocale(loc)
@@ -99,6 +100,7 @@ function AppShell({ onLocaleChange }: { onLocaleChange: (l: string) => void }) {
       </nav>
 
       <div className="locale-switcher">
+        {isLoading && <span data-testid="loading">Loading...</span>}
         <button
           data-testid="lang-en"
           className={locale === 'en' ? 'active' : ''}
@@ -116,6 +118,12 @@ function AppShell({ onLocaleChange }: { onLocaleChange: (l: string) => void }) {
           onMouseEnter={() => preloadLocale('ja')}
           onClick={() => handleSwitch('ja')}
         >日本語</button>
+        <button
+          data-testid="lang-ar"
+          className={locale === 'ar' ? 'active' : ''}
+          onMouseEnter={() => preloadLocale('ar')}
+          onClick={() => handleSwitch('ar')}
+        >العربية</button>
       </div>
 
       <Outlet />

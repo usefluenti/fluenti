@@ -10,6 +10,7 @@ import { Layout } from './pages/Layout'
 import { Home } from './pages/Home'
 import { About } from './pages/About'
 import { Plurals } from './pages/Plurals'
+import { RichText } from './pages/RichText'
 
 const messages = { en, ja, ar }
 
@@ -46,6 +47,7 @@ function Root() {
             <Route path="/" element={<Home />} />
             <Route path="/about" element={<About />} />
             <Route path="/plurals" element={<Plurals />} />
+            <Route path="/richtext" element={<RichText />} />
           </Route>
         </Routes>
       </BrowserRouter>

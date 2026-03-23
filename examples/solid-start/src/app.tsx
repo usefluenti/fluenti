@@ -3,23 +3,28 @@ import { FileRoutes } from '@solidjs/start/router'
 import { Suspense, type Component, type JSX } from 'solid-js'
 import { isServer } from 'solid-js/web'
 import { I18nProvider, useI18n, t } from '@fluenti/solid'
+import { getDirection } from '@fluenti/core'
 import { allMessages, DEFAULT_LOCALE, getInitialLocale } from './lib/i18n'
 
 const LanguageSwitcher: Component = () => {
-  const { locale, setLocale } = useI18n()
+  const { locale, setLocale, isLoading, preloadLocale } = useI18n()
 
   const languages = [
     { code: 'en', label: 'English' },
     { code: 'ja', label: '日本語' },
+    { code: 'ar', label: 'العربية' },
   ] as const
 
   return (
     <div style={{ display: 'flex', gap: '8px', 'align-items': 'center' }}>
+      {isLoading() && <span data-testid="loading">Loading...</span>}
       {languages.map((lang) => (
         <button
           data-testid={`lang-${lang.code}`}
+          onMouseEnter={() => preloadLocale(lang.code)}
           onClick={() => {
             document.cookie = `locale=${lang.code};path=/;max-age=31536000`
+            document.documentElement.dir = getDirection(lang.code)
             setLocale(lang.code)
           }}
           style={{
@@ -77,6 +82,10 @@ const Layout: Component<{ children?: JSX.Element }> = (props) => {
 
 export default function App() {
   const initialLocale = isServer ? DEFAULT_LOCALE : getInitialLocale()
+
+  if (!isServer) {
+    document.documentElement.dir = getDirection(initialLocale)
+  }
 
   return (
     <Router

@@ -19,6 +19,8 @@ export default function HomePage() {
           <span data-testid="current-locale">{t`Current locale: ${currentLocale}`}</span></p>
       </section>
 
+      <p data-testid="fallback-only">{t`This key only exists in English`}</p>
+
       <section style={{
         'background': 'white',
         'padding': '16px',

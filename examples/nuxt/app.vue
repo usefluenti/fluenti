@@ -1,16 +1,32 @@
 <script setup lang="ts">
 import { useI18n } from '@fluenti/vue'
-import { getSSRLocaleScript } from '@fluenti/core'
-import { computed } from 'vue'
+import { getSSRLocaleScript, getDirection } from '@fluenti/core'
+import { computed, watch, onMounted } from 'vue'
 
-const { locale, setLocale, getLocales, isLoading } = useI18n()
+const { locale, setLocale, getLocales, isLoading, preloadLocale } = useI18n()
 
 const locales = computed(() => getLocales())
 
 const localeLabels: Record<string, string> = {
   en: 'English',
   ja: '日本語',
+  ar: 'العربية',
 }
+
+function updateDirection(loc: string) {
+  if (import.meta.client) {
+    document.documentElement.dir = getDirection(loc)
+    document.documentElement.lang = loc
+  }
+}
+
+onMounted(() => {
+  updateDirection(locale.value)
+})
+
+watch(locale, (newLocale) => {
+  updateDirection(newLocale)
+})
 
 function switchLocale(loc: string) {
   // Set a cookie so the server can detect locale on next request
@@ -44,6 +60,7 @@ const ssrLocaleScript = computed(() => {
             :key="loc"
             :class="{ active: loc === locale }"
             @click="switchLocale(loc)"
+            @mouseenter="preloadLocale(loc)"
           >
             {{ localeLabels[loc] || loc }}
           </button>

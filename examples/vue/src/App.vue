@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useI18n } from '@fluenti/vue'
-import { msg } from '@fluenti/core'
+import { msg, getDirection } from '@fluenti/core'
 
 const { locale, setLocale, getLocales, isLoading, preloadLocale, t, format, d, n } = useI18n()
 
@@ -11,7 +11,22 @@ const localeLabels: Record<string, string> = {
   en: 'English',
   'zh-CN': '中文',
   ja: '日本語',
+  ar: 'العربية',
 }
+
+// Set dir attribute on <html> element when locale changes
+watch(locale, (newLocale) => {
+  document.documentElement.dir = getDirection(newLocale)
+  document.cookie = `locale=${newLocale};path=/;max-age=31536000`
+}, { immediate: true })
+
+// Restore locale from cookie on init
+onMounted(() => {
+  const match = document.cookie.match(/(?:^|;\s*)locale=([^;]+)/)
+  if (match && match[1] && match[1] !== locale.value) {
+    setLocale(match[1])
+  }
+})
 
 // Home — server template
 const serverTemplate = ref('{user} just {action}')

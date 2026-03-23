@@ -3,39 +3,39 @@ msgstr "Content-Type: text/plain; charset=utf-8\n"
 
 #: ./src/app.tsx:50
 msgid "Home"
-msgstr ""
+msgstr "الرئيسية"
 
 #: ./src/routes/rich-text.tsx:21
 msgid "Rich Text"
-msgstr ""
+msgstr "نص منسق"
 
 #: ./src/routes/plurals.tsx:10
 msgid "Plurals"
-msgstr ""
+msgstr "الجمع"
 
 #: ./src/app.tsx:53
 msgid "Formatting"
-msgstr ""
+msgstr "التنسيق"
 
 #: ./src/routes/index.tsx:10
 msgid "Welcome to Fluenti"
-msgstr ""
+msgstr "مرحبًا بك في Fluenti"
 
 #: ./src/routes/index.tsx:12
 msgid "A compile-time i18n library with SSR support"
-msgstr ""
+msgstr "مكتبة ترجمة وقت البناء مع دعم العرض من الخادم"
 
 #: ./src/routes/index.tsx:16
 msgid "Hello, {name}!"
-msgstr ""
+msgstr "مرحبًا، {name}!"
 
 #: ./src/routes/index.tsx:17
 msgid "This page is server-side rendered with per-request locale isolation."
-msgstr ""
+msgstr "هذه الصفحة معروضة من الخادم مع عزل اللغة لكل طلب."
 
 #: ./src/routes/index.tsx:19
 msgid "Current locale: {currentLocale}"
-msgstr ""
+msgstr "اللغة الحالية: {currentLocale}"
 
 #: ./src/routes/index.tsx:22
 msgid "This key only exists in English"
@@ -43,19 +43,19 @@ msgstr ""
 
 #: ./src/routes/plurals.tsx:34
 msgid "Your cart is empty."
-msgstr ""
+msgstr "سلة التسوق فارغة."
 
 #: ./src/routes/plurals.tsx:35
 msgid "You have # item in your cart."
-msgstr ""
+msgstr "لديك # عنصر في سلة التسوق."
 
 #: ./src/routes/plurals.tsx:36
 msgid "You have # items in your cart."
-msgstr ""
+msgstr "لديك # عناصر في سلة التسوق."
 
 #: ./src/routes/plurals.tsx:78
 msgid "Reset"
-msgstr ""
+msgstr "إعادة تعيين"
 
 #: ./src/routes/plurals.tsx:90
 msgid "Select Demo"
@@ -63,26 +63,28 @@ msgstr ""
 
 #: ./src/routes/rich-text.tsx:40
 msgid "Welcome to <bold>Fluenti</bold> for <italic>SolidStart</italic>!"
-msgstr ""
+msgstr "مرحبًا بك في <bold>Fluenti</bold> لـ <italic>SolidStart</italic>!"
 
 #: ./src/routes/rich-text.tsx:55
 msgid "Supports <bold>bold</bold>, <italic>italic</italic>, and <link>links</link>."
 msgstr ""
+"يدعم <bold>الخط العريض</bold> و<italic>المائل</italic> "
+"و<link>الروابط</link>."
 
 msgid "Current locale: {locale}"
-msgstr ""
+msgstr "اللغة الحالية: {locale}"
 
 msgid "Date & Number Formatting"
-msgstr ""
+msgstr "تنسيق التاريخ والأرقام"
 
 msgid "Today's date:"
-msgstr ""
+msgstr "تاريخ اليوم:"
 
 msgid "A large number:"
-msgstr ""
+msgstr "رقم كبير:"
 
 msgid "Percentage:"
-msgstr ""
+msgstr "النسبة المئوية:"
 
 msgid "Currency:"
-msgstr ""
+msgstr "العملة:"

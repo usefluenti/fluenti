@@ -1,15 +1,15 @@
 msgid ""
 msgstr "Content-Type: text/plain; charset=utf-8\n"
 
-#: ./src/routes/__root.tsx:91
+#: ./src/routes/__root.tsx:92
 msgid "Fluenti TanStack Start Playground"
 msgstr "Fluenti TanStack Start 练习场"
 
-#: ./src/routes/__root.tsx:92
+#: ./src/routes/__root.tsx:93
 msgid "Write text. Fluenti translates it. Zero config."
 msgstr "只需编写文本。Fluenti 为你翻译。零配置。"
 
-#: ./src/routes/__root.tsx:96
+#: ./src/routes/__root.tsx:97
 msgid "Home"
 msgstr "首页"
 
@@ -17,11 +17,11 @@ msgstr "首页"
 msgid "Plurals"
 msgstr "复数"
 
-#: ./src/routes/__root.tsx:98
+#: ./src/routes/__root.tsx:99
 msgid "Rich Text"
 msgstr "富文本"
 
-#: ./src/routes/__root.tsx:124
+#: ./src/routes/__root.tsx:132
 msgid "Built with Fluenti and TanStack Start"
 msgstr "使用 Fluenti 和 TanStack Start 构建"
 
@@ -68,6 +68,14 @@ msgstr "内置复数支持"
 #: ./src/routes/index.tsx:35
 msgid "Type-safe message catalogs"
 msgstr "类型安全的消息目录"
+
+#: ./src/routes/index.tsx:38
+msgid "Date Formatting"
+msgstr ""
+
+#: ./src/routes/index.tsx:43
+msgid "Number Formatting"
+msgstr ""
 
 #: ./src/routes/plurals.tsx:14
 msgid "{count, plural, =0 {No messages} one {# message} other {# messages}}"

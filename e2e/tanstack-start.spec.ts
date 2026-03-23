@@ -320,3 +320,71 @@ test.describe('TanStack Start — Concurrent SSR Isolation', () => {
     await Promise.all([ctxEn.close(), ctxJa.close()])
   })
 })
+
+test.describe('TanStack Start — RTL Support', () => {
+  test('Arabic locale sets dir=rtl', async ({ page }) => {
+    await page.goto('/')
+    await page.getByTestId('lang-ar').click()
+    expect(await page.locator('html').getAttribute('dir')).toBe('rtl')
+  })
+
+  test('switching back to English sets dir=ltr', async ({ page }) => {
+    await page.goto('/')
+    await page.getByTestId('lang-ar').click()
+    await page.getByTestId('lang-en').click()
+    expect(await page.locator('html').getAttribute('dir')).toBe('ltr')
+  })
+
+  test('Arabic locale renders Arabic translations', async ({ page }) => {
+    await page.goto('/')
+    await page.getByTestId('lang-ar').click()
+    await expect(page.getByTestId('welcome')).toContainText('مرحبًا بك في Fluenti')
+    await expect(page.getByTestId('title')).toContainText('ساحة تجارب Fluenti TanStack Start')
+  })
+})
+
+test.describe('TanStack Start — SSR Rendering', () => {
+  test('server-rendered HTML contains translated content before hydration', async ({ page }) => {
+    // Intercept the initial HTML response
+    const response = await page.goto('/')
+    const html = await response!.text()
+    // The server should render "Welcome to Fluenti" in the HTML
+    expect(html).toContain('Welcome to Fluenti')
+  })
+
+  test('SSR with Arabic cookie renders RTL dir attribute', async ({ page, context }) => {
+    await context.addCookies([
+      { name: 'locale', value: 'ar', domain: 'localhost', path: '/' },
+    ])
+    await page.goto('/')
+    await page.waitForLoadState('networkidle')
+    expect(await page.locator('html').getAttribute('dir')).toBe('rtl')
+    await context.clearCookies()
+  })
+})
+
+test.describe('TanStack Start — isLoading Indicator', () => {
+  test('loading indicator element exists in DOM', async ({ page }) => {
+    await page.goto('/')
+    await page.waitForLoadState('networkidle')
+    // isLoading should be false after initial load
+    const loading = page.getByTestId('loading')
+    await expect(loading).toBeHidden()
+  })
+})
+
+test.describe('TanStack Start — Preload on Hover', () => {
+  test('hovering locale buttons preloads without errors', async ({ page }) => {
+    const errors: string[] = []
+    page.on('pageerror', (err) => errors.push(err.message))
+
+    await page.goto('/')
+    await page.waitForLoadState('networkidle')
+    await page.getByTestId('lang-ja').hover()
+    await page.waitForTimeout(500)
+    await page.getByTestId('lang-ar').hover()
+    await page.waitForTimeout(500)
+
+    expect(errors).toHaveLength(0)
+  })
+})

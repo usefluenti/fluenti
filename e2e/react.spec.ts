@@ -222,3 +222,45 @@ test.describe('React SPA Playground', () => {
     await expect(page.getByTestId('title')).toContainText('Fluenti React プレイグラウンド')
   })
 })
+
+test.describe('React RTL support', () => {
+  test('Arabic locale sets dir=rtl on html element', async ({ page }) => {
+    await page.goto('/')
+    await page.getByTestId('lang-ar').click()
+    await expect(page.locator('html')).toHaveAttribute('dir', 'rtl')
+  })
+
+  test('switching back to English sets dir=ltr', async ({ page }) => {
+    await page.goto('/')
+    await page.getByTestId('lang-ar').click()
+    await expect(page.locator('html')).toHaveAttribute('dir', 'rtl')
+    await page.getByTestId('lang-en').click()
+    await expect(page.locator('html')).toHaveAttribute('dir', 'ltr')
+  })
+
+  test('Arabic locale renders Arabic translations', async ({ page }) => {
+    await page.goto('/')
+    await page.getByTestId('lang-ar').click()
+    await expect(page.getByTestId('title')).toContainText('ساحة Fluenti React')
+  })
+})
+
+test.describe('React Cookie persistence', () => {
+  test('locale persists after page reload via cookie', async ({ page }) => {
+    await page.goto('/')
+    await page.getByTestId('lang-ja').click()
+    await expect(page.getByTestId('title')).toContainText('Fluenti React プレイグラウンド')
+    await page.reload()
+    // After reload, should still be in Japanese (not English)
+    await expect(page.getByTestId('title')).toContainText('Fluenti React プレイグラウンド')
+  })
+
+  test('Arabic locale persists after page reload', async ({ page }) => {
+    await page.goto('/')
+    await page.getByTestId('lang-ar').click()
+    await expect(page.locator('html')).toHaveAttribute('dir', 'rtl')
+    await page.reload()
+    await expect(page.locator('html')).toHaveAttribute('dir', 'rtl')
+    await expect(page.getByTestId('title')).toContainText('ساحة Fluenti React')
+  })
+})

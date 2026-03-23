@@ -371,3 +371,70 @@ test.describe('SolidStart — Browser Back/Forward', () => {
     await expect(page.getByTestId('welcome')).toContainText('Fluenti へようこそ')
   })
 })
+
+test.describe('SolidStart — RTL Support', () => {
+  test('Arabic locale sets dir=rtl', async ({ page }) => {
+    await page.goto('/')
+    await page.waitForLoadState('networkidle')
+    await page.getByTestId('lang-ar').click()
+    expect(await page.locator('html').getAttribute('dir')).toBe('rtl')
+  })
+
+  test('switching back to English sets dir=ltr', async ({ page }) => {
+    await page.goto('/')
+    await page.waitForLoadState('networkidle')
+    await page.getByTestId('lang-ar').click()
+    await page.getByTestId('lang-en').click()
+    expect(await page.locator('html').getAttribute('dir')).toBe('ltr')
+  })
+
+  test('Arabic locale renders Arabic translations', async ({ page }) => {
+    await page.goto('/')
+    await page.waitForLoadState('networkidle')
+    await page.getByTestId('lang-ar').click()
+    await expect(page.getByTestId('welcome')).toContainText('مرحبًا بك في Fluenti')
+  })
+})
+
+test.describe('SolidStart — Fallback Only', () => {
+  test('missing translation fallback on SolidStart', async ({ page }) => {
+    await page.goto('/')
+    await page.waitForLoadState('networkidle')
+    await expect(page.getByTestId('fallback-only')).toContainText('This key only exists in English')
+    await page.getByTestId('lang-ja').click()
+    await expect(page.getByTestId('fallback-only')).not.toBeEmpty()
+  })
+
+  test('fallback-only shows English text when switched to Arabic', async ({ page }) => {
+    await page.goto('/')
+    await page.waitForLoadState('networkidle')
+    await page.getByTestId('lang-ar').click()
+    await expect(page.getByTestId('fallback-only')).toContainText('This key only exists in English')
+  })
+})
+
+test.describe('SolidStart — isLoading Indicator', () => {
+  test('loading indicator element exists in DOM', async ({ page }) => {
+    await page.goto('/')
+    await page.waitForLoadState('networkidle')
+    // isLoading should be false after initial load, so the element should not be visible
+    const loading = page.getByTestId('loading')
+    await expect(loading).toBeHidden()
+  })
+})
+
+test.describe('SolidStart — Preload on Hover', () => {
+  test('hovering a locale button does not cause errors', async ({ page }) => {
+    const errors: string[] = []
+    page.on('pageerror', (err) => errors.push(err.message))
+
+    await page.goto('/')
+    await page.waitForLoadState('networkidle')
+    await page.getByTestId('lang-ja').hover()
+    await page.waitForTimeout(500)
+    await page.getByTestId('lang-ar').hover()
+    await page.waitForTimeout(500)
+
+    expect(errors).toHaveLength(0)
+  })
+})

@@ -3,75 +3,73 @@ msgstr "Content-Type: text/plain; charset=utf-8\n"
 
 #: ./pages/index.vue:9
 msgid "Welcome to Fluenti"
-msgstr "Fluenti へようこそ"
+msgstr "مرحباً بكم في Fluenti"
 
 #: ./pages/index.vue:10
 msgid "A modern i18n library with SSR support"
-msgstr "SSR対応のモダンな i18n ライブラリ"
+msgstr "مكتبة i18n حديثة مع دعم SSR"
 
 #: ./pages/index.vue:49
 msgid "Features"
-msgstr "機能"
+msgstr "المميزات"
 
 #: ./pages/index.vue:51
 msgid "Server-side rendering"
-msgstr "サーバーサイドレンダリング"
+msgstr "العرض من جانب الخادم"
 
 #: ./pages/index.vue:52
 msgid "Locale detection from cookies"
-msgstr "Cookie からのロケール検出"
+msgstr "اكتشاف اللغة من ملفات تعريف الارتباط"
 
 #: ./pages/index.vue:53
 msgid "Hydration without flash"
-msgstr "フラッシュなしのハイドレーション"
+msgstr "ترطيب بدون وميض"
 
 #: ./pages/index.vue:54
 msgid "Reactive locale switching"
-msgstr "リアクティブなロケール切り替え"
+msgstr "تبديل اللغة التفاعلي"
 
 #: ./pages/index.vue:16
 msgid "Hello, {name}!"
-msgstr "こんにちは、{name}さん！"
+msgstr "مرحباً، {name}!"
 
 #: ./pages/index.vue:20
 msgid "Current locale: {locale}"
-msgstr "現在のロケール：{locale}"
+msgstr "اللغة الحالية: {locale}"
 
 #: ./pages/index.vue:24
 msgid "You have {count} items in your cart."
-msgstr "カートに {count} 個のアイテムがあります。"
+msgstr "لديك {count} عناصر في سلة التسوق."
 
 #: ./pages/plurals.vue:10
 msgid "Plural Demos"
-msgstr "複数形デモ"
+msgstr "عروض الجمع"
 
 #: ./pages/plurals.vue:34
 msgid "Remove"
-msgstr "削除"
+msgstr "إزالة"
 
 #: ./pages/plurals.vue:36
 msgid "Add"
-msgstr "追加"
+msgstr "إضافة"
 
 #: ./pages/plurals.vue:37
 msgid "Reset"
-msgstr "リセット"
+msgstr "إعادة تعيين"
 
 #: ./pages/plurals.vue:22
 msgid "{appleCount, plural, =0 {No apples} one {1 apple} other {# apples}}"
-msgstr "{appleCount, plural, =0 {りんごなし} one {りんご 1 個} other {りんご # 個}}"
+msgstr ""
 
 #: ./pages/plurals.vue:41
 msgid ""
 "{messageCount, plural, =0 {No new messages} one {1 new message} other {# "
 "new messages}}"
 msgstr ""
-"{messageCount, plural, =0 {新しいメッセージなし} one {新しいメッセージ 1 件} other {新しいメッセージ # "
-"件}}"
 
 #: ./pages/rich-text.vue:6
 msgid "Rich Text Demos"
-msgstr "リッチテキストデモ"
+msgstr "عروض النص المنسق"
 
 #: ./pages/rich-text.vue:13
 msgid "Visit our <0>documentation</0> to learn more."
@@ -86,34 +84,34 @@ msgid "Please <0>sign in</0> or <1>register</1> to continue."
 msgstr ""
 
 msgid "Fluenti Nuxt Playground"
-msgstr "Fluenti Nuxt プレイグラウンド"
+msgstr "ملعب Fluenti Nuxt"
 
 msgid "Server-rendered i18n with Nuxt 3 and Fluenti."
-msgstr "Nuxt 3 と Fluenti によるサーバーサイド i18n。"
+msgstr "i18n معروض من الخادم مع Nuxt 3 و Fluenti."
 
 msgid "Loading translations..."
-msgstr "翻訳を読み込み中..."
+msgstr "جاري تحميل الترجمات..."
 
 msgid "Built with Fluenti and Nuxt 3"
-msgstr "Fluenti と Nuxt 3 で構築"
+msgstr "مبني بواسطة Fluenti و Nuxt 3"
 
 msgid "Visit our <link>documentation</link> to learn more."
-msgstr "詳しくは<link>ドキュメント</link>をご覧ください。"
+msgstr ""
 
 msgid "This is <bold>important</bold> information."
-msgstr "これは<bold>重要な</bold>情報です。"
+msgstr ""
 
 msgid "Please <link>sign in</link> or <bold>register</bold> to continue."
-msgstr "<link>ログイン</link>または<bold>登録</bold>してください。"
+msgstr ""
 
 msgid "Home"
-msgstr "ホーム"
+msgstr "الرئيسية"
 
 msgid "Rich Text"
-msgstr "リッチテキスト"
+msgstr "نص منسق"
 
 msgid "Plurals"
-msgstr "複数形"
+msgstr "جمع"
 
 msgid "A modern i18n framework"
-msgstr "モダンな i18n フレームワーク"
+msgstr "إطار عمل i18n حديث"

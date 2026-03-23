@@ -1,0 +1,68 @@
+msgid ""
+msgstr "Content-Type: text/plain; charset=utf-8\n"
+
+msgid "Welcome to Fluenti"
+msgstr "مرحبًا بك في Fluenti"
+
+msgid "A type-safe i18n library for Solid"
+msgstr "مكتبة i18n آمنة الأنواع لـ Solid"
+
+msgid "Hello, {developer}!"
+msgstr "مرحبًا، {developer}!"
+
+msgid "This playground demonstrates the features of @fluenti/solid."
+msgstr "هذه الساحة توضح ميزات @fluenti/solid."
+
+msgid "Current locale: {locale}"
+msgstr "اللغة الحالية: {locale}"
+
+msgid "Username"
+msgstr "اسم المستخدم"
+
+msgid "Email"
+msgstr "البريد الإلكتروني"
+
+msgid "Password"
+msgstr "كلمة المرور"
+
+msgid "Submit"
+msgstr "إرسال"
+
+msgid "Cancel"
+msgstr "إلغاء"
+
+msgid "This field is required"
+msgstr "هذا الحقل مطلوب"
+
+msgid "Rich Text"
+msgstr "نص منسق"
+
+msgid "Plurals"
+msgstr "الجمع"
+
+msgid "Reset"
+msgstr "إعادة تعيين"
+
+msgid "Your cart is empty."
+msgstr "سلتك فارغة."
+
+msgid "You have # item in your cart."
+msgstr "لديك # عنصر في سلتك."
+
+msgid "You have # items in your cart."
+msgstr "لديك # عناصر في سلتك."
+
+msgid "Reactivity Demo"
+msgstr "عرض التفاعلية"
+
+msgid "He liked this"
+msgstr "أعجبه هذا"
+
+msgid "She liked this"
+msgstr "أعجبها هذا"
+
+msgid "They liked this"
+msgstr "أعجبهم هذا"
+
+msgid "Formatting Showcase"
+msgstr "عرض التنسيق"

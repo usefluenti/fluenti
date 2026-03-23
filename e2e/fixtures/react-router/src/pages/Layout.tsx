@@ -15,6 +15,7 @@ export function Layout({ onLocaleChange }: { onLocaleChange: (l: string) => void
         <Link to="/" data-testid="nav-home">{t`Home`}</Link>
         <Link to="/about" data-testid="nav-about">{t`About`}</Link>
         <Link to="/plurals" data-testid="nav-plurals">{t`Plurals`}</Link>
+        <Link to="/richtext" data-testid="nav-richtext">{t`Rich Text`}</Link>
       </nav>
 
       <div className="locale-switcher">

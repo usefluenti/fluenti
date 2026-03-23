@@ -150,3 +150,6 @@ msgstr "リッチテキストデモ"
 
 msgid "Components for complex translations"
 msgstr "複雑な翻訳のためのコンポーネント"
+
+msgid "{gender, select, male {He liked it} female {She liked it} other {They liked it}}"
+msgstr ""

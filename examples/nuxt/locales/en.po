@@ -112,3 +112,6 @@ msgstr ""
 
 msgid "Plurals"
 msgstr ""
+
+msgid "A modern i18n framework"
+msgstr ""

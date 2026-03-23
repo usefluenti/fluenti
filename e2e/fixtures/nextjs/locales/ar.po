@@ -144,3 +144,6 @@ msgstr "إرسال"
 #: ./src/app/server-action/page.tsx:24
 msgid "Server says: {result}"
 msgstr "الخادم يقول: {result}"
+
+msgid "{gender, select, male {He liked it} female {She liked it} other {They liked it}}"
+msgstr ""

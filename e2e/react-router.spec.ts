@@ -126,6 +126,79 @@ test.describe('React Router e2e', () => {
   })
 })
 
+test.describe('React Router — Select component', () => {
+  test('select component renders default (other) form', async ({ page }) => {
+    await page.goto('/')
+    await page.getByTestId('nav-plurals').click()
+    await expect(page.getByTestId('select-result')).toContainText('They liked it')
+  })
+
+  test('select component renders correct gender form', async ({ page }) => {
+    await page.goto('/')
+    await page.getByTestId('nav-plurals').click()
+    await page.getByTestId('gender-male').click()
+    await expect(page.getByTestId('select-result')).toContainText('He liked it')
+  })
+
+  test('select component switches between gender forms', async ({ page }) => {
+    await page.goto('/')
+    await page.getByTestId('nav-plurals').click()
+    await page.getByTestId('gender-female').click()
+    await expect(page.getByTestId('select-result')).toContainText('She liked it')
+    await page.getByTestId('gender-male').click()
+    await expect(page.getByTestId('select-result')).toContainText('He liked it')
+  })
+})
+
+test.describe('React Router — Trans/richtext', () => {
+  test('Trans renders link in rich text', async ({ page }) => {
+    await page.goto('/richtext')
+    await expect(page.getByTestId('richtext-page')).toBeVisible()
+    await expect(page.getByTestId('trans-basic').locator('a[href="/docs"]')).toContainText('documentation')
+  })
+
+  test('Trans renders bold in rich text', async ({ page }) => {
+    await page.goto('/richtext')
+    await expect(page.getByTestId('trans-bold').locator('strong')).toContainText('important')
+  })
+})
+
+test.describe('React Router — DateTime/NumberFormat', () => {
+  test('DateTime renders a formatted date', async ({ page }) => {
+    await page.goto('/')
+    await expect(page.getByTestId('date-display')).not.toBeEmpty()
+  })
+
+  test('NumberFormat renders a formatted number', async ({ page }) => {
+    await page.goto('/')
+    const text = await page.getByTestId('number-display').textContent()
+    expect(text).toContain('1')
+    expect(text).toContain('234')
+  })
+})
+
+test.describe('React Router — msg`` lazy descriptors', () => {
+  test('msg tagged template renders role text', async ({ page }) => {
+    await page.goto('/')
+    await expect(page.getByTestId('msg-role')).toContainText('Developer')
+  })
+
+  test('msg tagged template translates to Japanese', async ({ page }) => {
+    await page.goto('/')
+    await page.getByTestId('lang-ja').click()
+    await expect(page.getByTestId('msg-role')).toContainText('開発者')
+  })
+})
+
+test.describe('React Router — Fallback', () => {
+  test('missing translation falls back to English', async ({ page }) => {
+    await page.goto('/')
+    await expect(page.getByTestId('fallback-only')).toContainText('This key only exists in English')
+    await page.getByTestId('lang-ja').click()
+    await expect(page.getByTestId('fallback-only')).toContainText('This key only exists in English')
+  })
+})
+
 test.describe('React Router — Rapid Locale Switching', () => {
   test('rapid locale switching settles on final locale', async ({ page }) => {
     await page.goto('/')

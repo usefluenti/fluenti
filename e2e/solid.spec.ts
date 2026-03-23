@@ -206,3 +206,45 @@ test.describe('Solid Playground', () => {
     expect(after).not.toBe(before)
   })
 })
+
+test.describe('Solid RTL support', () => {
+  test('Arabic locale sets dir=rtl on html element', async ({ page }) => {
+    await page.goto('/')
+    await page.locator('button:has-text("العربية")').click()
+    await expect(page.locator('html')).toHaveAttribute('dir', 'rtl')
+  })
+
+  test('switching back to English sets dir=ltr', async ({ page }) => {
+    await page.goto('/')
+    await page.locator('button:has-text("العربية")').click()
+    await expect(page.locator('html')).toHaveAttribute('dir', 'rtl')
+    await page.locator('button:has-text("English")').click()
+    await expect(page.locator('html')).toHaveAttribute('dir', 'ltr')
+  })
+
+  test('Arabic locale renders Arabic translations', async ({ page }) => {
+    await page.goto('/')
+    await page.locator('button:has-text("العربية")').click()
+    await expect(page.locator('h1').first()).toContainText('مرحبًا بك في Fluenti')
+  })
+})
+
+test.describe('Solid Cookie persistence', () => {
+  test('locale persists after page reload via cookie', async ({ page }) => {
+    await page.goto('/')
+    await page.locator('button:has-text("日本語")').click()
+    await expect(page.locator('h1').first()).not.toContainText('Welcome to Fluenti')
+    await page.reload()
+    // After reload, should still be in Japanese (not English)
+    await expect(page.locator('h1').first()).not.toContainText('Welcome to Fluenti')
+  })
+
+  test('Arabic locale persists after page reload', async ({ page }) => {
+    await page.goto('/')
+    await page.locator('button:has-text("العربية")').click()
+    await expect(page.locator('html')).toHaveAttribute('dir', 'rtl')
+    await page.reload()
+    await expect(page.locator('html')).toHaveAttribute('dir', 'rtl')
+    await expect(page.locator('h1').first()).toContainText('مرحبًا بك في Fluenti')
+  })
+})

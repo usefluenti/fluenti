@@ -1,8 +1,10 @@
-import { createSignal, type Component, type JSX } from 'solid-js'
+import { createSignal, createEffect, type Component, type JSX } from 'solid-js'
 import { I18nProvider, useI18n, Trans, Plural, Select, DateTime, NumberFormat, msg } from '@fluenti/solid'
+import { getDirection } from '@fluenti/core'
 import en from './locales/compiled/en.js'
 import zhCN from './locales/compiled/zh-CN.js'
 import ja from './locales/compiled/ja.js'
+import ar from './locales/compiled/ar.js'
 
 const Bold: Component<{ children?: JSX.Element }> = (props) => (
   <strong style={{ color: '#2c3e50' }}>{props.children}</strong>
@@ -27,7 +29,14 @@ const LanguageSwitcher: Component = () => {
     { code: 'en', label: 'English' },
     { code: 'zh-CN', label: '中文' },
     { code: 'ja', label: '日本語' },
+    { code: 'ar', label: 'العربية' },
   ] as const
+
+  // Set dir attribute on <html> and persist locale in cookie
+  createEffect(() => {
+    document.documentElement.dir = getDirection(locale())
+    document.cookie = `locale=${locale()};path=/;max-age=31536000`
+  })
 
   return (
     <div style={{ display: 'flex', gap: '8px', 'align-items': 'center' }}>

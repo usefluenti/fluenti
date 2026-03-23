@@ -2,7 +2,7 @@ import { defineConfig } from '@fluenti/cli'
 
 export default defineConfig({
   sourceLocale: 'en',
-  locales: ['en', 'zh-CN', 'ja'],
+  locales: ['en', 'zh-CN', 'ja', 'ar'],
   catalogDir: './locales',
   format: 'po',
   include: ['./src/**/*.{tsx,ts}'],

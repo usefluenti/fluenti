@@ -1,15 +1,15 @@
 msgid ""
 msgstr "Content-Type: text/plain; charset=utf-8\n"
 
-#: ./src/routes/__root.tsx:91
+#: ./src/routes/__root.tsx:92
 msgid "Fluenti TanStack Start Playground"
 msgstr ""
 
-#: ./src/routes/__root.tsx:92
+#: ./src/routes/__root.tsx:93
 msgid "Write text. Fluenti translates it. Zero config."
 msgstr ""
 
-#: ./src/routes/__root.tsx:96
+#: ./src/routes/__root.tsx:97
 msgid "Home"
 msgstr ""
 
@@ -17,11 +17,11 @@ msgstr ""
 msgid "Plurals"
 msgstr ""
 
-#: ./src/routes/__root.tsx:98
+#: ./src/routes/__root.tsx:99
 msgid "Rich Text"
 msgstr ""
 
-#: ./src/routes/__root.tsx:124
+#: ./src/routes/__root.tsx:132
 msgid "Built with Fluenti and TanStack Start"
 msgstr ""
 
@@ -67,6 +67,14 @@ msgstr ""
 
 #: ./src/routes/index.tsx:35
 msgid "Type-safe message catalogs"
+msgstr ""
+
+#: ./src/routes/index.tsx:38
+msgid "Date Formatting"
+msgstr ""
+
+#: ./src/routes/index.tsx:43
+msgid "Number Formatting"
 msgstr ""
 
 #: ./src/routes/plurals.tsx:14

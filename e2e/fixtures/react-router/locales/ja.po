@@ -48,3 +48,18 @@ msgstr "追加"
 #: ./src/pages/Plurals.tsx:23
 msgid "Reset"
 msgstr "リセット"
+
+msgid "Rich Text"
+msgstr "リッチテキスト"
+
+msgid "Read the <0>documentation</0> for more info."
+msgstr ""
+
+msgid "This is <0>important</0> information."
+msgstr ""
+
+msgid "Developer"
+msgstr "開発者"
+
+msgid "{gender, select, male {He liked it} female {She liked it} other {They liked it}}"
+msgstr ""
