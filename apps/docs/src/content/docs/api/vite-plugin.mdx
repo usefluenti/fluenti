@@ -3,53 +3,110 @@ title: "@fluenti/vite-plugin"
 description: "API reference for @fluenti/vite-plugin — compile-time transforms, virtual modules, code splitting strategies, and build configuration options."
 ---
 
-import { Aside } from '@astrojs/starlight/components'
+import { Aside, Tabs, TabItem } from '@astrojs/starlight/components'
 
-## Usage
+The core Vite plugin that powers Fluenti's compile-time transforms, virtual module system, and code splitting. You never import `@fluenti/vite-plugin` directly — instead, use the framework-specific wrapper for your project.
 
-Import the plugin from your framework's package:
+## Framework-specific usage
 
+Each framework package re-exports the plugin factory with its own runtime generator and (optionally) framework-specific sub-plugins. The plugin ordering relative to the framework's own Vite plugin matters.
+
+<Tabs>
+<TabItem label="Vue">
 ```typescript
-// Vue — vite.config.ts
+// vite.config.ts
+import { defineConfig } from 'vite'
+import vue from '@vitejs/plugin-vue'
 import fluentiVue from '@fluenti/vue/vite-plugin'
-export default defineConfig({ plugins: [vue(), fluentiVue()] })
 
-// React — vite.config.ts
-import fluentiReact from '@fluenti/react/vite-plugin'
-export default defineConfig({ plugins: [fluentiReact(), react()] })
-
-// Solid — vite.config.ts
-import fluentiSolid from '@fluenti/solid/vite-plugin'
-export default defineConfig({ plugins: [solidPlugin(), fluentiSolid()] })
+export default defineConfig({
+  plugins: [
+    vue(),
+    fluentiVue(),
+  ],
+})
 ```
 
-## Options
+`fluentiVue()` adds a **`fluenti:vue-template`** sub-plugin that pre-transforms `v-t`, `<Trans>`, and `<Plural>` usage in Vue SFC templates before the core script transform runs.
 
-The plugin accepts a single `config` option — either a path to a config file or an inline `FluentiBuildConfig` object. When omitted, the plugin auto-discovers `fluenti.config.ts` in the project root.
+Place `fluentiVue()` **after** `vue()` so that Vue's SFC compiler runs first.
+</TabItem>
+<TabItem label="React">
+```typescript
+// vite.config.ts
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+import fluentiReact from '@fluenti/react/vite-plugin'
+
+export default defineConfig({
+  plugins: [
+    fluentiReact(),
+    react(),
+  ],
+})
+```
+
+Place `fluentiReact()` **before** `react()` so that Fluenti's JSX transforms (`` t` ` ``, `<Trans>`) run before React's JSX compilation.
+</TabItem>
+<TabItem label="Solid">
+```typescript
+// vite.config.ts
+import { defineConfig } from 'vite'
+import solidPlugin from 'vite-plugin-solid'
+import fluentiSolid from '@fluenti/solid/vite-plugin'
+
+export default defineConfig({
+  plugins: [
+    solidPlugin(),
+    fluentiSolid(),
+  ],
+})
+```
+
+Place `fluentiSolid()` **after** `solidPlugin()`. The Solid wrapper passes the core plugins through with Solid's reactive runtime generator.
+</TabItem>
+</Tabs>
+
+<Aside type="note">
+For **Next.js**, use `@fluenti/next` which wraps webpack instead of Vite. For **Nuxt**, use the built-in Nuxt module via `@fluenti/vue`. See the [Next.js API](/api/next) and [Nuxt API](/api/nuxt) references.
+</Aside>
+
+## Plugin options
+
+Every framework wrapper accepts a single optional `FluentiPluginOptions` object:
 
 ```typescript
-// Zero-config — auto-discovers fluenti.config.ts
+interface FluentiPluginOptions {
+  config?: string | FluentiBuildConfig
+}
+```
+
+The `config` field accepts three forms:
+
+```typescript
+// 1. Zero-config — auto-discovers fluenti.config.ts in the project root
 fluentiVue()
 
-// Point to a specific config file
+// 2. Path to a specific config file
 fluentiVue({ config: './i18n/fluenti.config.ts' })
 
-// Inline config override
+// 3. Inline config object (merged with built-in defaults)
 fluentiVue({
   config: {
-    compileOutDir: './src/locales/compiled',
+    sourceLocale: 'en',
+    locales: ['en', 'ja', 'zh-CN'],
     splitting: 'dynamic',
   },
 })
 ```
 
 <Aside type="tip">
-Most projects only need `fluentiVue()` with a `fluenti.config.ts` at the project root. Inline config is useful for monorepos or custom setups where you need per-app overrides.
+Most projects only need the zero-config form with a `fluenti.config.ts` at the project root. Inline config is useful for monorepos or per-app overrides where a shared config file does not apply.
 </Aside>
 
-### `config` fields
+## Config fields reference
 
-The following fields are accepted when passing an inline config object. All fields are optional — defaults come from `fluenti.config.ts` or the built-in defaults shown below.
+When passing an inline config object, the following `FluentiBuildConfig` fields are accepted. All are optional — defaults come from `fluenti.config.ts` or the built-in defaults shown below.
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
@@ -57,65 +114,318 @@ The following fields are accepted when passing an inline config object. All fiel
 | `locales` | `LocaleDefinition[]` | `['en']` | Locale codes or objects (`string \| { code, name?, iso?, dir?, domain? }`) available to the build |
 | `format` | `'json' \| 'po'` | `'po'` | Catalog file format |
 | `compileOutDir` | `string` | `'./src/locales/compiled'` | Directory where compiled catalog files are read from |
-| `splitting` | `'dynamic' \| 'static' \| false` | `false` | Build-time locale chunking strategy |
+| `splitting` | `'dynamic' \| 'static' \| false` | `false` | Build-time locale chunking strategy (see [Code splitting](#code-splitting-strategies) below) |
 | `defaultBuildLocale` | `string` | `sourceLocale` | Locale inlined for `'static'` builds |
 | `include` | `string[]` | `['./src/**/*.{vue,tsx,jsx,ts,js}']` | Source file patterns for dev watcher |
 | `exclude` | `string[]` | `['**/*.test.*', '**/*.spec.*', '**/__tests__/**', '**/*.d.ts']` | File patterns excluded from dev watcher |
-| `devAutoCompile` | `boolean` | `true` | Auto extract+compile on file change during dev |
-| `buildAutoCompile` | `boolean` | `true` | Auto extract+compile before production build |
+| `devAutoCompile` | `boolean` | `true` | Auto extract + compile on file change during dev |
+| `buildAutoCompile` | `boolean` | `true` | Auto extract + compile before production build |
 | `devAutoCompileDelay` | `number` | `300` | Debounce delay (ms) for dev auto-compile |
 | `parallelCompile` | `boolean` | `false` | Use worker threads for compilation (effective with 5+ locales) |
 | `catalogExtension` | `string` | `'.js'` | File extension for compiled catalog files (e.g. `'.mjs'`, `'.json'`) |
 | `idGenerator` | `(message: string, context?: string) => string` | built-in FNV-1a | Custom message ID generator. Replaces the default hash-based ID strategy |
-| `onBeforeCompile` | `() => boolean \| void \| Promise<…>` | — | Hook called before auto-compile. Return `false` to skip compilation |
+| `onBeforeCompile` | `() => boolean \| void \| Promise<...>` | — | Hook called before auto-compile. Return `false` to skip compilation |
 | `onAfterCompile` | `() => void \| Promise<void>` | — | Hook called after auto-compile completes |
 
-## What it does
+## Sub-plugin pipeline
 
-The plugin provides several sub-plugins, each implemented as a dedicated module:
+The plugin factory produces six ordered sub-plugins. The order is significant — each plugin depends on the output of the previous stage.
 
-The core `@fluenti/vite-plugin` provides these sub-plugins:
+| # | Plugin name | Enforce | Purpose |
+|---|-------------|---------|---------|
+| 1 | `fluenti:virtual` | — | Resolves `virtual:fluenti/*` module IDs. Must be first. |
+| 2 | `fluenti:vue-template` | `pre` | (Vue only) Pre-transforms `v-t`, `<Trans>`, `<Plural>` in SFC templates |
+| 3 | `fluenti:script-transform` | `pre` | AST scope-aware rewrite of `` t` ` `` tagged templates and `<Trans>` JSX optimization |
+| 4 | `fluenti:build-compile` | — | Triggers extract + compile before production builds (`buildStart` hook) |
+| 5 | `fluenti:build-split` | — | Rewrites `t()` calls to catalog references and emits per-route chunks |
+| 6 | `fluenti:dev` | — | File watcher + HMR for catalog changes during dev |
 
-1. **fluenti:virtual** — Internal virtual-module layer used by the build output (`virtual-modules.ts`)
-2. **fluenti:script-transform** — Strict AST-only tagged-template optimization (`scope-transform.ts`, `trans-transform.ts`)
-3. **fluenti:build-compile** — Auto extract+compile before production builds
-4. **fluenti:build-split** — Code-splitting transforms for production builds (`build-transform.ts`)
-5. **fluenti:dev** — HMR support for catalog changes
+## Code splitting strategies
 
-Each framework package adds its own plugins:
+The `splitting` option controls how translated messages are bundled for production.
 
-- `@fluenti/vue/vite-plugin` adds **fluenti:vue-template** — pre-transforms Vue `v-t`, `<Trans>`, and `<Plural>` template usage
-- `@fluenti/react/vite-plugin` and `@fluenti/solid/vite-plugin` pass the core plugins through with the correct framework-specific runtime generator
+### `false` (default) — no splitting
 
-## Splitting strategies
+All compiled catalogs are bundled together. Every locale's messages ship in the initial bundle. Simplest setup, suitable for apps with few locales or small catalogs.
 
-Use `splitting: 'dynamic'` for locale chunks loaded on demand, `splitting: 'static'` for a single inlined build locale, or `false` to bundle every catalog together.
+```typescript
+fluentiVue({
+  config: { splitting: false },
+})
+```
 
-The plugin's internal virtual modules (`virtual:fluenti/runtime`, `virtual:fluenti/messages`, `virtual:fluenti/route-runtime`) are implementation details, not the primary public API. App code should use framework runtime APIs such as `setLocale()`, `preloadLocale()`, `loadMessages()`, and `chunkLoader`.
+No virtual modules are generated. Your app imports compiled catalogs directly from `compileOutDir`.
+
+### `'dynamic'` — lazy locale loading
+
+Each locale is a separate chunk loaded on demand. Only the active locale is fetched; switching locales triggers a dynamic `import()`.
+
+```typescript
+fluentiVue({
+  config: {
+    splitting: 'dynamic',
+    locales: ['en', 'ja', 'zh-CN'],
+  },
+})
+```
+
+At build time, the plugin:
+
+1. Rewrites `t('message')` calls to `__catalog["<hash>"]` references
+2. Injects `import { __catalog } from 'virtual:fluenti/runtime'` at the top of each transformed module
+3. Generates `virtual:fluenti/runtime` — a reactive module that exports `__catalog`, `switchLocale()`, and `preloadLocale()`
+4. Each locale's catalog becomes a lazy chunk loaded via `import()`
+
+This is the recommended strategy for multi-locale SPAs.
+
+### `'static'` — single locale inlined
+
+A single locale is inlined at build time. Other locales are stripped. Useful for pre-rendered or server-side builds that serve one locale per deployment.
+
+```typescript
+fluentiVue({
+  config: {
+    splitting: 'static',
+    defaultBuildLocale: 'ja', // defaults to sourceLocale if omitted
+  },
+})
+```
+
+At build time, the plugin:
+
+1. Rewrites `t('message')` calls to direct named imports (e.g. `_a1b2c3`)
+2. Injects `import { _a1b2c3, ... } from 'virtual:fluenti/messages'`
+3. Generates `virtual:fluenti/messages` — a re-export from the compiled catalog of `defaultBuildLocale`
+
+This produces the smallest bundle for a single locale but requires a separate build per locale.
+
+### `'per-route'` — route-level chunks
+
+<Aside type="caution">
+Per-route splitting is an internal/advanced strategy. It builds on `'dynamic'` but further splits messages by which route uses them. Messages used in multiple routes go into a shared chunk.
+</Aside>
+
+```typescript
+fluentiVue({
+  config: { splitting: 'per-route' },
+})
+```
+
+At build time, the plugin:
+
+1. Tracks which message hashes appear in which modules during `transform`
+2. In `generateBundle`, groups hashes by output chunk — messages used in multiple chunks become "shared", the rest are route-specific
+3. Emits asset files like `_fluenti/shared-en.js`, `_fluenti/home-en.js`, `_fluenti/about-ja.js`
+4. Generates `virtual:fluenti/route-runtime` for the route-level loader
+
+## Virtual module system
+
+When `splitting` is enabled, the plugin serves generated code through Vite's virtual module convention. These modules are implementation details — app code should use the framework runtime APIs (`setLocale()`, `preloadLocale()`, etc.) rather than importing virtual modules directly.
+
+| Virtual module | Splitting mode | Contents |
+|----------------|----------------|----------|
+| `virtual:fluenti/runtime` | `'dynamic'` | Reactive catalog object, `switchLocale()`, `preloadLocale()`, lazy `import()` loaders per locale |
+| `virtual:fluenti/messages` | `'static'` | Re-export of all named exports from the `defaultBuildLocale` compiled catalog |
+| `virtual:fluenti/messages/<locale>` | any | Re-export of a specific locale's compiled catalog |
+| `virtual:fluenti/route-runtime` | `'per-route'` | Route-aware catalog loader with shared/route chunk resolution |
+
+Virtual modules are resolved with the `\0` prefix (Vite convention) so they are excluded from the file system and from other plugins' transforms.
+
+### TypeScript support
+
+If your editor shows errors on virtual module imports, add a type declaration:
+
+```typescript
+// src/env.d.ts
+declare module 'virtual:fluenti/runtime' {
+  export const __catalog: Record<string, (...args: unknown[]) => string>
+  export function switchLocale(locale: string): Promise<void>
+  export function preloadLocale(locale: string): Promise<void>
+}
+
+declare module 'virtual:fluenti/messages' {
+  const messages: Record<string, (...args: unknown[]) => string>
+  export = messages
+}
+```
+
+<Aside type="tip">
+You rarely need these declarations. The framework runtime packages (`@fluenti/vue`, `@fluenti/react`, `@fluenti/solid`) wrap the virtual modules behind typed APIs like `useI18n()` and `setLocale()`.
+</Aside>
 
 ## Script transforms
 
-The plugin uses **AST scope analysis** to detect Fluenti's direct-import `t` inside supported component/setup scopes and rewrites it at build time. Other variables named `t` are left untouched.
+The `fluenti:script-transform` plugin uses AST scope analysis to detect Fluenti's `t` import and rewrite tagged templates at build time. Other variables named `t` are left untouched.
 
-```ts
+### Compile-time `t` tagged template
+
+```typescript
+// Source (your code)
 import { t } from '@fluenti/react'
 const greeting = t`Hello ${name}`
 ```
 
-```ts
+```typescript
+// Build output (after transform)
 const { t } = useI18n()
 const greeting = t('Hello {name}', { name: name })
 ```
 
-Supported compile-time forms:
+Supported import sources:
 
-- `` import { t } from '@fluenti/react'; t`Hello ${name}` ``
 - `import { t } from '@fluenti/vue'`
+- `import { t } from '@fluenti/react'`
 - `import { t } from '@fluenti/solid'`
-- `t({ message: 'Hello {name}', context: 'hero' }, { name })`
 
-Runtime lookup such as `t('message.id')` still belongs to `useI18n().t()`.
+Supported call forms:
 
-## `<Trans>` compile-time optimization
+- `` t`Hello ${name}` `` — tagged template with interpolation
+- `t({ message: 'Hello {name}', context: 'hero' }, { name })` — descriptor object form
+- `t('literal string')` — plain string (passed through for runtime lookup)
 
-The plugin also optimizes JSX `<Trans>` components at build time. It statically extracts the message string from children and pre-computes the context-aware message ID, injecting `__id`, `__message`, and `__components` props. This eliminates the runtime `extractMessage()` / `hashMessage()` fast-path cost without changing the component API.
+### `<Trans>` compile-time optimization
+
+For JSX files (`.tsx`, `.jsx`), the plugin statically extracts the message string from `<Trans>` children, pre-computes the message ID, and injects `__id`, `__message`, and `__components` props. This eliminates the runtime cost of `extractMessage()` and `hashMessage()` without changing the component API.
+
+```tsx
+// Source
+<Trans>Hello <b>world</b></Trans>
+
+// After transform — __id, __message, __components injected
+<Trans __id="a1b2c3" __message="Hello <0>world</0>" __components={[({ children }) => <b>{children}</b>]}>
+  Hello <b>world</b>
+</Trans>
+```
+
+## Dev mode vs build mode behavior
+
+The plugin adapts its behavior based on whether Vite is running `serve` (dev) or `build` (production).
+
+### Dev mode (`vite dev`)
+
+| Feature | Behavior |
+|---------|----------|
+| Auto extract + compile | On startup, runs `extract` then `compile`. On file changes matching `include` patterns, re-runs with debounce (`devAutoCompileDelay` ms). Disable with `devAutoCompile: false`. |
+| HMR | When compiled catalog files change in `compileOutDir`, the plugin invalidates all `virtual:fluenti/*` modules, triggering a hot update. |
+| Script transforms | `` t` ` `` and `<Trans>` are transformed on every request (standard Vite transform pipeline). |
+| Code splitting | Virtual modules are served but splitting transforms are **not** applied — all catalogs are available for instant locale switching. |
+
+### Build mode (`vite build`)
+
+| Feature | Behavior |
+|---------|----------|
+| Auto compile | Before `buildStart`, runs `compile` (extract is skipped — source files have not changed). Disable with `buildAutoCompile: false`. |
+| Compile hooks | `onBeforeCompile` runs before compilation. Return `false` to skip. `onAfterCompile` runs after successful compilation. |
+| Script transforms | Same as dev. |
+| Code splitting | `fluenti:build-split` rewrites `t()` calls to catalog references and (for `'per-route'`) emits chunked assets in `generateBundle`. |
+| Parallel compile | When `parallelCompile: true`, compilation uses worker threads (effective with 5+ locales). |
+
+## Compile lifecycle hooks
+
+Use `onBeforeCompile` and `onAfterCompile` to integrate with external tooling:
+
+```typescript
+fluentiReact({
+  config: {
+    onBeforeCompile: async () => {
+      // Pull latest translations from a TMS
+      await fetchTranslationsFromCrowdin()
+      // Return false to skip compilation
+      // return false
+    },
+    onAfterCompile: async () => {
+      // Notify CI, run validation, etc.
+      console.log('Catalogs compiled successfully')
+    },
+  },
+})
+```
+
+## Custom ID generator
+
+By default, Fluenti generates message IDs using FNV-1a hashing. You can replace this with a custom function:
+
+```typescript
+fluentiVue({
+  config: {
+    idGenerator: (message, context) => {
+      // Your custom ID logic
+      const key = context ? `${context}::${message}` : message
+      return myCustomHash(key)
+    },
+  },
+})
+```
+
+The `idGenerator` is used everywhere IDs are computed: extraction, compilation, and build-time code splitting transforms.
+
+## Troubleshooting
+
+### "Cannot find module 'virtual:fluenti/runtime'"
+
+This error appears when `splitting` is `false` (default) but your code imports from the virtual module. Virtual modules are only generated when `splitting` is set to `'dynamic'`, `'static'`, or `'per-route'`. Either enable splitting or import compiled catalogs directly.
+
+### HMR not picking up translation changes
+
+1. Verify `devAutoCompile` is `true` (the default).
+2. Check that the changed source file matches the `include` patterns and is not excluded.
+3. Look for `[fluenti] Extracting and compiling... done` in the terminal. If it does not appear, the watcher is not triggering.
+4. Ensure `compileOutDir` matches the actual output directory of your compiled catalogs.
+
+### Build fails with "CLI not found"
+
+The auto-compile feature requires `@fluenti/cli` as a dev dependency. Install it:
+
+```bash
+pnpm add -D @fluenti/cli
+```
+
+If you manage compilation externally (e.g., in a CI step), disable auto-compile:
+
+```typescript
+fluentiReact({
+  config: {
+    devAutoCompile: false,
+    buildAutoCompile: false,
+  },
+})
+```
+
+### Plugin order causes transform issues
+
+Plugin ordering relative to the framework plugin matters:
+
+- **Vue**: `vue()` first, then `fluentiVue()` — Vue's SFC compiler must process `.vue` files before Fluenti's template transform runs.
+- **React**: `fluentiReact()` first, then `react()` — Fluenti's JSX transforms must run before React's JSX compilation.
+- **Solid**: `solidPlugin()` first, then `fluentiSolid()`.
+
+### `t` variable name collisions
+
+The scope transform only rewrites `t` when it is imported from a `@fluenti/*` package or destructured from `useI18n()`. Other variables named `t` (e.g., from a test library) are left untouched. If you still see unexpected rewrites, check that you do not have a conflicting `import { t } from '...'` statement.
+
+### Large catalogs slow down dev startup
+
+Enable `parallelCompile` for projects with 5+ locales:
+
+```typescript
+fluentiVue({
+  config: {
+    parallelCompile: true,
+    devAutoCompileDelay: 500, // increase debounce for heavy catalogs
+  },
+})
+```
+
+### Per-route chunks are empty or missing
+
+Per-route splitting relies on static analysis of `t()` calls during the `transform` phase. Dynamic message IDs (e.g., `t(variable)`) cannot be statically analyzed and will not appear in route chunks. Use the descriptor form with a literal `message` or `id` field to ensure static extraction:
+
+```typescript
+// Statically extractable
+t({ id: 'home.title' })
+t({ message: 'Welcome to {name}', context: 'home' }, { name })
+
+// NOT statically extractable — will be missing from route chunks
+const key = getMessageKey()
+t(key)
+```

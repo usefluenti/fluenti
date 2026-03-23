@@ -3,9 +3,11 @@ title: Troubleshooting
 description: Common issues and solutions when working with Fluenti
 ---
 
-import { Aside } from '@astrojs/starlight/components'
+import { Aside, Tabs, TabItem } from '@astrojs/starlight/components'
 
-## `t` is not a function at runtime
+## Build Errors
+
+### `t` is not a function at runtime
 
 The Vite plugin was not configured. Ensure the framework-specific plugin is added to your `vite.config.ts`:
 
@@ -20,73 +22,61 @@ export default defineConfig({
 })
 ```
 
-For Next.js, use `withFluenti()` in `next.config.js` instead. For Nuxt, add `@fluenti/nuxt` to your `nuxt.config.ts` modules.
+For Next.js, use `withFluenti()` in `next.config.ts` instead. For Nuxt, add `@fluenti/nuxt` to your `nuxt.config.ts` modules.
 
-## Hydration mismatch after locale switch
+### Build fails with "Cannot resolve virtual:fluenti/\*"
 
-The server and client are resolving different locales. This typically happens when the locale is stored in `localStorage` (not visible to the server).
-
-<Aside type="tip">
-Always use **cookies** for locale persistence in SSR apps. Cookies are sent with every request, so the server can render the correct locale on the first pass.
-</Aside>
-
-See [Best Practices — SSR & Hydration](/advanced/best-practices/#ssr--hydration) for the recommended setup.
-
-## PO file encoding issues
-
-PO files must be saved as **UTF-8 without BOM**. Some editors (notably older versions of Poedit on Windows) may add a BOM, which can cause parsing errors.
-
-Check your file encoding:
-
-```bash
-file locales/ja.po
-# Should output: UTF-8 Unicode text
-```
-
-## Vite HMR not picking up catalog changes
-
-If translations are not updating during development, check that `devAutoCompile` is enabled (it is by default):
+The Vite plugin must be loaded before framework-specific plugins. Ensure `fluenti()` appears early in your plugins array:
 
 ```typescript
-// Pass devAutoCompile to your framework plugin:
-fluentiVue({ devAutoCompile: true })
-// or fluentiReact({ ... }) / fluentiSolid({ ... })
+export default defineConfig({
+  plugins: [
+    fluentiVue(), // before vue()
+    vue(),
+  ],
+})
 ```
 
-Also verify that your source files match the `include` patterns in `fluenti.config.ts`.
+If you are using a monorepo with hoisted dependencies, ensure `@fluenti/vite-plugin` is installed at the correct level. The plugin resolves virtual modules prefixed with `\0` following Vite conventions, so other plugins that modify `resolveId` hooks can interfere.
 
-## Missing translations in production
+### "runtimeGenerator is required" error
 
-Compiled catalogs are build artifacts. Since v0.1.4, both the Vite plugin and `withFluenti()` automatically run `extract + compile` before production builds (`buildAutoCompile` is enabled by default). If you still see missing translations:
-
-1. Ensure you're using the latest plugin version
-2. Check that `buildAutoCompile` isn't explicitly set to `false`
-
-If you need to run the steps manually (e.g. custom CI pipeline with `buildAutoCompile: false`):
-
-```bash
-pnpm fluenti extract
-pnpm fluenti compile
-pnpm build
+```
+[fluenti] vite-plugin: runtimeGenerator is required.
+Use a framework-specific plugin (e.g. @fluenti/vue/vite-plugin).
 ```
 
-## TypeScript errors with message IDs
+You imported `@fluenti/vite-plugin` directly instead of the framework wrapper. Always use the framework-specific plugin:
 
-If your IDE shows type errors for message IDs, regenerate the type declarations:
+<Tabs>
+  <TabItem label="Vue">
+    ```typescript
+    import fluentiVue from '@fluenti/vue/vite-plugin'
+    ```
+  </TabItem>
+  <TabItem label="React">
+    ```typescript
+    import fluentiReact from '@fluenti/react/vite-plugin'
+    ```
+  </TabItem>
+  <TabItem label="Solid">
+    ```typescript
+    import fluentiSolid from '@fluenti/solid/vite-plugin'
+    ```
+  </TabItem>
+</Tabs>
 
-```bash
-pnpm fluenti compile
+The framework plugins call `createFluentiPlugins()` internally and provide the runtime generator for your framework.
+
+### "catalogDir must not contain backticks or $ characters"
+
+```
+[fluenti] vite-plugin: catalogDir must not contain backticks or $ characters
 ```
 
-This generates `messages.d.ts` in your `compileOutDir`. Ensure your `tsconfig.json` includes it:
+Your `catalogDir` path contains characters that would break generated code. Rename the directory to use only alphanumeric characters, hyphens, underscores, and path separators.
 
-```json
-{
-  "include": ["src", "src/locales/compiled/messages.d.ts"]
-}
-```
-
-## `fluenti extract` finds no messages
+### `fluenti extract` finds no messages
 
 Check that your `include` patterns in `fluenti.config.ts` match your source file paths:
 
@@ -103,27 +93,449 @@ export default defineConfig({
 
 Also verify you are using supported extraction patterns: `v-t`, `` t`...` ``, `t()`, `<Trans>`, `<Plural>`, or `msg`.
 
-## Plural forms not working correctly
+### Missing translations in production
+
+Compiled catalogs are build artifacts. Since v0.1.4, both the Vite plugin and `withFluenti()` automatically run `extract + compile` before production builds (`buildAutoCompile` is enabled by default). If you still see missing translations:
+
+1. Ensure you are using the latest plugin version
+2. Check that `buildAutoCompile` is not explicitly set to `false`
+
+If you need to run the steps manually (e.g. custom CI pipeline with `buildAutoCompile: false`):
+
+```bash
+pnpm fluenti extract
+pnpm fluenti compile
+pnpm build
+```
+
+### Config file not found or circular extends
+
+```
+Config extends "base.config.ts" but file not found: /path/to/base.config.ts
+```
+
+The `extends` field in `fluenti.config.ts` resolves relative to the config file itself. Verify the path exists. If you see `Circular extends detected`, your config chain loops back on itself -- remove the circular reference.
+
+---
+
+## Runtime Errors
+
+### Console warning: "Missing translation for \{id\}"
+
+```
+[fluenti] Missing translation for "abc123" in locale "ja"
+```
+
+This means the message ID exists in your source code but has no translation in the compiled catalog for the active locale. Common causes:
+
+1. **Catalog not compiled** -- run `pnpm fluenti extract && pnpm fluenti compile`
+2. **New message not extracted** -- the message was added after the last extraction
+3. **Locale file incomplete** -- the `.po` or `.json` file for that locale is missing the entry
+
+<Aside type="tip">
+Enable diagnostics for detailed reporting during development:
+
+```typescript
+createFluentiCore({
+  diagnostics: { warnMissing: true, warnFallback: true },
+})
+```
+
+In production, diagnostics are tree-shaken to zero cost.
+</Aside>
+
+### Plural forms not working correctly
 
 Ensure you are passing a **number** to plural arguments, not a string:
 
 ```typescript
-// Correct — number
+// Correct -- number
 t`{count, plural, one {# item} other {# items}}`, { count: 5 })
 
-// Wrong — string "5" won't match plural rules
+// Wrong -- string "5" won't match plural rules
 t`{count, plural, one {# item} other {# items}}`, { count: "5" })
 ```
 
-## Build fails with "Cannot resolve virtual:fluenti/*"
+### Custom formatter errors
 
-The Vite plugin must be loaded before framework-specific plugins. Ensure `fluenti()` appears early in your plugins array:
+```
+[fluenti] Custom formatter "currency" threw for variable "price": ...
+```
+
+A custom formatter registered via `createFluentiCore({ formatters })` threw an error. The runtime catches the error and falls back to the raw value, but you should fix the formatter. Check that it handles all expected input types including `undefined` and `null`.
+
+### "locale must be a valid BCP 47 tag"
+
+```
+[fluenti] setLocale: locale must be a valid BCP 47 tag (e.g. "en", "en-US"), got "english"
+```
+
+Fluenti validates locale strings against a BCP 47 pattern. Use standard codes like `en`, `en-US`, `zh-CN`, or `ja` -- not full language names.
+
+### "No messages for locale and no loadMessages function"
+
+```
+[fluenti] No messages for locale "fr" and no loadMessages function provided
+```
+
+You called `setLocale('fr')` but no messages are loaded for that locale and no dynamic loader is configured. Either:
+
+1. Pre-load messages for all locales at startup
+2. Configure `loadMessages` in your provider/plugin options so catalogs are loaded on demand
+3. Ensure `fr` is listed in the `locales` array in `fluenti.config.ts`
+
+---
+
+## SSR and Hydration
+
+### Hydration mismatch after locale switch
+
+The server and client are resolving different locales. This typically happens when the locale is stored in `localStorage` (not visible to the server).
+
+<Aside type="tip">
+Always use **cookies** for locale persistence in SSR apps. Cookies are sent with every request, so the server can render the correct locale on the first pass.
+</Aside>
+
+See [Best Practices -- SSR & Hydration](/advanced/best-practices/#ssr--hydration) for the recommended setup.
+
+### `window.__FLUENTI_LOCALE__` is undefined on the client
+
+The SSR locale script was not injected into the HTML. Ensure you call `getSSRLocaleScript()` and include the result in your HTML template:
 
 ```typescript
-export default defineConfig({
-  plugins: [
-    fluentiVue(), // before vue()
-    vue(),
-  ],
+import { getSSRLocaleScript } from '@fluenti/core'
+
+// In your server handler:
+const html = `
+  <head>
+    ${getSSRLocaleScript(detectedLocale)}
+  </head>
+`
+```
+
+On the client, `getHydratedLocale()` reads this value. If the script tag is missing, it falls back to `'en'`.
+
+### SSR locale detection priority
+
+`detectLocale()` checks sources in this order: **cookie > query > path > Accept-Language header > fallback**. If the wrong locale is being detected:
+
+1. Check that the cookie value is a valid BCP 47 tag
+2. Verify the `available` array contains the expected locale codes
+3. Inspect the `Accept-Language` header -- it may contain unexpected preferences
+
+```typescript
+import { detectLocale } from '@fluenti/core'
+
+const locale = detectLocale({
+  cookie: getCookie('locale'),
+  headers: request.headers,
+  available: ['en', 'ja', 'zh-CN'],
+  fallback: 'en',
 })
 ```
+
+### Multi-instance SSR key collisions
+
+If you run multiple Fluenti instances on the same page (e.g. micro-frontends), use unique keys:
+
+```typescript
+// Server
+getSSRLocaleScript('ja', { key: '__MY_APP_LOCALE__' })
+
+// Client
+getHydratedLocale('en', { key: '__MY_APP_LOCALE__' })
+```
+
+The key must be a valid JavaScript identifier (letters, numbers, `_`, `$`).
+
+---
+
+## Code Splitting
+
+### Lazy-loaded locale chunks fail to load
+
+If you see network errors loading locale chunks in production:
+
+1. **Check base path** -- if your app is deployed under a subpath, ensure `base` is set in `vite.config.ts`
+2. **Check server routing** -- the server must serve `.js` chunk files from the build output directory
+3. **Preload critical locales** -- call `preloadLocale()` early to avoid waterfall requests
+
+### Stale chunks after deployment
+
+After deploying a new version, users with cached HTML may request old chunk filenames that no longer exist. Configure your server to return the current HTML for chunk 404s, or use a service worker to handle cache invalidation.
+
+### Per-route splitting shows wrong translations
+
+With `splitting: 'dynamic'` or per-route splitting, each route loads its own message chunk. If translations from one route appear on another, ensure your route configuration correctly maps routes to message scopes. Check that `defineI18nRoute()` or the route-level scope configuration matches your catalog structure.
+
+---
+
+## Next.js
+
+### "`withFluenti()` must be configured in next.config.ts"
+
+```
+[fluenti] `withFluenti()` must be configured in next.config.ts
+before importing from "@fluenti/next".
+```
+
+The `@fluenti/next` package exports runtime stubs that throw this error. At build time, webpack replaces `@fluenti/next` imports with a generated server module via `resolve.alias`. This error means the alias is not active -- typically because `withFluenti()` is missing from `next.config.ts`:
+
+```typescript
+// next.config.ts
+import { withFluenti } from '@fluenti/next'
+export default withFluenti()({ reactStrictMode: true })
+```
+
+### Compiled catalogs not found warning
+
+```
+[fluenti] Compiled catalogs not found at src/locales/compiled.
+Run: npx fluenti extract && npx fluenti compile
+```
+
+This is a startup warning, not a build failure. It means the compiled output directory does not exist yet. Run the suggested commands, or rely on `buildAutoCompile: true` (the default) to compile automatically during production builds.
+
+### Turbopack loader conflicts
+
+```
+[fluenti] Your turbopack.rules override Fluenti's loader for: *.tsx, *.ts.
+Fluenti's t`` transform will NOT run on these file types.
+```
+
+Your custom `turbopack.rules` in `next.config.ts` override the rules that Fluenti adds. Fluenti's rules are applied first and then merged with yours, with your rules taking precedence. Either remove the conflicting rules or integrate Fluenti's loader into your custom rule configuration.
+
+### Webpack loader transform failures
+
+```
+[fluenti] Transform failed in /app/components/Header.tsx: ...
+```
+
+The webpack loader that transforms `` t` ` `` calls encountered an error. Common causes:
+
+- **Syntax error in source file** -- fix the TypeScript/JSX syntax first
+- **Unsupported pattern** -- the loader only transforms `` t` ` ``, `t()`, `<Trans>`, `<Plural>`, and `<Select>` patterns
+- **Conflicting Babel/SWC transforms** -- another loader may have transformed the code before Fluenti's loader reaches it. Set `loaderEnforce: 'pre'` (the default) to ensure Fluenti runs first
+
+### Server components and `'use client'`
+
+The Fluenti loader detects whether a file is a server component or client component:
+
+- Files with `'use client'` use the client-side `useI18n` hook
+- Files under `app/` without `'use client'` use the server-side `getServerI18n`
+
+If translations are not rendering in a server component, verify that the file does not have `'use client'` at the top. If you need translations in a client component, ensure `I18nProvider` wraps your app in the root layout.
+
+---
+
+## Nuxt
+
+### Module not registered
+
+If Fluenti features are not available in your Nuxt app, verify the module is added to `nuxt.config.ts`:
+
+```typescript
+export default defineNuxtConfig({
+  modules: ['@fluenti/nuxt'],
+  fluenti: {
+    locales: ['en', 'ja'],
+    defaultLocale: 'en',
+  },
+})
+```
+
+The module name must be the string `'@fluenti/nuxt'`, not a path to the package.
+
+### SSR context errors with `useCookie`
+
+```
+useCookie failed outside Nuxt context
+```
+
+Fluenti's Nuxt locale detection uses `useCookie()` internally, which must be called within a Nuxt composable context (setup function, middleware, or plugin). If you are calling locale detection code outside these contexts (e.g. in a standalone utility function), wrap it in `callWithNuxt()` or restructure your code to run within the Nuxt lifecycle.
+
+### Locale detection not working
+
+Nuxt uses a priority chain for locale detection: cookie, navigator language, default locale. If the detected locale is unexpected:
+
+1. Check browser cookies -- look for the locale cookie (default name: `i18n_locale`)
+2. Verify `detectBrowserLanguage` settings in your module config
+3. Test with the cookie explicitly set: `document.cookie = 'i18n_locale=ja'`
+
+### Vite plugin loaded twice
+
+If you see duplicate translations or build warnings, ensure you are not adding the Vite plugin manually in `nuxt.config.ts` when using `@fluenti/nuxt`. The Nuxt module adds the Vite plugin automatically. Remove any manual `fluentiVue()` calls from your Vite plugins.
+
+---
+
+## TypeScript Errors
+
+### TypeScript errors with message IDs
+
+If your IDE shows type errors for message IDs, regenerate the type declarations:
+
+```bash
+pnpm fluenti compile
+```
+
+This generates `messages.d.ts` in your `compileOutDir`. Ensure your `tsconfig.json` includes it:
+
+```json
+{
+  "include": ["src", "src/locales/compiled/messages.d.ts"]
+}
+```
+
+### "Cannot find module 'virtual:fluenti/runtime'"
+
+TypeScript does not know about virtual modules by default. Add a type declaration file:
+
+```typescript
+// src/env.d.ts or src/vite-env.d.ts
+declare module 'virtual:fluenti/runtime' {
+  export const t: import('@fluenti/core').CompileTimeT
+  export function setLocale(locale: string): Promise<void>
+  export function preloadLocale(locale: string): Promise<void>
+}
+```
+
+The exact exports depend on your framework. Check the generated runtime module for the full list.
+
+### Type mismatch with `verbatimModuleSyntax`
+
+If you see errors like `Re-exporting a type when 'verbatimModuleSyntax' is enabled`, ensure all type-only re-exports use `export type`:
+
+```typescript
+// Correct
+export type { Locale, Messages } from '@fluenti/core'
+
+// Wrong with verbatimModuleSyntax
+export { Locale, Messages } from '@fluenti/core'
+```
+
+Fluenti packages follow `verbatimModuleSyntax` conventions. If you see this error in your own code, add the `type` keyword to the re-export.
+
+### Generic type constraints with `t()`
+
+The `t()` function and `` t` ` `` tagged template have different type signatures. The tagged template form is preferred for compile-time optimization. If TypeScript complains about argument types with `t()`, check that you are passing values as a plain object:
+
+```typescript
+// Correct
+t('greeting', { name: 'World' })
+
+// Wrong -- second argument must be an object
+t('greeting', 'World')
+```
+
+---
+
+## PO File and Catalog Issues
+
+### PO file encoding issues
+
+PO files must be saved as **UTF-8 without BOM**. Some editors (notably older versions of Poedit on Windows) may add a BOM, which can cause parsing errors.
+
+Check your file encoding:
+
+```bash
+file locales/ja.po
+# Should output: UTF-8 Unicode text
+```
+
+### Vite HMR not picking up catalog changes
+
+If translations are not updating during development, check that `devAutoCompile` is enabled (it is by default):
+
+```typescript
+fluentiVue({ devAutoCompile: true })
+```
+
+Also verify that your source files match the `include` patterns in `fluenti.config.ts`. The dev watcher monitors source files for changes and triggers re-extraction and compilation automatically.
+
+If HMR still does not work, check the terminal for warnings:
+
+```
+[fluenti] Extract/compile failed: ...
+```
+
+These warnings indicate the auto-compile step failed silently. Fix the reported error and save again.
+
+---
+
+## Migration Issues
+
+### Migrating from vue-i18n
+
+Use the `@fluenti/vue-i18n-compat` bridge package for gradual migration:
+
+```bash
+pnpm add @fluenti/vue-i18n-compat
+```
+
+The compat package provides `useI18n()` and `$t()` with a vue-i18n-compatible API that delegates to Fluenti under the hood. You can migrate file by file:
+
+1. Install `@fluenti/vue-i18n-compat` alongside `vue-i18n`
+2. Switch imports from `vue-i18n` to `@fluenti/vue-i18n-compat` one component at a time
+3. Replace `$t('key')` calls with `` t`message` `` tagged templates
+4. Remove `@fluenti/vue-i18n-compat` once migration is complete
+
+Common pitfalls during migration:
+
+- **Named interpolation syntax differs**: vue-i18n uses `{name}`, Fluenti uses the same ICU syntax `{name}` -- but plural syntax is different. vue-i18n uses `{'|'}` pipe syntax, while Fluenti uses ICU `{count, plural, one {...} other {...}}`
+- **Locale messages structure**: vue-i18n uses nested JSON objects (`messages.en.greeting`), Fluenti uses flat PO catalogs or compiled modules. Run `pnpm fluenti migrate` if available, or convert manually
+
+### Migrating from other i18n libraries
+
+General steps for migrating from react-intl, i18next, or similar libraries:
+
+1. **Extract messages** -- export your existing messages to JSON or PO format
+2. **Map to ICU format** -- Fluenti uses standard ICU MessageFormat. Most libraries use a subset of ICU, so conversion is usually straightforward
+3. **Replace API calls**:
+   - `intl.formatMessage({ id })` becomes `` t`message text` ``
+   - `<FormattedMessage id="..." />` becomes `<Trans>message text</Trans>`
+   - `t('key', { count })` becomes `` t`{count, plural, one {# item} other {# items}}` ``
+4. **Update configuration** -- replace library-specific config with `fluenti.config.ts`
+5. **Test thoroughly** -- run extraction and compilation, then verify all translated strings render correctly
+
+<Aside type="caution">
+Fluenti uses **compile-time message IDs** generated from content hashes, not developer-defined string keys. After migration, your message IDs will change. Ensure all translations are re-extracted and catalogs are updated.
+</Aside>
+
+---
+
+## Performance
+
+### Large catalog causing slow startup
+
+If your app has thousands of messages and startup feels slow:
+
+1. **Enable code splitting** -- set `splitting: 'dynamic'` in your plugin config to load only the messages needed for the current route
+2. **Preload strategically** -- use `preloadLocale()` to load the next most likely locale in the background
+3. **Check cache size** -- the default LRU cache holds 500 compiled messages. For very large apps, increase it:
+
+```typescript
+import { setMessageCacheSize } from '@fluenti/core'
+setMessageCacheSize(1000)
+```
+
+### Memory usage on long-running servers
+
+For Node.js servers handling many locales, the compiled message cache can grow. Call `clearInterpolationCache()` periodically or during low-traffic periods:
+
+```typescript
+import { clearInterpolationCache } from '@fluenti/core'
+
+// Clear cache every hour
+setInterval(() => clearInterpolationCache(), 60 * 60 * 1000)
+```
+
+---
+
+## Getting Help
+
+If your issue is not covered here:
+
+1. Search the [GitHub Issues](https://github.com/usefluenti/fluenti/issues) for similar problems
+2. Enable diagnostics (`warnMissing: true`, `warnFallback: true`) for detailed runtime warnings
+3. Check the browser console and terminal for `[fluenti]`-prefixed warnings
+4. Open a new issue with your Fluenti version, framework, and a minimal reproduction

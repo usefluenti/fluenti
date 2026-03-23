@@ -1,83 +1,229 @@
 ---
 title: SSR, SSG & ISR
-description: Server-side rendering, static generation, and incremental static regeneration with Nuxt
+description: Server-side rendering, static generation, incremental static regeneration, and SPA mode with Nuxt
 slug: frameworks/nuxt/ssr-ssg-isr
 ---
 
-import { Aside } from '@astrojs/starlight/components'
+import { Aside, Tabs, TabItem } from '@astrojs/starlight/components'
 
-`@fluenti/nuxt` supports all Nuxt rendering modes out of the box. For general SSR concepts, see the [SSR & Hydration guide](/advanced/ssr-hydration/).
+`@fluenti/nuxt` supports all Nuxt rendering modes out of the box. The module handles locale detection, payload serialization, and route generation for each mode automatically. For general SSR concepts, see the [SSR & Hydration guide](/advanced/ssr-hydration/).
 
-| Mode | How it works |
-|------|-------------|
-| **SSR** | Server detects locale per-request, injects into payload, client hydrates |
-| **SSG** (`nuxt generate`) | Each locale route is pre-rendered with the correct locale from its URL path |
-| **ISR** | Pre-rendered with configurable TTL, re-validated on demand |
-| **SPA** (`ssr: false`) | Client-side path detection, cookie fallback |
+| Mode | How it works | Best for |
+|------|-------------|----------|
+| **SSR** | Server detects locale per-request, injects into payload, client hydrates | Dynamic apps, personalized content |
+| **SSG** (`nuxt generate`) | Each locale route is pre-rendered with the correct locale from its URL path | Marketing sites, blogs, docs |
+| **ISR** | Pre-rendered with configurable TTL, re-validated on demand | High-traffic sites with periodic updates |
+| **SPA** (`ssr: false`) | Client-side path + cookie detection, no server rendering | Dashboards, internal tools |
 
-## Zero Config
+## SSR Mode (Default)
 
-With `@fluenti/nuxt`, SSR/SSG/ISR work automatically:
+Server-side rendering is the default Nuxt behavior. The Fluenti plugin runs the full locale detection chain on every request and stores the result in the Nuxt payload for hydration.
+
+### Plugin Lifecycle
+
+```
+Server                                   Client
+──────                                   ──────
+1. Plugin hoists cookie + header reads   1. Read locale from nuxtApp.payload
+   (before any await — required for      2. Skip detection chain entirely
+   Nuxt async local storage)             3. Watch route.path for navigation
+2. Run detection chain:                  4. Sync cookie on locale change
+   path → cookie → header               5. Update <html lang> attribute
+3. Store locale in nuxtApp.payload
+4. Set event.context.locale
+5. Render HTML with detected locale
+```
+
+<Aside type="caution">
+  Nuxt composables (`useCookie`, `useRequestHeaders`) rely on async local storage that is dropped after the first `await`. The plugin hoists all server-side reads **before** any async call to avoid losing context.
+</Aside>
+
+### Locale Detection Chain
+
+The detection chain runs in order. The first detector to call `ctx.setLocale()` wins, and subsequent detectors are skipped:
+
+1. **Path detector** — extracts locale from URL prefix (`/ja/about` resolves to `ja`)
+2. **Cookie detector** — reads the `fluenti_locale` cookie (configurable key)
+3. **Header detector** — parses the `Accept-Language` header and negotiates against available locales
+
+You can customize the chain via `detectOrder`:
 
 ```typescript
-// nuxt.config.ts — this is all you need
+// nuxt.config.ts
 export default defineNuxtConfig({
   modules: ['@fluenti/nuxt'],
   fluenti: {
     locales: ['en', 'ja', 'zh'],
     defaultLocale: 'en',
+    detectOrder: ['path', 'cookie', 'header'],
+    detectBrowserLanguage: {
+      useCookie: true,
+      cookieKey: 'fluenti_locale',
+    },
   },
 })
 ```
 
-### How Hydration Works
+### Cookie-Based Persistence
 
-```
-Server (SSR/SSG)                     Client
-─────────────────                    ──────
-1. Run detector chain                1. Read locale from Nuxt payload
-   (path → cookie → header)         2. Skip detection — use server value
-2. Store locale in Nuxt payload      3. Watch route.path for nav changes
-3. Render HTML with correct locale   4. Sync cookie on locale change
-```
+When `detectBrowserLanguage.useCookie` is enabled, the plugin:
 
-The plugin stores the detected locale in `nuxtApp.payload`, which Nuxt serializes into the HTML. The client reads it back on hydration — no mismatch.
+- **Server**: reads the cookie value and passes it to the detection chain
+- **Client**: watches the reactive `currentLocale` ref and writes back to the cookie on every change
 
-## Static Site Generation (SSG)
+This means a user who switches to Japanese on one page will see Japanese on their next visit, even if they navigate to a URL without a locale prefix.
 
-`nuxt generate` pre-renders all locale routes:
+### Hydration Safety
 
-```
-dist/
-├── index.html          ← en (default, no prefix)
-├── about/index.html    ← en
-├── ja/index.html       ← ja
-├── ja/about/index.html ← ja
-├── zh/index.html       ← zh
-└── zh/about/index.html ← zh
-```
+The server stores the detected locale in `nuxtApp.payload['fluentiLocale']`. On the client:
 
-During SSG build:
-- **Path detector** extracts locale from each route's URL (`/ja/about` → `ja`)
-- Cookie and header detectors silently fail (no HTTP context) — this is by design
-- Each page is rendered in the correct locale
-
-<Aside type="tip">
-  The module enables `nitro.prerender.crawlLinks` automatically, so all locale-prefixed routes are discovered from your `<NuxtLinkLocale>` links.
-</Aside>
-
-## Incremental Static Regeneration (ISR)
-
-Add one config option:
+- If the payload contains a locale, the client uses it directly — no detection chain runs
+- This guarantees the client renders the same locale the server did, preventing hydration mismatches
+- After hydration, the client watches `route.path` and updates the locale reactively on navigation
 
 ```typescript
+// plugins/i18n.ts — reading the detected locale
+export default defineNuxtPlugin((nuxtApp) => {
+  // The Nuxt module already detected the locale and stored it in payload
+  const initialLocale = nuxtApp.payload?.['fluentiLocale'] ?? 'en'
+
+  const fluenti = createFluenti({
+    locale: initialLocale,
+    messages: { en, ja, zh },
+  })
+  nuxtApp.vueApp.use(fluenti)
+
+  // Sync locale when the module's reactive ref changes
+  if (nuxtApp.$fluentiLocale) {
+    watch(nuxtApp.$fluentiLocale, (newLocale: string) => {
+      fluenti.global.setLocale(newLocale)
+    })
+  }
+})
+```
+
+### SSR Configuration
+
+For pure SSR (no prerendering), disable prerendering explicitly so every request goes through the detection chain:
+
+```typescript
+// nuxt.config.ts
 export default defineNuxtConfig({
+  modules: ['@fluenti/nuxt'],
+
+  // Disable prerendering — locale detection requires live SSR
+  routeRules: {
+    '/**': { prerender: false },
+  },
+
   fluenti: {
     locales: ['en', 'ja', 'zh'],
     defaultLocale: 'en',
+    detectBrowserLanguage: {
+      useCookie: true,
+      cookieKey: 'fluenti_locale',
+    },
+  },
+})
+```
+
+## Static Site Generation (SSG)
+
+`nuxt generate` pre-renders all locale routes at build time. The output is a set of static HTML files that can be deployed to any CDN or static host.
+
+### How SSG Works with Fluenti
+
+During the `nuxt generate` build:
+
+1. The module enables `nitro.prerender.crawlLinks` automatically, so all locale-prefixed routes are discovered from your `<NuxtLinkLocale>` links
+2. For each route, the **path detector** extracts the locale from the URL (`/ja/about` resolves to `ja`)
+3. Cookie and header detectors silently skip (no HTTP context during prerendering) — this is by design
+4. Each page is rendered in the correct locale and written to disk
+
+### Output Structure
+
+With `strategy: 'prefix_except_default'`, the generated output looks like:
+
+```
+.output/public/
+├── index.html              ← en (default, no prefix)
+├── about/index.html        ← en
+├── ja/
+│   ├── index.html          ← ja
+│   └── about/index.html    ← ja
+├── zh/
+│   ├── index.html          ← zh
+│   └── about/index.html    ← zh
+└── _nuxt/                  ← client bundles
+```
+
+### SSG Configuration
+
+```typescript
+// nuxt.config.ts
+export default defineNuxtConfig({
+  modules: ['@fluenti/nuxt'],
+
+  fluenti: {
+    locales: ['en', 'ja', 'zh'],
+    defaultLocale: 'en',
+    strategy: 'prefix_except_default',
+    detectBrowserLanguage: {
+      useCookie: true,
+      cookieKey: 'fluenti_locale',
+    },
+  },
+
+  // Enable SSG mode
+  nitro: {
+    preset: 'static',
+  },
+})
+```
+
+<Aside type="tip">
+  You do not need to list routes manually. The module enables link crawling, and `NuxtLinkLocale` components generate links for all locales. The prerenderer discovers every locale variant automatically.
+</Aside>
+
+### Prefix Strategy and SSG
+
+When using `strategy: 'prefix'` (all locales get a URL prefix, including the default), the module replaces the default `/` prerender route with `/<defaultLocale>`:
+
+```typescript
+// With strategy: 'prefix', the prerenderer starts from /en instead of /
+// This is automatic — no manual configuration needed
+```
+
+This ensures the crawler begins from a valid route and discovers all locale variants.
+
+### Client-Side Navigation After SSG
+
+After the static HTML loads and Vue hydrates, client-side navigation works normally:
+
+- Route changes are intercepted by Vue Router (no full page reload)
+- The locale ref updates reactively based on the new path
+- The cookie is synced on every locale change
+- `NuxtLinkLocale` generates correct locale-prefixed `href` attributes
+
+## Incremental Static Regeneration (ISR)
+
+ISR combines the performance of static generation with the freshness of server rendering. Pages are pre-rendered and cached, then re-validated after a configurable TTL.
+
+### ISR Configuration
+
+```typescript
+// nuxt.config.ts
+export default defineNuxtConfig({
+  modules: ['@fluenti/nuxt'],
+
+  fluenti: {
+    locales: ['en', 'ja', 'zh'],
+    defaultLocale: 'en',
+    strategy: 'prefix_except_default',
+    detectOrder: ['path'],
     isr: {
       enabled: true,
-      ttl: 3600, // re-validate every hour
+      ttl: 60, // re-validate every 60 seconds
     },
   },
 })
@@ -86,11 +232,11 @@ export default defineNuxtConfig({
 This auto-generates `routeRules` for all locale patterns:
 
 ```typescript
-// Generated automatically:
+// Generated automatically by the module:
 routeRules: {
-  '/**': { isr: 3600 },       // default locale (prefix_except_default)
-  '/ja/**': { isr: 3600 },
-  '/zh/**': { isr: 3600 },
+  '/**': { isr: 60 },         // default locale (prefix_except_default)
+  '/ja/**': { isr: 60 },
+  '/zh/**': { isr: 60 },
 }
 ```
 
@@ -99,4 +245,165 @@ routeRules: {
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
 | `enabled` | `boolean` | — | Enable ISR route rules generation |
-| `ttl` | `number?` | `3600` | Cache TTL in seconds |
+| `ttl` | `number` | `3600` | Cache TTL in seconds (how long before re-validation) |
+
+### ISR and Locale Detection
+
+ISR caches responses **by URL path**. This has an important implication: non-path locale detectors (cookies, headers) can cause the wrong locale to be served from cache.
+
+<Aside type="caution">
+  When ISR is enabled with cookie or header detectors in `detectOrder`, the module emits a warning at build time:
+
+  ```
+  [@fluenti/nuxt] ISR is enabled but detectOrder includes non-path detectors
+  (cookie, header). ISR caches by URL path, so cookie/header-based detection
+  may serve the wrong locale from cache.
+  ```
+
+  Use `detectOrder: ['path']` with ISR to ensure cached pages always serve the correct locale.
+</Aside>
+
+### ISR with Different Strategies
+
+| Strategy | ISR compatibility | Notes |
+|----------|-------------------|-------|
+| `prefix_except_default` | Best | Each locale has a unique URL path |
+| `prefix` | Best | All locales have unique prefixed paths |
+| `prefix_and_default` | Good | Default locale has two paths (with and without prefix) |
+| `no_prefix` | Not recommended | All locales share the same URL — cache serves only one |
+| `domains` | Good | ISR caches per-domain, each domain maps to one locale |
+
+### Combining ISR with Custom Route Rules
+
+You can mix ISR locale rules with your own route rules. The module merges its generated rules with any existing `routeRules`:
+
+```typescript
+// nuxt.config.ts
+export default defineNuxtConfig({
+  modules: ['@fluenti/nuxt'],
+
+  // Your custom route rules are preserved
+  routeRules: {
+    '/api/**': { cors: true },
+    '/admin/**': { ssr: false },
+  },
+
+  fluenti: {
+    locales: ['en', 'ja', 'zh'],
+    defaultLocale: 'en',
+    isr: { enabled: true, ttl: 3600 },
+  },
+})
+```
+
+## SPA Mode
+
+When `ssr: false` is set, Nuxt runs entirely on the client. There is no server-side locale detection, no payload, and no pre-rendered HTML.
+
+### How SPA Locale Detection Works
+
+Without a server, the client-side plugin uses a simplified detection flow:
+
+1. Check `nuxtApp.payload['fluentiLocale']` — empty in SPA mode
+2. Fall back to **path detection**: extract locale from `route.path`
+3. If no path prefix found, fall back to **cookie**: read `fluenti_locale` cookie
+4. If no cookie, use `defaultLocale`
+
+```
+SPA Client Boot
+────────────────
+1. No payload (ssr: false)
+2. Extract locale from URL path (/ja/about → ja)
+3. If no prefix → read cookie
+4. If no cookie → defaultLocale
+5. Watch route.path for subsequent navigation
+6. Sync cookie on locale change
+```
+
+### SPA Configuration
+
+```typescript
+// nuxt.config.ts
+export default defineNuxtConfig({
+  modules: ['@fluenti/nuxt'],
+
+  // SPA mode — no server-side rendering
+  ssr: false,
+
+  fluenti: {
+    locales: ['en', 'ja', 'zh'],
+    defaultLocale: 'en',
+    strategy: 'prefix_except_default',
+    detectBrowserLanguage: {
+      useCookie: true,
+      cookieKey: 'fluenti_locale',
+    },
+  },
+})
+```
+
+### Differences from SSR
+
+| Aspect | SSR | SPA |
+|--------|-----|-----|
+| Initial HTML | Contains translated content | Empty shell (no translated text) |
+| Locale detection | Server runs full chain | Client-only: path, then cookie |
+| SEO | Search engines see translated HTML | No translated content in source |
+| Hydration | Payload ensures locale match | No hydration (client renders from scratch) |
+| `Accept-Language` | Header detector works | Not available (browser API only) |
+| First paint | Translated content visible immediately | Brief flash before JS loads |
+
+<Aside type="tip">
+  SPA mode is ideal for authenticated dashboards and internal tools where SEO is not a concern. For public-facing sites, use SSR or SSG for better search engine indexing and faster perceived load times.
+</Aside>
+
+### Cookie Restoration in SPA
+
+A key SPA feature is cookie-based locale restoration. When a user:
+
+1. Visits the site and switches to Japanese (cookie set to `ja`)
+2. Returns later to `/` (no locale prefix)
+3. The cookie detector finds `ja` and sets the locale accordingly
+
+This works because in SPA mode, when no path prefix is found, the plugin falls back to the cookie value before defaulting.
+
+## Performance Considerations
+
+### SSR
+
+- **Pros**: Correct locale on first paint, full SEO support, `Accept-Language` negotiation
+- **Cons**: Every request runs through the server, detection chain adds minimal overhead
+- **Tip**: Enable `detectBrowserLanguage.useCookie` so returning users skip header negotiation
+
+### SSG
+
+- **Pros**: Fastest TTFB (pre-built HTML), CDN-friendly, no server runtime
+- **Cons**: Build time scales with `pages x locales`, no per-request detection
+- **Tip**: Use `NuxtLinkLocale` consistently so the crawler discovers all locale routes. Enable cookie persistence for client-side locale memory.
+
+### ISR
+
+- **Pros**: Combines SSG speed with near-real-time content updates, scales to many locales
+- **Cons**: First request after TTL expires may be slower (re-validation), cache invalidation complexity
+- **Tip**: Use `detectOrder: ['path']` to avoid cache/locale mismatches. Set TTL based on how frequently your content changes.
+
+### SPA
+
+- **Pros**: Simplest deployment (static files), no server infrastructure
+- **Cons**: No SEO for translated content, flash of untranslated content, no `Accept-Language` support
+- **Tip**: Always enable cookie persistence so returning users get their preferred locale immediately.
+
+### Bundle Size
+
+All rendering modes benefit from Fluenti's compile-time architecture. Translations are compiled at build time into optimized JavaScript functions, not parsed at runtime. This keeps the runtime overhead minimal regardless of rendering mode.
+
+For large translation catalogs, enable [code splitting](/advanced/code-splitting/) to load only the translations needed for the current route:
+
+```typescript
+// fluenti.config.ts
+export default {
+  sourceLocale: 'en',
+  locales: ['en', 'ja', 'zh'],
+  codeSplitting: 'dynamic', // split translations per-route
+}
+```

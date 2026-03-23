@@ -3,130 +3,421 @@ title: SSR & Hydration
 description: Server-side rendering concepts, locale detection, and hydration across all frameworks
 ---
 
-import { Tabs, TabItem, Aside } from '@astrojs/starlight/components'
+import { Tabs, TabItem, Aside, Steps } from '@astrojs/starlight/components'
 
 ## Key Rules
 
-1. **No shared global state** — Every SSR request gets its own Fluenti instance
-2. **Hydration consistency** — Client always reads the server-determined locale from payload
-3. **Path-first detection** — In SSG/ISR, the URL path is the only reliable locale source
+1. **No shared global state** -- Every SSR request gets its own Fluenti instance
+2. **Hydration consistency** -- Client always reads the server-determined locale from payload
+3. **Path-first detection** -- In SSG/ISR, the URL path is the only reliable locale source
 
-## Detection Priority
+## How SSR Locale Detection Works
 
-Use `detectLocale` from core with a clear priority chain:
+When a request arrives at your server, Fluenti determines which locale to render by inspecting multiple sources in a defined priority order. The `detectLocale` function from `@fluenti/core` checks each source sequentially and returns the first valid match.
+
+### Detection Sources
+
+| Source | How it works | When to use |
+|--------|-------------|-------------|
+| **Cookie** | Reads a locale preference stored in a browser cookie | Persistent user choice across sessions |
+| **Query parameter** | Checks `?lang=ja` or similar URL parameter | Temporary overrides, preview links |
+| **URL path** | Extracts locale from path prefix (e.g. `/ja/about`) | SEO-friendly routing with locale in URL |
+| **Accept-Language header** | Parses the browser's language preference header | First-visit detection for new users |
+| **Fallback** | Returns the configured default locale | Safety net when no source matches |
+
+### Detection Priority
+
+The default priority chain is:
 
 ```
-cookie → query → path → Accept-Language → fallback
+cookie -> query -> path -> Accept-Language -> fallback
 ```
+
+Each source is checked in order. The first match that appears in your `available` locales list wins. If no source produces a match, the `fallback` locale is returned.
 
 ```ts
 import { detectLocale } from '@fluenti/core'
 
 const locale = detectLocale({
-  cookie: req.headers.cookie,
-  query: url.searchParams.get('lang'),
-  path: url.pathname,
-  headers: req.headers,
+  cookie: req.headers.cookie,        // e.g. "fluenti_locale=ja"
+  query: url.searchParams.get('lang'), // e.g. "ja"
+  path: url.pathname,                // e.g. "/ja/about"
+  headers: req.headers,              // Accept-Language header
   available: ['en', 'ja', 'zh-CN'],
   fallback: 'en',
 })
 ```
 
-## Always set `<html lang>` and `<html dir>`
+<Aside type="tip">
+**Locale matching is flexible.** `detectLocale` performs case-insensitive matching and supports partial matches. A cookie value of `zh` will match `zh-CN` in your available list, and `en-US` from Accept-Language will match `en`.
+</Aside>
 
-```ts
-import { getDirection } from '@fluenti/core'
+### Accept-Language Parsing
 
-const dir = getDirection(locale) // 'ltr' or 'rtl'
-// <html lang="${locale}" dir="${dir}">
+The Accept-Language header is parsed into an ordered list by quality value. For example:
+
+```
+Accept-Language: en-US,en;q=0.9,zh-CN;q=0.8,ja;q=0.7
 ```
 
-## Persist with a Cookie
-
-After the user explicitly switches locale, store the preference in a cookie so `detectLocale` picks it up on the next server request.
-
-<Aside type="caution">
-**Hydration mismatch:** If the server renders locale A but the client reads locale B from `localStorage`, React/Vue/Solid will warn about mismatched HTML. Always let the server be the source of truth — use cookies (visible to both server and client), not `localStorage`.
-</Aside>
+This produces the preference list `['en-US', 'en', 'zh-CN', 'ja']`, which is negotiated against your available locales. The first match wins.
 
 ## Hydration Script
 
-For manual SSR (without Nuxt or Next.js), use `getSSRLocaleScript` to inject the server-detected locale into the HTML:
+When rendering HTML on the server, you need to communicate the detected locale to the client so it initializes with the same value. Fluenti provides a script injection helper for this.
+
+### How it works
+
+<Steps>
+1. **Server**: `getSSRLocaleScript(locale)` generates a `<script>` tag that sets `window.__FLUENTI_LOCALE__` to the detected locale.
+2. **HTML**: The script tag is injected into `<head>` as part of the SSR response.
+3. **Client**: `getHydratedLocale(fallback)` reads the window variable and returns the locale, falling back to the provided default.
+</Steps>
 
 ```ts
 import { getSSRLocaleScript, getHydratedLocale } from '@fluenti/core'
 
 // Server: inject into HTML <head>
-const script = getSSRLocaleScript(locale)
-// → <script>window.__FLUENTI_LOCALE__="ja"</script>
+const script = getSSRLocaleScript('ja')
+// -> '<script>window.__FLUENTI_LOCALE__="ja"</script>'
 
 // Client: read it back
 const locale = getHydratedLocale('en')
-
-// Multi-instance / micro-frontend: use a custom window variable
-const script2 = getSSRLocaleScript(locale, { key: '__MY_APP_LOCALE__' })
-const locale2 = getHydratedLocale('en', { key: '__MY_APP_LOCALE__' })
+// -> 'ja' (from the injected script)
 ```
+
+### XSS Protection
+
+The locale value is escaped before injection. Characters like `<`, `>`, `&`, `"`, and `'` are converted to Unicode escapes (`\u003c`, `\u003e`, etc.) to prevent script injection. The locale is also validated as a BCP 47 code and capped at 255 characters.
+
+### Multi-Instance Support
+
+When running multiple Fluenti instances (e.g. micro-frontends), use a custom window variable key to avoid collisions:
+
+```ts
+// Server
+const script = getSSRLocaleScript('ja', { key: '__MY_APP_LOCALE__' })
+// -> '<script>window.__MY_APP_LOCALE__="ja"</script>'
+
+// Client — key must match
+const locale = getHydratedLocale('en', { key: '__MY_APP_LOCALE__' })
+```
+
+The custom key must be a valid JavaScript identifier (`/^[a-zA-Z_$][a-zA-Z0-9_$]*$/`).
+
+## Always Set `<html lang>` and `<html dir>`
+
+Regardless of framework, always set the `lang` and `dir` attributes on the `<html>` element. This is critical for accessibility (screen readers) and SEO:
+
+```ts
+import { getDirection } from '@fluenti/core'
+
+const dir = getDirection(locale) // 'ltr' or 'rtl'
+// <html lang="ja" dir="ltr">
+```
+
+## Cookie-Based Locale Persistence
+
+After a user explicitly switches locale, store the preference in a cookie so `detectLocale` picks it up on the next server request.
+
+<Aside type="caution">
+**Hydration mismatch warning:** If the server renders locale A but the client reads locale B from `localStorage`, React/Vue/Solid will warn about mismatched HTML. Always let the server be the source of truth -- use cookies (visible to both server and client), not `localStorage`.
+</Aside>
+
+### Setting the Cookie
+
+When the user switches locale, set a cookie from the client:
+
+```ts
+function switchLocale(newLocale: string) {
+  // Set cookie (accessible by both server and client)
+  document.cookie = `fluenti_locale=${newLocale}; path=/; max-age=${60 * 60 * 24 * 365}; SameSite=Lax`
+
+  // Then trigger navigation or locale change
+}
+```
+
+### Cookie Best Practices
+
+| Setting | Recommendation | Why |
+|---------|---------------|-----|
+| `path` | `/` | Cookie available on all routes |
+| `max-age` | 1 year (`31536000`) | Persistent preference |
+| `SameSite` | `Lax` | Available on navigation but blocks CSRF |
+| `Secure` | Set in production | Only sent over HTTPS |
+| `HttpOnly` | **Do not set** | Client JS needs to read/write it for locale switching |
+
+## Avoiding Hydration Mismatches
+
+Hydration mismatches occur when the server renders HTML with one locale but the client initializes with a different one. Here are the most common causes and solutions.
+
+### Common Causes
+
+| Cause | Solution |
+|-------|----------|
+| Client reads locale from `localStorage` instead of server payload | Use cookies or the hydration script, never `localStorage` for initial locale |
+| Server detects locale from Accept-Language but client defaults to `'en'` | Inject the server locale via `getSSRLocaleScript` or framework payload |
+| CDN caches a single locale variant for all users | Add `Vary: Accept-Language` header or use path-based locales |
+| Client-side router changes locale before hydration completes | Delay locale changes until after hydration (`onMounted` / `useEffect`) |
+
+### The Golden Rule
+
+The client must always initialize with the exact locale the server used. There are two reliable ways to communicate this:
+
+1. **Hydration script** (`getSSRLocaleScript` / `getHydratedLocale`) -- for manual SSR setups
+2. **Framework payload** -- Nuxt stores it in `nuxtApp.payload`, Next.js passes it via URL params or cookies
 
 ## Framework-Specific SSR
 
 <Tabs>
 <TabItem label="Next.js">
-Uses `withFluenti()` and `I18nProvider`. Cookie-based locale detection via `cookies()` from `next/headers`. RSC support via `createServerI18n`.
+Next.js App Router uses `React.cache()` for per-request isolation. The `withFluenti()` wrapper generates a server module with locale detection, `I18nProvider`, and RSC support built in.
+
+```tsx
+// app/[locale]/layout.tsx
+import { setLocale, I18nProvider } from '@fluenti/next'
+
+export default async function RootLayout({
+  params,
+  children,
+}: {
+  params: Promise<{ locale: string }>
+  children: React.ReactNode
+}) {
+  const { locale } = await params
+  return (
+    <html lang={locale}>
+      <body>
+        <I18nProvider locale={locale}>{children}</I18nProvider>
+      </body>
+    </html>
+  )
+}
+```
+
+The generated server module includes automatic `resolveLocale` for Server Actions, which checks the referer URL path, the locale cookie, and the Accept-Language header in that order.
 
 See [Next.js guide](/frameworks/react/nextjs/) and [Server Components](/frameworks/react/server-components/).
 </TabItem>
 
 <TabItem label="Nuxt">
-Zero-config — the `@fluenti/nuxt` module handles locale detection, cookie persistence, `<html lang>`, SSR hydration, SSG, and ISR automatically.
+The `@fluenti/nuxt` module handles SSR automatically. On the server, it runs a configurable detection chain. The result is stored in the Nuxt payload so the client reads the same locale during hydration.
 
-See [Nuxt SSR](/frameworks/nuxt/ssr-ssg-isr/).
+The default detection order is:
+
+```ts
+// nuxt.config.ts
+export default defineNuxtConfig({
+  fluenti: {
+    detectOrder: ['path', 'cookie', 'query', 'header'],
+  },
+})
+```
+
+Each detector runs in sequence. The first to call `ctx.setLocale()` with a valid locale wins.
+
+| Detector | Behavior |
+|----------|----------|
+| `path` | Extracts locale from URL prefix (`/ja/about`). Skipped when strategy is `no_prefix`. |
+| `cookie` | Reads the locale cookie (key configurable via `detectBrowserLanguage.cookieKey`). |
+| `query` | Checks query parameter (key configurable via `queryParamKey`, default `locale`). |
+| `header` | Parses Accept-Language header. SSR only. |
+| `domain` | Matches the request hostname against configured domain mappings. |
+
+Cookie persistence is automatic when `detectBrowserLanguage.useCookie` is enabled -- the plugin watches the reactive locale and syncs it to the cookie.
+
+See [Nuxt SSR](/frameworks/nuxt/ssr-ssg-isr/) and [Locale Detection](/frameworks/nuxt/locale-detection/).
 </TabItem>
 
 <TabItem label="Vue (manual)">
-```typescript
-// server
+For Vue apps without Nuxt, use `detectLocale` on the server and `getHydratedLocale` on the client.
+
+**Server entry:**
+
+```ts
+import { createSSRApp } from 'vue'
 import { detectLocale, getSSRLocaleScript } from '@fluenti/core'
 import { createFluenti } from '@fluenti/vue'
+import App from './App.vue'
+import allMessages from '../locales/compiled'
 
-const locale = detectLocale({
-  cookie: getCookie(event, 'lang'),
-  headers: event?.headers,
-  available: ['en', 'zh-CN', 'ja'],
-  fallback: 'en',
-})
-const i18n = createFluenti({ locale, messages: allMessages })
-app.use(i18n)
+export function createApp(req) {
+  const locale = detectLocale({
+    cookie: getCookie(req, 'lang'),
+    headers: req.headers,
+    available: ['en', 'ja', 'zh-CN'],
+    fallback: 'en',
+  })
 
-const script = getSSRLocaleScript(locale)
+  const app = createSSRApp(App)
+  const i18n = createFluenti({ locale, messages: allMessages })
+  app.use(i18n)
+
+  const headScript = getSSRLocaleScript(locale)
+  return { app, headScript, locale }
+}
 ```
 
-```typescript
-// client
+**Client entry:**
+
+```ts
+import { createSSRApp } from 'vue'
 import { getHydratedLocale } from '@fluenti/core'
+import { createFluenti } from '@fluenti/vue'
+import App from './App.vue'
+import allMessages from '../locales/compiled'
 
 const locale = getHydratedLocale('en')
+const app = createSSRApp(App)
 const i18n = createFluenti({ locale, messages: allMessages })
 app.use(i18n)
+app.mount('#app')
 ```
+
+Each call to `createFluenti()` creates fresh state with no module-level singletons, so it is safe to call once per SSR request.
 
 See [Vue Manual SSR](/frameworks/vue/ssr/).
 </TabItem>
 
+<TabItem label="React SPA">
+React SPAs with Vite use client-side detection only. For SSR with a custom server (Express, Hono, etc.), inject the hydration script:
+
+**Server:**
+
+```tsx
+import { renderToString } from 'react-dom/server'
+import { detectLocale, getSSRLocaleScript } from '@fluenti/core'
+import { I18nProvider } from '@fluenti/react'
+import App from './App'
+import allMessages from '../locales/compiled'
+
+app.get('*', (req, res) => {
+  const locale = detectLocale({
+    cookie: req.headers.cookie,
+    headers: req.headers,
+    available: ['en', 'ja', 'zh-CN'],
+    fallback: 'en',
+  })
+
+  const html = renderToString(
+    <I18nProvider locale={locale} messages={allMessages}>
+      <App />
+    </I18nProvider>
+  )
+
+  res.send(`
+    <html lang="${locale}">
+      <head>${getSSRLocaleScript(locale)}</head>
+      <body><div id="root">${html}</div></body>
+    </html>
+  `)
+})
+```
+
+**Client:**
+
+```tsx
+import { hydrateRoot } from 'react-dom/client'
+import { getHydratedLocale } from '@fluenti/core'
+import { I18nProvider } from '@fluenti/react'
+import App from './App'
+import allMessages from '../locales/compiled'
+
+const locale = getHydratedLocale('en')
+
+hydrateRoot(
+  document.getElementById('root')!,
+  <I18nProvider locale={locale} messages={allMessages}>
+    <App />
+  </I18nProvider>
+)
+```
+
+See [React SPA guide](/frameworks/react/react-spa/).
+</TabItem>
+
 <TabItem label="SolidStart">
-Uses `getSSRLocaleScript` + `getHydratedLocale` with `isServer` guard for mismatch-free hydration.
+SolidStart uses `AsyncLocalStorage` for per-request isolation via `createServerI18n`. Use `getSSRLocaleScript` and `getHydratedLocale` with an `isServer` guard:
+
+```tsx
+// src/lib/i18n.server.ts
+import { createServerI18n } from '@fluenti/solid/server'
+
+export const { setLocale, getI18n, withLocale } = createServerI18n({
+  loadMessages: (locale) => import(`../locales/compiled/${locale}.ts`),
+  fallbackLocale: 'en',
+})
+```
+
+```tsx
+// src/app.tsx
+import { isServer } from 'solid-js/web'
+import { detectLocale, getSSRLocaleScript, getHydratedLocale } from '@fluenti/core'
+
+export default function App() {
+  let locale: string
+  if (isServer) {
+    locale = detectLocale({
+      cookie: getCookie('lang'),
+      headers: getRequestHeaders(),
+      available: ['en', 'ja', 'zh-CN'],
+      fallback: 'en',
+    })
+  } else {
+    locale = getHydratedLocale('en')
+  }
+
+  return (
+    <html lang={locale}>
+      <head>
+        {isServer && <script innerHTML={getSSRLocaleScript(locale).slice(8, -9)} />}
+      </head>
+      <body>{/* ... */}</body>
+    </html>
+  )
+}
+```
 
 See [SolidStart guide](/frameworks/solid/solidstart/).
 </TabItem>
 
 <TabItem label="Solid (manual)">
-SolidJS is naturally SSR-safe — each `renderToString()` creates a new component tree with isolated signals.
+SolidJS is naturally SSR-safe -- each `renderToString()` creates a new component tree with isolated signals. No special handling is needed beyond the hydration script.
+
+```tsx
+import { renderToString } from 'solid-js/web'
+import { detectLocale, getSSRLocaleScript } from '@fluenti/core'
+import { I18nProvider } from '@fluenti/solid'
+import App from './App'
+import allMessages from '../locales/compiled'
+
+const locale = detectLocale({ /* ... */ })
+
+const html = renderToString(() => (
+  <I18nProvider locale={locale} messages={allMessages}>
+    <App />
+  </I18nProvider>
+))
+```
 
 See [SolidJS Manual SSR](/frameworks/solid/ssr/).
 </TabItem>
 </Tabs>
 
-## Utilities
+## Server Context Isolation
+
+In production SSR, multiple requests are processed concurrently. If locale state is stored in a module-level variable, one request can overwrite another's locale. Fluenti solves this with per-request isolation:
+
+| Framework | Mechanism |
+|-----------|-----------|
+| Vue / Nuxt | `AsyncLocalStorage` via `withLocale()` |
+| SolidStart | `AsyncLocalStorage` via `withLocale()` |
+| Next.js (RSC) | `React.cache()` -- automatic per-request scoping |
+| React Router SSR | `AsyncLocalStorage` via `withLocale()` |
+
+For a deep dive on isolation patterns, see [Server Context Isolation](/advanced/server-context/).
+
+## Utilities Reference
 
 | Utility | Description |
 |---------|-------------|
@@ -135,3 +426,9 @@ See [SolidJS Manual SSR](/frameworks/solid/ssr/).
 | `getHydratedLocale(fallback?, options?)` | Read the injected locale on the client. Pass `{ key }` to match custom variable |
 | `getDirection(locale)` | Return `'rtl'` or `'ltr'` |
 | `isRTL(locale)` | Check if a locale is right-to-left |
+
+## Related
+
+- [Server Context Isolation](/advanced/server-context/) -- `AsyncLocalStorage` and `React.cache()` for concurrent SSR
+- [Server Components](/frameworks/react/server-components/) -- React RSC deep dive
+- [Best Practices](/advanced/best-practices/) -- Production patterns including SSR guidelines

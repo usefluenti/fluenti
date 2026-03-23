@@ -3,66 +3,425 @@ title: Configuration
 description: "Complete fluenti.config.ts reference — source/target locales, catalog format, extraction, compilation, code splitting, and custom formatter options."
 ---
 
-Fluenti uses a `fluenti.config.ts` file (auto-loaded via jiti).
+import { Aside } from '@astrojs/starlight/components'
 
-## Full Reference
+Fluenti is configured via a `fluenti.config.ts` file at your project root. The file is loaded at build time using [jiti](https://github.com/unjs/jiti), so you can use TypeScript, ESM imports, and top-level `await` without any extra setup.
+
+## `defineConfig()`
+
+Wrap your config in `defineConfig()` for full type inference and IDE autocompletion. It is an identity function with no runtime effect.
 
 ```typescript
 // fluenti.config.ts
 import { defineConfig } from '@fluenti/cli'
 
 export default defineConfig({
-  extends: '../../fluenti.config.ts',        // Monorepo config inheritance
   sourceLocale: 'en',
-  locales: ['en', 'zh-CN', 'ja'],
+  locales: ['en', 'ja', 'zh-CN'],
   catalogDir: './locales',
   format: 'po',
-  include: ['./src/**/*.vue', './src/**/*.tsx', './src/**/*.jsx', './src/**/*.ts'],
-  exclude: ['./src/**/*.test.*'],
+  include: ['./src/**/*.{vue,tsx,ts}'],
   compileOutDir: './src/locales/compiled',
-  fallbackChain: { 'zh-TW': ['zh-CN', 'en'], '*': ['en'] },
-  splitting: 'dynamic',
-  defaultBuildLocale: 'en',
-  parallelCompile: true,                     // Worker threads for compilation
-  onBeforeCompile: () => console.log('Compiling...'),
-  onAfterCompile: () => console.log('Done!'),
 })
 ```
 
-`defineConfig` is an identity function that provides full type inference and IDE autocompletion for all config options.
+`defineConfig` is also exported from `@fluenti/core` if you prefer not to depend on the CLI package.
 
-## Options
+## Config File Resolution
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `sourceLocale` | `string` | `'en'` | The locale used in source code |
-| `locales` | `LocaleDefinition[]` | `['en']` | All target locales. Each entry can be a string (`'en'`) or an object (`{ code: 'en', name: 'English' }`) |
-| `catalogDir` | `string` | `'./locales'` | Directory for translation catalogs |
-| `format` | `'json' \| 'po'` | `'po'` | Catalog file format. PO is recommended — compatible with Poedit, Weblate, Crowdin and other translation tools |
-| `include` | `string[]` | `['./src/**/*.vue', './src/**/*.tsx', './src/**/*.jsx']` | Glob patterns for source files |
-| `exclude` | `string[]` | `['./src/**/*.test.*']` | Glob patterns to exclude |
-| `compileOutDir` | `string` | `'./src/locales/compiled'` | Output directory for compiled messages |
-| `fallbackChain` | `Record<string, string[]>` | `{}` | Locale fallback chains |
-| `splitting` | `'dynamic' \| 'static' \| false` | `false` | Code-splitting strategy |
-| `defaultBuildLocale` | `string?` | — | Default locale embedded in the bundle |
-| `devWarnings` | `boolean?` | — | Enable development-mode warnings for missing translations and format errors |
-| `extends` | `string?` | — | Path to parent config file for monorepo inheritance |
-| `defaultLocale` | `string?` | — | Default locale for routing/detection (defaults to `sourceLocale`) |
-| `parallelCompile` | `boolean?` | `false` | Enable parallel compilation using worker threads |
-| `idGenerator` | `(message: string, context?: string) => string` | — | Custom message ID hash function |
-| `catalogExtension` | `string?` | `'.js'` | File extension for compiled catalog output files |
-| `devAutoCompile` | `boolean?` | `true` | Auto extract+compile in dev mode |
-| `buildAutoCompile` | `boolean?` | `true` | Auto extract+compile before production build |
-| `devAutoCompileDelay` | `number?` | `500` | Debounce delay in ms for dev auto-compile |
-| `onBeforeCompile` | `() => boolean \| void \| Promise<...>` | — | Called before auto-compile. Return `false` to skip. |
-| `onAfterCompile` | `() => void \| Promise<void>` | — | Called after auto-compile completes successfully |
-| `plugins` | `FluentiPlugin[]?` | — | Plugins that hook into the extract and compile pipelines |
-| `dateFormats` | `DateFormatOptions?` | — | Named date format presets (e.g. `{ short: { dateStyle: 'short' } }`) |
-| `numberFormats` | `NumberFormatOptions?` | — | Named number format presets. Values can be `Intl.NumberFormatOptions` or `(locale: string) => Intl.NumberFormatOptions` |
+When no explicit path is provided, the config loader searches the working directory for:
+
+1. `fluenti.config.ts`
+2. `fluenti.config.js`
+3. `fluenti.config.mjs`
+
+The first file found is used. If none exists, built-in defaults apply.
+
+## Build Options
+
+These options control extraction, compilation, and output.
+
+### `sourceLocale`
+
+| | |
+|---|---|
+| **Type** | `string` |
+| **Default** | `'en'` |
+
+The locale used in your source code. Messages written in source files are treated as this locale. This locale's catalog is auto-populated during extraction.
+
+### `locales`
+
+| | |
+|---|---|
+| **Type** | `LocaleDefinition[]` |
+| **Default** | `['en']` |
+
+All locales your app supports. Each entry can be a plain string or a metadata object:
+
+```typescript
+locales: [
+  'en',
+  { code: 'ja', name: '日本語' },
+  { code: 'ar', name: 'العربية', dir: 'rtl' },
+  { code: 'zh-CN', name: '简体中文', iso: 'zh-Hans-CN' },
+]
+```
+
+The `LocaleObject` shape:
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `code` | `string` | Locale code (e.g. `'en'`, `'ja'`, `'zh-CN'`) |
+| `name` | `string?` | Human-readable display name |
+| `iso` | `string?` | BCP 47 language tag for SEO (e.g. `'en-US'`) |
+| `dir` | `'ltr' \| 'rtl'?` | Text direction |
+| `domain` | `string?` | Domain for domain-based routing |
+
+### `defaultLocale`
+
+| | |
+|---|---|
+| **Type** | `string?` |
+| **Default** | Value of `sourceLocale` |
+
+Default locale for routing and detection. Usually the same as `sourceLocale`, but can differ when your source language is not the primary user-facing locale.
+
+### `catalogDir`
+
+| | |
+|---|---|
+| **Type** | `string` |
+| **Default** | `'./locales'` |
+
+Directory where translation catalog files are stored. The CLI reads from and writes to this directory during `extract` and `compile` commands.
+
+### `format`
+
+| | |
+|---|---|
+| **Type** | `'po' \| 'json'` |
+| **Default** | `'po'` |
+
+Catalog file format.
+
+- **`'po'`** (recommended) — gettext PO format. Compatible with Poedit, Weblate, Crowdin, and other translation tools.
+- **`'json'`** — Simple key-value JSON. Useful for lightweight setups or when integrating with JSON-based translation services.
+
+### `include`
+
+| | |
+|---|---|
+| **Type** | `string[]` |
+| **Default** | `['./src/**/*.{vue,tsx,jsx,ts,js}']` |
+
+Glob patterns for source files to scan during message extraction.
+
+```typescript
+// Vue project
+include: ['./src/**/*.{vue,ts}']
+
+// Next.js project
+include: ['./src/**/*.{tsx,ts}']
+
+// Nuxt project (no src directory)
+include: ['./pages/**/*.vue', './components/**/*.vue', './plugins/**/*.ts']
+```
+
+### `exclude`
+
+| | |
+|---|---|
+| **Type** | `string[]` |
+| **Default** | `['**/*.test.*', '**/*.spec.*', '**/__tests__/**', '**/*.d.ts']` |
+
+Glob patterns to exclude from extraction. Test files and type declarations are excluded by default.
+
+### `compileOutDir`
+
+| | |
+|---|---|
+| **Type** | `string` |
+| **Default** | `'./src/locales/compiled'` |
+
+Output directory for compiled message modules. The compiler writes one file per locale here (e.g. `en.ts`, `ja.ts`). These files are imported by framework integrations at runtime.
+
+### `catalogExtension`
+
+| | |
+|---|---|
+| **Type** | `'.js' \| '.ts'` |
+| **Default** | `'.js'` |
+
+File extension for compiled catalog output files. Use `'.ts'` if your build pipeline handles TypeScript directly.
+
+### `splitting`
+
+| | |
+|---|---|
+| **Type** | `'dynamic' \| 'static' \| false` |
+| **Default** | `false` |
+
+Code-splitting strategy for compiled message modules.
+
+- **`false`** — All messages are bundled into a single module per locale. Simplest setup.
+- **`'static'`** — Messages are split per route at build time. Requires `defaultBuildLocale`.
+- **`'dynamic'`** — Messages are loaded on demand per route. Best for large apps with many locales.
+
+See [Code Splitting](/advanced/code-splitting) for details.
+
+### `defaultBuildLocale`
+
+| | |
+|---|---|
+| **Type** | `string?` |
+| **Default** | — |
+
+The locale embedded directly in the bundle when using the `'static'` splitting strategy. Other locales are loaded at runtime.
+
+### `idGenerator`
+
+| | |
+|---|---|
+| **Type** | `(message: string, context?: string) => string` |
+| **Default** | Built-in hash function |
+
+Custom message ID generator. By default, Fluenti generates deterministic hash-based IDs from message content and optional context. Override this to use your own ID scheme.
+
+```typescript
+idGenerator: (message, context) => {
+  const base = context ? `${context}::${message}` : message
+  return myCustomHash(base)
+}
+```
+
+## Dev Options
+
+Options that control behavior during development.
+
+### `devAutoCompile`
+
+| | |
+|---|---|
+| **Type** | `boolean` |
+| **Default** | `true` |
+
+Automatically run extract + compile when source files change in dev mode. The Vite plugin watches for file changes and triggers recompilation.
+
+### `buildAutoCompile`
+
+| | |
+|---|---|
+| **Type** | `boolean` |
+| **Default** | `true` |
+
+Automatically run extract + compile before production builds. Set to `false` if you run `fluenti extract && fluenti compile` as a separate CI step.
+
+### `devAutoCompileDelay`
+
+| | |
+|---|---|
+| **Type** | `number` |
+| **Default** | `500` |
+
+Debounce delay in milliseconds for dev auto-compile. Prevents excessive recompilation when multiple files change in rapid succession.
+
+### `parallelCompile`
+
+| | |
+|---|---|
+| **Type** | `boolean` |
+| **Default** | `false` |
+
+Enable parallel compilation across locales using worker threads. Useful for projects with many target locales where compilation is a bottleneck.
+
+### `devWarnings`
+
+| | |
+|---|---|
+| **Type** | `boolean?` |
+| **Default** | — |
+
+Enable development warnings for missing translations. When `true`, missing messages return a `[!]`-prefixed fallback and emit `console.warn`. Also activatable via the `FLUENTI_DEBUG` environment variable.
+
+## Lifecycle Hooks
+
+### `onBeforeCompile`
+
+| | |
+|---|---|
+| **Type** | `() => boolean \| void \| Promise<boolean \| void>` |
+
+Called before auto-compile runs. Return `false` to skip compilation for this cycle.
+
+```typescript
+onBeforeCompile: () => {
+  console.log('Compiling translations...')
+  // Return false to skip
+}
+```
+
+### `onAfterCompile`
+
+| | |
+|---|---|
+| **Type** | `() => void \| Promise<void>` |
+
+Called after auto-compile completes successfully.
+
+```typescript
+onAfterCompile: () => {
+  console.log('Translation compilation complete')
+}
+```
+
+## Runtime Options
+
+These options are stored in the config file but consumed at runtime by framework integrations.
+
+### `fallbackChain`
+
+| | |
+|---|---|
+| **Type** | `Record<string, string[]>` |
+| **Default** | `{}` |
+
+Locale fallback chains. When a message is missing in a locale, the chain is followed in order. Use `'*'` as a wildcard for all locales.
+
+```typescript
+fallbackChain: {
+  'zh-TW': ['zh-CN', 'en'],   // Traditional Chinese falls back to Simplified, then English
+  'pt-BR': ['pt', 'en'],       // Brazilian Portuguese falls back to Portuguese, then English
+  '*': ['en'],                  // All other locales fall back to English
+}
+```
+
+See [Fallback Chains](/advanced/fallback-chains) for details.
+
+### `dateFormats`
+
+| | |
+|---|---|
+| **Type** | `Record<string, Intl.DateTimeFormatOptions \| 'relative'>` |
+| **Default** | — |
+
+Named date format presets used by the `d()` formatter and `<DateTime>` components.
+
+```typescript
+dateFormats: {
+  short: { dateStyle: 'short' },
+  long: { dateStyle: 'long', timeStyle: 'short' },
+  relative: 'relative',
+}
+```
+
+### `numberFormats`
+
+| | |
+|---|---|
+| **Type** | `Record<string, Intl.NumberFormatOptions \| ((locale: string) => Intl.NumberFormatOptions)>` |
+| **Default** | — |
+
+Named number format presets used by the `n()` formatter and `<NumberFormat>` components. Values can be static options or a function that returns locale-specific options.
+
+```typescript
+numberFormats: {
+  currency: (locale) => ({
+    style: 'currency',
+    currency: locale.startsWith('ja') ? 'JPY' : 'USD',
+  }),
+  percent: { style: 'percent', maximumFractionDigits: 1 },
+}
+```
+
+## Plugins
+
+### `plugins`
+
+| | |
+|---|---|
+| **Type** | `FluentiPlugin[]` |
+| **Default** | — |
+
+Plugins that hook into the extract and compile pipelines. Each plugin is an object with a `name` and optional lifecycle hooks.
+
+```typescript
+import { pseudoLocalePlugin } from '@fluenti/core/plugins/pseudo-locale'
+import { messageValidatorPlugin } from '@fluenti/core/plugins/message-validator'
+
+export default defineConfig({
+  // ...
+  plugins: [
+    pseudoLocalePlugin({ locale: 'en-XA' }),
+    messageValidatorPlugin(),
+  ],
+})
+```
+
+The `FluentiPlugin` interface:
+
+| Hook | Signature | Description |
+|------|-----------|-------------|
+| `name` | `string` | Plugin identifier |
+| `onAfterExtract` | `(context) => void` | Called after message extraction |
+| `onBeforeCompile` | `(context) => void` | Called before compilation per locale |
+| `onAfterCompile` | `(context) => void` | Called after compilation per locale |
+| `transformMessages` | `(messages, locale) => messages` | Transform message map before compilation |
+| `formatters` | `Record<string, CustomFormatter>` | Custom ICU formatters provided by the plugin |
+
+## Monorepo Inheritance
+
+### `extends`
+
+| | |
+|---|---|
+| **Type** | `string?` |
+| **Default** | — |
+
+Path to a parent config file (relative to the current config's directory). The child config inherits all options from the parent and can override any of them. Path-based fields (`catalogDir`, `compileOutDir`, `include`, `exclude`) are automatically rebased to the child directory.
+
+```
+my-monorepo/
+├── fluenti.config.ts          # Shared base config
+├── packages/
+│   ├── app-a/
+│   │   └── fluenti.config.ts  # extends ../../fluenti.config.ts
+│   └── app-b/
+│       └── fluenti.config.ts  # extends ../../fluenti.config.ts
+```
+
+Root config (shared settings):
+
+```typescript
+// my-monorepo/fluenti.config.ts
+import { defineConfig } from '@fluenti/cli'
+
+export default defineConfig({
+  sourceLocale: 'en',
+  locales: ['en', 'ja'],
+  format: 'po',
+})
+```
+
+App config (inherits and overrides):
+
+```typescript
+// my-monorepo/packages/app-a/fluenti.config.ts
+import { defineConfig } from '@fluenti/cli'
+
+export default defineConfig({
+  extends: '../../fluenti.config.ts',
+  catalogDir: '../../locales',
+  include: ['./src/**/*.{tsx,ts}'],
+  compileOutDir: './src/locales/compiled',
+})
+```
+
+The extends chain has a maximum depth of 10 and circular references are detected with a clear error message.
 
 ## Runtime Config
 
-These options are available when creating a runtime instance (e.g. via `createFluentiCore()`, `createFluenti()`, or `I18nProvider`), but not in `fluenti.config.ts`:
+These options are available when creating a runtime instance (e.g. via `createFluentiCore()`, `createFluenti()`, or `I18nProvider`), but **not** in `fluenti.config.ts`:
 
 | Option | Type | Description |
 |--------|------|-------------|
@@ -75,12 +434,72 @@ These options are available when creating a runtime instance (e.g. via `createFl
 | `formatters` | `Record<string, CustomFormatter>` | Custom ICU function formatters (e.g. `{items, list}`) |
 | `devWarnings` | `boolean?` | Show `[!]` prefix and `console.warn` for missing translations |
 
+See the [`@fluenti/core` API reference](/api/core) for full details on runtime configuration.
+
+## Programmatic API
+
+### `loadConfig()`
+
+Load and resolve a config file asynchronously. Supports `extends` chain resolution.
+
+```typescript
+import { loadConfig } from '@fluenti/core'
+
+const config = await loadConfig()                    // Auto-discover from cwd
+const config = await loadConfig('./custom.config.ts') // Explicit path
+const config = await loadConfig(undefined, '/my/app') // Custom working directory
+```
+
+### `loadConfigSync()`
+
+Synchronous variant for contexts where `await` is not available (e.g. webpack config). Falls back to defaults on error.
+
+```typescript
+import { loadConfigSync } from '@fluenti/core'
+
+const config = loadConfigSync()
+```
+
 ### `normalizeConfig()`
 
-Use `normalizeConfig()` from `@fluenti/core` to validate and normalize a config object. This is useful for tools and plugins that need to read configuration programmatically:
+Validate and normalize a config object. Useful for tools and plugins that construct config programmatically.
 
 ```typescript
 import { normalizeConfig } from '@fluenti/core'
 
-const config = normalizeConfig(rawConfig)
+const config = normalizeConfig({
+  sourceLocale: 'en',
+  locales: ['en', 'ja'],
+  catalogDir: './locales',
+  format: 'po',
+  include: ['./src/**/*.tsx'],
+  compileOutDir: './src/locales/compiled',
+})
 ```
+
+## Defaults Reference
+
+When no config file is found, or for any omitted options, these defaults apply:
+
+```typescript
+{
+  sourceLocale: 'en',
+  locales: ['en'],
+  catalogDir: './locales',
+  format: 'po',
+  include: ['./src/**/*.{vue,tsx,jsx,ts,js}'],
+  exclude: ['**/*.test.*', '**/*.spec.*', '**/__tests__/**', '**/*.d.ts'],
+  compileOutDir: './src/locales/compiled',
+  devAutoCompile: true,
+  buildAutoCompile: true,
+  devAutoCompileDelay: 500,
+}
+```
+
+## Related
+
+- [Configuration Guide](/essentials/configuration) — step-by-step setup walkthrough
+- [CLI Reference](/api/cli) — `extract`, `compile`, and `stats` commands that read this config
+- [Vite Plugin](/api/vite-plugin) — how the Vite plugin uses config for auto-compile and virtual modules
+- [Code Splitting](/advanced/code-splitting) — `splitting` strategy deep dive
+- [Fallback Chains](/advanced/fallback-chains) — `fallbackChain` patterns for regional variants

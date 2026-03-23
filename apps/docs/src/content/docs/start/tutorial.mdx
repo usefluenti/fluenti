@@ -54,21 +54,17 @@ A small task manager app with:
 
 5. **Write your component**
 
-   Replace `src/App.tsx`:
+   Replace `src/App.tsx` with a simple component that uses tagged templates for translation:
 
    ```tsx
    import { I18nProvider, useI18n, t } from '@fluenti/react'
 
    function TaskApp() {
      const { setLocale, locale } = useI18n()
-     const name = 'Alice'
-     const taskCount = 3
-
      return (
        <div>
-         <h1>{t`Hello, ${name}!`}</h1>
-         <p>{t`You have ${taskCount} tasks today`}</p>
-
+         <h1>{t`Hello, ${'Alice'}!`}</h1>
+         <p>{t`You have ${3} tasks today`}</p>
          <button onClick={() => setLocale(locale === 'en' ? 'ja' : 'en')}>
            {t`Switch language`}
          </button>
@@ -78,27 +74,16 @@ A small task manager app with:
 
    export default function App() {
      return (
-       <I18nProvider
-         locale="en"
-         messages={{}}
-       >
+       <I18nProvider locale="en" messages={{}}>
          <TaskApp />
        </I18nProvider>
      )
    }
    ```
 
-6. **Extract messages**
+6. **Extract and translate**
 
-   ```bash
-   npm run i18n:extract
-   ```
-
-   This scans your source files and creates PO catalog files in `locales/en.po` and `locales/ja.po`.
-
-7. **Translate**
-
-   Open `locales/ja.po` and add translations:
+   Run `npm run i18n:extract` to generate PO catalogs, then open `locales/ja.po` and add translations:
 
    ```po
    msgid "Hello, {name}!"
@@ -111,19 +96,9 @@ A small task manager app with:
    msgstr "言語を切り替え"
    ```
 
-   You can also use `npx fluenti translate --locale ja` to auto-translate with AI.
+7. **Compile and load messages**
 
-8. **Compile**
-
-   ```bash
-   npm run i18n:compile
-   ```
-
-   This generates optimized JavaScript modules in `src/locales/compiled/`.
-
-9. **Update App.tsx to use compiled messages**
-
-   Now import the compiled catalogs and pass them to the provider:
+   Run `npm run i18n:compile` to generate optimized JS modules, then update `App.tsx` to load them:
 
    ```tsx
    import { I18nProvider, useI18n, t } from '@fluenti/react'
@@ -132,14 +107,10 @@ A small task manager app with:
 
    function TaskApp() {
      const { setLocale, locale } = useI18n()
-     const name = 'Alice'
-     const taskCount = 3
-
      return (
        <div>
-         <h1>{t`Hello, ${name}!`}</h1>
-         <p>{t`You have ${taskCount} tasks today`}</p>
-
+         <h1>{t`Hello, ${'Alice'}!`}</h1>
+         <p>{t`You have ${3} tasks today`}</p>
          <button onClick={() => setLocale(locale === 'en' ? 'ja' : 'en')}>
            {t`Switch language`}
          </button>
@@ -149,18 +120,14 @@ A small task manager app with:
 
    export default function App() {
      return (
-       <I18nProvider
-         locale="en"
-         fallbackLocale="en"
-         messages={{ en, ja }}
-       >
+       <I18nProvider locale="en" fallbackLocale="en" messages={{ en, ja }}>
          <TaskApp />
        </I18nProvider>
      )
    }
    ```
 
-10. **Run**
+8. **Run**
 
    ```bash
    npm run dev
