@@ -1,7 +1,8 @@
 import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
 import { readFileSync, existsSync } from 'node:fs'
-import { resolve, join } from 'node:path'
+import { resolve, join, dirname } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import fg from 'fast-glob'
 import consola from 'consola'
 import type { AIProvider } from './translate'
@@ -142,11 +143,14 @@ async function detectFiles(info: LibraryInfo): Promise<DetectedFiles> {
 }
 
 function loadMigrationGuide(guidePath: string): string {
+  const thisDir = typeof __dirname !== 'undefined'
+    ? __dirname
+    : dirname(fileURLToPath(import.meta.url))
   // Try to find the migration guide relative to the CLI package
   const candidates = [
     resolve('node_modules', '@fluenti', 'cli', '..', '..', guidePath),
-    join(__dirname, '..', '..', '..', guidePath),
-    join(__dirname, '..', '..', guidePath),
+    join(thisDir, '..', '..', '..', guidePath),
+    join(thisDir, '..', '..', guidePath),
   ]
 
   for (const candidate of candidates) {
@@ -254,9 +258,9 @@ async function invokeAI(provider: AIProvider, prompt: string): Promise<string> {
     }
   } catch (error: unknown) {
     const err = error as Error & { code?: string }
-    if (err.code === 'ENOENT') {
+    if (err.code === 'ENOENT' || err.code === 'EPERM' || err.code === 'EACCES') {
       throw new Error(
-        `"${provider}" CLI not found. Please install it first:\n` +
+        `"${provider}" CLI not found or not executable. Please install it first:\n` +
         (provider === 'claude'
           ? '  npm install -g @anthropic-ai/claude-code'
           : '  npm install -g @openai/codex'),
