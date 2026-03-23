@@ -195,8 +195,8 @@ export interface FluentiConfig {
   compileOutDir: string
 
   // Build options
-  /** Code splitting strategy: 'dynamic' | 'static' | false */
-  splitting?: 'dynamic' | 'static' | false
+  /** Code splitting strategy */
+  splitting?: 'dynamic' | 'static' | 'per-route' | false
   /** Default locale for build-time static strategy */
   defaultBuildLocale?: Locale
   /** File extension for compiled catalog files (default: '.js') */

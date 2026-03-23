@@ -21,7 +21,6 @@ export { setResolvedMode, isBuildMode, getPluginEnvironment } from './mode-detec
 
 const VIRTUAL_PREFIX = 'virtual:fluenti/messages/'
 const RESOLVED_PREFIX = '\0virtual:fluenti/messages/'
-type InternalSplitStrategy = FluentiBuildConfig['splitting'] | 'per-route'
 
 /**
  * Resolve a config option (string path, inline object, or undefined) into a full FluentiBuildConfig.
@@ -72,7 +71,7 @@ export function createFluentiPlugins(
   const catalogDir = earlyConfig.compileOutDir.replace(/^\.\//, '')
   const catalogExtension = earlyConfig.catalogExtension ?? '.js'
   const framework = options.framework
-  const splitting = (earlyConfig.splitting as InternalSplitStrategy | undefined) ?? false
+  const splitting = earlyConfig.splitting ?? false
   const sourceLocale = earlyConfig.sourceLocale
   const localeCodes = resolveLocaleCodes(earlyConfig.locales)
   const defaultBuildLocale = earlyConfig.defaultBuildLocale ?? sourceLocale
