@@ -13,7 +13,7 @@
   <a href="https://www.npmjs.com/package/@fluenti/core"><img src="https://img.shields.io/npm/dm/@fluenti/core?color=6366f1&label=" alt="npm downloads" /></a>
   <a href="https://github.com/usefluenti/fluenti/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/usefluenti/fluenti/ci.yml?label=CI" alt="CI" /></a>
   <a href="https://github.com/usefluenti/fluenti/actions/workflows/e2e.yml"><img src="https://img.shields.io/github/actions/workflow/status/usefluenti/fluenti/e2e.yml?label=E2E" alt="E2E" /></a>
-  <img src="https://img.shields.io/badge/tests-2604%20unit%20%2B%20596%20e2e-4caf50" alt="tests" />
+  <img src="https://img.shields.io/badge/tests-2765%20unit%20%2B%20630%20e2e-4caf50" alt="tests" />
   <img src="https://img.shields.io/badge/coverage-92%25-4caf50" alt="coverage" />
   <a href="https://github.com/usefluenti/fluenti/blob/main/LICENSE"><img src="https://img.shields.io/github/license/usefluenti/fluenti?color=4338ca&label=" alt="license" /></a>
 </p>
@@ -27,10 +27,13 @@ Traditional i18n libraries interpret messages at runtime, adding bundle weight a
 - **ICU MessageFormat** — plurals, selects, nested arguments, custom formatters
 - **Vue `v-t` directive** — compile-time template transform, not a runtime directive
 - **`<Trans>`, `<Plural>`, `<Select>` components** — for Vue, Solid, React, and more
-- **Code splitting** — lazy-load translations per route (`dynamic`, `static`, or off)
+- **Code splitting** — lazy-load translations per route (`dynamic`, `static`, `per-route`, or off)
 - **SSR-safe** — locale detection via cookie, query, path, or headers
 - **Date / number formatting** — thin wrappers around `Intl` APIs
 - **PO + JSON catalogs** — gettext-compatible workflow with JSON alternative
+- **Plugin system** — extend extract/compile pipeline with custom hooks
+- **Runtime diagnostics** — structured missing-key and fallback events
+- **`msg\`\`` descriptors** — lazy message constants for use outside components
 
 ## Install
 
@@ -96,7 +99,7 @@ The Vite plugin loads compiled catalogs automatically — no manual wiring neede
 | [`@fluenti/vue`](packages/vue) <br> [![npm](https://img.shields.io/npm/v/@fluenti/vue?color=4f46e5&label=)](https://www.npmjs.com/package/@fluenti/vue) | Vue 3 integration — `v-t` directive, `<Trans>`, `useI18n()` composable |
 | [`@fluenti/react`](packages/react) <br> [![npm](https://img.shields.io/npm/v/@fluenti/react?color=4f46e5&label=)](https://www.npmjs.com/package/@fluenti/react) | React integration — `I18nProvider`, `<Trans>`, `<Plural>`, `<Select>`, `useI18n()` hook |
 | [`@fluenti/solid`](packages/solid) <br> [![npm](https://img.shields.io/npm/v/@fluenti/solid?color=4f46e5&label=)](https://www.npmjs.com/package/@fluenti/solid) | SolidJS integration — `<Trans>`, `I18nProvider`, `useI18n()` |
-| [`@fluenti/cli`](packages/cli) <br> [![npm](https://img.shields.io/npm/v/@fluenti/cli?color=4f46e5&label=)](https://www.npmjs.com/package/@fluenti/cli) | Message extraction from Vue SFC & TSX, PO/JSON catalog compilation |
+| [`@fluenti/cli`](packages/cli) <br> [![npm](https://img.shields.io/npm/v/@fluenti/cli?color=4f46e5&label=)](https://www.npmjs.com/package/@fluenti/cli) | Message extraction (Vue SFC, TSX, `msg\`\``), PO/JSON compilation, plugin hooks |
 | [`@fluenti/vite-plugin`](packages/vite-plugin) <br> [![npm](https://img.shields.io/npm/v/@fluenti/vite-plugin?color=4f46e5&label=)](https://www.npmjs.com/package/@fluenti/vite-plugin) | Vite build-time transforms, virtual modules, code splitting |
 | [`@fluenti/next`](packages/next-plugin) <br> [![npm](https://img.shields.io/npm/v/@fluenti/next?color=4f46e5&label=)](https://www.npmjs.com/package/@fluenti/next) | Next.js plugin — `withFluenti()`, RSC support, streaming SSR |
 | [`@fluenti/nuxt`](packages/nuxt) <br> [![npm](https://img.shields.io/npm/v/@fluenti/nuxt?color=4f46e5&label=)](https://www.npmjs.com/package/@fluenti/nuxt) | Nuxt module — locale-prefixed routing, SEO helpers, auto locale detection |
