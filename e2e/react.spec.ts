@@ -18,8 +18,8 @@ test.describe('React SPA Playground', () => {
   test('d() date formatting renders locale-aware output', async ({ page }) => {
     await page.goto('/')
     const dateText = await page.getByTestId('date').textContent()
-    // Date output should contain a recognizable date pattern (month, day, year)
-    expect(dateText).toMatch(/\d/)
+    // Date output should contain a recognizable date pattern (e.g. "1/1/2024" or "January 1, 2024")
+    expect(dateText).toMatch(/\d{1,2}\/\d{1,2}\/\d{2,4}|[A-Z][a-z]+ \d{1,2}, \d{4}/)
   })
 
   test('n() number formatting renders locale-aware number', async ({ page }) => {
@@ -178,12 +178,12 @@ test.describe('React SPA Playground', () => {
   // P2.12 DateTime component renders different styles
   test('DateTime component renders default and long styles', async ({ page }) => {
     await page.goto('/')
-    // Default DateTime
+    // Default DateTime — e.g. "1/1/2024" with slashes
     const dtDefault = await page.getByTestId('datetime-default').textContent()
-    expect(dtDefault).toMatch(/\d/)
-    // Long DateTime — should contain month name or longer format
+    expect(dtDefault).toMatch(/\d{1,2}\/\d{1,2}\/\d{2,4}/)
+    // Long DateTime — should contain full month name, e.g. "January 1, 2024"
     const dtLong = await page.getByTestId('datetime-long').textContent()
-    expect(dtLong).toMatch(/\d/)
+    expect(dtLong).toMatch(/[A-Z][a-z]+ \d{1,2}, \d{4}/)
     expect(dtLong!.length).toBeGreaterThan(dtDefault!.length)
   })
 

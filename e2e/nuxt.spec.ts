@@ -22,7 +22,8 @@ test.describe('Nuxt Playground (SSR)', () => {
     await page.waitForLoadState('networkidle')
     await expect(page.locator('text=$d() — Date Formatting')).toBeVisible()
     const dateSection = page.locator('.demo-label:has-text("$d(Date.now())") + div')
-    await expect(dateSection).not.toBeEmpty()
+    const dateText = await dateSection.textContent()
+    expect(dateText).toMatch(/\d{1,4}/)
   })
 
   test('$n() number formatting renders locale-aware numbers', async ({ page }) => {
@@ -276,7 +277,7 @@ test.describe('Nuxt SSR — Concurrent Locale Isolation', () => {
     await pageJa.waitForLoadState('networkidle')
 
     await expect(pageEn.locator('h2:has-text("Welcome to Fluenti")')).toBeVisible()
-    await expect(pageJa.locator('h2').first()).toBeVisible()
+    await expect(pageJa.locator('h2').first()).toContainText('リッチテキストデモ')
 
     await Promise.all([ctxEn.close(), ctxJa.close()])
   })
@@ -358,7 +359,7 @@ test.describe('Nuxt — Browser Back/Forward', () => {
     await jaBtn.click()
     await expect(page.locator('header h1')).toContainText('Fluenti Nuxt プレイグラウンド')
     await page.locator('nav a[href="/plurals"]').click()
-    await expect(page.locator('h2:has-text("Plural Demos")')).toBeVisible()
+    await expect(page.locator('h2')).toContainText('複数形デモ')
     await page.goBack()
     await page.waitForLoadState('networkidle')
     await expect(page.locator('header h1')).toContainText('Fluenti Nuxt プレイグラウンド')
@@ -451,7 +452,7 @@ test.describe('Nuxt — Fallback & Loading', () => {
     await page.waitForLoadState('networkidle')
     await expect(page.getByTestId('fallback-only')).toContainText('This key only exists in English')
     await page.locator('header button:has-text("日本語")').click()
-    await expect(page.getByTestId('fallback-only')).not.toBeEmpty()
+    await expect(page.getByTestId('fallback-only')).toContainText('This key only exists in English')
   })
 
   test('loading indicator disappears after locale switch', async ({ page }) => {

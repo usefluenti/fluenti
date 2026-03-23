@@ -40,13 +40,13 @@ test.describe('Vue Playground', () => {
   test('locale switching updates translations to Japanese', async ({ page }) => {
     await page.goto('/')
     await page.locator('.lang-buttons button:has-text("日本語")').click()
-    await expect(page.locator('header h1')).not.toContainText('Fluenti Vue Playground')
+    await expect(page.locator('header h1')).toContainText('Fluenti Vue プレイグラウンド')
   })
 
   test('locale switching updates translations to Chinese', async ({ page }) => {
     await page.goto('/')
     await page.locator('.lang-buttons button:has-text("中文")').click()
-    await expect(page.locator('header h1')).not.toContainText('Fluenti Vue Playground')
+    await expect(page.locator('header h1')).toContainText('Fluenti Vue 演练场')
   })
 
   test('v-t directive renders rich text with HTML tags', async ({ page }) => {
@@ -129,18 +129,18 @@ test.describe('Vue Playground', () => {
   // P2.12 DateTime styles — verify d() renders multiple format styles
   test('d() date formatting renders short, long, relative, and datetime styles', async ({ page }) => {
     await page.goto('/')
-    // short style
+    // short style — e.g. "1/1/24" or similar short date with slashes
     const shortOutput = page.locator('.demo-label:has-text("$d(date, \'short\')") + div')
-    await expect(shortOutput).toContainText(/\d/)
-    // long style
+    await expect(shortOutput).toContainText(/\d{1,2}\/\d{1,2}\/\d{2,4}/)
+    // long style — e.g. "January 1, 2024" contains full month name
     const longOutput = page.locator('.demo-label:has-text("$d(date, \'long\')") + div')
-    await expect(longOutput).toContainText(/\d/)
-    // relative style — should contain a relative time expression (e.g. "3 days ago")
+    await expect(longOutput).toContainText(/[A-Z][a-z]+ \d{1,2}, \d{4}/)
+    // relative style — should contain a relative time expression (e.g. "3 days ago", "yesterday")
     const relativeOutput = page.locator('.demo-label:has-text("$d(date, \'relative\')") + div')
-    await expect(relativeOutput).not.toBeEmpty()
-    // datetime style
+    await expect(relativeOutput).toContainText(/ago|yesterday|today|tomorrow/)
+    // datetime style — e.g. "1/1/2024, 12:00:00 AM" contains date and time with colon
     const datetimeOutput = page.locator('.demo-label:has-text("$d(date, \'datetime\')") + div')
-    await expect(datetimeOutput).toContainText(/\d/)
+    await expect(datetimeOutput).toContainText(/\d{1,2}\/\d{1,2}\/\d{2,4},?\s+\d{1,2}:\d{2}/)
   })
 
   // P2.13 Number formatting styles — verify n() with currency, percent, decimal
@@ -161,7 +161,7 @@ test.describe('Vue Playground', () => {
     await expect(page.getByTestId('fallback-only')).toContainText('This key only exists in English')
     await page.locator('.lang-buttons button:has-text("日本語")').click()
     // Should still show English text (fallback)
-    await expect(page.getByTestId('fallback-only')).not.toBeEmpty()
+    await expect(page.getByTestId('fallback-only')).toContainText('This key only exists in English')
   })
 
   test('loading indicator disappears after locale switch', async ({ page }) => {
@@ -170,7 +170,7 @@ test.describe('Vue Playground', () => {
     await page.locator('.lang-buttons button:has-text("日本語")').click()
     // After settling, loading should be gone
     await expect(page.locator('.loading-indicator')).not.toBeVisible()
-    await expect(page.locator('header h1')).not.toContainText('Fluenti Vue Playground')
+    await expect(page.locator('header h1')).toContainText('Fluenti Vue プレイグラウンド')
   })
 
   test('preloadLocale fires on hover and subsequent switch works', async ({ page }) => {
@@ -180,7 +180,7 @@ test.describe('Vue Playground', () => {
     await page.waitForTimeout(500)
     // Click to switch
     await page.locator('.lang-buttons button:has-text("日本語")').click()
-    await expect(page.locator('header h1')).not.toContainText('Fluenti Vue Playground')
+    await expect(page.locator('header h1')).toContainText('Fluenti Vue プレイグラウンド')
   })
 })
 
@@ -210,10 +210,10 @@ test.describe('Vue Cookie persistence', () => {
   test('locale persists after page reload via cookie', async ({ page }) => {
     await page.goto('/')
     await page.locator('.lang-buttons button:has-text("日本語")').click()
-    await expect(page.locator('header h1')).not.toContainText('Fluenti Vue Playground')
+    await expect(page.locator('header h1')).toContainText('Fluenti Vue プレイグラウンド')
     await page.reload()
     // After reload, should still be in Japanese (not English)
-    await expect(page.locator('header h1')).not.toContainText('Fluenti Vue Playground')
+    await expect(page.locator('header h1')).toContainText('Fluenti Vue プレイグラウンド')
   })
 
   test('Arabic locale persists after page reload', async ({ page }) => {

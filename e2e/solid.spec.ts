@@ -26,13 +26,13 @@ test.describe('Solid Playground', () => {
   test('locale switching updates translations to Japanese', async ({ page }) => {
     await page.goto('/')
     await page.locator('button:has-text("日本語")').click()
-    await expect(page.locator('h1').first()).not.toContainText('Welcome to Fluenti')
+    await expect(page.locator('h1').first()).toContainText('Fluenti へようこそ')
   })
 
   test('locale switching updates translations to Chinese', async ({ page }) => {
     await page.goto('/')
     await page.locator('button:has-text("中文")').click()
-    await expect(page.locator('h1').first()).not.toContainText('Welcome to Fluenti')
+    await expect(page.locator('h1').first()).toContainText('欢迎使用 Fluenti')
   })
 
   test('Rich Text section renders with Trans component', async ({ page }) => {
@@ -152,12 +152,15 @@ test.describe('Solid Playground', () => {
   // P2.12 DateTime styles — d() renders multiple format styles
   test('d() date formatting renders short, long, and relative styles', async ({ page }) => {
     await page.goto('/')
-    // short style
-    await expect(page.locator('text=d(date, \'short\') >> xpath=.. >> div >> nth=1')).toBeDefined()
-    // Verify the date formatting section has multiple format outputs with digits
+    // short style — e.g. "1/1/24" with slashes
     const dateSection = page.locator('h2:has-text("Feature: d() Date Formatting")').locator('..')
-    const dateOutputs = dateSection.locator('div').filter({ hasText: /\d{1,4}/ })
+    const shortOutput = dateSection.locator('div').filter({ hasText: /\d{1,2}\/\d{1,2}\/\d{2,4}/ })
+    await expect(shortOutput.first()).toBeVisible()
+    // long style — e.g. "January 1, 2024" with full month name
+    const longOutput = dateSection.locator('div').filter({ hasText: /[A-Z][a-z]+ \d{1,2}, \d{4}/ })
+    await expect(longOutput.first()).toBeVisible()
     // Should have at least 3 date outputs (default, short, long)
+    const dateOutputs = dateSection.locator('div').filter({ hasText: /\d{1,4}/ })
     expect(await dateOutputs.count()).toBeGreaterThanOrEqual(3)
   })
 
@@ -175,7 +178,7 @@ test.describe('Solid Playground', () => {
     await expect(page.getByTestId('fallback-only')).toContainText('This key only exists in English')
     await page.locator('button:has-text("日本語")').click()
     // Should still show English text (fallback)
-    await expect(page.getByTestId('fallback-only')).not.toBeEmpty()
+    await expect(page.getByTestId('fallback-only')).toContainText('This key only exists in English')
   })
 
   test('loading indicator disappears after locale switch', async ({ page }) => {
@@ -184,7 +187,7 @@ test.describe('Solid Playground', () => {
     await page.locator('button:has-text("日本語")').click()
     // After settling, loading indicator (span with "Loading...") should be gone
     await expect(page.locator('span:has-text("Loading...")')).not.toBeVisible()
-    await expect(page.locator('h1').first()).not.toContainText('Welcome to Fluenti')
+    await expect(page.locator('h1').first()).toContainText('Fluenti へようこそ')
   })
 
   test('preloadLocale fires on hover and subsequent switch works', async ({ page }) => {
@@ -194,16 +197,15 @@ test.describe('Solid Playground', () => {
     await page.waitForTimeout(500)
     // Click to switch
     await page.locator('button:has-text("日本語")').click()
-    await expect(page.locator('h1').first()).not.toContainText('Welcome to Fluenti')
+    await expect(page.locator('h1').first()).toContainText('Fluenti へようこそ')
   })
 
   test('msg() lazy message descriptor translates', async ({ page }) => {
     await page.goto('/')
-    const before = await page.getByTestId('msg-title').textContent()
     // Switch to Japanese
     await page.locator('button:has-text("日本語")').click()
     const after = await page.getByTestId('msg-title').textContent()
-    expect(after).not.toBe(before)
+    expect(after).toContain('管理者')
   })
 })
 
@@ -233,10 +235,10 @@ test.describe('Solid Cookie persistence', () => {
   test('locale persists after page reload via cookie', async ({ page }) => {
     await page.goto('/')
     await page.locator('button:has-text("日本語")').click()
-    await expect(page.locator('h1').first()).not.toContainText('Welcome to Fluenti')
+    await expect(page.locator('h1').first()).toContainText('Fluenti へようこそ')
     await page.reload()
     // After reload, should still be in Japanese (not English)
-    await expect(page.locator('h1').first()).not.toContainText('Welcome to Fluenti')
+    await expect(page.locator('h1').first()).toContainText('Fluenti へようこそ')
   })
 
   test('Arabic locale persists after page reload', async ({ page }) => {

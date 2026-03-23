@@ -27,9 +27,9 @@ test.describe('TanStack Start — Home Page Details', () => {
     const dateDefault = page.getByTestId('date-default')
     const dateLong = page.getByTestId('date-long')
     const dateShort = page.getByTestId('date-short')
-    await expect(dateDefault).not.toBeEmpty()
-    await expect(dateLong).not.toBeEmpty()
-    await expect(dateShort).not.toBeEmpty()
+    await expect(dateDefault).toContainText('1/15/2025')
+    await expect(dateLong).toContainText('January 15, 2025')
+    await expect(dateShort).toContainText('1/15/25')
     // Long format should be longer than short format
     const longText = await dateLong.textContent()
     const shortText = await dateShort.textContent()
@@ -149,9 +149,9 @@ test.describe('TanStack Start — Plurals Page', () => {
     await expect(page.getByTestId('plural-result')).toContainText('1 message')
 
     await page.getByTestId('lang-ja').click()
-    await expect(page.getByTestId('title')).not.toContainText('Fluenti TanStack Start Playground')
-    // Plural result should update to Japanese
-    await expect(page.getByTestId('plural-result')).toContainText('1')
+    await expect(page.getByTestId('title')).toContainText('Fluenti TanStack Start プレイグラウンド')
+    // Plural has no Japanese translation, falls back to English
+    await expect(page.getByTestId('plural-result')).toContainText('1 message')
   })
 })
 
@@ -232,9 +232,7 @@ test.describe('TanStack Start — Navigation', () => {
     await expect(page.getByTestId('welcome')).toContainText('Fluenti へようこそ')
 
     await page.getByTestId('nav-plurals').click()
-    await expect(page.getByTestId('title')).not.toContainText('Fluenti TanStack Start Playground')
-    // Title should remain in Japanese
-    await expect(page.getByTestId('current-locale')).not.toBeVisible()
+    await expect(page.getByTestId('title')).toContainText('Fluenti TanStack Start プレイグラウンド')
 
     await page.getByTestId('nav-home').click()
     await expect(page.getByTestId('welcome')).toContainText('Fluenti へようこそ')

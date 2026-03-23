@@ -166,14 +166,12 @@ test.describe('React Router — Trans/richtext', () => {
 test.describe('React Router — DateTime/NumberFormat', () => {
   test('DateTime renders a formatted date', async ({ page }) => {
     await page.goto('/')
-    await expect(page.getByTestId('date-display')).not.toBeEmpty()
+    await expect(page.getByTestId('date-display')).toContainText('1/15/2025')
   })
 
   test('NumberFormat renders a formatted number', async ({ page }) => {
     await page.goto('/')
-    const text = await page.getByTestId('number-display').textContent()
-    expect(text).toContain('1')
-    expect(text).toContain('234')
+    await expect(page.getByTestId('number-display')).toContainText('1,234.56')
   })
 })
 
@@ -213,7 +211,7 @@ test.describe('React Router — Preload locale', () => {
     await page.getByTestId('lang-ja').hover()
     await page.waitForTimeout(500)
     await page.getByTestId('lang-ja').click()
-    await expect(page.getByTestId('welcome')).not.toContainText('Welcome')
+    await expect(page.getByTestId('welcome')).toContainText('Fluenti へようこそ')
   })
 })
 
@@ -270,7 +268,7 @@ test.describe('React Router — SSR', () => {
     ])
     await page.goto('/')
     await page.waitForLoadState('networkidle')
-    await expect(page.getByTestId('welcome')).not.toContainText('Welcome')
+    await expect(page.getByTestId('welcome')).toContainText('Fluenti へようこそ')
   })
 })
 
@@ -289,8 +287,8 @@ test.describe('React Router — Concurrent SSR', () => {
     ])
     await pageEn.waitForLoadState('networkidle')
     await pageJa.waitForLoadState('networkidle')
-    await expect(pageEn.getByTestId('welcome')).toContainText('Welcome')
-    await expect(pageJa.getByTestId('welcome')).not.toContainText('Welcome')
+    await expect(pageEn.getByTestId('welcome')).toContainText('Welcome to Fluenti')
+    await expect(pageJa.getByTestId('welcome')).toContainText('Fluenti へようこそ')
     await Promise.all([ctxEn.close(), ctxJa.close()])
   })
 })

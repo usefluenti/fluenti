@@ -17,16 +17,15 @@ test.describe('SolidStart — Home Page', () => {
     await expect(page.getByTestId('current-locale')).toContainText('Current locale: en')
   })
 
-  test('date formatting renders non-empty output', async ({ page }) => {
+  test('date formatting renders locale-aware date', async ({ page }) => {
     await page.goto('/')
     await page.waitForLoadState('networkidle')
-    await expect(page.getByTestId('date')).not.toBeEmpty()
+    await expect(page.getByTestId('date')).toContainText('/')
   })
 
   test('number formatting renders locale-aware number', async ({ page }) => {
     await page.goto('/')
     await page.waitForLoadState('networkidle')
-    await expect(page.getByTestId('number')).not.toBeEmpty()
     // English locale uses comma grouping
     await expect(page.getByTestId('number')).toContainText('1,234,567.89')
   })
@@ -167,20 +166,20 @@ test.describe('SolidStart — Rich Text', () => {
 })
 
 test.describe('SolidStart — Formatting Page', () => {
-  test('DateTime components render non-empty output', async ({ page }) => {
+  test('DateTime components render formatted dates', async ({ page }) => {
     await page.goto('/formatting')
     await page.waitForLoadState('networkidle')
-    await expect(page.getByTestId('date-default')).not.toBeEmpty()
-    await expect(page.getByTestId('date-short')).not.toBeEmpty()
-    await expect(page.getByTestId('date-long')).not.toBeEmpty()
+    await expect(page.getByTestId('date-default')).toContainText('/')
+    await expect(page.getByTestId('date-short')).toContainText('/')
+    await expect(page.getByTestId('date-long')).toContainText(',')
   })
 
-  test('NumberFormat components render non-empty output', async ({ page }) => {
+  test('NumberFormat components render formatted numbers', async ({ page }) => {
     await page.goto('/formatting')
     await page.waitForLoadState('networkidle')
-    await expect(page.getByTestId('number-default')).not.toBeEmpty()
-    await expect(page.getByTestId('number-percent')).not.toBeEmpty()
-    await expect(page.getByTestId('number-currency')).not.toBeEmpty()
+    await expect(page.getByTestId('number-default')).toContainText('1,234,567.89')
+    await expect(page.getByTestId('number-percent')).toContainText('75%')
+    await expect(page.getByTestId('number-currency')).toContainText('$99.99')
   })
 
   test('formatting page translates on locale switch', async ({ page }) => {
@@ -241,7 +240,7 @@ test.describe('SolidStart — Cookie Persistence', () => {
 
     const cookies = await context.cookies()
     const localeCookie = cookies.find((c) => c.name === 'locale')
-    expect(localeCookie).toBeDefined()
+    expect(localeCookie).not.toBeUndefined()
     expect(localeCookie!.value).toBe('ja')
   })
 
@@ -402,7 +401,7 @@ test.describe('SolidStart — Fallback Only', () => {
     await page.waitForLoadState('networkidle')
     await expect(page.getByTestId('fallback-only')).toContainText('This key only exists in English')
     await page.getByTestId('lang-ja').click()
-    await expect(page.getByTestId('fallback-only')).not.toBeEmpty()
+    await expect(page.getByTestId('fallback-only')).toContainText('This key only exists in English')
   })
 
   test('fallback-only shows English text when switched to Arabic', async ({ page }) => {

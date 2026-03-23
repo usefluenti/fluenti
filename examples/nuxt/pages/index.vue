@@ -13,18 +13,18 @@ const PAGE_SUBTITLE = msg`A modern i18n framework`
     <p v-t>A modern i18n library with SSR support</p>
 
     <div class="section">
-      <h2>t({ message }) — Catalog Translations</h2>
+      <h2 v-t>Compile-time Translations</h2>
       <div class="demo-item">
-        <div class="demo-label">t({ message: 'Hello, {name}!' }, { name: 'World' })</div>
-        <div>{{ t({ message: 'Hello, {name}!' }, { name: 'World' }) }}</div>
+        <div class="demo-label">t`Hello, ${'World'}!`</div>
+        <div>{{ t`Hello, ${'World'}!` }}</div>
       </div>
       <div class="demo-item">
-        <div class="demo-label">t({ message: 'Current locale: {locale}' }, { locale })</div>
-        <div>{{ t({ message: 'Current locale: {locale}' }, { locale }) }}</div>
+        <div class="demo-label">t`Current locale: ${locale}`</div>
+        <div>{{ t`Current locale: ${locale}` }}</div>
       </div>
       <div class="demo-item">
-        <div class="demo-label">t({ message: 'You have {count} items in your cart.' }, { count: 5 })</div>
-        <div>{{ t({ message: 'You have {count} items in your cart.' }, { count: 5 }) }}</div>
+        <div class="demo-label">t`You have ${5} items in your cart.`</div>
+        <div>{{ t`You have ${5} items in your cart.` }}</div>
       </div>
     </div>
 
@@ -66,7 +66,7 @@ const PAGE_SUBTITLE = msg`A modern i18n framework`
 
     <p data-testid="msg-subtitle">{{ t(PAGE_SUBTITLE) }}</p>
 
-    <p data-testid="fallback-only">{{ t('This key only exists in English') }}</p>
+    <p data-testid="fallback-only">{{ t`This key only exists in English` }}</p>
 
     <div class="section">
       <h2 v-t>Features</h2>

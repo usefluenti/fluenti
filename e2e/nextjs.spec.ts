@@ -277,14 +277,14 @@ test.describe('Next.js App Router e2e', () => {
 
   test('RSC richtext page renders DateTime', async ({ page }) => {
     await page.goto('/rsc-richtext')
-    await expect(page.getByTestId('rsc-date')).not.toBeEmpty()
+    const dateText = await page.getByTestId('rsc-date').textContent()
+    expect(dateText).toMatch(/\d{1,4}/)
   })
 
   test('RSC richtext page renders NumberFormat', async ({ page }) => {
     await page.goto('/rsc-richtext')
     const text = await page.getByTestId('rsc-number').textContent()
-    expect(text).toContain('1')
-    expect(text).toContain('234')
+    expect(text).toMatch(/1[,.]?234/)
   })
 
   test('RSC richtext page translates Trans when locale is Japanese', async ({ page }) => {
@@ -368,7 +368,7 @@ test.describe('Next.js — Preload locale', () => {
     await page.getByTestId('lang-ja').hover()
     await page.waitForTimeout(500)
     await page.getByTestId('lang-ja').click()
-    await expect(page.getByTestId('welcome')).not.toContainText('Welcome')
+    await expect(page.getByTestId('welcome')).toContainText('Fluenti へようこそ')
   })
 })
 
@@ -578,7 +578,7 @@ test.describe('Next.js — Rapid Locale Switching', () => {
       await page.getByTestId('lang-ja').click()
       await page.getByTestId('lang-en').click()
     }
-    await expect(page.getByTestId('welcome')).toContainText('Welcome')
+    await expect(page.getByTestId('welcome')).toContainText('Welcome to Fluenti')
   })
 })
 
