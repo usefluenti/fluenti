@@ -46,9 +46,6 @@ export default defineConfig({
 | `splitting` | `'dynamic' \| 'static' \| false` | `false` | Code-splitting strategy |
 | `defaultBuildLocale` | `string?` | — | Default locale embedded in the bundle |
 | `devWarnings` | `boolean?` | — | Enable development-mode warnings for missing translations and format errors |
-| `strictBuild` | `boolean?` | — | Fail the build if any translations are missing |
-| `externalCatalogs` | `Array<{ package: string; catalogDir: string }>?` | — | Load catalogs from external npm packages |
-| `strictThreshold` | `number?` | — | Minimum translation percentage required (used by `fluenti stats`) |
 | `extends` | `string?` | — | Path to parent config file for monorepo inheritance |
 | `defaultLocale` | `string?` | — | Default locale for routing/detection (defaults to `sourceLocale`) |
 | `parallelCompile` | `boolean?` | `false` | Enable parallel compilation using worker threads |
@@ -63,95 +60,6 @@ export default defineConfig({
 | `dateFormats` | `DateFormatOptions?` | — | Named date format presets (e.g. `{ short: { dateStyle: 'short' } }`) |
 | `numberFormats` | `NumberFormatOptions?` | — | Named number format presets. Values can be `Intl.NumberFormatOptions` or `(locale: string) => Intl.NumberFormatOptions` |
 
-:::caution[Flat fields are deprecated]
-The flat config fields above (`splitting`, `defaultBuildLocale`, `devWarnings`, `strictBuild`, `devAutoCompile`, `devAutoCompileDelay`, `parallelCompile`, `onBeforeCompile`, `onAfterCompile`, `fallbackChain`, `externalCatalogs`) are supported for backward compatibility but deprecated. Use the nested structure below instead.
-:::
-
-## Nested Config Structure
-
-The recommended configuration groups related options into `build`, `dev`, `runtime`, and `hooks`:
-
-```typescript
-// fluenti.config.ts
-import { defineConfig } from '@fluenti/cli'
-
-export default defineConfig({
-  sourceLocale: 'en',
-  locales: ['en', 'zh-CN', 'ja'],
-  catalogDir: './locales',
-  format: 'po',
-  include: ['./src/**/*.vue', './src/**/*.tsx', './src/**/*.jsx', './src/**/*.ts'],
-  exclude: ['./src/**/*.test.*'],
-  compileOutDir: './src/locales/compiled',
-
-  build: {
-    splitting: 'dynamic',
-    defaultBuildLocale: 'en',
-    catalogExtension: '.js',
-    parallel: true,
-    strict: true,
-    strictThreshold: 0.9,
-    autoCompile: true,
-    idGenerator: (message, context) => customHash(message, context),
-  },
-
-  dev: {
-    autoCompile: true,
-    autoCompileDelay: 500,
-    warnings: true,
-  },
-
-  runtime: {
-    fallbackChain: { 'zh-TW': ['zh-CN', 'en'], '*': ['en'] },
-    dateFormats: { short: { dateStyle: 'short' } },
-    numberFormats: { currency: { style: 'currency', currency: 'USD' } },
-    externalCatalogs: [{ package: '@my-org/shared-translations', catalogDir: './locales' }],
-  },
-
-  hooks: {
-    onBeforeCompile: () => console.log('Compiling...'),
-    onAfterCompile: () => console.log('Done!'),
-  },
-})
-```
-
-### `build` options
-
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `splitting` | `'dynamic' \| 'static' \| false` | `false` | Code-splitting strategy |
-| `defaultBuildLocale` | `string?` | — | Default locale embedded in the bundle |
-| `catalogExtension` | `string?` | `'.js'` | File extension for compiled catalog output files |
-| `idGenerator` | `(message, context?) => string` | — | Custom message ID hash function |
-| `autoCompile` | `boolean?` | `true` | Auto extract+compile before production build |
-| `parallel` | `boolean?` | `false` | Enable parallel compilation using worker threads |
-| `strict` | `boolean?` | — | Fail the build if any translations are missing |
-| `strictThreshold` | `number?` | — | Minimum translation percentage required |
-
-### `dev` options
-
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `autoCompile` | `boolean?` | `true` | Auto extract+compile in dev mode |
-| `autoCompileDelay` | `number?` | `500` | Debounce delay in ms for dev auto-compile |
-| `warnings` | `boolean?` | — | Enable development-mode warnings for missing translations |
-
-### `runtime` options
-
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `fallbackChain` | `Record<string, string[]>` | `{}` | Locale fallback chains |
-| `dateFormats` | `DateFormatOptions?` | — | Custom date format presets |
-| `numberFormats` | `NumberFormatOptions?` | — | Custom number format presets |
-| `externalCatalogs` | `Array<{ package, catalogDir }>?` | — | Load catalogs from external npm packages |
-
-### `hooks` options
-
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `onBeforeCompile` | `() => boolean \| void \| Promise<...>` | — | Called before auto-compile. Return `false` to skip |
-| `onAfterCompile` | `() => void \| Promise<void>` | — | Called after auto-compile completes successfully |
-
 ## Runtime Config
 
 These options are available when creating a runtime instance (e.g. via `createFluentiCore()`, `createFluenti()`, or `I18nProvider`), but not in `fluenti.config.ts`:
@@ -161,23 +69,18 @@ These options are available when creating a runtime instance (e.g. via `createFl
 | `locale` | `string` | Active locale |
 | `fallbackLocale` | `string?` | Fallback locale when a key is missing |
 | `messages` | `AllMessages` | Pre-loaded message catalogs |
-| `missing` | `(locale, id) => string \| undefined` | **Deprecated** — use `onMissingKey` |
-| `onMissingKey` | `(event: MissingKeyEvent) => string \| undefined \| void` | Called when a key is missing or a fallback locale is used. Return a string to override. |
+| `missing` | `(locale, id) => string \| undefined` | Called when a translation key is missing. Return a string to use as fallback. |
 | `transform` | `(result, id, locale) => string` | Post-translation transform applied to every resolved message |
 | `onLocaleChange` | `(newLocale, prevLocale) => void` | Callback fired when locale changes via `setLocale()` |
 | `formatters` | `Record<string, CustomFormatter>` | Custom ICU function formatters (e.g. `{items, list}`) |
 | `devWarnings` | `boolean?` | Show `[!]` prefix and `console.warn` for missing translations |
-| `diagnostics` | `DiagnosticsConfig?` | Runtime diagnostics for development (tree-shaken in production) |
 
 ### `normalizeConfig()`
 
-Use `normalizeConfig()` from `@fluenti/core` to convert any config (flat or nested) into the canonical nested form. This is useful for tools and plugins that need to read configuration programmatically:
+Use `normalizeConfig()` from `@fluenti/core` to validate and normalize a config object. This is useful for tools and plugins that need to read configuration programmatically:
 
 ```typescript
 import { normalizeConfig } from '@fluenti/core'
 
-const normalized = normalizeConfig(rawConfig)
-// normalized.build.splitting, normalized.dev.warnings, etc.
+const config = normalizeConfig(rawConfig)
 ```
-
-Flat fields are mapped to their nested equivalents (e.g., `splitting` to `build.splitting`, `devWarnings` to `dev.warnings`). Nested fields take precedence when both are specified.

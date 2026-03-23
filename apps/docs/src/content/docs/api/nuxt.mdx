@@ -37,7 +37,7 @@ export default defineNuxtConfig({
 | `queryParamKey` | `string?` | `'locale'` | Query parameter name for locale detection (e.g. set to `'lang'` for `?lang=ja`) |
 | `injectGlobalProperties` | `boolean?` | `true` | Inject `$localePath` onto `app.config.globalProperties`. Set to `false` if another plugin already provides it |
 | `extendRoutes` | `boolean?` | `true` | Whether to extend routes with locale-prefixed variants. Set to `false` to handle locale routing yourself |
-| `routeMode` | `'all' \| 'opt-in'?` | `'all'` | Route generation mode. `'all'`: all pages get locale variants unless opted out. `'opt-in'`: only pages with explicit `definePageMeta({ i18n: { locales: [...] } })` get variants |
+| `routeMode` | `'all' \| 'opt-in'?` | `'all'` | Route generation mode. `'all'`: all pages get locale variants unless opted out. `'opt-in'`: only pages with explicit `definePageMeta({ i18nRoute: { locales: [...] } })` get variants |
 | `routeNameTemplate` | `(name: string, locale: string) => string` | `` `${name}___${locale}` `` | Custom template for locale-specific route names |
 | `routeOverrides` | `Record<string, Record<string, string>>?` | — | Custom route paths per locale (e.g. `/about` → `/について` for `ja`) |
 | `registerNuxtLinkLocale` | `boolean?` | `true` | Whether to register the `NuxtLinkLocale` component globally |
@@ -116,6 +116,44 @@ const switchLocalePath = useSwitchLocalePath()
 ```typescript
 function useSwitchLocalePath(): (locale: string) => string
 ```
+
+### `useLocaleRoute()`
+
+Returns a function that resolves a locale-prefixed route object. Unlike `useLocalePath()` which returns a path string, this returns a full resolved `RouteLocationResolved` that can be passed to `router.push()`.
+
+```vue
+<script setup>
+const localeRoute = useLocaleRoute()
+const route = localeRoute('/about')       // resolved route for '/ja/about'
+const route2 = localeRoute('/about', 'en') // resolved route for '/about'
+</script>
+```
+
+**Signature:**
+
+```typescript
+function useLocaleRoute(): (to: RouteLocationRaw, locale?: string) => RouteLocationResolved
+```
+
+### `useI18nScoped(namespace)`
+
+Returns a namespace-scoped i18n context. The `t()` function automatically prepends the namespace to message keys, reducing boilerplate when a component only uses messages from one section.
+
+```vue
+<script setup>
+const { t } = useI18nScoped('Navbar')
+t('home')     // looks up 'Navbar.home'
+t('about')    // looks up 'Navbar.about'
+</script>
+```
+
+**Signature:**
+
+```typescript
+function useI18nScoped(namespace: string): FluentiContext & { namespace: string }
+```
+
+The returned context has the same shape as `useI18n()`, but `t()`, `te()`, and `tm()` automatically prefix keys with `namespace.`. Tagged template calls pass through without namespacing.
 
 ### `useLocaleHead()`
 

@@ -21,7 +21,7 @@ import { Steps, Tabs, TabItem, Aside } from '@astrojs/starlight/components'
    export default defineNuxtConfig({
      modules: ['@fluenti/nuxt'],
      fluenti: {
-       locales: ['en', 'ja', 'zh'],
+       locales: ['en', 'ja', 'ar'],
        defaultLocale: 'en',
        strategy: 'prefix_except_default',
      },
@@ -36,7 +36,7 @@ import { Steps, Tabs, TabItem, Aside } from '@astrojs/starlight/components'
 
    export default defineConfig({
      sourceLocale: 'en',
-     locales: ['en', 'ja', 'zh'],
+     locales: ['en', 'ja', 'ar'],
      catalogDir: './locales',
      format: 'po',
      include: ['./pages/**/*.vue', './components/**/*.vue', './layouts/**/*.vue'],
@@ -74,7 +74,7 @@ import { Steps, Tabs, TabItem, Aside } from '@astrojs/starlight/components'
      <div>
        <button @click="setLocale('en')">English</button>
        <button @click="setLocale('ja')">日本語</button>
-       <button @click="setLocale('zh')">中文</button>
+       <button @click="setLocale('ar')">العربية</button>
      </div>
    </template>
    ```
@@ -82,7 +82,7 @@ import { Steps, Tabs, TabItem, Aside } from '@astrojs/starlight/components'
 5. **Extract, translate, and compile**
 
    ```bash
-   npx fluenti extract    # → locales/ja.po, locales/zh.po
+   npx fluenti extract    # → locales/ja.po, locales/ar.po
    # ... translate the .po files ...
    npx fluenti compile    # → locales/compiled/
    ```
@@ -113,7 +113,7 @@ import { Steps, Tabs, TabItem, Aside } from '@astrojs/starlight/components'
      <div>
        <NuxtLink :to="switchLocalePath('en')">EN</NuxtLink>
        <NuxtLink :to="switchLocalePath('ja')">JA</NuxtLink>
-       <NuxtLink :to="switchLocalePath('zh')">ZH</NuxtLink>
+       <NuxtLink :to="switchLocalePath('ar')">AR</NuxtLink>
      </div>
 
      <slot />
@@ -146,11 +146,11 @@ The `strategy` option controls how locale prefixes appear in URLs:
 <head>
   <link rel="alternate" hreflang="en" href="https://example.com/about" />
   <link rel="alternate" hreflang="ja" href="https://example.com/ja/about" />
-  <link rel="alternate" hreflang="zh" href="https://example.com/zh/about" />
+  <link rel="alternate" hreflang="ar" href="https://example.com/ar/about" />
   <link rel="alternate" hreflang="x-default" href="https://example.com/about" />
   <meta property="og:locale" content="en" />
   <meta property="og:locale:alternate" content="ja" />
-  <meta property="og:locale:alternate" content="zh" />
+  <meta property="og:locale:alternate" content="ar" />
 </head>
 ```
 

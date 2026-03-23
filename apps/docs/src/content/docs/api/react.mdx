@@ -76,6 +76,8 @@ function MyComponent() {
 | `isLoading` | `boolean` | Whether a locale is being loaded |
 | `loadedLocales` | `string[]` | Array of loaded locale codes |
 | `preloadLocale` | `(locale) => Promise<void>` | Preload a locale without switching |
+| `te` | `(key: string, locale?: string) => boolean` | Check if a translation key exists for the given or current locale |
+| `tm` | `(key: string, locale?: string) => CompiledMessage \| undefined` | Get the raw compiled message for a key without interpolation |
 
 ## `t` (compile-time import)
 

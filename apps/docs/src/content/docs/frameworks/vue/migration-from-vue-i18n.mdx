@@ -55,8 +55,14 @@ import { useI18n } from 'vue-i18n'
 const { t } = useI18n()
 const msg = t('greeting')
 
-// After — no imports needed
+// After — Option A: useI18n() composable (same API)
+import { useI18n } from '@fluenti/vue'
+const { t } = useI18n()
 const msg = t('greeting')
+
+// After — Option B: compile-time tagged template
+import { t } from '@fluenti/vue'
+const msg = t`greeting`
 </script>
 ```
 

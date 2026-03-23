@@ -62,7 +62,7 @@ export function createLocaleLoader(options: LocaleLoaderOptions): LocaleLoaderSt
   let currentLocale = options.locale
   let loading = false
   let requestId = 0
-  const messages: Record<string, Messages> = { ...(options.messages ?? {}) }
+  const messages: Record<string, Messages> = { ...options.messages }
   const loadedLocalesSet = new Set<string>(Object.keys(messages))
 
   function notifyLocale(): void { options.onLocaleChange?.(currentLocale) }

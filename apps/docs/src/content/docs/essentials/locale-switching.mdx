@@ -34,11 +34,11 @@ const { locale, setLocale, getLocales, isLoading, preloadLocale } = useI18n()
 
 ```tsx
 function LocaleSwitcher() {
-  const { t, d, n, locale, setLocale, isLoading, loadedLocales, preloadLocale } = useI18n()
+  const { locale, setLocale, getLocales, isLoading, preloadLocale } = useI18n()
 
   return (
     <div>
-      {loadedLocales.map(l => (
+      {getLocales().map(l => (
         <button
           key={l}
           className={locale === l ? 'active' : ''}

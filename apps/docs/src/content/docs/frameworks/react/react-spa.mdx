@@ -68,8 +68,20 @@ function Greeting() {
 import { Trans, Plural } from '@fluenti/react'
 
 <Trans>Click <a href="/next">here</a> to continue.</Trans>
+<Trans tag="p">Click <a href="/next">here</a> to continue.</Trans>
 <Plural value={count} zero="No items" one="# item" other="# items" />
 ```
+
+### `<Trans>` props
+
+| Prop | Type | Description |
+|------|------|-------------|
+| `children` | `ReactNode` | Source text with embedded components |
+| `id` | `string` | Override the auto-generated hash ID |
+| `context` | `string` | Message context for identity and translator disambiguation |
+| `comment` | `string` | Context comment for translators |
+| `tag` | `keyof JSX.IntrinsicElements` | Wrapper element tag (e.g. `'span'`, `'p'`). Defaults to Fragment (no wrapper). |
+| `render` | `(translation: ReactNode) => ReactNode` | Custom render wrapper |
 
 ## Select Component
 

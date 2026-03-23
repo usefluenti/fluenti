@@ -220,8 +220,8 @@ const id = resolveDescriptorId('Hello {name}', 'greeting')
 ## SSR Utilities
 
 - `detectLocale(options)` — Detect locale from request context (cookie, query, path, Accept-Language header)
-- `getSSRLocaleScript(locale)` — Generate a `<script>` tag that sets `window.__FLUENTI_LOCALE__` for hydration
-- `getHydratedLocale(fallback?)` — Read the locale set by the SSR script on the client side
+- `getSSRLocaleScript(locale, options?)` — Generate a `<script>` tag that sets `window.__FLUENTI_LOCALE__` for hydration. Pass `{ key: '__MY_APP_LOCALE__' }` to customize the window variable name (useful for multi-instance / micro-frontends)
+- `getHydratedLocale(fallback?, options?)` — Read the locale set by the SSR script on the client side. Pass `{ key: '__MY_APP_LOCALE__' }` to match a custom key used in `getSSRLocaleScript`
 - `getDirection(locale)` — Returns `'ltr'` or `'rtl'` for the given locale
 
 ## Locale Utilities
@@ -353,6 +353,16 @@ import {
   DEFAULT_NUMBER_FORMATS,  // Built-in number format styles
   LOCALE_CURRENCY_MAP,     // Locale → default currency code mapping
 } from '@fluenti/core'
+```
+
+## `clearAllCaches()`
+
+Clear all internal caches (interpolation, compilation, plural rules, date/number/relative-time formatters). Useful for long-running servers to prevent unbounded memory growth.
+
+```typescript
+import { clearAllCaches } from '@fluenti/core'
+
+clearAllCaches()
 ```
 
 ## `Catalog`

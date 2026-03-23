@@ -121,7 +121,46 @@ A small task manager app with:
 
    This generates optimized JavaScript modules in `src/locales/compiled/`.
 
-9. **Run**
+9. **Update App.tsx to use compiled messages**
+
+   Now import the compiled catalogs and pass them to the provider:
+
+   ```tsx
+   import { I18nProvider, useI18n, t } from '@fluenti/react'
+   import en from './locales/compiled/en'
+   import ja from './locales/compiled/ja'
+
+   function TaskApp() {
+     const { setLocale, locale } = useI18n()
+     const name = 'Alice'
+     const taskCount = 3
+
+     return (
+       <div>
+         <h1>{t`Hello, ${name}!`}</h1>
+         <p>{t`You have ${taskCount} tasks today`}</p>
+
+         <button onClick={() => setLocale(locale === 'en' ? 'ja' : 'en')}>
+           {t`Switch language`}
+         </button>
+       </div>
+     )
+   }
+
+   export default function App() {
+     return (
+       <I18nProvider
+         locale="en"
+         fallbackLocale="en"
+         messages={{ en, ja }}
+       >
+         <TaskApp />
+       </I18nProvider>
+     )
+   }
+   ```
+
+10. **Run**
 
    ```bash
    npm run dev

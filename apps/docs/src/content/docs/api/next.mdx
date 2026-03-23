@@ -28,13 +28,14 @@ All options are optional. Defaults are read from `fluenti.config.ts` in the proj
 | `resolveLocale` | `string?` | reads `locale` cookie | Path to a module that default-exports `() => string \| Promise<string>`. Used in Server Actions and other contexts where the layout doesn't run |
 | `serverModule` | `string?` | auto-generated | Path to a custom server module. When provided, skips auto-generation |
 | `serverModuleOutDir` | `string?` | `node_modules/.fluenti` | Directory where generated server module files are written |
-| `dateFormats` | `DateFormatOptions?` | — | Custom date format presets (passed to `createServerI18n`) |
-| `numberFormats` | `NumberFormatOptions?` | — | Custom number format presets (passed to `createServerI18n`) |
-| `fallbackChain` | `Record<string, string[]>?` | — | Locale fallback chains (e.g. `{ 'zh-TW': ['zh-CN', 'en'] }`) |
 | `devAutoCompile` | `boolean?` | `true` | Auto extract+compile when source files change in dev mode |
 | `devAutoCompileDelay` | `number?` | `1000` | Debounce delay in ms for dev auto-compile. Increase if recompilation is too frequent |
 | `buildAutoCompile` | `boolean?` | `true` | Auto extract+compile before production build |
 | `loaderEnforce` | `'pre' \| 'post' \| undefined` | `'pre'` | Webpack loader execution order. Set to `undefined` to use webpack's default ordering, or `'post'` to run after other loaders |
+
+:::note
+Options like `dateFormats`, `numberFormats`, and `fallbackChain` belong in `fluenti.config.ts`, not in `withFluenti()`. The `WithFluentConfig` interface only accepts Next.js-specific options; all i18n config is read from the config file.
+:::
 
 ### What it does
 
@@ -107,7 +108,7 @@ This module is primarily the Next runtime/integration surface. For ordinary tran
 | `Select` | async server component | Locale-aware categorical selection |
 | `DateTime` | async server component | Date formatting |
 | `NumberFormat` | async server component | Number formatting |
-| `withLocale` | `(locale: string, fn: () => T) => Promise<T>` | Temporarily switch request-scoped locale for a subtree render |
+| `withLocale` | `(locale: string, fn: () => T, serverModule: ServerModule) => Promise<T>` | Temporarily switch request-scoped locale for a subtree render |
 
 ### `I18nProvider` (server)
 
@@ -155,17 +156,18 @@ Use this only if you are handling server-side i18n setup yourself (e.g. custom `
 | `@fluenti/next` | Async server component | Automatic | Automatic (static imports) |
 | `@fluenti/next/provider` | Client component | Manual | Manual (you pass `messages` prop) |
 
-## `withLocale(locale, fn)`
+## `withLocale(locale, fn, serverModule)`
 
-Temporarily switch the request-scoped locale for a subtree render. Useful for rendering a component in a different locale within the same request:
+Temporarily switch the request-scoped locale for a subtree render. Useful for rendering a component in a different locale within the same request. The third parameter `serverModule` is required and must be the generated server module (which provides `setLocale` and `getI18n`):
 
 ```tsx
 import { withLocale } from '@fluenti/next/server'
+import * as serverI18n from '@fluenti/next'
 
 export default async function Page() {
   const jaContent = await withLocale('ja', async () => {
     return <Trans>Hello</Trans>  // renders in Japanese
-  })
+  }, serverI18n)
   return <div>{jaContent}</div>
 }
 ```
