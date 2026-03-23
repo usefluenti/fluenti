@@ -19,6 +19,9 @@ const demoDate = new Date(Date.UTC(2025, 0, 15, 12))
 
     <p data-testid="welcome">{{ t('Welcome to Fluenti') }}</p>
 
+    <p data-testid="runtime-interpolation">{{ t('Hello, {name}!', { name: 'World' }) }}</p>
+    <p data-testid="runtime-locale">{{ t('Current locale: {locale}', { locale }) }}</p>
+
     <p data-testid="trans-basic">
       <Trans id="docs-link">Read the <a href="/docs">documentation</a> for more info.</Trans>
     </p>

@@ -49,7 +49,7 @@ const ROLES = {
 }
 const pluralIcu = '{n, plural, one {# item} other {# items}}'
 const cartMessage = computed(() =>
-  t('You have {count} items in your cart.', { count: itemCount.value }),
+  t`You have ${itemCount.value} items in your cart.`,
 )
 
 // Plurals
@@ -113,18 +113,18 @@ const nested1 = computed(() => format(nestedPattern, { count: 1, gender: gender.
       <p v-t>Fluenti provides reactive translations, rich text support, and plural handling out of the box.</p>
 
       <div class="section">
-        <h2>t() — Catalog Translations</h2>
+        <h2>t`` — Compile-time Translations</h2>
         <div class="demo-item">
-          <div class="demo-label">t('Hello, {name}!', { name: 'World' })</div>
-          <div>{{ t('Hello, {name}!', { name: 'World' }) }}</div>
+          <div class="demo-label">t`Hello, ${'World'}!`</div>
+          <div>{{ t`Hello, ${'World'}!` }}</div>
         </div>
         <div class="demo-item">
-          <div class="demo-label">t('Current locale: {locale}', { locale })</div>
-          <div>{{ t('Current locale: {locale}', { locale: locale }) }}</div>
+          <div class="demo-label">t`Current locale: ${locale}`</div>
+          <div>{{ t`Current locale: ${locale}` }}</div>
         </div>
         <div class="demo-item">
-          <div class="demo-label">t('You have {count} items in your cart.', { count: 5 })</div>
-          <div>{{ t('You have {count} items in your cart.', { count: 5 }) }}</div>
+          <div class="demo-label">t`You have ${5} items in your cart.`</div>
+          <div>{{ t`You have ${5} items in your cart.` }}</div>
         </div>
       </div>
 
@@ -274,21 +274,21 @@ const nested1 = computed(() => format(nestedPattern, { count: 1, gender: gender.
       <!-- Script Features — t() / format() / msg``   -->
       <!-- ═══════════════════════════════════════════ -->
       <div class="section">
-        <h2>Script Features — t() / format() / msg``</h2>
+        <h2>Script Features — t`` / format() / msg``</h2>
 
         <div class="demo-item">
-          <div class="demo-label">t('Hello, {name}!', { name })</div>
-          <div>{{ t('Hello, {name}!', { name: userName }) }}</div>
+          <div class="demo-label">t`Hello, ${userName}!`</div>
+          <div>{{ t`Hello, ${userName}!` }}</div>
         </div>
 
         <div class="demo-item">
-          <div class="demo-label">t('You have {count} items.', { count })</div>
-          <div>{{ t('You have {count} items.', { count: itemCount }) }}</div>
+          <div class="demo-label">t`You have ${itemCount} items.`</div>
+          <div>{{ t`You have ${itemCount} items.` }}</div>
         </div>
 
         <div class="demo-item">
-          <div class="demo-label">t('Current locale: {locale}', { locale })</div>
-          <div>{{ t('Current locale: {locale}', { locale: locale }) }}</div>
+          <div class="demo-label">t`Current locale: ${locale}`</div>
+          <div>{{ t`Current locale: ${locale}` }}</div>
         </div>
 
         <div class="demo-item">
@@ -310,7 +310,7 @@ const nested1 = computed(() => format(nestedPattern, { count: 1, gender: gender.
           <label>
             Name: <input v-model="userName" class="demo-input" />
           </label>
-          <div style="margin-top: 4px">{{ t('Hello, {name}!', { name: userName }) }}</div>
+          <div style="margin-top: 4px">{{ t`Hello, ${userName}!` }}</div>
         </div>
 
         <div class="demo-item">
@@ -463,8 +463,8 @@ const nested1 = computed(() => format(nestedPattern, { count: 1, gender: gender.
           <div class="demo-label">&lt;Select :value :options&gt; (type-safe)</div>
           <Select
             :value="gender"
-            :options="{ male: t('He liked this'), female: t('She liked this') }"
-            :other="t('They liked this')"
+            :options="{ male: t`He liked this`, female: t`She liked this` }"
+            :other="t`They liked this`"
           />
         </div>
       </div>
@@ -548,7 +548,7 @@ const nested1 = computed(() => format(nestedPattern, { count: 1, gender: gender.
       </div>
     </main>
 
-    <p data-testid="fallback-only">{{ t('This key only exists in English') }}</p>
+    <p data-testid="fallback-only">{{ t`This key only exists in English` }}</p>
 
     <footer>
       <p v-t>Built with Fluenti and Vue 3</p>

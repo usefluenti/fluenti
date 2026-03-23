@@ -14,6 +14,8 @@ test.describe('Vue No-Plugin (runtime components)', () => {
   test('renders runtime-capable components in English', async ({ page }) => {
     await page.goto('/')
     await expect(page.getByTestId('welcome')).toContainText('Welcome to Fluenti')
+    await expect(page.getByTestId('runtime-interpolation')).toContainText('Hello, World!')
+    await expect(page.getByTestId('runtime-locale')).toContainText('Current locale: en')
     await expect(page.getByTestId('trans-basic').locator('a[href="/docs"]')).toContainText('documentation')
     await expect(page.getByTestId('plural-basic')).toContainText('No items')
     await expect(page.getByTestId('select-basic')).toContainText('Administrator')
@@ -26,6 +28,8 @@ test.describe('Vue No-Plugin (runtime components)', () => {
     await page.getByTestId('lang-ja').click()
 
     await expect(page.getByTestId('welcome')).toContainText('Fluenti へようこそ')
+    await expect(page.getByTestId('runtime-interpolation')).toContainText('こんにちは、Worldさん！')
+    await expect(page.getByTestId('runtime-locale')).toContainText('現在のロケール：ja')
     await expect(page.getByTestId('trans-basic').locator('a[href="/docs"]')).toContainText('ドキュメント')
     await expect(page.getByTestId('plural-basic')).toContainText('アイテムはありません')
     await expect(page.getByTestId('select-basic')).toContainText('管理者')
