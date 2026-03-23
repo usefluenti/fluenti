@@ -414,6 +414,30 @@ msgstr "Fichier"
     })
   })
 
+  describe('custom idGenerator roundtrip', () => {
+    it('roundtrips correctly with custom idGenerator IDs', () => {
+      // Create catalog data with custom-format IDs
+      const catalog: CatalogData = {
+        'custom_Hello': { message: 'Hello', translation: 'Bonjour' },
+        'custom_Goodbye': { message: 'Goodbye', translation: 'Au revoir' },
+      }
+
+      // Write to PO format
+      const poContent = writePoCatalog(catalog)
+
+      // Read back
+      const parsed = readPoCatalog(poContent)
+
+      // Verify IDs and content survive
+      expect(parsed['custom_Hello']).toBeDefined()
+      expect(parsed['custom_Hello']!.message).toBe('Hello')
+      expect(parsed['custom_Hello']!.translation).toBe('Bonjour')
+      expect(parsed['custom_Goodbye']).toBeDefined()
+      expect(parsed['custom_Goodbye']!.message).toBe('Goodbye')
+      expect(parsed['custom_Goodbye']!.translation).toBe('Au revoir')
+    })
+  })
+
   describe('PO roundtrip edge cases', () => {
     it('preserves all data through write and read cycle', () => {
       const original: CatalogData = {

@@ -203,7 +203,13 @@ export interface FluentiConfig {
   defaultBuildLocale?: Locale
   /** File extension for compiled catalog files (default: '.js') */
   catalogExtension?: '.js' | '.ts'
-  /** Custom message ID generator */
+  /**
+   * Custom message ID generator. Replaces the default hash-based ID generation.
+   *
+   * **Critical**: The same generator must be used for both extraction (`fluenti extract`)
+   * and compilation (`fluenti compile`). Using different generators will cause ID mismatches
+   * and translations will be lost.
+   */
   idGenerator?: (message: string, context?: string) => string
 
   // Dev options
