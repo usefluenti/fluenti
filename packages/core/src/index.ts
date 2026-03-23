@@ -297,7 +297,7 @@ export function createFluentiCore(config: FluentiCoreConfigFull): FluentiCoreIns
       return interp(message, values, currentLocale) as LocalizedString
     },
 
-    diagnostics,
+    ...(diagnostics ? { diagnostics } : {}),
   }
 
   return instance
