@@ -590,6 +590,22 @@ test.describe('Next.js — XSS Prevention', () => {
   })
 })
 
+test.describe('Next.js — isLoading indicator', () => {
+  test('isLoading indicator is not visible on initial page load', async ({ page }) => {
+    await page.goto('/')
+    await expect(page.getByTestId('home-page')).toBeVisible()
+    await expect(page.getByTestId('loading')).not.toBeVisible()
+  })
+
+  test('isLoading indicator disappears after locale switch', async ({ page }) => {
+    await page.goto('/')
+    await page.getByTestId('lang-ja').click()
+    // After locale switch completes, loading should not be visible
+    await expect(page.getByTestId('loading')).not.toBeVisible()
+    await expect(page.getByTestId('welcome')).toContainText('Fluenti へようこそ')
+  })
+})
+
 test.describe('Next.js — Browser Back/Forward', () => {
   test('browser back preserves locale after navigation', async ({ page }) => {
     await page.goto('/')

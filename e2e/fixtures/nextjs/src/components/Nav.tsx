@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useI18n } from '@fluenti/react'
 
 export function Nav() {
-  const { t, locale, setLocale, preloadLocale } = useI18n()
+  const { t, locale, setLocale, preloadLocale, isLoading } = useI18n()
   const router = useRouter()
 
   const switchLocale = async (loc: string) => {
@@ -28,6 +28,8 @@ export function Nav() {
         <Link href="/rsc-richtext" data-testid="nav-rsc-richtext">{t`RSC Rich Text`}</Link>
         <Link href="/fallback" data-testid="nav-fallback">{t`Fallback`}</Link>
       </nav>
+
+      {isLoading && <span data-testid="loading">Loading...</span>}
 
       <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
         <button
