@@ -4,13 +4,14 @@
   "type": "module",
   "scripts": {
     "compile": "fluenti compile",
-    "build": "vite build",
-    "preview": "vite preview"
+    "build": "vite build --outDir dist/client && vite build --ssr src/entry.server.tsx --outDir dist/server",
+    "preview": "node server.js"
   },
   "dependencies": {
     "@fluenti/cli": "workspace:*",
     "@fluenti/core": "workspace:*",
     "@fluenti/react": "workspace:*",
+    "express": "^5",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-router-dom": "^7"

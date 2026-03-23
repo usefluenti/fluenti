@@ -17,7 +17,7 @@ const serverMap: Record<string, { command: string; port: number; timeout?: numbe
   'nuxt-custom-detect': { command: 'cd e2e/fixtures/nuxt-custom-detect && pnpm build && pnpm preview --port 5185', port: 5185, timeout: 120_000 },
   'nuxt-prefix':     { command: 'cd e2e/fixtures/nuxt-prefix && pnpm build && pnpm preview --port 5186', port: 5186, timeout: 120_000 },
   'splitting-react': { command: 'cd e2e/fixtures/react-splitting && pnpm build && pnpm preview --port 5187', port: 5187, timeout: 120_000 },
-  'react-router':    { command: 'cd e2e/fixtures/react-router && pnpm build && pnpm preview --port 5188', port: 5188, timeout: 120_000 },
+  'react-router':    { command: 'cd e2e/fixtures/react-router && pnpm build && PORT=5188 pnpm preview', port: 5188, timeout: 120_000 },
   remix:             { command: 'cd e2e/fixtures/remix && pnpm build && pnpm preview --port 5189', port: 5189, timeout: 120_000 },
   nextjs:            { command: 'cd e2e/fixtures/nextjs && pnpm build && pnpm start -p 5190', port: 5190, timeout: 120_000 },
   'react-no-plugin': { command: 'cd e2e/fixtures/react-no-plugin && pnpm build && pnpm preview --port 5192', port: 5192, timeout: 120_000 },

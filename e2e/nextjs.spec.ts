@@ -362,6 +362,16 @@ test.describe('Next.js App Router e2e', () => {
   })
 })
 
+test.describe('Next.js — Preload locale', () => {
+  test('preloadLocale fires on hover and switch works', async ({ page }) => {
+    await page.goto('/')
+    await page.getByTestId('lang-ja').hover()
+    await page.waitForTimeout(500)
+    await page.getByTestId('lang-ja').click()
+    await expect(page.getByTestId('welcome')).not.toContainText('Welcome')
+  })
+})
+
 test.describe('Next.js — Select component', () => {
   test('select component renders default (other) form', async ({ page }) => {
     await page.goto('/plurals')

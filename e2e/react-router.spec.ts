@@ -199,6 +199,24 @@ test.describe('React Router — Fallback', () => {
   })
 })
 
+test.describe('React Router — isLoading indicator', () => {
+  test('isLoading indicator disappears after locale switch', async ({ page }) => {
+    await page.goto('/')
+    await page.getByTestId('lang-ja').click()
+    await expect(page.getByTestId('loading')).not.toBeVisible()
+  })
+})
+
+test.describe('React Router — Preload locale', () => {
+  test('preloadLocale fires on hover', async ({ page }) => {
+    await page.goto('/')
+    await page.getByTestId('lang-ja').hover()
+    await page.waitForTimeout(500)
+    await page.getByTestId('lang-ja').click()
+    await expect(page.getByTestId('welcome')).not.toContainText('Welcome')
+  })
+})
+
 test.describe('React Router — Rapid Locale Switching', () => {
   test('rapid locale switching settles on final locale', async ({ page }) => {
     await page.goto('/')
@@ -227,5 +245,52 @@ test.describe('React Router — Browser Back/Forward', () => {
     await expect(page.getByTestId('about-page')).toBeVisible()
     await page.goBack()
     await expect(page.getByTestId('welcome')).toContainText('Fluenti へようこそ')
+  })
+})
+
+test.describe('React Router — SSR', () => {
+  test('server renders content before hydration', async ({ page }) => {
+    await page.goto('/')
+    // Content should be visible immediately (SSR)
+    await expect(page.getByTestId('welcome')).toBeVisible()
+  })
+
+  test('no hydration mismatch errors', async ({ page }) => {
+    const logs: string[] = []
+    page.on('console', (msg) => logs.push(msg.text()))
+    await page.goto('/')
+    await page.waitForLoadState('networkidle')
+    const errors = logs.filter(l => l.includes('hydration') || l.includes('mismatch'))
+    expect(errors).toHaveLength(0)
+  })
+
+  test('cookie-based locale renders correct SSR content', async ({ page, context }) => {
+    await context.addCookies([
+      { name: 'locale', value: 'ja', domain: 'localhost', path: '/' },
+    ])
+    await page.goto('/')
+    await page.waitForLoadState('networkidle')
+    await expect(page.getByTestId('welcome')).not.toContainText('Welcome')
+  })
+})
+
+test.describe('React Router — Concurrent SSR', () => {
+  test('concurrent requests with different locales are isolated', async ({ browser }) => {
+    const ctxEn = await browser.newContext()
+    const ctxJa = await browser.newContext()
+    await ctxJa.addCookies([
+      { name: 'locale', value: 'ja', domain: 'localhost', path: '/' },
+    ])
+    const pageEn = await ctxEn.newPage()
+    const pageJa = await ctxJa.newPage()
+    await Promise.all([
+      pageEn.goto('http://localhost:5188/'),
+      pageJa.goto('http://localhost:5188/'),
+    ])
+    await pageEn.waitForLoadState('networkidle')
+    await pageJa.waitForLoadState('networkidle')
+    await expect(pageEn.getByTestId('welcome')).toContainText('Welcome')
+    await expect(pageJa.getByTestId('welcome')).not.toContainText('Welcome')
+    await Promise.all([ctxEn.close(), ctxJa.close()])
   })
 })

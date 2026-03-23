@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useI18n } from '@fluenti/react'
 
 export function Nav() {
-  const { t, locale, setLocale } = useI18n()
+  const { t, locale, setLocale, preloadLocale } = useI18n()
   const router = useRouter()
 
   const switchLocale = async (loc: string) => {
@@ -38,11 +38,13 @@ export function Nav() {
         <button
           data-testid="lang-ja"
           style={{ fontWeight: locale === 'ja' ? 'bold' : 'normal' }}
+          onMouseEnter={() => preloadLocale('ja')}
           onClick={() => switchLocale('ja')}
         >日本語</button>
         <button
           data-testid="lang-ar"
           style={{ fontWeight: locale === 'ar' ? 'bold' : 'normal' }}
+          onMouseEnter={() => preloadLocale('ar')}
           onClick={() => switchLocale('ar')}
         >العربية</button>
       </div>

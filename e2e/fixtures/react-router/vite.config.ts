@@ -7,4 +7,9 @@ export default defineConfig({
     fluentiReact(),
     react(),
   ],
+  build: {
+    rollupOptions: {
+      input: './index.html',
+    },
+  },
 })

@@ -434,6 +434,17 @@ test.describe('Nuxt — Preload on hover', () => {
   })
 })
 
+test.describe('Nuxt — Select component', () => {
+  test('select renders correct gender form', async ({ page }) => {
+    await page.goto('/plurals')
+    await page.waitForLoadState('networkidle')
+    await page.getByTestId('gender-male').click()
+    await expect(page.getByTestId('select-result')).toContainText('He')
+    await page.getByTestId('gender-female').click()
+    await expect(page.getByTestId('select-result')).toContainText('She')
+  })
+})
+
 test.describe('Nuxt — Fallback & Loading', () => {
   test('missing translation falls back gracefully', async ({ page }) => {
     await page.goto('/')

@@ -2,7 +2,7 @@ import { Outlet, Link } from 'react-router-dom'
 import { t, useI18n } from '@fluenti/react'
 
 export function Layout({ onLocaleChange }: { onLocaleChange: (l: string) => void }) {
-  const { locale, setLocale } = useI18n()
+  const { locale, setLocale, isLoading, preloadLocale } = useI18n()
 
   const handleSwitch = async (loc: string) => {
     await setLocale(loc)
@@ -27,14 +27,18 @@ export function Layout({ onLocaleChange }: { onLocaleChange: (l: string) => void
         <button
           data-testid="lang-ja"
           className={locale === 'ja' ? 'active' : ''}
+          onMouseEnter={() => preloadLocale('ja')}
           onClick={() => handleSwitch('ja')}
         >日本語</button>
         <button
           data-testid="lang-ar"
           className={locale === 'ar' ? 'active' : ''}
+          onMouseEnter={() => preloadLocale('ar')}
           onClick={() => handleSwitch('ar')}
         >العربية</button>
       </div>
+
+      {isLoading && <span data-testid="loading">Loading...</span>}
 
       <Outlet />
     </div>

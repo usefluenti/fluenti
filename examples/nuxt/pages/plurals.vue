@@ -54,6 +54,7 @@ const gender = ref('other')
         <button
           v-for="g in ['male', 'female', 'other']"
           :key="g"
+          :data-testid="`gender-${g}`"
           :class="{ active: gender === g }"
           @click="gender = g"
         >
@@ -62,11 +63,13 @@ const gender = ref('other')
       </div>
       <div class="demo-item">
         <div class="demo-label">&lt;Select :value="gender" ...&gt;</div>
-        <Select
-          :value="gender"
-          :options="{ male: 'He liked this', female: 'She liked this' }"
-          other="They liked this"
-        />
+        <div data-testid="select-result">
+          <Select
+            :value="gender"
+            :options="{ male: 'He liked this', female: 'She liked this' }"
+            other="They liked this"
+          />
+        </div>
       </div>
     </div>
   </div>
