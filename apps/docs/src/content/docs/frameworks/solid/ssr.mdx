@@ -3,57 +3,154 @@ title: SolidJS Manual SSR
 description: Server-side rendering with SolidJS and Fluenti without SolidStart
 ---
 
-SolidJS is naturally SSR-safe because each `renderToString()` creates a new component tree with isolated signals.
+import { Aside } from '@astrojs/starlight/components'
 
-For general SSR concepts and utilities, see the [SSR & Hydration guide](/advanced/ssr-hydration/). For SolidStart setup, see [SolidStart](/frameworks/solid/solidstart/).
+SolidJS is naturally SSR-safe because each `renderToString()` creates a new component tree with isolated signals. For SolidStart projects, see [SolidStart](/frameworks/solid/solidstart/). For general SSR concepts, see [SSR & Hydration](/advanced/ssr-hydration/).
 
-## Server Setup
+## createServerI18n
+
+Create your server-side i18n singleton in a shared module. This uses `AsyncLocalStorage` for per-request locale isolation:
+
+```typescript
+// lib/i18n.server.ts
+import { createServerI18n } from '@fluenti/solid/server'
+
+export const { setLocale, getI18n, withLocale } = createServerI18n({
+  loadMessages: (locale) => import(`../locales/compiled/${locale}.ts`),
+  fallbackLocale: 'en',
+})
+```
+
+Messages are loaded lazily and cached across requests. The `loadMessages` function is called once per locale for the lifetime of the server process.
+
+### Configuration Options
+
+| Option | Type | Description |
+|---|---|---|
+| `loadMessages` | `(locale: string) => Promise<Messages>` | **(required)** Async loader for compiled catalogs |
+| `fallbackLocale` | `string` | Locale to fall back to when a key is missing |
+| `resolveLocale` | `() => string \| Promise<string>` | Auto-detect locale when `setLocale()` was not called |
+| `fallbackChain` | `Record<string, string[]>` | Custom fallback chains per locale |
+| `dateFormats` | `DateFormatOptions` | Named date format styles |
+| `numberFormats` | `NumberFormatOptions` | Named number format styles |
+| `missing` | `(locale, id) => string \| undefined` | Handler for missing translation keys |
+
+## Locale Detection
+
+Use `detectLocale` from `@fluenti/core` to determine the locale from cookies and headers:
+
+```typescript
+import { detectLocale } from '@fluenti/solid/server'
+
+const locale = detectLocale({
+  cookie: getCookie(event, 'lang'),
+  headers: event.headers,
+  available: ['en', 'zh-CN', 'ja'],
+  fallback: 'en',
+})
+```
+
+## withLocale for Concurrent SSR
+
+In production, your server handles multiple requests concurrently. Use `withLocale` to scope the locale to each request:
+
+```typescript
+import { detectLocale } from '@fluenti/solid/server'
+import { withLocale } from './lib/i18n.server'
+
+app.use(async (req, res, next) => {
+  const locale = detectLocale({
+    cookie: req.cookies.lang,
+    headers: req.headers,
+    available: ['en', 'zh-CN', 'ja'],
+    fallback: 'en',
+  })
+  await withLocale(locale, () => next())
+})
+```
+
+`withLocale` uses `AsyncLocalStorage` internally. All calls to `getI18n()` within the callback resolve to an i18n instance scoped to that locale — even across async boundaries.
+
+<Aside type="caution">
+Without `withLocale`, a `setLocale('ja')` call from one request can leak into another request's `getI18n()` response. Always use `withLocale` in concurrent SSR environments.
+</Aside>
+
+## Server Setup with I18nProvider
+
+On the server, wrap your app with `I18nProvider` and pass the detected locale:
 
 ```tsx
-import { detectLocale } from '@fluenti/core'
+import { renderToString } from 'solid-js/web'
+import { detectLocale, getSSRLocaleScript } from '@fluenti/solid/server'
 import { I18nProvider } from '@fluenti/solid'
+import { App } from './App'
 
-function Server() {
+async function handleRequest(req) {
   const locale = detectLocale({
-    cookie: getCookie(event, 'lang'),
-    headers: event?.headers,
+    cookie: req.cookies.lang,
+    headers: req.headers,
     available: ['en', 'zh-CN', 'ja'],
     fallback: 'en',
   })
 
-  return (
-    <I18nProvider locale={locale} messages={allMessages}>
+  const messages = await loadMessages(locale)
+
+  const html = renderToString(() => (
+    <I18nProvider locale={locale} fallbackLocale="en" messages={{ [locale]: messages }}>
       <App />
     </I18nProvider>
-  )
+  ))
+
+  const localeScript = getSSRLocaleScript(locale)
+
+  return `
+    <!DOCTYPE html>
+    <html lang="${locale}">
+      <head>${localeScript}</head>
+      <body><div id="app">${html}</div></body>
+    </html>
+  `
 }
 ```
+
+Because `renderToString()` creates a new component tree with isolated signals, there is no shared state between requests at the Solid level. The `withLocale` pattern is still recommended for the `getI18n()` server API.
 
 ## Client Hydration
 
-Use `getSSRLocaleScript` to inject the locale into the HTML and `getHydratedLocale` to read it back:
+Inject the locale into the HTML on the server and read it back on the client:
 
 ```tsx
-import { getSSRLocaleScript, getHydratedLocale } from '@fluenti/core'
-import { I18nProvider } from '@fluenti/solid'
+// Server: inject into HTML <head>
+import { getSSRLocaleScript } from '@fluenti/solid/server'
 
-// Server: inject into HTML
 const script = getSSRLocaleScript(locale)
+// → <script>window.__FLUENTI_LOCALE__="zh-CN"</script>
+```
 
-// Client: read it back
-const locale = getHydratedLocale('en')
+```tsx
+// Client: read it back and hydrate
+import { getHydratedLocale } from '@fluenti/core'
+import { I18nProvider } from '@fluenti/solid'
+import { hydrate } from 'solid-js/web'
 
-function Client() {
-  return (
-    <I18nProvider locale={locale} messages={allMessages}>
+const locale = getHydratedLocale('en') // 'en' is the fallback
+
+hydrate(
+  () => (
+    <I18nProvider locale={locale} fallbackLocale="en" messages={allMessages}>
       <App />
     </I18nProvider>
-  )
-}
+  ),
+  document.getElementById('app')!,
+)
 ```
+
+This ensures the client starts with the exact locale the server rendered, avoiding hydration mismatches.
 
 ## Key Points
 
-1. **Isolated signals** — Each `renderToString()` creates a new component tree, so there's no shared state between requests
-2. **Hydration consistency** — Use `getSSRLocaleScript` + `getHydratedLocale` to prevent mismatch
-3. **Cookie-based detection** — Use cookies (not `localStorage`) so the server can detect locale on the first request
+1. **Isolated signals** — Each `renderToString()` creates a new component tree, so there is no shared Solid state between requests
+2. **Use `withLocale`** for server API isolation — even though Solid's component tree is isolated, `getI18n()` uses module-level state that needs `AsyncLocalStorage` scoping
+3. **Hydration consistency** — Use `getSSRLocaleScript` + `getHydratedLocale` to prevent mismatch
+4. **Cookie-based detection** — Use cookies (not `localStorage`) so the server can detect locale on the first request
+5. **Message caching** — `createServerI18n` caches loaded messages across requests, so each locale is loaded only once

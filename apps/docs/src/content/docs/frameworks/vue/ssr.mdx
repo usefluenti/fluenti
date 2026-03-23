@@ -3,45 +3,171 @@ title: Vue Manual SSR
 description: Server-side rendering with Vue and Fluenti without Nuxt
 ---
 
-If you're using Vue without Nuxt, you can set up SSR manually using the core utilities.
+import { Aside } from '@astrojs/starlight/components'
 
-For general SSR concepts and utilities, see the [SSR & Hydration guide](/advanced/ssr-hydration/).
+If you're using Vue without Nuxt, you can set up SSR manually using the server utilities from `@fluenti/vue/server`. For Nuxt projects, see the [Nuxt SSR guide](/frameworks/nuxt/ssr/). For general SSR concepts, see [SSR & Hydration](/advanced/ssr-hydration/).
 
-## Server Setup
+## createServerI18n
+
+Create your server-side i18n singleton in a shared module. This provides `setLocale`, `getI18n`, and `withLocale` — all backed by `AsyncLocalStorage` for per-request isolation:
 
 ```typescript
-// server.ts
-import { detectLocale, getSSRLocaleScript } from '@fluenti/core'
-import { createFluenti } from '@fluenti/vue'
+// server/i18n.ts
+import { createServerI18n } from '@fluenti/vue/server'
+
+export const { setLocale, getI18n, withLocale } = createServerI18n({
+  loadMessages: (locale) => import(`../locales/compiled/${locale}.ts`),
+  fallbackLocale: 'en',
+})
+```
+
+Messages are loaded lazily on first use and cached across requests. The `loadMessages` function is called once per locale for the lifetime of the server process.
+
+### Configuration Options
+
+| Option | Type | Description |
+|---|---|---|
+| `loadMessages` | `(locale: string) => Promise<Messages>` | **(required)** Async loader for compiled catalogs |
+| `fallbackLocale` | `string` | Locale to fall back to when a key is missing |
+| `resolveLocale` | `() => string \| Promise<string>` | Auto-detect locale when `setLocale()` was not called |
+| `fallbackChain` | `Record<string, string[]>` | Custom fallback chains per locale |
+| `dateFormats` | `DateFormatOptions` | Named date format styles |
+| `numberFormats` | `NumberFormatOptions` | Named number format styles |
+| `missing` | `(locale, id) => string \| undefined` | Handler for missing translation keys |
+
+## Locale Detection
+
+Use `detectLocale` from `@fluenti/core` to determine the locale from cookies, headers, or query parameters:
+
+```typescript
+import { detectLocale } from '@fluenti/vue/server'
 
 const locale = detectLocale({
   cookie: getCookie(event, 'lang'),
-  headers: event?.headers,
+  headers: event.headers,
   available: ['en', 'zh-CN', 'ja'],
   fallback: 'en',
 })
+```
+
+`detectLocale` checks sources in priority order: cookie, `Accept-Language` header, then fallback.
+
+## withLocale for Concurrent SSR
+
+In production, your server handles multiple requests concurrently. Use `withLocale` to scope the locale to each request, preventing cross-request leakage:
+
+```typescript
+// server/middleware/i18n.ts
+import { detectLocale } from '@fluenti/vue/server'
+import { withLocale } from '../i18n'
+
+app.use(async (req, res, next) => {
+  const locale = detectLocale({
+    cookie: req.cookies.lang,
+    headers: req.headers,
+    available: ['en', 'zh-CN', 'ja'],
+    fallback: 'en',
+  })
+  await withLocale(locale, () => next())
+})
+```
+
+`withLocale` uses `AsyncLocalStorage` internally. All calls to `getI18n()` within the callback resolve to an i18n instance scoped to that locale — even across async boundaries.
+
+<Aside type="caution">
+Without `withLocale`, a `setLocale('ja')` call from one request can leak into another request's `getI18n()` response. Always use `withLocale` in concurrent SSR environments.
+</Aside>
+
+## setLocale / getI18n Pattern
+
+For simpler setups (single-request-at-a-time or middleware that does not support `withLocale`), use the direct `setLocale` + `getI18n` pattern:
+
+```typescript
+setLocale(locale)
+const i18n = await getI18n()
+// i18n.t, i18n.d, i18n.n are all available
+```
+
+Create a fresh `createFluenti()` instance per request and install it on the Vue app:
+
+```typescript
+import { createFluenti } from '@fluenti/vue'
+
 const i18n = createFluenti({ locale, messages: allMessages })
 app.use(i18n)
+```
 
-// Inject into HTML head:
+<Aside type="tip">
+Never share a single `createFluenti()` instance across requests. Each request must get its own instance to avoid locale leakage.
+</Aside>
+
+## Client Hydration
+
+Inject the server-detected locale into the HTML so the client can hydrate with the same locale:
+
+```typescript
+// Server: inject into HTML <head>
+import { getSSRLocaleScript } from '@fluenti/vue/server'
+
 const script = getSSRLocaleScript(locale)
 // → <script>window.__FLUENTI_LOCALE__="zh-CN"</script>
 ```
 
-## Client Hydration
-
 ```typescript
-// client.ts
+// Client: read it back
 import { getHydratedLocale } from '@fluenti/core'
 import { createFluenti } from '@fluenti/vue'
 
-const locale = getHydratedLocale('en')
+const locale = getHydratedLocale('en') // 'en' is the fallback
 const i18n = createFluenti({ locale, messages: allMessages })
 app.use(i18n)
+```
+
+This ensures the client starts with the exact locale the server rendered, avoiding hydration mismatches.
+
+## Integration with Express
+
+```typescript
+import express from 'express'
+import { createSSRApp } from 'vue'
+import { renderToString } from 'vue/server-renderer'
+import { detectLocale, getSSRLocaleScript } from '@fluenti/vue/server'
+import { createFluenti } from '@fluenti/vue'
+import { withLocale, getI18n } from './server/i18n'
+
+const server = express()
+
+server.get('*', async (req, res) => {
+  const locale = detectLocale({
+    cookie: req.cookies.lang,
+    headers: req.headers,
+    available: ['en', 'zh-CN', 'ja'],
+    fallback: 'en',
+  })
+
+  await withLocale(locale, async () => {
+    const app = createSSRApp(App)
+    const i18n = createFluenti({ locale, messages: await loadMessages(locale) })
+    app.use(i18n)
+
+    const html = await renderToString(app)
+    const localeScript = getSSRLocaleScript(locale)
+
+    res.send(`
+      <!DOCTYPE html>
+      <html lang="${locale}">
+        <head>${localeScript}</head>
+        <body><div id="app">${html}</div></body>
+      </html>
+    `)
+  })
+})
 ```
 
 ## Key Points
 
 1. **No shared global state** — Create a new `createFluenti()` instance per request on the server
-2. **Hydration consistency** — Use `getSSRLocaleScript` + `getHydratedLocale` to ensure the client starts with the same locale the server rendered
-3. **Cookie-based detection** — Use cookies (not `localStorage`) so the server can detect locale on the first request
+2. **Use `withLocale`** for concurrent SSR to prevent cross-request locale leakage
+3. **Hydration consistency** — Use `getSSRLocaleScript` + `getHydratedLocale` to ensure the client starts with the same locale the server rendered
+4. **Cookie-based detection** — Use cookies (not `localStorage`) so the server can detect locale on the first request
+5. **Message caching** — `createServerI18n` caches loaded messages across requests, so each locale is loaded only once

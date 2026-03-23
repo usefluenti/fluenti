@@ -3,11 +3,13 @@ title: SolidJS SPA
 description: Using Fluenti in a SolidJS single-page application with Vite
 ---
 
-Fluenti works with any SolidJS SPA built on Vite. See the [Quick Start](/start/quick-start/) for initial setup.
+import { Aside } from '@astrojs/starlight/components'
+
+Fluenti works with any SolidJS SPA built on Vite. See the [Quick Start](/start/quick-start/) for initial setup and installation.
 
 ## Provider Setup
 
-Wrap your app with `I18nProvider`:
+Wrap your app with `I18nProvider` and pass in your compiled message catalogs:
 
 ```tsx
 // src/App.tsx
@@ -15,13 +17,14 @@ import { I18nProvider } from '@fluenti/solid'
 import { Home } from './Home'
 import en from './locales/compiled/en'
 import zhCN from './locales/compiled/zh-CN'
+import ja from './locales/compiled/ja'
 
 export function App() {
   return (
     <I18nProvider
       locale="en"
       fallbackLocale="en"
-      messages={{ en, 'zh-CN': zhCN }}
+      messages={{ en, 'zh-CN': zhCN, ja }}
     >
       <Home />
     </I18nProvider>
@@ -29,33 +32,224 @@ export function App() {
 }
 ```
 
+`I18nProvider` creates a reactive i18n context using `createFluentiContext()` internally and provides it to the component tree via Solid's context API. All child components can access it through `useI18n()`.
+
+### Lazy Locale Loading
+
+For larger apps, load non-default locales on demand:
+
+```tsx
+<I18nProvider
+  locale="en"
+  fallbackLocale="en"
+  messages={{ en }}
+  lazyLocaleLoading
+  chunkLoader={(locale) => import(`./locales/compiled/${locale}.ts`)}
+>
+  <App />
+</I18nProvider>
+```
+
+When `setLocale('ja')` is called, the chunk loader fetches the Japanese catalog before switching. Use `preloadLocale('ja')` to load it in the background (e.g., on hover).
+
 ## Translation APIs
 
-### Direct-Import `t`
+### Direct-Import `t` (Compile-Time)
+
+The primary DX path. The Vite plugin transforms tagged templates at build time:
 
 ```tsx
 import { t } from '@fluenti/solid'
 
 function Greeting() {
-  return <p>{t`Hello, ${name()}`}</p>
+  const [name, setName] = createSignal('World')
+  return (
+    <div>
+      <h1>{t`Welcome to Fluenti`}</h1>
+      <p>{t`Hello, ${name()}!`}</p>
+    </div>
+  )
 }
 ```
 
-### Rich Text and Plurals
+Because `t` reads the internal `locale()` signal, Solid's fine-grained reactivity tracks it automatically. When the locale changes, only the text nodes that call `t` re-evaluate — the component function itself does not re-run.
+
+<Aside type="caution">
+Direct-import `t` requires the Fluenti Vite plugin. Without it, `t` throws a clear error at runtime. Use `useI18n().t()` as the fallback for environments without the build plugin.
+</Aside>
+
+### useI18n() Hook
+
+`useI18n()` returns the full i18n context from the nearest `I18nProvider`:
 
 ```tsx
-<Trans>Click <a href="/next">here</a> to continue.</Trans>
-<Plural value={count()} zero="No items" one="# item" other="# items" />
+import { useI18n } from '@fluenti/solid'
+
+function Dashboard() {
+  const { t, locale, setLocale, d, n, format, isLoading, preloadLocale } = useI18n()
+
+  return (
+    <div>
+      <p>{t`Current locale: ${locale()}`}</p>
+      <p>{t('Hello, {name}!', { name: 'Developer' })}</p>
+      <p>{d(Date.now(), 'long')}</p>
+      <p>{n(1234.5, 'currency')}</p>
+      <button onClick={() => setLocale('ja')}>日本語</button>
+    </div>
+  )
+}
 ```
 
-## Key Differences from Vue
+Key properties returned by `useI18n()`:
 
-- Uses `<I18nProvider>` instead of a plugin
-- Signals (`name()`) instead of refs (`name.value`)
-- JSX instead of templates — use `t` inline in JSX expressions
-- Naturally reactive — `t()` reads the `locale()` signal, so JSX auto-tracks it
+| Property | Type | Description |
+|---|---|---|
+| `locale()` | `Accessor<string>` | Reactive accessor for the current locale |
+| `setLocale(loc)` | `(locale: string) => Promise<void>` | Switch locale (async when lazy loading) |
+| `t` | function | Translate by ID or tagged template |
+| `d(value, style?)` | function | Format dates for the current locale |
+| `n(value, style?)` | function | Format numbers for the current locale |
+| `format(msg, values?)` | function | Interpolate an ICU message directly |
+| `isLoading()` | `Accessor<boolean>` | Whether a locale chunk is being loaded |
+| `preloadLocale(loc)` | function | Preload a locale in the background |
+| `te(key, loc?)` | function | Check if a translation key exists |
+| `tm(key, loc?)` | function | Get the raw compiled message |
+
+### Lazy Messages with `msg`
+
+Define translations outside components — in route definitions, stores, or constants:
+
+```tsx
+import { msg } from '@fluenti/solid'
+
+const PAGE_TITLES = {
+  home: msg`Home`,
+  settings: msg`Settings`,
+}
+
+// Later, inside a component:
+function PageHeader(props: { page: keyof typeof PAGE_TITLES }) {
+  const { t } = useI18n()
+  return <h1>{t(PAGE_TITLES[props.page])}</h1>
+}
+```
+
+`msg` returns a `MessageDescriptor` that records the message text without translating it. Resolve it at render time with `t()`.
+
+## Rich Text with Trans
+
+The `<Trans>` component renders translations that contain embedded components:
+
+```tsx
+import { Trans } from '@fluenti/solid'
+import { t } from '@fluenti/solid'
+
+const Bold = (props) => <strong>{props.children}</strong>
+const Link = (props) => <a href="/docs">{props.children}</a>
+
+function Welcome() {
+  return (
+    <Trans
+      message={t`Welcome to <bold>Fluenti</bold> for <link>SolidJS</link>!`}
+      components={{ bold: Bold, link: Link }}
+    />
+  )
+}
+```
+
+The `message` prop contains the translated string with XML-style tags. The `components` map provides the Solid components used to render each tag.
+
+## Plurals and Select
+
+```tsx
+import { Plural, Select } from '@fluenti/solid'
+
+function CartStatus() {
+  const [count, setCount] = createSignal(0)
+  const [gender, setGender] = createSignal('female')
+
+  return (
+    <div>
+      <Plural
+        value={count()}
+        zero="Your cart is empty."
+        one="# item in your cart."
+        other="# items in your cart."
+      />
+
+      <Select
+        value={gender()}
+        male="He liked this"
+        female="She liked this"
+        other="They liked this"
+      />
+    </div>
+  )
+}
+```
+
+Both components are runtime-capable and work without the build plugin. `#` in plural forms is replaced with the formatted count value.
+
+## Reactive Signal Patterns
+
+SolidJS components run their function body **once**. Reactivity comes from signals, not re-renders. This has important implications for i18n:
+
+```tsx
+function ReactivityDemo() {
+  const { t, locale } = useI18n()
+  const [count, setCount] = createSignal(0)
+
+  // This log runs only once — the component body is not re-executed
+  console.log('Component created')
+
+  // t() reads locale() internally, so it's a reactive expression
+  // When locale changes, only the text nodes update — not the whole component
+
+  return (
+    <div>
+      <p>{t`Counter value: ${count()}`}</p>
+      <p>{t`Current locale: ${locale()}`}</p>
+      <button onClick={() => setCount((c) => c + 1)}>+</button>
+    </div>
+  )
+}
+```
+
+### Side Effects on Locale Change
+
+Use `createEffect` to run side effects when the locale changes:
+
+```tsx
+import { createEffect } from 'solid-js'
+import { getDirection } from '@fluenti/core'
+
+function App() {
+  const { locale } = useI18n()
+
+  createEffect(() => {
+    document.documentElement.dir = getDirection(locale())
+    document.cookie = `locale=${locale()};path=/;max-age=31536000`
+  })
+
+  return <Main />
+}
+```
 
 ## Key Differences from React
 
-- Uses signals — `locale()` is an accessor, not a string
-- Direct-import `t` works inline in JSX, while `useI18n().t()` remains the runtime escape hatch
+| | SolidJS | React |
+|---|---|---|
+| **Reactivity** | Fine-grained signals — `locale()` is an accessor | Re-render cycle — `locale` is a string from state |
+| **Component execution** | Function body runs once | Function body re-runs on every render |
+| **t() tracking** | Auto-tracked via signal reads | Relies on React re-render |
+| **Provider** | `<I18nProvider>` (context API) | `<I18nProvider>` (React context) |
+| **Locale access** | `locale()` — call the accessor | `locale` — read the value directly |
+
+## Key Differences from Vue
+
+| | SolidJS | Vue |
+|---|---|---|
+| **Setup** | `<I18nProvider>` wraps the app | `app.use(fluenti)` plugin |
+| **Template directive** | None — use `t` in JSX | `v-t` compile-time directive |
+| **Reactivity model** | Signals (`name()`) | Refs (`name.value`) |
+| **Rich text** | `<Trans message={...} components={...} />` | `v-t` with child elements or `<Trans>` slot |

@@ -118,3 +118,69 @@ import fluentiSolid from '@fluenti/solid/vite-plugin'
 ```
 
 All three accept the same `FluentiPluginOptions` (optional `config` field). The framework plugin handles scope transforms, virtual module generation, and component compilation automatically.
+
+## Fluenti vs Other i18n Libraries
+
+### Feature Comparison
+
+| Feature | Fluenti | vue-i18n | react-i18next | next-intl | LinguiJS |
+|---------|:-------:|:--------:|:-------------:|:---------:|:--------:|
+| **Compile-time transforms** | Yes | No | No | No | Yes |
+| **Runtime parser needed** | No | Yes | Yes | Yes | No |
+| **ICU MessageFormat** | Full | Partial | Via plugin | Full | Full |
+| **Plural/Select components** | `<Plural>`, `<Select>` | `$tc()` | `<Trans>` | `useTranslations` | `<Plural>` |
+| **SSR support** | Built-in | Built-in | Via next-i18next | Built-in | Manual |
+| **Code splitting** | Built-in (static/dynamic) | Manual | Manual namespace loading | Per-locale JSON | Manual |
+| **TypeScript** | Full (branded types, message ID narrowing) | Partial | Partial | Full | Partial |
+| **PO catalog format** | Native | No | No | No | Native |
+| **JSON catalog format** | Yes | Yes | Yes | Yes | Yes |
+| **Message extraction CLI** | Built-in | No | i18next-parser | No | Built-in |
+| **Multi-framework** | Vue, React, Solid, Next.js, Nuxt, SolidStart | Vue only | React only | Next.js only | React, Vue (experimental) |
+
+### Bundle Size
+
+Because Fluenti compiles messages at build time, the runtime does not include a parser or compiler. This reduces the client-side footprint:
+
+| Library | Runtime size (min+gzip) | Includes parser? |
+|---------|:-----------------------:|:----------------:|
+| `@fluenti/core` | ~3 kB | No |
+| `vue-i18n` | ~14 kB | Yes |
+| `react-i18next` + `i18next` | ~13 kB | Yes |
+| `next-intl` | ~12 kB | Yes |
+| `@lingui/react` + `@lingui/core` | ~5 kB | No |
+
+Sizes are approximate and vary by version. Fluenti and Lingui both use compile-time transforms to keep runtime size minimal.
+
+### Runtime Overhead
+
+Compile-time libraries (Fluenti, Lingui) perform message resolution via simple object lookups at runtime. Runtime libraries (vue-i18n, react-i18next, next-intl) parse ICU syntax on the fly or on first access, which adds CPU overhead on initial render and locale switches.
+
+| Aspect | Compile-time (Fluenti) | Runtime (vue-i18n, react-i18next) |
+|--------|:----------------------:|:---------------------------------:|
+| **First render** | Hash lookup | Parse + interpolate |
+| **Locale switch** | Swap compiled catalog | Re-parse all visible messages |
+| **Memory** | Pre-compiled functions | Parser cache + AST cache |
+| **Cold start (SSR)** | Minimal | Parser initialization |
+
+## When to Choose Fluenti
+
+**Fluenti is a good fit when:**
+- You need a single i18n solution across Vue, React, and Solid projects
+- Bundle size and runtime performance are priorities
+- You use PO-based translation workflows (gettext tooling, Weblate, Crowdin)
+- You want type-safe message IDs with compile-time checking
+- Your app uses SSR and needs built-in hydration support
+
+**Consider alternatives when:**
+- You only use one framework and are already invested in its ecosystem library (e.g., vue-i18n for Vue-only projects)
+- You need runtime message loading from a CMS without a build step
+- Your team is already productive with react-i18next and migration cost outweighs the benefits
+
+## Migration Paths
+
+If you are migrating from an existing i18n library, see the dedicated migration guides:
+
+- **From vue-i18n**: [Migration from vue-i18n](/frameworks/vue/migration-from-vue-i18n/) covers the `vue-i18n-compat` bridge layer for incremental migration
+- **From react-i18next**: Replace `useTranslation()` with `useI18n()`, `<Trans>` with Fluenti's `<Trans>`, and convert JSON namespaces to PO catalogs or flat JSON
+- **From next-intl**: Swap `useTranslations()` for `useI18n()` and adopt `@fluenti/next` with `withFluenti()` in `next.config.ts`
+- **From LinguiJS**: The APIs are similar — replace `<Trans>` and `useLingui()` with Fluenti equivalents; PO catalogs are compatible with minimal changes

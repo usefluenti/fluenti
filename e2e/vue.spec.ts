@@ -7,8 +7,38 @@ test.describe('Vue Playground', () => {
     await expect(page.locator('.tagline')).toContainText('Write text. Fluenti translates it. Zero config.')
   })
 
-  test('v-t directive renders plain text translations', async ({ page }) => {
+  test('navigation links are visible', async ({ page }) => {
     await page.goto('/')
+    await expect(page.getByTestId('nav-home')).toBeVisible()
+    await expect(page.getByTestId('nav-plurals')).toBeVisible()
+    await expect(page.getByTestId('nav-richtext')).toBeVisible()
+    await expect(page.getByTestId('nav-formatting')).toBeVisible()
+    await expect(page.getByTestId('nav-directives')).toBeVisible()
+    await expect(page.getByTestId('nav-script')).toBeVisible()
+  })
+
+  test('navigation between pages works', async ({ page }) => {
+    await page.goto('/')
+    await expect(page.locator('h2:has-text("Welcome to Fluenti")')).toBeVisible()
+
+    await page.getByTestId('nav-plurals').click()
+    await expect(page.locator('h2:has-text("Plural Demos")')).toBeVisible()
+
+    await page.getByTestId('nav-richtext').click()
+    await expect(page.locator('h2:has-text("Rich Text Demos")')).toBeVisible()
+
+    await page.getByTestId('nav-formatting').click()
+    await expect(page.locator('h2:has-text("Formatting Demos")')).toBeVisible()
+
+    await page.getByTestId('nav-directives').click()
+    await expect(page.locator('h2:has-text("v-t Directive")')).toBeVisible()
+
+    await page.getByTestId('nav-script').click()
+    await expect(page.locator('h2:has-text("Script Features")')).toBeVisible()
+  })
+
+  test('v-t directive renders plain text translations', async ({ page }) => {
+    await page.goto('/directives')
     await expect(page.locator('h2:has-text("v-t Directive")')).toBeVisible()
     await expect(page.locator('p:has-text("Welcome to Fluenti")')).toBeVisible()
   })
@@ -20,19 +50,19 @@ test.describe('Vue Playground', () => {
   })
 
   test('format() renders ICU interpolated text', async ({ page }) => {
-    await page.goto('/')
+    await page.goto('/script')
     await expect(page.locator('text=3 items at $9.99 each')).toBeVisible()
   })
 
-  test('d() date formatting renders non-empty output', async ({ page }) => {
-    await page.goto('/')
-    await expect(page.locator('h2:has-text("$d() Date Formatting")')).toBeVisible()
-    const dateOutput = page.locator('.demo-label:has-text("$d(date) — default") + div')
+  test('DateTime component renders date formatting', async ({ page }) => {
+    await page.goto('/formatting')
+    await expect(page.locator('h2:has-text("DateTime")')).toBeVisible()
+    const dateOutput = page.locator('.demo-label:has-text("default") + div').first()
     await expect(dateOutput).toContainText('/')
   })
 
-  test('n() number formatting renders locale-aware numbers', async ({ page }) => {
-    await page.goto('/')
+  test('NumberFormat component renders locale-aware numbers', async ({ page }) => {
+    await page.goto('/formatting')
     await expect(page.locator('text=1,234,567.89').first()).toBeVisible()
     await expect(page.locator('text=$42.50')).toBeVisible()
   })
@@ -50,7 +80,7 @@ test.describe('Vue Playground', () => {
   })
 
   test('v-t directive renders rich text with HTML tags', async ({ page }) => {
-    await page.goto('/')
+    await page.goto('/richtext')
     const richTextLink = page.locator('a[href="/terms"]')
     await expect(richTextLink).toBeVisible()
     await expect(richTextLink).toContainText('terms of service')
@@ -60,7 +90,7 @@ test.describe('Vue Playground', () => {
   })
 
   test('Trans component renders rich text with links and bold', async ({ page }) => {
-    await page.goto('/')
+    await page.goto('/richtext')
     const docLink = page.locator('a[href="https://github.com"][target="_blank"]')
     await expect(docLink).toBeVisible()
     await expect(docLink).toContainText('documentation')
@@ -69,7 +99,7 @@ test.describe('Vue Playground', () => {
   })
 
   test('Plural component renders and updates with counter', async ({ page }) => {
-    await page.goto('/')
+    await page.goto('/plurals')
     await expect(page.locator('text=No apples').first()).toBeVisible()
 
     const addButtons = page.locator('button:has-text("Add")')
@@ -81,7 +111,7 @@ test.describe('Vue Playground', () => {
   })
 
   test('Select component renders gender-based text', async ({ page }) => {
-    await page.goto('/')
+    await page.goto('/plurals')
     await expect(page.locator('text=She liked this')).toBeVisible()
 
     await page.locator('button:has-text("male")').first().click()
@@ -94,7 +124,7 @@ test.describe('Vue Playground', () => {
   })
 
   test('v-t attribute modifiers work on input placeholder', async ({ page }) => {
-    await page.goto('/')
+    await page.goto('/directives')
     const searchInput = page.locator('input[placeholder]').first()
     await expect(searchInput).toBeVisible()
   })
@@ -126,33 +156,33 @@ test.describe('Vue Playground', () => {
     await expect(page.locator('header h1')).toContainText('Fluenti Vue Playground')
   })
 
-  // P2.12 DateTime styles — verify d() renders multiple format styles
-  test('d() date formatting renders short, long, relative, and datetime styles', async ({ page }) => {
-    await page.goto('/')
-    // short style — e.g. "1/1/24" or similar short date with slashes
-    const shortOutput = page.locator('.demo-label:has-text("$d(date, \'short\')") + div')
+  // DateTime styles — verify component renders multiple format styles
+  test('DateTime component renders short, long, relative, and datetime styles', async ({ page }) => {
+    await page.goto('/formatting')
+    // short style
+    const shortOutput = page.locator('.demo-label:has-text("short") + div').first()
     await expect(shortOutput).toContainText(/\d{1,2}\/\d{1,2}\/\d{2,4}/)
-    // long style — e.g. "January 1, 2024" contains full month name
-    const longOutput = page.locator('.demo-label:has-text("$d(date, \'long\')") + div')
+    // long style
+    const longOutput = page.locator('.demo-label:has-text("long") + div').first()
     await expect(longOutput).toContainText(/[A-Z][a-z]+ \d{1,2}, \d{4}/)
-    // relative style — should contain a relative time expression (e.g. "3 days ago", "yesterday")
-    const relativeOutput = page.locator('.demo-label:has-text("$d(date, \'relative\')") + div')
+    // relative style
+    const relativeOutput = page.locator('.demo-label:has-text("relative") + div').first()
     await expect(relativeOutput).toContainText(/ago|yesterday|today|tomorrow/)
-    // datetime style — e.g. "1/1/2024, 12:00:00 AM" contains date and time with colon
-    const datetimeOutput = page.locator('.demo-label:has-text("$d(date, \'datetime\')") + div')
+    // datetime style
+    const datetimeOutput = page.locator('.demo-label:has-text("datetime") + div').first()
     await expect(datetimeOutput).toContainText(/\d{1,2}\/\d{1,2}\/\d{2,4},?\s+\d{1,2}:\d{2}/)
   })
 
-  // P2.13 Number formatting styles — verify n() with currency, percent, decimal
-  test('n() number formatting renders currency, percent, and decimal styles', async ({ page }) => {
-    await page.goto('/')
+  // Number formatting styles — verify NumberFormat component
+  test('NumberFormat component renders currency, percent, and decimal styles', async ({ page }) => {
+    await page.goto('/formatting')
     // currency: $42.50
     await expect(page.locator('text=$42.50')).toBeVisible()
-    // percent: 0.856 → 86% (or similar)
-    const percentOutput = page.locator('.demo-label:has-text("$n(0.856, \'percent\')") + div')
+    // percent: 0.856 -> 86% (or similar)
+    const percentOutput = page.locator('.demo-label:has-text("percent") + div').first()
     await expect(percentOutput).toContainText('%')
     // decimal: 1,234.5
-    const decimalOutput = page.locator('.demo-label:has-text("$n(1234.5, \'decimal\')") + div')
+    const decimalOutput = page.locator('.demo-label:has-text("decimal") + div').first()
     await expect(decimalOutput).toContainText('1,234.5')
   })
 

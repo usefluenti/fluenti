@@ -29,38 +29,38 @@ const PAGE_SUBTITLE = msg`A modern i18n framework`
     </div>
 
     <div class="section">
-      <h2>$d() — Date Formatting</h2>
+      <h2>&lt;DateTime&gt; — Date Formatting</h2>
       <div class="demo-item">
-        <div class="demo-label">$d(Date.now()) — default</div>
-        <div>{{ $d(Date.now()) }}</div>
+        <div class="demo-label">&lt;DateTime :value="Date.now()" /&gt; — default</div>
+        <div><DateTime :value="Date.now()" /></div>
       </div>
       <div class="demo-item">
-        <div class="demo-label">$d(Date.now(), 'short')</div>
-        <div>{{ $d(Date.now(), 'short') }}</div>
+        <div class="demo-label">&lt;DateTime :value="Date.now()" style="short" /&gt;</div>
+        <div><DateTime :value="Date.now()" style="short" /></div>
       </div>
       <div class="demo-item">
-        <div class="demo-label">$d(Date.now(), 'long')</div>
-        <div>{{ $d(Date.now(), 'long') }}</div>
+        <div class="demo-label">&lt;DateTime :value="Date.now()" style="long" /&gt;</div>
+        <div><DateTime :value="Date.now()" style="long" /></div>
       </div>
     </div>
 
     <div class="section">
-      <h2>$n() — Number Formatting</h2>
+      <h2>&lt;NumberFormat&gt; — Number Formatting</h2>
       <div class="demo-item">
-        <div class="demo-label">$n(1234567.89) — default</div>
-        <div>{{ $n(1234567.89) }}</div>
+        <div class="demo-label">&lt;NumberFormat :value="1234567.89" /&gt; — default</div>
+        <div><NumberFormat :value="1234567.89" /></div>
       </div>
       <div class="demo-item">
-        <div class="demo-label">$n(42.5, 'currency')</div>
-        <div>{{ $n(42.5, 'currency') }}</div>
+        <div class="demo-label">&lt;NumberFormat :value="42.5" style="currency" /&gt;</div>
+        <div><NumberFormat :value="42.5" style="currency" /></div>
       </div>
       <div class="demo-item">
-        <div class="demo-label">$n(0.856, 'percent')</div>
-        <div>{{ $n(0.856, 'percent') }}</div>
+        <div class="demo-label">&lt;NumberFormat :value="0.856" style="percent" /&gt;</div>
+        <div><NumberFormat :value="0.856" style="percent" /></div>
       </div>
       <div class="demo-item">
-        <div class="demo-label">$n(1234.5, 'decimal')</div>
-        <div>{{ $n(1234.5, 'decimal') }}</div>
+        <div class="demo-label">&lt;NumberFormat :value="1234.5" style="decimal" /&gt;</div>
+        <div><NumberFormat :value="1234.5" style="decimal" /></div>
       </div>
     </div>
 

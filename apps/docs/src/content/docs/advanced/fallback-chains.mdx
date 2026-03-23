@@ -3,56 +3,93 @@ title: Fallback Chains
 description: Configure locale fallback resolution for regional variants and missing translations
 ---
 
-When a message is not found in the current locale, Fluenti tries:
-1. Current locale
-2. Fallback chain (if configured)
-3. `fallbackLocale` (if set)
-4. Returns the message ID
+## What Fallback Chains Solve
+
+Applications that support regional variants (e.g., `pt-BR` and `pt-PT`) often share most of their translations. Without fallback chains, you would need to duplicate the entire catalog for each variant. Fallback chains let you maintain only the differences in regional catalogs and fall back to a shared base locale for the rest.
+
+## Resolution Order
+
+When a message is not found in the current locale, Fluenti resolves it in this order:
+
+1. **Current locale** — the active locale's catalog
+2. **Fallback chain** — locale-specific chain from `fallbackChain[currentLocale]`, then the wildcard `fallbackChain['*']`
+3. **`fallbackLocale`** — the global fallback locale (if set)
+4. **`missing` handler** — custom function for programmatic fallback
+5. **Message ID** — returns the raw ID as a last resort
 
 ## Configuration
 
+Define `fallbackChain` in your `fluenti.config.ts`:
+
 ```typescript
-const i18n = createFluenti({
-  locale: 'zh-TW',
-  fallbackLocale: 'en',
-  messages: { en, 'zh-CN': zhCN, 'zh-TW': zhTW },
+// fluenti.config.ts
+import { defineConfig } from '@fluenti/core'
+
+export default defineConfig({
+  sourceLocale: 'en',
+  locales: ['en', 'pt', 'pt-BR', 'zh-CN', 'zh-TW', 'es', 'es-MX'],
   fallbackChain: {
-    'zh-TW': ['zh-CN', 'en'],
     'pt-BR': ['pt', 'en'],
+    'zh-TW': ['zh-CN', 'en'],
+    'es-MX': ['es', 'en'],
     '*': ['en'],
   },
+  // ...
 })
 ```
 
-With this config, when locale is `zh-TW`:
-1. Try `zh-TW` catalog
-2. Try `zh-CN` catalog (from fallbackChain)
-3. Try `en` catalog (from fallbackChain)
-4. Try `en` catalog (from fallbackLocale)
+Or pass it directly to the runtime instance:
 
-## Regional Variants
-
-Instead of duplicating an entire catalog for `en-GB`, let it fall back to `en` and only translate the differences:
-
-```ts
-createFluentiCore({
-  locale: 'en-GB',
+```typescript
+const i18n = createFluentiCore({
+  locale: 'pt-BR',
   fallbackLocale: 'en',
   fallbackChain: {
-    'en-GB': ['en'],
-    'zh-TW': ['zh-CN'],
-    'pt-BR': ['pt'],
+    'pt-BR': ['pt', 'en'],
+    'zh-TW': ['zh-CN', 'en'],
+    'es-MX': ['es', 'en'],
   },
-  messages,
+  messages: { en, pt, 'pt-BR': ptBR, 'zh-CN': zhCN, 'zh-TW': zhTW, es, 'es-MX': esMX },
 })
 ```
+
+## Real-World Examples
+
+Common fallback patterns for regional variants:
+
+- **Chinese**: `zh-TW` falls back to `zh-CN` before `en`. The `zh-TW` catalog only needs entries where Traditional Chinese characters or phrasing differ from Simplified.
+- **Spanish**: `es-MX` falls back to `es` before `en`. Override region-specific terms (e.g., "computadora" vs "ordenador") while inheriting everything else.
+- **Portuguese**: `pt-BR` falls back to `pt` before `en`. Maintain a full `pt` catalog for European Portuguese and a partial `pt-BR` catalog with Brazilian-specific overrides.
+
+## Per-Locale vs Global Fallback
+
+Use **per-locale chains** for regional variants that share a common base:
+
+```typescript
+fallbackChain: {
+  'en-GB': ['en'],
+  'en-AU': ['en-GB', 'en'],
+  'fr-CA': ['fr'],
+}
+```
+
+Use the **wildcard `'*'`** as a catch-all for any locale without an explicit chain:
+
+```typescript
+fallbackChain: {
+  'pt-BR': ['pt', 'en'],
+  '*': ['en'],  // all other locales fall back to English
+}
+```
+
+The wildcard chain is checked only when no locale-specific chain exists for the current locale.
 
 ## Missing Handler
 
-For custom behavior when a message is not found:
+For custom behavior when a message is not found after all fallback attempts:
 
 ```typescript
-const i18n = createFluenti({
+const i18n = createFluentiCore({
   locale: 'en',
   messages,
   missing: (locale, id) => {
@@ -60,4 +97,27 @@ const i18n = createFluenti({
     return undefined // or return a fallback string
   },
 })
+```
+
+The `missing` handler runs after the full chain is exhausted, giving you a final opportunity to provide a dynamic fallback or log the gap for translators.
+
+## Testing Fallback Behavior
+
+Test with partial catalogs to verify resolution at each level of the chain:
+
+```typescript
+const i18n = createFluentiCore({
+  locale: 'pt-BR',
+  fallbackLocale: 'en',
+  fallbackChain: { 'pt-BR': ['pt', 'en'] },
+  messages: {
+    en: { greeting: 'Hello', color: 'Color', cancel: 'Cancel' },
+    pt: { greeting: 'Olá', color: 'Cor' },
+    'pt-BR': { color: 'Cor' },
+  },
+})
+
+i18n.t('color')    // 'Cor'    — found in pt-BR
+i18n.t('greeting') // 'Olá'   — pt-BR → pt
+i18n.t('cancel')   // 'Cancel' — pt-BR → pt → en
 ```

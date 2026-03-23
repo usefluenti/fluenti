@@ -148,6 +148,7 @@ export default defineConfig({
             { label: 'Performance', slug: 'advanced/performance' },
             { label: 'Scaling & Enterprise', slug: 'advanced/scaling' },
             { label: 'SSR & Hydration', slug: 'advanced/ssr-hydration' },
+            { label: 'Server Context Isolation', slug: 'advanced/server-context' },
             { label: 'Fallback Chains', slug: 'advanced/fallback-chains' },
             { label: 'Complex Languages', slug: 'advanced/complex-languages' },
             { label: 'Best Practices', slug: 'advanced/best-practices' },

@@ -1,0 +1,235 @@
+---
+title: Server Context Isolation
+description: How Fluenti uses AsyncLocalStorage and React.cache() to prevent cross-request locale leakage in concurrent SSR environments.
+---
+
+import { Tabs, TabItem, Aside } from '@astrojs/starlight/components'
+
+## The Problem: Cross-Request Locale Leakage
+
+In a Node.js SSR server, multiple requests are processed concurrently within the same process. If locale state is stored in a module-level variable, one request can overwrite another's locale before rendering completes:
+
+```
+Request A (locale: ja)    Request B (locale: en)
+──────────────────────    ──────────────────────
+setLocale('ja')
+                          setLocale('en')  ← overwrites 'ja'
+render()
+  └─ getI18n()
+       └─ locale = 'en'  ← WRONG! Should be 'ja'
+```
+
+This is harmless in development (one request at a time) but causes **random, hard-to-reproduce locale mixing** in production under load.
+
+## The Solution
+
+Fluenti solves this with **per-request context isolation** using platform-native mechanisms:
+
+| Framework | Mechanism | How it works |
+|-----------|-----------|-------------|
+| Vue / Nuxt | `AsyncLocalStorage` | Each request runs inside `withLocale()`, which creates an isolated store |
+| SolidStart | `AsyncLocalStorage` | Same pattern as Vue |
+| Next.js (RSC) | `React.cache()` | React automatically scopes the cache to the current server request |
+| React Router SSR | `AsyncLocalStorage` | Wrap Express/Hono handler with `withLocale()` |
+
+## API Reference
+
+### `withLocale(locale, fn)` (Vue, Solid, React Router)
+
+Runs `fn` inside an `AsyncLocalStorage` context with the given locale. All calls to `getI18n()` within `fn` (and any functions it calls) will resolve to that locale.
+
+```ts
+withLocale<T>(locale: string, fn: () => T | Promise<T>): Promise<T>
+```
+
+- **locale** -- The locale string for this request (e.g. `'en'`, `'ja'`)
+- **fn** -- The async callback that handles the request
+- **Returns** -- The return value of `fn`
+
+`withLocale` is returned by `createServerI18n()`:
+
+```ts
+import { createServerI18n } from '@fluenti/vue/server'
+// or: import { createServerI18n } from '@fluenti/solid/server'
+
+export const { setLocale, getI18n, withLocale } = createServerI18n({
+  loadMessages: (locale) => import(`../locales/compiled/${locale}.ts`),
+  fallbackLocale: 'en',
+})
+```
+
+### `React.cache()` (Next.js)
+
+React's `cache()` function automatically scopes state to the current server request. No `withLocale` wrapper is needed -- just call `setLocale()` in your layout:
+
+```ts
+import { createServerI18n } from '@fluenti/react/server'
+
+export const { setLocale, getI18n } = createServerI18n({
+  loadMessages: (locale) => import(`../locales/compiled/${locale}.js`),
+  fallbackLocale: 'en',
+})
+```
+
+## Usage by Framework
+
+<Tabs>
+<TabItem label="Vue / Nuxt">
+Wrap each request in `withLocale` in your server middleware:
+
+```ts
+// server/middleware/i18n.ts
+import { detectLocale } from '@fluenti/core'
+import { withLocale } from '../i18n.server'
+
+export default defineEventHandler(async (event) => {
+  const locale = detectLocale({
+    cookie: getCookie(event, 'locale'),
+    headers: event.headers,
+    available: ['en', 'ja', 'zh-CN'],
+    fallback: 'en',
+  })
+  return withLocale(locale, () => handleRequest(event))
+})
+```
+
+Any subsequent `getI18n()` call during that request will return an instance bound to the correct locale.
+</TabItem>
+
+<TabItem label="SolidStart">
+Use `withLocale` in your entry-server or middleware:
+
+```ts
+// src/middleware.ts
+import { detectLocale } from '@fluenti/core'
+import { withLocale } from './lib/i18n.server'
+
+export function middleware(event) {
+  const locale = detectLocale({
+    cookie: getCookie(event, 'locale'),
+    headers: event.request.headers,
+    available: ['en', 'ja', 'zh-CN'],
+    fallback: 'en',
+  })
+  return withLocale(locale, () => handleRequest(event))
+}
+```
+</TabItem>
+
+<TabItem label="Next.js">
+No `withLocale` needed. Call `setLocale()` once in your root layout -- `React.cache()` handles isolation automatically:
+
+```tsx
+// app/[locale]/layout.tsx
+import { setLocale } from '@/lib/i18n.server'
+
+export default async function Layout({ params, children }) {
+  const { locale } = await params
+  setLocale(locale)
+  return <html lang={locale}><body>{children}</body></html>
+}
+```
+
+For Server Actions (which skip the layout), provide `resolveLocale` in your config:
+
+```ts
+createServerI18n({
+  loadMessages: (locale) => import(`../locales/compiled/${locale}.js`),
+  resolveLocale: async () => {
+    const { cookies } = await import('next/headers')
+    return (await cookies()).get('locale')?.value ?? 'en'
+  },
+})
+```
+</TabItem>
+
+<TabItem label="React Router SSR">
+Wrap your Express or Hono handler with `withLocale`:
+
+```ts
+// server.ts
+import express from 'express'
+import { detectLocale } from '@fluenti/core'
+import { withLocale } from './lib/i18n.server'
+
+app.use(async (req, res, next) => {
+  const locale = detectLocale({
+    cookie: req.headers.cookie,
+    headers: req.headers,
+    available: ['en', 'ja', 'zh-CN'],
+    fallback: 'en',
+  })
+  await withLocale(locale, () => next())
+})
+```
+</TabItem>
+</Tabs>
+
+## Fallback Behavior
+
+When `withLocale` is **not** used, `createServerI18n` falls back to a module-level store. This means `setLocale()` and `getI18n()` still work -- but the locale is shared across all concurrent requests.
+
+This is **backward compatible** and safe for:
+- Development servers (single request at a time)
+- Static site generation (sequential renders)
+- Serverless functions (one request per isolate)
+
+<Aside type="caution">
+**Always use `withLocale` in production** if your server handles concurrent requests (e.g., Node.js with `http.createServer`, Express, Fastify, Nitro). Without it, users may see translations in the wrong language under load.
+</Aside>
+
+## How It Works Internally
+
+`createServerI18n` creates a Node.js `AsyncLocalStorage` instance. When you call `withLocale(locale, fn)`, it runs `fn` inside `als.run()` with a fresh store containing the locale:
+
+```ts
+// Simplified from @fluenti/vue/server and @fluenti/solid/server
+const als = new AsyncLocalStorage<RequestStore>()
+let fallbackStore = { locale: null, instance: null }
+
+function getStore() {
+  return als.getStore() ?? fallbackStore  // ALS context or fallback
+}
+
+function withLocale(locale, fn) {
+  return als.run({ locale, instance: null }, fn)
+}
+```
+
+The message cache (compiled translations) is shared across requests at the module level -- only the locale and i18n instance are request-scoped. This means each locale's messages are loaded once and reused, keeping memory usage low.
+
+## Testing Concurrent Isolation
+
+You can verify isolation by simulating concurrent requests in a test:
+
+```ts
+import { createServerI18n } from '@fluenti/vue/server'
+
+const { withLocale, getI18n } = createServerI18n({
+  loadMessages: (locale) => Promise.resolve({ greeting: `Hello from ${locale}` }),
+})
+
+// Simulate two concurrent requests
+const [resultA, resultB] = await Promise.all([
+  withLocale('ja', async () => {
+    await new Promise((r) => setTimeout(r, 10)) // simulate async work
+    const i18n = await getI18n()
+    return i18n.locale
+  }),
+  withLocale('en', async () => {
+    const i18n = await getI18n()
+    return i18n.locale
+  }),
+])
+
+assert(resultA === 'ja')  // not polluted by request B
+assert(resultB === 'en')  // not polluted by request A
+```
+
+The E2E test suite verifies this pattern against real framework fixtures to ensure locale isolation holds under concurrent SSR.
+
+## Related
+
+- [SSR & Hydration](/advanced/ssr-hydration/) -- locale detection, hydration scripts, and framework-specific SSR setup
+- [Server Components](/frameworks/react/server-components/) -- React RSC deep dive with `React.cache()` internals
+- [Best Practices](/advanced/best-practices/) -- production patterns including SSR guidelines

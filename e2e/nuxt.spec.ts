@@ -17,16 +17,16 @@ test.describe('Nuxt Playground (SSR)', () => {
     await expect(page.locator('text=You have 5 items in your cart.')).toBeVisible()
   })
 
-  test('$d() date formatting renders output', async ({ page }) => {
+  test('<DateTime> date formatting renders output', async ({ page }) => {
     await page.goto('/')
     await page.waitForLoadState('networkidle')
-    await expect(page.locator('text=$d() — Date Formatting')).toBeVisible()
-    const dateSection = page.locator('.demo-label:has-text("$d(Date.now())") + div')
+    await expect(page.locator('text=<DateTime> — Date Formatting')).toBeVisible()
+    const dateSection = page.locator('.demo-label:has-text("DateTime :value") + div')
     const dateText = await dateSection.textContent()
     expect(dateText).toMatch(/\d{1,4}/)
   })
 
-  test('$n() number formatting renders locale-aware numbers', async ({ page }) => {
+  test('<NumberFormat> number formatting renders locale-aware numbers', async ({ page }) => {
     await page.goto('/')
     await page.waitForLoadState('networkidle')
     await expect(page.locator('text=1,234,567.89').first()).toBeVisible()
