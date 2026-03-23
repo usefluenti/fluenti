@@ -1,6 +1,6 @@
 'use client'
 
-import { t, Trans, msg, useI18n } from '@fluenti/react'
+import { Trans, msg, useI18n } from '@fluenti/react'
 
 const PAGE_LABELS = {
   title: msg`Rich Text Demos`,

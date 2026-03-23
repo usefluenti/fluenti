@@ -2,9 +2,6 @@ import { describe, it, expect } from 'vitest'
 import { render } from '@solidjs/testing-library'
 import { I18nProvider, useI18n } from '../src'
 
-const enMessages = { en: { hello: 'Hello' } }
-const jaMessages = { ja: { hello: 'こんにちは' } }
-
 describe('multi-provider isolation', () => {
   it('two sibling providers render different locales', () => {
     const messages = {

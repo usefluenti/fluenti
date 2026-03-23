@@ -149,8 +149,6 @@ describe('complex languages: end-to-end', () => {
   // These tests use `interpolate()` to verify step 3→5 as a pipeline,
   // plus `createFluentiCore` with pre-compiled functions to verify the runtime path.
 
-  const SOURCE_MSG = '{name} shared {count} photos with you'
-
   describe('Arabic — 6-category plurals', () => {
     // Arabic translation: translator expands 2 plural forms → 6
     const arTranslation =

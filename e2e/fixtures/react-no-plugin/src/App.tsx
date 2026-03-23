@@ -4,7 +4,7 @@ import { useI18n, Trans, Plural, Select, DateTime, NumberFormat } from '@fluenti
 const DEMO_DATE = new Date(Date.UTC(2025, 0, 15, 12))
 
 export function App({ onLocaleChange }: { onLocaleChange: (locale: string) => void }) {
-  const { t, locale, setLocale } = useI18n()
+  const { t, setLocale } = useI18n()
   const [count, setCount] = useState(0)
   const [role, setRole] = useState('admin')
 

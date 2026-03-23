@@ -22,7 +22,7 @@ const Link: Component<{ children?: JSX.Element }> = (props) => (
 const richComponents = { bold: Bold, italic: Italic, link: Link }
 
 const App: Component = () => {
-  const { t, locale, setLocale } = useI18n()
+  const { t, setLocale } = useI18n()
   const [count, setCount] = createSignal(0)
   const [role, setRole] = createSignal('admin')
 

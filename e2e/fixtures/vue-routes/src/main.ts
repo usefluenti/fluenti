@@ -1,4 +1,4 @@
-import { createApp, ref, computed, type InjectionKey } from 'vue'
+import { createApp, type InjectionKey } from 'vue'
 import { createFluenti } from '@fluenti/vue'
 import {
   extractLocaleFromPath,

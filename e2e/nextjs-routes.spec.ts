@@ -4,7 +4,7 @@ test.describe('Next.js path-based routing e2e', () => {
   // ─── Group 1: Middleware redirects ───
 
   test('bare root / redirects to /en', async ({ page }) => {
-    const response = await page.goto('/')
+    await page.goto('/')
     expect(page.url()).toContain('/en')
     await expect(page.getByTestId('home-page')).toBeVisible()
     await expect(page.getByTestId('welcome')).toContainText('Welcome to Fluenti')
@@ -17,7 +17,7 @@ test.describe('Next.js path-based routing e2e', () => {
   })
 
   test('/ja renders Japanese without redirect', async ({ page }) => {
-    const response = await page.goto('/ja')
+    await page.goto('/ja')
     await expect(page.getByTestId('welcome')).toContainText('Fluenti へようこそ')
   })
 

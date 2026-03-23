@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach } from 'vitest'
-import { render, screen, cleanup, renderHook } from '@testing-library/react'
+import { render, screen, cleanup } from '@testing-library/react'
 import { I18nProvider, useI18n, createFluenti } from '../src'
 
 const messages = {

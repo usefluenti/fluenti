@@ -222,7 +222,7 @@ describe('startDevWatcher', () => {
   })
 
   it('starts fresh watcher with new options on reload', () => {
-    const cleanup1 = createAndCleanup({ include: ['./src/**/*.tsx'] })
+    createAndCleanup({ include: ['./src/**/*.tsx'] })
     expect(vi.mocked(watch).mock.calls[0]![0]).toBe('/project/src')
 
     // Simulate dev server reload with different options

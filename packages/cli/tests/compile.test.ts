@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { compileCatalog, compileIndex, collectAllIds, CATALOG_VERSION, extractMessageVariables, compileTypeDeclaration, type CompileOptions } from '../src/compile'
+import { compileCatalog, compileIndex, collectAllIds, CATALOG_VERSION, extractMessageVariables, compileTypeDeclaration } from '../src/compile'
 import { hashMessage } from '@fluenti/core/internal'
 import type { CatalogData } from '../src/catalog'
 

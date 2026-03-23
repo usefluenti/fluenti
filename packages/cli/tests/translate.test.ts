@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { buildPrompt, extractJSON, getUntranslatedEntries, chunkEntries, translateCatalog } from '../src/translate'
 import type { CatalogData } from '../src/catalog'
 
@@ -193,14 +193,6 @@ describe('chunkEntries', () => {
 
 describe('translateCatalog', () => {
   it('does not mutate the original catalog', async () => {
-    const original: CatalogData = {
-      abc: { message: 'Hello' },
-      def: { message: 'World', translation: 'Monde' },
-    }
-
-    // Deep clone for comparison
-    const originalSnapshot = JSON.parse(JSON.stringify(original))
-
     // Mock invokeAI by mocking the module
     const translateModule = await import('../src/translate')
 
@@ -281,11 +273,6 @@ describe('translateCatalog', () => {
       }
       return {} as never
     })
-
-    const catalog: CatalogData = {
-      abc: { message: 'Hello' },
-      def: { message: 'World' },
-    }
 
     // This will fail because invokeAI is promisified differently, but we test
     // that the function handles the case where AI returns partial translations

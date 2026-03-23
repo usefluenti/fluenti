@@ -79,7 +79,7 @@ function RootDocument({ locale, children }: { locale: string; children: ReactNod
 }
 
 function AppShell({ onLocaleChange }: { onLocaleChange: (l: string) => void }) {
-  const { t, i18n, locale, setLocale, preloadLocale, isLoading } = useI18n()
+  const { t, locale, setLocale, preloadLocale, isLoading } = useI18n()
 
   const handleSwitch = async (loc: string) => {
     await setLocale(loc)

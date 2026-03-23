@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { useI18n } from '@fluenti/react'
 
 export function App({ onLocaleChange }: { onLocaleChange: (locale: string) => void }) {

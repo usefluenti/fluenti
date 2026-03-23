@@ -1,5 +1,4 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import type { AIProvider } from '../src/ai-provider'
 
 vi.mock('node:child_process', () => ({
   execFile: vi.fn(),

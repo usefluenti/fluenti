@@ -206,7 +206,7 @@ function mergeTurbopackConfig(
   return {
     ...base,
     rules: { ...fluenti.rules, ...userRules },
-    resolveAlias: { ...fluenti.resolveAlias, ...(base['resolveAlias'] as Record<string, string> ?? {}) },
+    resolveAlias: { ...fluenti.resolveAlias, ...(base['resolveAlias'] as Record<string, string>) },
   }
 }
 

@@ -1,9 +1,8 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { useState } from 'react'
 import { useI18n, Plural, Select } from '@fluenti/react'
 
 function PluralsPage() {
-  const { t, i18n } = useI18n()
+  const { t } = useI18n()
   const [count, setCount] = useState(0)
   const [gender, setGender] = useState('other')
 

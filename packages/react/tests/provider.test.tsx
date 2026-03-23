@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
+import { describe, it, expect, vi, afterEach } from 'vitest'
 import { useState } from 'react'
 import { render, screen, act, waitFor, cleanup } from '@testing-library/react'
 import { I18nProvider, useI18n } from '../src'

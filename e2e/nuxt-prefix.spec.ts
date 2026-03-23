@@ -5,7 +5,7 @@ test.describe('Nuxt Prefix Strategy — Middleware Redirect', () => {
     // With 'prefix' strategy, visiting / should redirect to a locale-prefixed URL.
     // detectOrder is ['query', 'path', 'cookie', 'header'].
     // No query, no path locale, no cookie, no Accept-Language → fallbackLocale = 'ja'
-    const response = await page.goto('/')
+    await page.goto('/')
     // Should have been redirected to /ja (fallbackLocale)
     await expect(page.getByTestId('current-locale')).toContainText('ja')
     await expect(page.getByTestId('page-title')).toContainText('ようこそ')
@@ -13,7 +13,7 @@ test.describe('Nuxt Prefix Strategy — Middleware Redirect', () => {
   })
 
   test('redirects unprefixed /about to locale-prefixed URL', async ({ page }) => {
-    const response = await page.goto('/about')
+    await page.goto('/about')
     await expect(page.getByTestId('current-locale')).toContainText('ja')
     await expect(page.getByTestId('page-title')).toContainText('私たちについて')
     expect(page.url()).toContain('/ja/about')

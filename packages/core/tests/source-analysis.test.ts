@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import { parseSourceModule, isSourceNode, walkSourceAst } from '../src/source-analysis'
 import type { SourceNode } from '../src/source-analysis'
 
