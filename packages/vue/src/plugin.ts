@@ -178,7 +178,7 @@ export function createFluenti(options: FluentiConfig): FluentiPlugin {
     if (Array.isArray(idOrStrings) && 'raw' in idOrStrings) {
       const strings = idOrStrings as TemplateStringsArray
       const icu = buildICUMessage(strings, rest)
-      const values = Object.fromEntries(rest.map((v, i) => [String(i), v]))
+      const values = Object.fromEntries(rest.map((v, i) => [`arg${i}`, v]))
       // Delegate to the function-call path with the ICU string as the id
       return t(icu, values)
     }
