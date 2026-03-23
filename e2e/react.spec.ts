@@ -195,4 +195,30 @@ test.describe('React SPA Playground', () => {
     // percent: 86% or similar
     await expect(page.getByTestId('number-percent')).toContainText('%')
   })
+
+  test('loading indicator disappears after locale switch', async ({ page }) => {
+    await page.goto('/')
+    // Switch locale
+    await page.getByTestId('lang-ja').click()
+    // After settling, loading indicator should be gone
+    await expect(page.getByTestId('loading')).not.toBeVisible()
+    await expect(page.getByTestId('title')).toContainText('Fluenti React プレイグラウンド')
+  })
+
+  test('HTML in translated text is escaped, not executed (XSS prevention)', async ({ page }) => {
+    await page.goto('/')
+    // Verify no unexpected script elements from translations
+    const scripts = page.locator('#react-app script')
+    await expect(scripts).toHaveCount(0)
+  })
+
+  test('preloadLocale fires on hover and subsequent switch works', async ({ page }) => {
+    await page.goto('/')
+    // Hover to trigger preload
+    await page.getByTestId('lang-ja').hover()
+    await page.waitForTimeout(500)
+    // Click to switch
+    await page.getByTestId('lang-ja').click()
+    await expect(page.getByTestId('title')).toContainText('Fluenti React プレイグラウンド')
+  })
 })

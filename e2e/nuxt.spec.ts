@@ -326,3 +326,61 @@ test.describe('Nuxt SSR — Hydration Integrity', () => {
     await expect(page.locator('header h1')).toContainText('Fluenti Nuxt プレイグラウンド')
   })
 })
+
+test.describe('Nuxt — Rapid Locale Switching', () => {
+  test('rapid locale switching settles on final locale', async ({ page }) => {
+    await page.goto('/')
+    await page.waitForLoadState('networkidle')
+    const enBtn = page.locator('header button:has-text("English")')
+    const jaBtn = page.locator('header button:has-text("日本語")')
+    for (let i = 0; i < 5; i++) {
+      await jaBtn.click()
+      await enBtn.click()
+    }
+    await expect(page.locator('header h1')).toContainText('Fluenti Nuxt Playground')
+  })
+})
+
+test.describe('Nuxt — XSS Prevention', () => {
+  test('no script injection in translated content', async ({ page }) => {
+    await page.goto('/')
+    await page.waitForLoadState('networkidle')
+    const scripts = page.locator('main script')
+    await expect(scripts).toHaveCount(0)
+  })
+})
+
+test.describe('Nuxt — Browser Back/Forward', () => {
+  test('browser back preserves locale after navigation', async ({ page }) => {
+    await page.goto('/')
+    await page.waitForLoadState('networkidle')
+    const jaBtn = page.locator('header button:has-text("日本語")')
+    await jaBtn.click()
+    await expect(page.locator('header h1')).toContainText('Fluenti Nuxt プレイグラウンド')
+    await page.locator('nav a[href="/plurals"]').click()
+    await expect(page.locator('h2:has-text("Plural Demos")')).toBeVisible()
+    await page.goBack()
+    await page.waitForLoadState('networkidle')
+    await expect(page.locator('header h1')).toContainText('Fluenti Nuxt プレイグラウンド')
+  })
+})
+
+test.describe('Nuxt — Fallback & Loading', () => {
+  test('missing translation falls back gracefully', async ({ page }) => {
+    await page.goto('/')
+    await page.waitForLoadState('networkidle')
+    await expect(page.getByTestId('fallback-only')).toContainText('This key only exists in English')
+    await page.locator('header button:has-text("日本語")').click()
+    await expect(page.getByTestId('fallback-only')).not.toBeEmpty()
+  })
+
+  test('loading indicator disappears after locale switch', async ({ page }) => {
+    await page.goto('/')
+    await page.waitForLoadState('networkidle')
+    // Switch locale
+    await page.locator('header button:has-text("日本語")').click()
+    // After settling, loading indicator should be gone
+    await expect(page.locator('.loading-indicator')).not.toBeVisible()
+    await expect(page.locator('header h1')).toContainText('Fluenti Nuxt プレイグラウンド')
+  })
+})

@@ -19,7 +19,7 @@ export default function PluralsPage() {
         'box-shadow': '0 1px 3px rgba(0,0,0,0.1)',
         'text-align': 'center',
       }}>
-        <div style={{
+        <div data-testid="plural-count" style={{
           'font-size': '48px',
           'font-weight': 'bold',
           'margin-bottom': '16px',
@@ -28,7 +28,7 @@ export default function PluralsPage() {
           {count()}
         </div>
 
-        <p style={{ 'font-size': '18px', 'margin-bottom': '24px' }}>
+        <p data-testid="plural-result" style={{ 'font-size': '18px', 'margin-bottom': '24px' }}>
           <Plural
             value={count()}
             zero={t`Your cart is empty.`}
@@ -39,6 +39,7 @@ export default function PluralsPage() {
 
         <div style={{ display: 'flex', gap: '8px', 'justify-content': 'center' }}>
           <button
+            data-testid="btn-dec"
             onClick={() => setCount((c) => Math.max(0, c - 1))}
             style={{
               padding: '8px 20px',
@@ -51,6 +52,7 @@ export default function PluralsPage() {
             -
           </button>
           <button
+            data-testid="btn-inc"
             onClick={() => setCount((c) => c + 1)}
             style={{
               padding: '8px 20px',
@@ -63,6 +65,7 @@ export default function PluralsPage() {
             +
           </button>
           <button
+            data-testid="btn-reset"
             onClick={() => setCount(0)}
             style={{
               padding: '8px 20px',
@@ -85,7 +88,7 @@ export default function PluralsPage() {
         'margin-top': '24px',
       }}>
         <h2 style={{ 'margin-bottom': '16px' }}>{t`Select Demo`}</h2>
-        <p style={{ 'font-size': '18px', 'margin-bottom': '16px' }}>
+        <p data-testid="select-result" style={{ 'font-size': '18px', 'margin-bottom': '16px' }}>
           <Select
             value={gender()}
             options={{
@@ -97,6 +100,7 @@ export default function PluralsPage() {
         </p>
         <div style={{ display: 'flex', gap: '8px', 'justify-content': 'center' }}>
           <button
+            data-testid="gender-male"
             onClick={() => setGender('male')}
             style={{
               padding: '8px 20px',
@@ -111,6 +115,7 @@ export default function PluralsPage() {
             Male
           </button>
           <button
+            data-testid="gender-female"
             onClick={() => setGender('female')}
             style={{
               padding: '8px 20px',
@@ -125,6 +130,7 @@ export default function PluralsPage() {
             Female
           </button>
           <button
+            data-testid="gender-other"
             onClick={() => setGender('other')}
             style={{
               padding: '8px 20px',

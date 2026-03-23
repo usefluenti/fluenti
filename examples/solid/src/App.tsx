@@ -1,5 +1,5 @@
 import { createSignal, type Component, type JSX } from 'solid-js'
-import { I18nProvider, useI18n, Trans, Plural, Select, DateTime, NumberFormat } from '@fluenti/solid'
+import { I18nProvider, useI18n, Trans, Plural, Select, DateTime, NumberFormat, msg } from '@fluenti/solid'
 import en from './locales/compiled/en.js'
 import zhCN from './locales/compiled/zh-CN.js'
 import ja from './locales/compiled/ja.js'
@@ -17,6 +17,8 @@ const Link: Component<{ children?: JSX.Element }> = (props) => (
 )
 
 const richComponents = { bold: Bold, italic: Italic, link: Link }
+
+const PAGE_TITLE = msg`Solid Playground Title`
 
 const LanguageSwitcher: Component = () => {
   const { locale, setLocale, isLoading, preloadLocale } = useI18n()
@@ -106,6 +108,8 @@ export const App: Component = () => {
         {/* ── Home ── */}
         <div>
           <h1>{t`Welcome to Fluenti`}</h1>
+          <span data-testid="msg-title">{t(PAGE_TITLE)}</span>
+          <p data-testid="fallback-only">{t`This key only exists in English`}</p>
           <p style={{ color: '#666', 'margin-bottom': '16px' }}>{t`A type-safe i18n library for Solid`}</p>
 
           <section style={{ 'margin-bottom': '24px' }}>

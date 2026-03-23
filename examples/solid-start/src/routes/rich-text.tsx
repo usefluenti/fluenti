@@ -18,7 +18,7 @@ const richComponents = { bold: Bold, italic: Italic, link: Link }
 export default function RichTextPage() {
   return (
     <div>
-      <h1>{t`Rich Text`}</h1>
+      <h1 data-testid="richtext-title">{t`Rich Text`}</h1>
       <p style={{ color: '#666', 'margin-bottom': '16px' }}>
         The Trans component renders rich text with embedded components, fully SSR-compatible.
       </p>
@@ -35,7 +35,7 @@ export default function RichTextPage() {
           'box-shadow': '0 1px 3px rgba(0,0,0,0.1)',
         }}>
           <h3 style={{ 'margin-bottom': '8px' }}>Welcome Message</h3>
-          <p>
+          <p data-testid="trans-welcome">
             <Trans
               message={t`Welcome to <bold>Fluenti</bold> for <italic>SolidStart</italic>!`}
               components={richComponents}
@@ -50,7 +50,7 @@ export default function RichTextPage() {
           'box-shadow': '0 1px 3px rgba(0,0,0,0.1)',
         }}>
           <h3 style={{ 'margin-bottom': '8px' }}>Feature List</h3>
-          <p>
+          <p data-testid="trans-features">
             <Trans
               message={t`Supports <bold>bold</bold>, <italic>italic</italic>, and <link>links</link>.`}
               components={richComponents}

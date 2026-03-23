@@ -533,6 +533,8 @@ const nested1 = computed(() => format(nestedPattern, { count: 1, gender: gender.
       </div>
     </main>
 
+    <p data-testid="fallback-only">{{ t('This key only exists in English') }}</p>
+
     <footer>
       <p v-t>Built with Fluenti and Vue 3</p>
     </footer>

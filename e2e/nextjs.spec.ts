@@ -539,3 +539,34 @@ test.describe('Next.js — Concurrent SSR Locale Isolation', () => {
     await Promise.all([ctxEn.close(), ctxJa.close()])
   })
 })
+
+test.describe('Next.js — Rapid Locale Switching', () => {
+  test('rapid locale switching settles on final locale', async ({ page }) => {
+    await page.goto('/')
+    for (let i = 0; i < 5; i++) {
+      await page.getByTestId('lang-ja').click()
+      await page.getByTestId('lang-en').click()
+    }
+    await expect(page.getByTestId('welcome')).toContainText('Welcome')
+  })
+})
+
+test.describe('Next.js — XSS Prevention', () => {
+  test('no script injection in translated content', async ({ page }) => {
+    await page.goto('/')
+    const scripts = page.locator('main script')
+    await expect(scripts).toHaveCount(0)
+  })
+})
+
+test.describe('Next.js — Browser Back/Forward', () => {
+  test('browser back preserves locale after navigation', async ({ page }) => {
+    await page.goto('/')
+    await page.getByTestId('lang-ja').click()
+    await expect(page.getByTestId('welcome')).toContainText('Fluenti へようこそ')
+    await page.getByTestId('nav-plurals').click()
+    await expect(page.getByTestId('plurals-page')).toBeVisible()
+    await page.goBack()
+    await expect(page.getByTestId('welcome')).toContainText('Fluenti へようこそ')
+  })
+})

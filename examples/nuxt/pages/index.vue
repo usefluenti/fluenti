@@ -61,6 +61,8 @@ const { t, locale } = useI18n()
       </div>
     </div>
 
+    <p data-testid="fallback-only">{{ t('This key only exists in English') }}</p>
+
     <div class="section">
       <h2 v-t>Features</h2>
       <ul>

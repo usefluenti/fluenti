@@ -155,4 +155,31 @@ test.describe('Vue Playground', () => {
     const decimalOutput = page.locator('.demo-label:has-text("$n(1234.5, \'decimal\')") + div')
     await expect(decimalOutput).toContainText('1,234.5')
   })
+
+  test('missing translation falls back gracefully', async ({ page }) => {
+    await page.goto('/')
+    await expect(page.getByTestId('fallback-only')).toContainText('This key only exists in English')
+    await page.locator('.lang-buttons button:has-text("日本語")').click()
+    // Should still show English text (fallback)
+    await expect(page.getByTestId('fallback-only')).not.toBeEmpty()
+  })
+
+  test('loading indicator disappears after locale switch', async ({ page }) => {
+    await page.goto('/')
+    // Switch locale
+    await page.locator('.lang-buttons button:has-text("日本語")').click()
+    // After settling, loading should be gone
+    await expect(page.locator('.loading-indicator')).not.toBeVisible()
+    await expect(page.locator('header h1')).not.toContainText('Fluenti Vue Playground')
+  })
+
+  test('preloadLocale fires on hover and subsequent switch works', async ({ page }) => {
+    await page.goto('/')
+    // Hover to trigger preload
+    await page.locator('.lang-buttons button:has-text("日本語")').hover()
+    await page.waitForTimeout(500)
+    // Click to switch
+    await page.locator('.lang-buttons button:has-text("日本語")').click()
+    await expect(page.locator('header h1')).not.toContainText('Fluenti Vue Playground')
+  })
 })

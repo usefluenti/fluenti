@@ -10,42 +10,42 @@ const Formatting: Component = () => {
 
   return (
     <div>
-      <h1>{translate(pageTitle)}</h1>
+      <h1 data-testid="formatting-title">{translate(pageTitle)}</h1>
 
       <section style={{ 'margin-bottom': '24px' }}>
         <h2>{translate`Today's date:`}</h2>
         <p>
-          Default: <DateTime value={Date.now()} />
+          Default: <span data-testid="date-default"><DateTime value={Date.now()} /></span>
         </p>
         <p>
-          Short: <DateTime value={Date.now()} style="short" />
+          Short: <span data-testid="date-short"><DateTime value={Date.now()} style="short" /></span>
         </p>
         <p>
-          Long: <DateTime value={Date.now()} style="long" />
+          Long: <span data-testid="date-long"><DateTime value={Date.now()} style="long" /></span>
         </p>
         <p>
-          Time: <DateTime value={Date.now()} style="time" />
+          Time: <span data-testid="date-time"><DateTime value={Date.now()} style="time" /></span>
         </p>
       </section>
 
       <section style={{ 'margin-bottom': '24px' }}>
         <h2>{translate`A large number:`}</h2>
         <p>
-          Default: <NumberFormat value={1234567.89} />
+          Default: <span data-testid="number-default"><NumberFormat value={1234567.89} /></span>
         </p>
       </section>
 
       <section style={{ 'margin-bottom': '24px' }}>
         <h2>{translate`Percentage:`}</h2>
         <p>
-          <NumberFormat value={0.75} style="percent" />
+          <span data-testid="number-percent"><NumberFormat value={0.75} style="percent" /></span>
         </p>
       </section>
 
       <section>
         <h2>{translate`Currency:`}</h2>
         <p>
-          <NumberFormat value={99.99} style="currency" />
+          <span data-testid="number-currency"><NumberFormat value={99.99} style="currency" /></span>
         </p>
       </section>
     </div>

@@ -17,6 +17,7 @@ const LanguageSwitcher: Component = () => {
     <div style={{ display: 'flex', gap: '8px', 'align-items': 'center' }}>
       {languages.map((lang) => (
         <button
+          data-testid={`lang-${lang.code}`}
           onClick={() => {
             document.cookie = `locale=${lang.code};path=/;max-age=31536000`
             setLocale(lang.code)
@@ -41,9 +42,10 @@ const LanguageSwitcher: Component = () => {
 const Nav: Component = () => {
   return (
     <nav style={{ display: 'flex', gap: '16px', 'margin-bottom': '8px' }}>
-      <a href="/" style={{ color: '#4a90d9' }}>{t`Home`}</a>
-      <a href="/rich-text" style={{ color: '#4a90d9' }}>{t`Rich Text`}</a>
-      <a href="/plurals" style={{ color: '#4a90d9' }}>{t`Plurals`}</a>
+      <a href="/" data-testid="nav-home" style={{ color: '#4a90d9' }}>{t`Home`}</a>
+      <a href="/rich-text" data-testid="nav-richtext" style={{ color: '#4a90d9' }}>{t`Rich Text`}</a>
+      <a href="/plurals" data-testid="nav-plurals" style={{ color: '#4a90d9' }}>{t`Plurals`}</a>
+      <a href="/formatting" data-testid="nav-formatting" style={{ color: '#4a90d9' }}>{t`Formatting`}</a>
     </nav>
   )
 }

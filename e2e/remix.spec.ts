@@ -122,3 +122,22 @@ test.describe('Remix SPA e2e', () => {
     await expect(page.getByTestId('welcome')).toContainText('Welcome to Fluenti')
   })
 })
+
+test.describe('Remix — Rapid Locale Switching', () => {
+  test('rapid locale switching settles on final locale', async ({ page }) => {
+    await page.goto('/')
+    for (let i = 0; i < 5; i++) {
+      await page.getByTestId('lang-ja').click()
+      await page.getByTestId('lang-en').click()
+    }
+    await expect(page.getByTestId('welcome')).toContainText('Welcome')
+  })
+})
+
+test.describe('Remix — XSS Prevention', () => {
+  test('no script injection in translated content', async ({ page }) => {
+    await page.goto('/')
+    const scripts = page.locator('main script')
+    await expect(scripts).toHaveCount(0)
+  })
+})

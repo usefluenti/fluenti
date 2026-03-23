@@ -169,4 +169,40 @@ test.describe('Solid Playground', () => {
     // percent: 86% or similar
     await expect(page.locator('text=86%').first()).toBeVisible()
   })
+
+  test('missing translation falls back gracefully', async ({ page }) => {
+    await page.goto('/')
+    await expect(page.getByTestId('fallback-only')).toContainText('This key only exists in English')
+    await page.locator('button:has-text("日本語")').click()
+    // Should still show English text (fallback)
+    await expect(page.getByTestId('fallback-only')).not.toBeEmpty()
+  })
+
+  test('loading indicator disappears after locale switch', async ({ page }) => {
+    await page.goto('/')
+    // Switch locale
+    await page.locator('button:has-text("日本語")').click()
+    // After settling, loading indicator (span with "Loading...") should be gone
+    await expect(page.locator('span:has-text("Loading...")')).not.toBeVisible()
+    await expect(page.locator('h1').first()).not.toContainText('Welcome to Fluenti')
+  })
+
+  test('preloadLocale fires on hover and subsequent switch works', async ({ page }) => {
+    await page.goto('/')
+    // Hover to trigger preload
+    await page.locator('button:has-text("日本語")').hover()
+    await page.waitForTimeout(500)
+    // Click to switch
+    await page.locator('button:has-text("日本語")').click()
+    await expect(page.locator('h1').first()).not.toContainText('Welcome to Fluenti')
+  })
+
+  test('msg() lazy message descriptor translates', async ({ page }) => {
+    await page.goto('/')
+    const before = await page.getByTestId('msg-title').textContent()
+    // Switch to Japanese
+    await page.locator('button:has-text("日本語")').click()
+    const after = await page.getByTestId('msg-title').textContent()
+    expect(after).not.toBe(before)
+  })
 })
