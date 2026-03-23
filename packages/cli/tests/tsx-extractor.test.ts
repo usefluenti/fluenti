@@ -400,4 +400,42 @@ const real = t('real message')`
     expect(messages).toHaveLength(1)
     expect(messages[0]!.message).toBe('outer {name}')
   })
+
+  describe('msg extraction', () => {
+    it('extracts msg`` from @fluenti/react import', () => {
+      const code = `import { msg } from '@fluenti/react'\nconst label = msg\`Administrator\``
+      const messages = extractFromTsx(code, 'App.tsx')
+      expect(messages).toHaveLength(1)
+      expect(messages[0]!.message).toBe('Administrator')
+      expect(messages[0]!.comment).toBe('msg tagged template')
+    })
+
+    it('extracts msg`` from @fluenti/solid import', () => {
+      const code = `import { msg } from '@fluenti/solid'\nconst title = msg\`Page Title\``
+      const messages = extractFromTsx(code, 'App.tsx')
+      expect(messages).toHaveLength(1)
+      expect(messages[0]!.message).toBe('Page Title')
+      expect(messages[0]!.comment).toBe('msg tagged template')
+    })
+
+    it('extracts msg`` with alias import', () => {
+      const code = `import { msg as defineMessage } from '@fluenti/react'\nconst label = defineMessage\`Administrator\``
+      const messages = extractFromTsx(code, 'App.tsx')
+      expect(messages).toHaveLength(1)
+      expect(messages[0]!.message).toBe('Administrator')
+      expect(messages[0]!.comment).toBe('msg tagged template')
+    })
+
+    it('does not extract msg() call expression', () => {
+      const code = `import { msg } from '@fluenti/react'\nconst label = msg({ id: 'test' })`
+      const messages = extractFromTsx(code, 'App.tsx')
+      expect(messages).toHaveLength(0)
+    })
+
+    it('extracts both t`` and msg`` in the same file', () => {
+      const code = `import { t, msg } from '@fluenti/react'\nconst greeting = t\`Hello\`\nconst role = msg\`Admin\``
+      const messages = extractFromTsx(code, 'App.tsx')
+      expect(messages).toHaveLength(2)
+    })
+  })
 })

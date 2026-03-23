@@ -410,8 +410,8 @@ function extractTaggedTemplateMessage(
   }
 }
 
-function collectDirectImportTBindings(ast: SourceNode): Set<string> {
-  const bindings = new Set<string>()
+function collectDirectBindings(ast: SourceNode): Map<string, 't' | 'msg'> {
+  const bindings = new Map<string, 't' | 'msg'>()
   const body = Array.isArray(ast['body']) ? ast['body'] : []
 
   for (const entry of body) {
@@ -420,8 +420,10 @@ function collectDirectImportTBindings(ast: SourceNode): Set<string> {
 
     for (const specifier of entry.specifiers) {
       if (!isImportSpecifier(specifier)) continue
-      if (readImportedName(specifier) !== 't') continue
-      bindings.add(specifier.local.name)
+      const importedName = readImportedName(specifier)
+      if (importedName === 't' || importedName === 'msg') {
+        bindings.set(specifier.local.name, importedName as 't' | 'msg')
+      }
     }
   }
 
@@ -435,17 +437,22 @@ export function extractFromTsx(code: string, filename: string): ExtractedMessage
   }
 
   const messages: ExtractedMessage[] = []
-  const directImportTBindings = collectDirectImportTBindings(ast)
+  const directBindings = collectDirectBindings(ast)
 
   walkSourceAst(ast, (node: SourceNode) => {
     if (node.type === 'TaggedTemplateExpression') {
       const tagged = node as TaggedTemplateExpressionNode
       if (
         isIdentifier(tagged.tag)
-        && (tagged.tag.name === 't' || directImportTBindings.has(tagged.tag.name))
+        && (tagged.tag.name === 't' || directBindings.has(tagged.tag.name))
       ) {
+        const descriptor = extractTaggedTemplateMessage(code, tagged)
+        const bindingType = directBindings.get(tagged.tag.name)
+        if (bindingType === 'msg') {
+          descriptor.comment = 'msg tagged template'
+        }
         const extracted = createExtractedMessage(
-          extractTaggedTemplateMessage(code, tagged),
+          descriptor,
           filename,
           tagged,
         )
@@ -458,8 +465,9 @@ export function extractFromTsx(code: string, filename: string): ExtractedMessage
 
     if (node.type === 'CallExpression') {
       const call = node as CallExpressionNode
-      if (isIdentifier(call.callee) && (call.callee.name === 't' || directImportTBindings.has(call.callee.name))) {
-        if (directImportTBindings.has(call.callee.name) && call.arguments[0]?.type !== 'ObjectExpression') {
+      const callBindingType = directBindings.get(call.callee && isIdentifier(call.callee) ? call.callee.name : '')
+      if (isIdentifier(call.callee) && (call.callee.name === 't' || (directBindings.has(call.callee.name) && callBindingType === 't'))) {
+        if (directBindings.has(call.callee.name) && call.arguments[0]?.type !== 'ObjectExpression') {
           return
         }
         const descriptor = call.arguments[0] ? extractDescriptorFromCallArgument(call.arguments[0]) : undefined
