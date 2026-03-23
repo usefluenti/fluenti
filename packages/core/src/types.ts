@@ -396,7 +396,7 @@ export interface PluginExtractContext {
 /** Context passed to plugin compile hooks */
 export interface PluginCompileContext {
   readonly locale: string
-  readonly messages: Record<string, CompiledMessage>
+  readonly messages: Record<string, string>
   readonly outDir: string
   readonly config?: FluentiConfig
 }

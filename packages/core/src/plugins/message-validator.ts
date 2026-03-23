@@ -73,7 +73,7 @@ export function messageValidatorPlugin(): FluentiPlugin {
 
     onBeforeCompile(context: PluginCompileContext): void {
       const issues: ValidationIssue[] = []
-      const msgs: Record<string, string> = context.messages as Record<string, string>
+      const msgs = context.messages
 
       for (const [id, message] of Object.entries(msgs)) {
         // 1. Check ICU parse validity
