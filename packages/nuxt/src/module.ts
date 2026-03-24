@@ -1,4 +1,5 @@
 import { defineNuxtModule, addPlugin, addImports, addComponent, addRouteMiddleware, addServerHandler, createResolver } from '@nuxt/kit'
+import { createRequire } from 'node:module'
 import type { FluentNuxtOptions } from './types'
 import { resolveLocaleProperties, resolveDomainConfigs } from './types'
 import { resolveLocaleCodes } from '@fluenti/core/internal'
@@ -29,10 +30,14 @@ export const CONFIG_KEY = 'fluenti'
  * Resolve the FluentiBuildConfig from the module options.
  */
 function resolveFluentiBuildConfig(configOption: string | FluentiBuildConfig | undefined, rootDir: string): FluentiBuildConfig {
+  // Use native `require` in CJS context (where import.meta.url is unavailable),
+  // fall back to createRequire in ESM context.
+  const _require = typeof require !== 'undefined' ? require : createRequire(import.meta.url)
+
   if (typeof configOption === 'object') {
     // Inline config — merge with defaults
     try {
-      const { DEFAULT_FLUENTI_CONFIG } = require('@fluenti/core/config') as {
+      const { DEFAULT_FLUENTI_CONFIG } = _require('@fluenti/core/config') as {
         DEFAULT_FLUENTI_CONFIG: FluentiBuildConfig
       }
       return { ...DEFAULT_FLUENTI_CONFIG, ...configOption }
@@ -43,7 +48,7 @@ function resolveFluentiBuildConfig(configOption: string | FluentiBuildConfig | u
 
   // string → specified path; undefined → auto-discover
   try {
-    const { loadConfigSync } = require('@fluenti/core/config') as {
+    const { loadConfigSync } = _require('@fluenti/core/config') as {
       loadConfigSync: (configPath?: string, cwd?: string) => FluentiBuildConfig
     }
     return loadConfigSync(

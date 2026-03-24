@@ -57,17 +57,35 @@ export async function runExtractCompile(options: DevRunnerOptions): Promise<void
     }
   }
 
-  // Dev mode: in-process extract + compile (avoids shell-out overhead)
+  // Dev mode: try in-process extract + compile first (avoids shell-out overhead).
+  // Step 1: check if @fluenti/cli is installed — if not, fall back to shell-out.
+  // Step 2: run — errors here mean the CLI ran but failed; surface them, don't fall through.
+  let fluentCli: { runExtract: (cwd: string) => Promise<void>; runCompile: (cwd: string, opts?: { parallel: boolean }) => Promise<void> } | null = null
   try {
     const projectRequire = createRequire(join(options.cwd, 'package.json'))
-    const { runExtract, runCompile } = projectRequire('@fluenti/cli')
-    await runExtract(options.cwd)
-    await runCompile(options.cwd, { parallel: options.parallelCompile })
-    console.log('[fluenti] Extracting and compiling... done')
-    options.onSuccess?.()
-    return
+    fluentCli = projectRequire('@fluenti/cli')
   } catch {
-    // In-process failed — fall back to shell-out
+    // @fluenti/cli not installed — fall back to shell-out
+  }
+
+  if (fluentCli) {
+    try {
+      await fluentCli.runExtract(options.cwd)
+      if (options.parallelCompile) {
+        await fluentCli.runCompile(options.cwd, { parallel: true })
+      } else {
+        await fluentCli.runCompile(options.cwd)
+      }
+      console.log('[fluenti] Extracting and compiling... done')
+      options.onSuccess?.()
+      return
+    } catch (e) {
+      const error = e instanceof Error ? e : new Error(String(e))
+      if (options.throwOnError) throw error
+      console.warn('[fluenti] Extract/compile failed:', error.message)
+      options.onError?.(error)
+      return
+    }
   }
 
   const bin = resolveCliBin(options.cwd)

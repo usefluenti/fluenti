@@ -1,5 +1,6 @@
 import { existsSync } from 'node:fs'
 import { resolve, dirname, relative, isAbsolute } from 'node:path'
+import { createRequire } from 'node:module'
 import type { FluentiBuildConfig } from './types'
 import { normalizeConfig } from './types'
 
@@ -154,8 +155,10 @@ export function loadConfigSync(configPath?: string, cwd?: string): FluentiBuildC
   if (!configFilePath) return normalizeConfig({ ...defaultConfig })
 
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { createJiti } = require('jiti') as {
+    // Use createRequire so this works in both CJS and ESM contexts.
+    // Bare `require('jiti')` throws ReferenceError in native ESM (e.g. next.config.mjs).
+    const _require = typeof require !== 'undefined' ? require : createRequire(import.meta.url)
+    const { createJiti } = _require('jiti') as {
       createJiti: (
         url: string,
         options?: { moduleCache?: boolean; interopDefault?: boolean },
@@ -165,9 +168,7 @@ export function loadConfigSync(configPath?: string, cwd?: string): FluentiBuildC
     const resolved = resolveConfigChainSync(configFilePath, createJiti, new Set())
     return normalizeConfig(resolved)
   } catch (err) {
-    if (typeof process !== 'undefined' && process.env?.['NODE_ENV'] !== 'production') {
-      console.warn('[fluenti] Failed to load config, using defaults:', err)
-    }
+    console.warn('[fluenti] Failed to load config, using defaults:', err)
     return normalizeConfig({ ...defaultConfig })
   }
 }

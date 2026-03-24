@@ -7,6 +7,11 @@ vi.mock('../src/generate-server-module', () => ({
   generateServerModule: vi.fn(() => '/project/.fluenti/server.js'),
 }))
 
+// Mock @fluenti/cli — used to simulate presence/failure of the optional peer dep
+vi.mock('@fluenti/cli', () => ({
+  runCompile: vi.fn().mockResolvedValue(undefined),
+}))
+
 // Mock read-config
 vi.mock('../src/read-config', () => ({
   resolveConfig: vi.fn(() => ({
@@ -611,5 +616,50 @@ describe('withFluenti', () => {
 
     const rule = result.module.rules[0]!
     expect(rule.enforce).toBe('pre')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// buildAutoCompile error handling
+// ---------------------------------------------------------------------------
+
+describe('buildAutoCompile — error handling', () => {
+  function getBeforeRunCallback() {
+    const wrapper = withFluenti()
+    const config = wrapper({})
+    const webpackFn = config['webpack'] as (cfg: unknown, opts: unknown) => unknown
+    const webpackConfig = {
+      module: { rules: [] as unknown[] },
+      resolve: { alias: {} as Record<string, string> },
+    }
+    const result = webpackFn(webpackConfig, { isServer: true, dev: false }) as {
+      plugins: Array<{ apply: (compiler: unknown) => void }>
+    }
+    let tapCallback: (() => Promise<void>) | null = null
+    result.plugins[0]!.apply({
+      hooks: {
+        beforeRun: {
+          tapPromise: (_name: string, cb: () => Promise<void>) => { tapCallback = cb },
+        },
+      },
+    })
+    return tapCallback!
+  }
+
+  it('propagates compile errors so the production build fails loudly', async () => {
+    // @fluenti/cli is available (mocked) but runCompile throws — the build should fail
+    const { runCompile } = await import('@fluenti/cli')
+    vi.mocked(runCompile).mockRejectedValueOnce(new Error('ICU syntax error at line 5'))
+
+    const cb = getBeforeRunCallback()
+    await expect(cb()).rejects.toThrow('ICU syntax error at line 5')
+  })
+
+  it('completes silently when compile succeeds', async () => {
+    const { runCompile } = await import('@fluenti/cli')
+    vi.mocked(runCompile).mockResolvedValueOnce(undefined)
+
+    const cb = getBeforeRunCallback()
+    await expect(cb()).resolves.toBeUndefined()
   })
 })

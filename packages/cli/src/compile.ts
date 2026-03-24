@@ -163,6 +163,7 @@ export function compileCatalog(
 ): { code: string; stats: CompileStats } {
   const lines: string[] = []
   lines.push(`// @fluenti/compiled v${CATALOG_VERSION}`)
+  lines.push(`// @ts-nocheck`)
   const exportNames: Array<{ id: string; exportName: string }> = []
   let compiled = 0
   const missing: string[] = []

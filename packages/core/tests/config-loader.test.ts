@@ -1,7 +1,10 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { join, dirname } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { createRequire } from 'node:module'
+import { execSync } from 'node:child_process'
 import { loadConfig, loadConfigSync } from '../src/config-loader'
 
 // ---------------------------------------------------------------------------
@@ -672,5 +675,49 @@ describe('edge cases — circular extends and boundaries', () => {
 
     // Duplicates are not deduplicated — behavior is preserved as-is
     expect(config.locales).toEqual(['en', 'fr', 'en', 'fr'])
+  })
+})
+
+// ---------------------------------------------------------------------------
+// 12. ESM compatibility — loadConfigSync must work when `require` is not defined
+// ---------------------------------------------------------------------------
+
+describe('ESM compatibility — loadConfigSync', () => {
+  it('loads config correctly in a pure ESM context where require is not defined', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'fluenti-esm-test-'))
+    try {
+      writeFileSync(
+        join(dir, 'fluenti.config.mjs'),
+        `export default { sourceLocale: 'ja', locales: ['ja', 'en'], format: 'po' }\n`,
+      )
+
+      // tsx loader path — resolve via package.json since dist/loader.cjs is not exported
+      const _require = createRequire(import.meta.url)
+      const tsxPkgDir = dirname(_require.resolve('tsx/package.json'))
+      const tsxLoader = join(tsxPkgDir, 'dist/loader.cjs')
+
+      // Source path of the module under test
+      const configLoaderPath = join(
+        dirname(fileURLToPath(import.meta.url)),
+        '../src/config-loader.ts',
+      )
+
+      // Run as a pure ESM stdin script: --input-type=module gives true ESM context
+      // where `require` is NOT defined, reproducing the next.config.mjs scenario.
+      const script = [
+        `import { loadConfigSync } from '${configLoaderPath}'`,
+        `const config = loadConfigSync(undefined, '${dir}')`,
+        `process.stdout.write(config.sourceLocale)`,
+      ].join('\n')
+
+      const output = execSync(
+        `node --input-type=module --import=${tsxLoader}`,
+        { input: script, encoding: 'utf-8', timeout: 15000 },
+      )
+
+      expect(output).toBe('ja')
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
   })
 })

@@ -120,4 +120,33 @@ describe('generateServerModule', () => {
     expect(serverSource).not.toContain("headerStore.get('referer')")
     expect(serverSource).not.toContain("cookieStore.get('locale')")
   })
+
+  // ── Template injection / escaping ──────────────────────────────────────
+  it('escapes single quotes in cookieName to prevent JS injection', () => {
+    generateServerModule('/project', {
+      ...baseConfig,
+      cookieName: "loc'ale",
+    })
+    const serverSource = writtenFiles['/project/node_modules/.fluenti/server.js']!
+    // Should contain escaped value, not a broken string literal
+    expect(serverSource).toContain("cookieStore.get('loc\\'ale')")
+    expect(serverSource).not.toContain("cookieStore.get('loc'ale')")
+  })
+
+  it('escapes backslashes in cookieName', () => {
+    generateServerModule('/project', {
+      ...baseConfig,
+      cookieName: 'loc\\ale',
+    })
+    const serverSource = writtenFiles['/project/node_modules/.fluenti/server.js']!
+    expect(serverSource).toContain("cookieStore.get('loc\\\\ale')")
+  })
+
+  it('adds @ts-nocheck to generated server.js and client-provider.js', () => {
+    generateServerModule('/project', baseConfig)
+    const serverSource = writtenFiles['/project/node_modules/.fluenti/server.js']!
+    const clientSource = writtenFiles['/project/node_modules/.fluenti/client-provider.js']!
+    expect(serverSource).toContain('// @ts-nocheck')
+    expect(clientSource).toContain('// @ts-nocheck')
+  })
 })

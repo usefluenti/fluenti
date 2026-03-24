@@ -1,5 +1,6 @@
 import { watch } from 'node:fs'
 import { resolve } from 'node:path'
+import { createRequire } from 'node:module'
 import { createDebouncedRunner } from './dev-runner'
 
 export interface DevWatcherOptions {
@@ -60,8 +61,8 @@ export function startDevWatcher(options: DevWatcherOptions): () => void {
 
   const { cwd, compiledDir, delay = 1000, include, exclude, parallelCompile } = options
   const compiledDirResolved = resolve(cwd, compiledDir)
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const picomatch = require('picomatch') as (patterns: string[]) => (str: string) => boolean
+  const _require = createRequire(import.meta.url)
+  const picomatch = _require('picomatch') as (patterns: string[]) => (str: string) => boolean
   const isExcluded = exclude?.length ? picomatch(exclude) : () => false
   const runnerOpts: Parameters<typeof createDebouncedRunner>[0] = { cwd }
   if (parallelCompile) runnerOpts.parallelCompile = true

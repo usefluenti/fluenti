@@ -267,7 +267,7 @@ test.describe('Next.js path-based routing e2e', () => {
   test('Japanese path renders correct content', async ({ page }) => {
     await page.goto('/ja')
     await page.waitForLoadState('networkidle')
-    await expect(page.getByTestId('page-title')).toBeVisible()
+    await expect(page.getByTestId('welcome')).toBeVisible()
   })
 
   // ─── P1.10 Concurrent SSR isolation ───

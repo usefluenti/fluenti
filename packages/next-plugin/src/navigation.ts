@@ -1,3 +1,5 @@
+'use client'
+
 /**
  * @module @fluenti/next/navigation
  *
@@ -17,11 +19,18 @@
  * }
  * ```
  */
-'use client'
+import { useRouter, usePathname } from 'next/navigation'
+import { useI18n } from '@fluenti/react'
 
 export interface GetLocalePathOptions {
   /** Source/default locale (no prefix in as-needed mode) */
   sourceLocale?: string
+  /**
+   * Known locale codes (e.g. ['en', 'fr', 'ja']).
+   * When provided, the existing prefix is only stripped when it's an actual locale —
+   * preventing false matches on generic 2-letter path segments like /my or /us.
+   */
+  locales?: string[]
 }
 
 /**
@@ -48,8 +57,13 @@ export function getLocalePath(
   const segments = pathname.split('/')
   const firstSegment = segments[1] ?? ''
 
-  // Check if the first segment looks like a locale (xx, xx-XX, xx-Xxxx script subtag)
-  const hasLocalePrefix = /^[a-z]{2}(-[A-Za-z]{2,})?$/.test(firstSegment)
+  // Check if the first segment is a locale prefix.
+  // If a locales list is provided, do an exact membership check to avoid false positives
+  // on generic 2-letter path segments (e.g. /my/page or /us/pricing).
+  // Otherwise fall back to the heuristic regex.
+  const hasLocalePrefix = options?.locales
+    ? options.locales.includes(firstSegment)
+    : /^[a-z]{2}(-[A-Za-z]{2,})?$/.test(firstSegment)
   const pathWithoutLocale = hasLocalePrefix
     ? '/' + segments.slice(2).join('/')
     : pathname
@@ -72,16 +86,6 @@ export function useLocaleSwitcher(options?: {
   /** Override the source/default locale instead of inferring from locales[0]. */
   sourceLocale?: string
 }) {
-  // These imports are deferred to keep this module usable in both
-  // server and client contexts (getLocalePath works everywhere)
-  const { useRouter, usePathname } = require('next/navigation') as {
-    useRouter(): { push(url: string): void; refresh(): void }
-    usePathname(): string
-  }
-  const { useI18n } = require('@fluenti/react') as {
-    useI18n(): { locale: string; setLocale(locale: string): void; getLocales(): string[] }
-  }
-
   const router = useRouter()
   const pathname = usePathname()
   const { locale, setLocale, getLocales } = useI18n()
@@ -96,7 +100,7 @@ export function useLocaleSwitcher(options?: {
     // 2. Update React context
     setLocale(newLocale)
     // 3. Navigate to new locale path
-    const newPath = getLocalePath(pathname, newLocale, { sourceLocale })
+    const newPath = getLocalePath(pathname, newLocale, { sourceLocale, locales })
     router.push(newPath)
     // 4. Refresh server components
     router.refresh()

@@ -16,14 +16,15 @@ vi.mock('node:fs', async () => {
   }
 })
 
-// Mock node:module for compileOnly mode (createRequire → require('@fluenti/cli'))
+// Mock node:module for compileOnly / dev mode (createRequire → require('@fluenti/cli'))
 const mockRunCompile = vi.fn(() => Promise.resolve())
+const mockRunExtract = vi.fn(() => Promise.resolve())
 vi.mock('node:module', async () => {
   const actual = await vi.importActual<typeof import('node:module')>('node:module')
   return {
     ...actual,
     createRequire: vi.fn(() => {
-      const req = vi.fn(() => ({ runCompile: mockRunCompile }))
+      const req = vi.fn(() => ({ runCompile: mockRunCompile, runExtract: mockRunExtract }))
       return req
     }),
   }
@@ -43,6 +44,7 @@ beforeEach(() => {
     return false
   })
   mockRunCompile.mockResolvedValue(undefined)
+  mockRunExtract.mockResolvedValue(undefined)
 })
 
 afterEach(() => {
@@ -75,7 +77,19 @@ describe('runExtractCompile', () => {
     expect(mockExec).not.toHaveBeenCalled()
   })
 
-  it('shells out in dev mode', async () => {
+  it('runs in-process extract+compile when @fluenti/cli is available', async () => {
+    await runExtractCompile({ cwd: '/project' })
+    expect(mockRunExtract).toHaveBeenCalledWith('/project')
+    expect(mockRunCompile).toHaveBeenCalled()
+    expect(mockExec).not.toHaveBeenCalled()
+  })
+
+  it('shells out when @fluenti/cli is not installed', async () => {
+    const { createRequire } = await import('node:module')
+    vi.mocked(createRequire).mockImplementationOnce(() => {
+      const req = vi.fn(() => { throw Object.assign(new Error("Cannot find module '@fluenti/cli'"), { code: 'MODULE_NOT_FOUND' }) })
+      return req as unknown as ReturnType<typeof createRequire>
+    })
     simulateExecSuccess()
     await runExtractCompile({ cwd: '/project' })
     expect(mockExec).toHaveBeenCalledWith(
@@ -84,19 +98,27 @@ describe('runExtractCompile', () => {
       expect.any(Function),
     )
   })
+
+  it('surfaces error when @fluenti/cli is available but extract fails', async () => {
+    mockRunExtract.mockRejectedValueOnce(new Error('ICU syntax error'))
+    const onError = vi.fn()
+    await runExtractCompile({ cwd: '/project', onError })
+    // Error should be surfaced via onError, NOT silently fallen through to shell-out
+    expect(onError).toHaveBeenCalledWith(expect.objectContaining({ message: 'ICU syntax error' }))
+    expect(mockExec).not.toHaveBeenCalled()
+  })
 })
 
 describe('createDebouncedRunner', () => {
   it('debounces multiple rapid calls into one execution', async () => {
-    simulateExecSuccess()
-
     const run = createDebouncedRunner({ cwd: '/project' }, 100)
     run()
     run()
     run()
 
-    expect(mockExec).not.toHaveBeenCalled()
+    expect(mockRunExtract).not.toHaveBeenCalled()
     await vi.advanceTimersByTimeAsync(100)
-    expect(mockExec).toHaveBeenCalledOnce()
+    // All three calls collapse into one in-process execution
+    expect(mockRunExtract).toHaveBeenCalledOnce()
   })
 })

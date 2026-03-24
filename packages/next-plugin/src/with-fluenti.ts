@@ -1,5 +1,6 @@
 import { existsSync } from 'node:fs'
 import { resolve, dirname } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import type { WithFluentConfig } from './types'
 import { resolveConfig } from './read-config'
 import { generateServerModule } from './generate-server-module'
@@ -75,7 +76,7 @@ function applyFluenti(
   // Resolve the loader path — use import.meta.url for ESM compatibility
   const thisDir = typeof __dirname !== 'undefined'
     ? __dirname
-    : dirname(new URL(import.meta.url).pathname)
+    : dirname(fileURLToPath(import.meta.url))
   const loaderPath = resolve(thisDir, 'loader.js')
 
   const existingWebpack = nextConfig['webpack'] as
@@ -163,13 +164,17 @@ function applyFluenti(
             compiler.hooks.beforeRun.tapPromise('fluenti-compile', async () => {
               if (buildCompileRan) return
               buildCompileRan = true
+              // Step 1: try to load @fluenti/cli — if not installed, skip silently
+              let fluentCli: { runCompile: (cwd: string, opts?: { parallel?: boolean }) => Promise<void> }
               try {
                 // @ts-expect-error — @fluenti/cli is an optional peer dependency
-                const { runCompile } = await import('@fluenti/cli')
-                await runCompile(projectRoot, fluentiConfig.parallelCompile ? { parallel: true } : undefined)
+                fluentCli = await import('@fluenti/cli')
               } catch {
-                // @fluenti/cli not available or compile failed — skip silently
+                // @fluenti/cli not installed — optional peer dep, nothing to do
+                return
               }
+              // Step 2: run compile — errors here mean compilation failed, let them surface
+              await fluentCli.runCompile(projectRoot, fluentiConfig.parallelCompile ? { parallel: true } : undefined)
             })
           },
         })
