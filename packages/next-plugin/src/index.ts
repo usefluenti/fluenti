@@ -21,6 +21,7 @@
  */
 export { withFluenti } from './with-fluenti'
 export type { WithFluentConfig, I18nProviderProps } from './types'
+export { msg } from '@fluenti/react'
 
 // ── Runtime stubs ────────────────────────────────────────────────────
 // TypeScript resolves types from this file (via package.json exports).

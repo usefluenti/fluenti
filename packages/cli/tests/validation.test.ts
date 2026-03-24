@@ -62,6 +62,7 @@ describe('validateTranslation', () => {
       extraPlaceholders: [],
       missingHtmlTags: [],
       extraHtmlTags: [],
+      syntaxErrors: [],
     })
   })
 
@@ -150,5 +151,30 @@ describe('extractHtmlTags — edge cases', () => {
     // The regex requires > to close the tag
     const result = extractHtmlTags('unclosed <div here')
     expect(result).toEqual([])
+  })
+})
+
+describe('ICU syntax validation', () => {
+  it('returns valid with no syntaxErrors for well-formed ICU plural', () => {
+    const result = validateTranslation(
+      '{count, plural, one {# item} other {# items}}',
+      '{count, plural, one {# article} other {# articles}}',
+    )
+    expect(result.valid).toBe(true)
+    expect(result.syntaxErrors).toHaveLength(0)
+  })
+
+  it('returns invalid with syntaxErrors for malformed ICU plural translation', () => {
+    const result = validateTranslation(
+      '{count, plural, one {# item} other {# items}}',
+      '{count, plural, one {# article}',
+    )
+    expect(result.valid).toBe(false)
+    expect(result.syntaxErrors.length).toBeGreaterThan(0)
+  })
+
+  it('does not validate ICU syntax for plain text translations', () => {
+    const result = validateTranslation('Hello {name}', 'Bonjour {name}')
+    expect(result.syntaxErrors).toHaveLength(0)
   })
 })

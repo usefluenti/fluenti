@@ -453,4 +453,52 @@ msgstr "Fichier"
       expect(restored['b']!.translation).toBeUndefined()
     })
   })
+
+  describe('obsolete entry handling', () => {
+    it('writes obsolete entries with #~ prefix', () => {
+      const catalog: CatalogData = {
+        old: { message: 'Old message', translation: 'Ancien message', obsolete: true },
+        active: { message: 'Active', translation: 'Actif' },
+      }
+      const po = writePoCatalog(catalog)
+      expect(po).toContain('#~ msgid "Old message"')
+      expect(po).toContain('#~ msgstr "Ancien message"')
+      // Active entry should not have #~ prefix
+      expect(po).toMatch(/^msgid "Active"/m)
+    })
+
+    it('reads #~ entries as obsolete', () => {
+      const po = `msgid ""
+msgstr "Content-Type: text/plain; charset=UTF-8\\n"
+
+msgid "Active"
+msgstr "Actif"
+
+#~ msgid "Old message"
+#~ msgstr "Ancien message"
+`
+      const catalog = readPoCatalog(po)
+      const oldEntry = catalog[key('Old message')]
+      expect(oldEntry).toBeDefined()
+      expect(oldEntry!.obsolete).toBe(true)
+      expect(oldEntry!.translation).toBe('Ancien message')
+      // Active entry should not be obsolete
+      const activeEntry = catalog[key('Active')]
+      expect(activeEntry).toBeDefined()
+      expect(activeEntry!.obsolete).toBeFalsy()
+    })
+
+    it('roundtrips obsolete flag through write/read cycle', () => {
+      const original: CatalogData = {
+        active: { message: 'Active', translation: 'Actif' },
+        old: { message: 'Old', translation: 'Vieux', obsolete: true },
+      }
+      const po = writePoCatalog(original)
+      const restored = readPoCatalog(po)
+
+      expect(restored['active']!.obsolete).toBeFalsy()
+      expect(restored['old']!.obsolete).toBe(true)
+      expect(restored['old']!.translation).toBe('Vieux')
+    })
+  })
 })

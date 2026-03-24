@@ -402,6 +402,14 @@ const real = t('real message')`
   })
 
   describe('msg extraction', () => {
+    it('extracts msg`` from @fluenti/core import', () => {
+      const code = `import { msg } from '@fluenti/core'\nconst label = msg\`Administrator\``
+      const messages = extractFromTsx(code, 'App.tsx')
+      expect(messages).toHaveLength(1)
+      expect(messages[0]!.message).toBe('Administrator')
+      expect(messages[0]!.comment).toBe('msg tagged template')
+    })
+
     it('extracts msg`` from @fluenti/react import', () => {
       const code = `import { msg } from '@fluenti/react'\nconst label = msg\`Administrator\``
       const messages = extractFromTsx(code, 'App.tsx')
@@ -432,10 +440,57 @@ const real = t('real message')`
       expect(messages).toHaveLength(0)
     })
 
+    it('extracts msg.descriptor() call expression', () => {
+      const code = `import { msg } from '@fluenti/core'\nconst desc = msg.descriptor({ message: 'Save', context: 'button' })`
+      const messages = extractFromTsx(code, 'App.tsx')
+      expect(messages).toHaveLength(1)
+      expect(messages[0]!.message).toBe('Save')
+      expect(messages[0]!.context).toBe('button')
+    })
+
+    it('extracts msg.descriptor() with explicit id', () => {
+      const code = `import { msg } from '@fluenti/core'\nconst desc = msg.descriptor({ id: 'greeting', message: 'Hello {name}' })`
+      const messages = extractFromTsx(code, 'App.tsx')
+      expect(messages).toHaveLength(1)
+      expect(messages[0]!.id).toBe('greeting')
+      expect(messages[0]!.message).toBe('Hello {name}')
+    })
+
+    it('does not extract msg.descriptor() without msg import', () => {
+      const code = `const desc = msg.descriptor({ message: 'Save' })`
+      const messages = extractFromTsx(code, 'App.tsx')
+      expect(messages).toHaveLength(0)
+    })
+
     it('extracts both t`` and msg`` in the same file', () => {
       const code = `import { t, msg } from '@fluenti/react'\nconst greeting = t\`Hello\`\nconst role = msg\`Admin\``
       const messages = extractFromTsx(code, 'App.tsx')
       expect(messages).toHaveLength(2)
+    })
+  })
+
+  describe('<Select> extraction', () => {
+    it('extracts <Select> with static string cases as ICU select message', () => {
+      const code = `const el = <Select value={gender} male="He liked your post" female="She liked your post" other="They liked your post" />`
+      const messages = extractFromTsx(code, 'App.tsx')
+      expect(messages).toHaveLength(1)
+      expect(messages[0]!.message).toContain('{gender, select,')
+      expect(messages[0]!.message).toContain('male {He liked your post}')
+      expect(messages[0]!.message).toContain('female {She liked your post}')
+      expect(messages[0]!.message).toContain('other {They liked your post}')
+    })
+
+    it('extracts <Select> with explicit id prop', () => {
+      const code = `const el = <Select id="gender-post" value={gender} male="He" female="She" other="They" />`
+      const messages = extractFromTsx(code, 'App.tsx')
+      expect(messages).toHaveLength(1)
+      expect(messages[0]!.id).toBe('gender-post')
+    })
+
+    it('does not extract <Select> when no static case props are present', () => {
+      const code = `const el = <Select value={role} options={roleLabels} />`
+      const messages = extractFromTsx(code, 'App.tsx')
+      expect(messages).toHaveLength(0)
     })
   })
 })

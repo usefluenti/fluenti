@@ -67,6 +67,17 @@ function buildPluralICUFromPipe(text: string, countVar: string): string {
   return `{${countVar}, plural, ${options.join(' ')}}`
 }
 
+const SELECT_RESERVED_PROPS = new Set(['id', 'value', 'context', 'comment', 'options', 'other', 'tag'])
+
+function buildSelectICUFromProps(varName: string, cases: Record<string, string>, other: string): string {
+  const options: string[] = []
+  for (const [key, value] of Object.entries(cases)) {
+    options.push(`${key} {${value}}`)
+  }
+  options.push(`other {${other}}`)
+  return `{${varName}, select, ${options.join(' ')}}`
+}
+
 function buildPluralICUFromProps(props: Record<string, string>): string {
   const countVar = props['count'] ?? 'count'
   const categories = ['zero', 'one', 'two', 'few', 'many', 'other']
@@ -221,6 +232,47 @@ function walkTemplate(
         messages.push({
           id,
           message: pluralMessage,
+          origin: {
+            file: filename,
+            line: node.loc.start.line,
+            column: node.loc.start.column,
+          },
+        })
+      }
+    }
+
+    if (node.tag === 'Select') {
+      let varName: string | undefined
+      let selectId: string | undefined
+      let selectContext: string | undefined
+      let selectComment: string | undefined
+      let other: string | undefined
+      const cases: Record<string, string> = {}
+
+      for (const prop of node.props ?? []) {
+        if (prop.type === ATTRIBUTE_PROP && prop.value) {
+          const name = getPropName(prop)
+          if (name === 'id') { selectId = prop.value.content; continue }
+          if (name === 'context') { selectContext = prop.value.content; continue }
+          if (name === 'comment') { selectComment = prop.value.content; continue }
+          if (name === 'other') { other = prop.value.content; continue }
+          if (SELECT_RESERVED_PROPS.has(name)) continue
+          cases[name] = prop.value.content
+        }
+        if (prop.type === DIRECTIVE_PROP && getPropName(prop) === 'bind' && prop.arg?.content === 'value' && prop.exp) {
+          varName = prop.exp.content
+        }
+      }
+
+      if (varName && other && Object.keys(cases).length > 0) {
+        const message = buildSelectICUFromProps(varName, cases, other)
+        const generateId = idGenerator ?? createMessageId
+        const id = selectId ?? generateId(message, selectContext)
+        messages.push({
+          id,
+          message,
+          ...(selectContext !== undefined ? { context: selectContext } : {}),
+          ...(selectComment !== undefined ? { comment: selectComment } : {}),
           origin: {
             file: filename,
             line: node.loc.start.line,

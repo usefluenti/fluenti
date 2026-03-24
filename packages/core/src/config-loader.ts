@@ -18,7 +18,7 @@ const defaultConfig: FluentiBuildConfig = {
   locales: ['en'],
   catalogDir: './locales',
   format: 'po',
-  include: ['./src/**/*.{vue,tsx,jsx,ts,js}'],
+  include: ['./src/**/*.{vue,tsx,jsx,ts,js,mts,mjs,cts,cjs}'],
   exclude: ['**/*.test.*', '**/*.spec.*', '**/__tests__/**', '**/*.d.ts'],
   compileOutDir: './src/locales/compiled',
   devAutoCompile: true,

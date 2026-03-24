@@ -110,6 +110,7 @@ interface ExtractedDescriptor {
 }
 
 const DIRECT_T_SOURCES = new Set([
+  '@fluenti/core',
   '@fluenti/react',
   '@fluenti/vue',
   '@fluenti/solid',
@@ -244,6 +245,66 @@ function extractDescriptorFromCallArgument(
   }
 
   return descriptorFromStaticParts(staticParts, idGenerator)
+}
+
+const SELECT_RESERVED_PROPS = new Set(['id', 'value', 'context', 'comment', 'options', 'other', 'tag'])
+
+function buildSelectICU(varName: string, cases: Record<string, string>, other: string): string {
+  const options: string[] = []
+  for (const [key, value] of Object.entries(cases)) {
+    options.push(`${key} {${value}}`)
+  }
+  options.push(`other {${other}}`)
+  return `{${varName}, select, ${options.join(' ')}}`
+}
+
+function extractSelectProps(
+  openingElement: JSXOpeningElementNode,
+  code: string,
+): { varName: string | undefined; id: string | undefined; context: string | undefined; comment: string | undefined; cases: Record<string, string>; other: string | undefined } {
+  let varName: string | undefined
+  let id: string | undefined
+  let context: string | undefined
+  let comment: string | undefined
+  let other: string | undefined
+  const cases: Record<string, string> = {}
+
+  for (const attribute of openingElement.attributes) {
+    if (attribute.type !== 'JSXAttribute') continue
+    const attr = attribute as JSXAttributeNode
+    if (attr.name.type !== 'JSXIdentifier') continue
+    const name = String(attr.name['name'])
+
+    if (name === 'id') {
+      id = attr.value ? readStaticStringValue(attr.value) : undefined
+      continue
+    }
+    if (name === 'value') {
+      const raw = attr.value ? (readStaticStringValue(attr.value) ?? readExpressionSource(attr.value, code)) : undefined
+      varName = raw ? classifyExpression(raw) || raw : undefined
+      continue
+    }
+    if (name === 'context') {
+      context = attr.value ? readStaticStringValue(attr.value) : undefined
+      continue
+    }
+    if (name === 'comment') {
+      comment = attr.value ? readStaticStringValue(attr.value) : undefined
+      continue
+    }
+    if (name === 'other') {
+      other = attr.value ? readStaticStringValue(attr.value) : undefined
+      continue
+    }
+    if (SELECT_RESERVED_PROPS.has(name)) continue
+
+    const staticValue = attr.value ? readStaticStringValue(attr.value) : undefined
+    if (staticValue === undefined) continue
+
+    cases[name] = staticValue
+  }
+
+  return { varName, id, context, comment, cases, other }
 }
 
 function buildPluralICU(props: Record<string, string>): string {
@@ -491,6 +552,19 @@ export function extractFromTsx(
         if (extracted) {
           messages.push(extracted)
         }
+      } else if (
+        call.callee.type === 'MemberExpression'
+        && isIdentifier(call.callee['object'])
+        && directBindings.get((call.callee['object'] as IdentifierNode).name) === 'msg'
+        && isIdentifier(call.callee['property'])
+        && (call.callee['property'] as IdentifierNode).name === 'descriptor'
+        && call.arguments[0]
+      ) {
+        const descriptor = extractDescriptorFromCallArgument(call.arguments[0], idGenerator)
+        const extracted = descriptor ? createExtractedMessage(descriptor, filename, call) : undefined
+        if (extracted) {
+          messages.push(extracted)
+        }
       }
       return
     }
@@ -544,6 +618,30 @@ export function extractFromTsx(
         {
           id: props['id'] ?? generateId(message),
           message,
+        },
+        filename,
+        element,
+      )
+      if (extracted) {
+        messages.push(extracted)
+      }
+      return
+    }
+
+    if (elementName === 'Select') {
+      const { varName, id, context, comment, cases, other } = extractSelectProps(openingElement, code)
+      if (!varName || !other || Object.keys(cases).length === 0) {
+        return
+      }
+
+      const message = buildSelectICU(varName, cases, other)
+      const generateId = idGenerator ?? createMessageId
+      const extracted = createExtractedMessage(
+        {
+          id: id ?? generateId(message, context),
+          message,
+          ...(context !== undefined ? { context } : {}),
+          ...(comment !== undefined ? { comment } : {}),
         },
         filename,
         element,

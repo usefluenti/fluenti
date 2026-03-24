@@ -8,6 +8,9 @@ export interface NumberFormatProps {
   style?: string
 }
 
+/** @alias NumberFormatProps */
+export type FluentiNumberFormatProps = NumberFormatProps
+
 /**
  * `<Number>` — number formatting component using Intl APIs.
  *

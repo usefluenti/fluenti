@@ -7,6 +7,9 @@ export interface DateTimeProps {
   style?: string
 }
 
+/** @alias DateTimeProps */
+export type FluentiDateTimeProps = DateTimeProps
+
 /**
  * `<DateTime>` — date formatting component using Intl APIs.
  *

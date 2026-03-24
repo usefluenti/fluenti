@@ -1,150 +1,209 @@
 msgid ""
 msgstr "Content-Type: text/plain; charset=utf-8\n"
 
-#: /Users/ins/Code/fluenti/examples/vue/src/App.vue:75
+#: ./src/App.vue:34
 msgid "Fluenti Vue Playground"
 msgstr "Fluenti Vue 演练场"
 
-#: /Users/ins/Code/fluenti/examples/vue/src/App.vue:88
+#: ./src/App.vue:47
 msgid "Write text. Fluenti translates it. Zero config."
 msgstr "写文本，Fluenti 自动翻译，零配置。"
 
-#: /Users/ins/Code/fluenti/examples/vue/src/App.vue:89
+#: ./src/App.vue:48
 msgid "Loading translations..."
 msgstr "加载翻译中..."
 
-#: /Users/ins/Code/fluenti/examples/vue/src/App.vue:168
-msgid "Welcome to Fluenti"
-msgstr "欢迎使用 Fluenti"
+#: ./src/pages/Directives.vue:28
+#. fluenti-id: nav.home
+msgid "Home"
+msgstr ""
 
-#: /Users/ins/Code/fluenti/examples/vue/src/App.vue:97
-msgid "A modern i18n library for Vue 3"
-msgstr "一个现代化的 Vue 3 国际化库"
+#: ./src/App.vue:51
+msgid "Plurals"
+msgstr ""
 
-#: /Users/ins/Code/fluenti/examples/vue/src/App.vue:98
-msgid ""
-"Fluenti provides reactive translations, rich text support, and plural "
-"handling out of the box."
-msgstr "Fluenti 提供响应式翻译、富文本支持和复数处理等开箱即用的功能。"
+#: ./src/App.vue:52
+msgid "Rich Text"
+msgstr ""
 
-#: /Users/ins/Code/fluenti/examples/vue/src/App.vue:146
-msgid "Features"
-msgstr "功能特性"
+#: ./src/App.vue:53
+msgid "Formatting"
+msgstr ""
 
-#: /Users/ins/Code/fluenti/examples/vue/src/App.vue:148
-msgid "Reactive locale switching"
-msgstr "响应式语言切换"
+#: ./src/App.vue:54
+msgid "Directives"
+msgstr ""
 
-#: /Users/ins/Code/fluenti/examples/vue/src/App.vue:149
-msgid "Rich text with Vue components"
-msgstr "支持 Vue 组件的富文本"
+#: ./src/App.vue:55
+msgid "Script"
+msgstr ""
 
-#: /Users/ins/Code/fluenti/examples/vue/src/App.vue:150
-msgid "Built-in plural support"
-msgstr "内置复数支持"
+#: ./src/App.vue:64
+msgid "Built with Fluenti and Vue 3"
+msgstr "使用 Fluenti 和 Vue 3 构建"
 
-#: /Users/ins/Code/fluenti/examples/vue/src/App.vue:151
-msgid "Type-safe message catalogs"
-msgstr "类型安全的消息目录"
-
-#: /Users/ins/Code/fluenti/examples/vue/src/App.vue:161
+#: ./src/pages/Directives.vue:8
 msgid "v-t Directive — Zero Config i18n"
 msgstr ""
 
-#: /Users/ins/Code/fluenti/examples/vue/src/App.vue:162
+#: ./src/pages/Directives.vue:9
 msgid ""
 "Just write text. Fluenti extracts and translates it at build time. No keys, "
 "no imports, no boilerplate."
 msgstr ""
 
-#: /Users/ins/Code/fluenti/examples/vue/src/App.vue:173
+#: ./src/pages/Home.vue:17
+msgid "Welcome to Fluenti"
+msgstr "欢迎使用 Fluenti"
+
+#: ./src/pages/Directives.vue:23
 msgid "Hello, welcome back!"
 msgstr "你好，欢迎回来！"
 
-#: /Users/ins/Code/fluenti/apps/playground-vue/src/pages/VtDirectiveShowcase.vue:32
-#, fuzzy
-msgid "Home"
-msgstr "首页"
-
-#: /Users/ins/Code/fluenti/examples/vue/src/App.vue:196
-msgid "Read thebefore continuing"
-msgstr "继续前请阅读<0>服务条款</0>"
-
-#: /Users/ins/Code/fluenti/examples/vue/src/App.vue:201
-msgid "This isinformation"
-msgstr "这是<0>非常重要的</0>信息"
-
-#: /Users/ins/Code/fluenti/examples/vue/src/App.vue:531
+#: ./src/pages/Directives.vue:64
 msgid "HTML"
 msgstr "HTML"
 
-#: /Users/ins/Code/fluenti/examples/vue/src/App.vue:225
-msgid "Rich Text Demos"
-msgstr "富文本演示"
-
-#: /Users/ins/Code/fluenti/examples/vue/src/App.vue:232
-msgid "Visit our <0>documentation</0> to learn more."
+#: ./src/pages/Formatting.vue:7
+msgid "Formatting Demos"
 msgstr ""
 
-#: /Users/ins/Code/fluenti/examples/vue/src/App.vue:237
-msgid "This is <0>important</0> information."
+#: ./src/pages/Home.vue:18
+msgid "A modern i18n library for Vue 3"
+msgstr "一个现代化的 Vue 3 国际化库"
+
+#: ./src/pages/Home.vue:19
+msgid ""
+"Fluenti provides reactive translations, rich text support, and plural "
+"handling out of the box."
+msgstr "Fluenti 提供响应式翻译、富文本支持和复数处理等开箱即用的功能。"
+
+#: ./src/pages/Home.vue:47
+msgid "Features"
+msgstr "功能特性"
+
+#: ./src/pages/Home.vue:49
+msgid "Reactive locale switching"
+msgstr "响应式语言切换"
+
+#: ./src/pages/Home.vue:50
+msgid "Rich text with Vue components"
+msgstr "支持 Vue 组件的富文本"
+
+#: ./src/pages/Home.vue:51
+msgid "Built-in plural support"
+msgstr "内置复数支持"
+
+#: ./src/pages/Home.vue:52
+msgid "Type-safe message catalogs"
+msgstr "类型安全的消息目录"
+
+#: ./src/pages/Home.vue:25
+msgid "Hello, {arg0}!"
 msgstr ""
 
-#: /Users/ins/Code/fluenti/examples/vue/src/App.vue:242
-msgid "Please <0>sign in</0> or <1>register</1> to continue."
+#: ./src/pages/Script.vue:33
+msgid "Current locale: {locale}"
+msgstr "当前语言：{locale}"
+
+#: ./src/pages/Home.vue:33
+msgid "You have {arg0} items in your cart."
 msgstr ""
 
-#: /Users/ins/Code/fluenti/examples/vue/src/App.vue:247
-msgid "Go to the <0>home page</0> or check out <1>plurals</1>."
+#: ./src/pages/Home.vue:64
+msgid "This key only exists in English"
 msgstr ""
 
-#: /Users/ins/Code/fluenti/examples/vue/src/App.vue:252
-msgid "Read the <0>getting started guide</0> for setup instructions."
+#: ./src/pages/Home.vue:11
+#. msg tagged template
+msgid "Administrator"
 msgstr ""
 
-#: /Users/ins/Code/fluenti/examples/vue/src/App.vue:316
+#: ./src/pages/Home.vue:12
+#. msg tagged template
+msgid "Regular User"
+msgstr ""
+
+#: ./src/pages/Plurals.vue:45
 msgid "Plural Demos"
 msgstr "复数演示"
 
-#: /Users/ins/Code/fluenti/examples/vue/src/App.vue:359
+#: ./src/pages/Plurals.vue:88
 msgid "Remove"
 msgstr "减少"
 
-#: /Users/ins/Code/fluenti/examples/vue/src/App.vue:361
+#: ./src/pages/Plurals.vue:90
 msgid "Add"
 msgstr "增加"
 
-#: /Users/ins/Code/fluenti/examples/vue/src/App.vue:362
+#: ./src/pages/Plurals.vue:91
 msgid "Reset"
 msgstr "重置"
 
-#: /Users/ins/Code/fluenti/examples/vue/src/App.vue:328
+#: ./src/pages/Plurals.vue:57
 msgid "{appleCount, plural, =0 {No apples} one {1 apple} other {# apples}}"
 msgstr ""
 
-#: /Users/ins/Code/fluenti/examples/vue/src/App.vue:347
+#: ./src/pages/Plurals.vue:76
 msgid ""
 "{messageCount, plural, =0 {No new messages} one {1 new message} other {# "
 "new messages}}"
 msgstr ""
 
-#: /Users/ins/Code/fluenti/examples/vue/src/App.vue:366
+#: ./src/pages/Plurals.vue:95
 msgid ""
 "{fileCount, plural, =0 {No files selected} one {1 file selected} other {# "
 "files selected}}"
 msgstr ""
 
-#: /Users/ins/Code/fluenti/examples/vue/src/App.vue:537
-msgid "Built with Fluenti and Vue 3"
-msgstr "使用 Fluenti 和 Vue 3 构建"
+#: ./src/pages/RichText.vue:5
+msgid "Rich Text Demos"
+msgstr "富文本演示"
+
+#: ./src/pages/RichText.vue:12
+msgid "Visit our <0>documentation</0> to learn more."
+msgstr ""
+
+#: ./src/pages/RichText.vue:17
+msgid "This is <0>important</0> information."
+msgstr ""
+
+#: ./src/pages/RichText.vue:22
+msgid "Please <0>sign in</0> or <1>register</1> to continue."
+msgstr ""
+
+#: ./src/pages/RichText.vue:27
+msgid "Go to the <0>home page</0> or check out <1>plurals</1>."
+msgstr ""
+
+#: ./src/pages/RichText.vue:32
+msgid "Read the <0>getting started guide</0> for setup instructions."
+msgstr ""
+
+#: ./src/pages/RichText.vue:43
+msgid "Read thebefore continuing"
+msgstr "继续前请阅读<0>服务条款</0>"
+
+#: ./src/pages/RichText.vue:48
+msgid "This isinformation"
+msgstr "这是<0>非常重要的</0>信息"
+
+#: ./src/pages/Script.vue:23
+#: ./src/pages/Script.vue:62
+msgid "Hello, {userName}!"
+msgstr ""
+
+#: ./src/pages/Script.vue:28
+msgid "You have {itemCount} items."
+msgstr ""
+
+#: ./src/pages/Script.vue:11
+msgid "You have {value} items in your cart."
+msgstr ""
 
 #: /Users/ins/Code/fluenti/examples/vue/src/App.vue:298
 msgid "Hello, {name}!"
 msgstr "你好，{name}！"
-
-#: /Users/ins/Code/fluenti/examples/vue/src/App.vue:276
-msgid "Current locale: {locale}"
-msgstr "当前语言：{locale}"
 
 #: /Users/ins/Code/fluenti/examples/vue/src/App.vue:37
 msgid "You have {count} items in your cart."

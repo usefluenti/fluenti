@@ -20,6 +20,7 @@ interface POTranslation {
 interface POData {
   headers?: Record<string, string>
   translations: Record<string, Record<string, POTranslation>>
+  obsolete?: Record<string, Record<string, POTranslation>>
 }
 
 interface ParsedExtractedComment {
@@ -28,13 +29,12 @@ interface ParsedExtractedComment {
   sourceMessage?: string
 }
 
-/** Read a PO catalog file */
-export function readPoCatalog(content: string): CatalogData {
-  const po = gettextParser.po.parse(content) as POData
-  const catalog: CatalogData = {}
-  const translations = po.translations ?? {}
-
-  for (const [contextKey, entries] of Object.entries(translations)) {
+function processPoEntries(
+  contextMap: Record<string, Record<string, POTranslation>>,
+  catalog: CatalogData,
+  isObsolete: boolean,
+): void {
+  for (const [contextKey, entries] of Object.entries(contextMap)) {
     for (const [msgid, entry] of Object.entries(entries)) {
       if (!msgid) continue
 
@@ -47,7 +47,7 @@ export function readPoCatalog(content: string): CatalogData {
           ? rawReference.split(/\s+/).filter(Boolean)
           : rawReference
       const normalizedOrigin = Array.isArray(origin) && origin.length === 1 ? origin[0] : origin
-      const isFuzzy = entry.comments?.flag?.includes('fuzzy') ?? false
+      const isFuzzy = !isObsolete && (entry.comments?.flag?.includes('fuzzy') ?? false)
       const { comment, customId, sourceMessage } = parseExtractedComment(entry.comments?.extracted)
       const resolvedSourceMessage = sourceMessage
         && hashMessage(sourceMessage, context) === msgid
@@ -63,8 +63,20 @@ export function readPoCatalog(content: string): CatalogData {
         ...(translation ? { translation } : {}),
         ...(normalizedOrigin !== undefined ? { origin: normalizedOrigin } : {}),
         ...(isFuzzy ? { fuzzy: true } : {}),
+        ...(isObsolete ? { obsolete: true } : {}),
       }
     }
+  }
+}
+
+/** Read a PO catalog file */
+export function readPoCatalog(content: string): CatalogData {
+  const po = gettextParser.po.parse(content) as POData
+  const catalog: CatalogData = {}
+
+  processPoEntries(po.translations ?? {}, catalog, false)
+  if (po.obsolete) {
+    processPoEntries(po.obsolete, catalog, true)
   }
 
   return catalog
@@ -80,6 +92,7 @@ export function writePoCatalog(catalog: CatalogData): string {
       },
     },
   }
+  const obsolete: POData['obsolete'] = {}
 
   for (const [id, entry] of Object.entries(catalog)) {
     const poEntry: POTranslation = {
@@ -89,7 +102,7 @@ export function writePoCatalog(catalog: CatalogData): string {
     }
 
     const comments: POTranslation['comments'] = {}
-    if (entry.origin) {
+    if (entry.origin && !entry.obsolete) {
       comments.reference = Array.isArray(entry.origin)
         ? entry.origin.join('\n')
         : entry.origin
@@ -98,16 +111,22 @@ export function writePoCatalog(catalog: CatalogData): string {
     if (extractedComment) {
       comments.extracted = extractedComment
     }
-    if (entry.fuzzy) {
+    if (entry.fuzzy && !entry.obsolete) {
       comments.flag = 'fuzzy'
     }
     if (comments.reference || comments.extracted || comments.flag) {
       poEntry.comments = comments
     }
 
-    const contextKey = entry.context ?? ''
-    translations[contextKey] ??= {}
-    translations[contextKey][poEntry.msgid] = poEntry
+    if (entry.obsolete) {
+      const contextKey = entry.context ?? ''
+      obsolete[contextKey] ??= {}
+      obsolete[contextKey]![poEntry.msgid] = poEntry
+    } else {
+      const contextKey = entry.context ?? ''
+      translations[contextKey] ??= {}
+      translations[contextKey]![poEntry.msgid] = poEntry
+    }
   }
 
   const poData: POData = {
@@ -115,6 +134,7 @@ export function writePoCatalog(catalog: CatalogData): string {
       'Content-Type': 'text/plain; charset=UTF-8',
     },
     translations,
+    ...(Object.keys(obsolete).length > 0 ? { obsolete } : {}),
   }
 
   const buffer = gettextParser.po.compile(poData as Parameters<typeof gettextParser.po.compile>[0])

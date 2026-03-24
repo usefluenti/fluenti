@@ -276,6 +276,21 @@ describe('compileCatalog', () => {
     expect(stats.compiled).toBe(1)
     expect(stats.missing).toEqual([])
   })
+
+  it('does not throw when ICU translation has malformed syntax, emits undefined for that entry', () => {
+    // Malformed ICU: missing `other` clause and closing brace
+    const malformedIcu = '{count, plural, one {# item}'
+    const catalog: CatalogData = {
+      bad: { message: '{count, plural, one {# item} other {# items}}', translation: malformedIcu },
+      good: { message: 'Hello', translation: 'Bonjour' },
+    }
+    expect(() => compileCatalog(catalog, 'fr', ['bad', 'good'])).not.toThrow()
+    const { code: output } = compileCatalog(catalog, 'fr', ['bad', 'good'])
+    // malformed entry falls back to undefined
+    expect(output).toContain('= undefined')
+    // valid entry is still compiled
+    expect(output).toContain("= 'Bonjour'")
+  })
 })
 
 describe('compileCatalog end-to-end consistency', () => {

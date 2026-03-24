@@ -190,7 +190,18 @@ export function compileCatalog(
       missing.push(id)
     } else if (hasIcuPluralOrSelect(translated)) {
       // Parse ICU and compile to JS
-      const ast = parse(translated)
+      let ast
+      try {
+        ast = parse(translated)
+      } catch (err) {
+        console.warn(
+          `[fluenti] Skipping malformed ICU translation for "${id}" (${locale}): ${(err as Error).message}`,
+        )
+        lines.push(`export const ${exportName} = undefined`)
+        missing.push(id)
+        exportNames.push({ id, exportName })
+        continue
+      }
       const jsExpr = astToJsExpression(ast, locale)
       lines.push(`export const ${exportName} = (v) => ${jsExpr}`)
       compiled++

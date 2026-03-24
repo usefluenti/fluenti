@@ -4,7 +4,12 @@ export interface ValidationResult {
   extraPlaceholders: string[]
   missingHtmlTags: string[]
   extraHtmlTags: string[]
+  syntaxErrors: string[]
 }
+
+import { parse } from '@fluenti/core/internal'
+
+const ICU_PLURAL_SELECT_RE = /\{(\w+),\s*(plural|select|selectordinal)\s*,/
 
 /** Extract unique ICU placeholder names from a message, sorted alphabetically */
 export function extractPlaceholders(message: string): string[] {
@@ -40,15 +45,26 @@ export function validateTranslation(source: string, translation: string): Valida
   const missingHtmlTags = sourceHtmlTags.filter(t => !translationHtmlTags.includes(t))
   const extraHtmlTags = translationHtmlTags.filter(t => !sourceHtmlTags.includes(t))
 
+  const syntaxErrors: string[] = []
+  if (ICU_PLURAL_SELECT_RE.test(translation)) {
+    try {
+      parse(translation)
+    } catch (err) {
+      syntaxErrors.push((err as Error).message)
+    }
+  }
+
   return {
     valid: missingPlaceholders.length === 0
       && extraPlaceholders.length === 0
       && missingHtmlTags.length === 0
-      && extraHtmlTags.length === 0,
+      && extraHtmlTags.length === 0
+      && syntaxErrors.length === 0,
     missingPlaceholders,
     extraPlaceholders,
     missingHtmlTags,
     extraHtmlTags,
+    syntaxErrors,
   }
 }
 

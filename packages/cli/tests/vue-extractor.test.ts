@@ -363,4 +363,35 @@ const x = 42
     expect(messages).toHaveLength(1)
     expect(messages[0]!.message).toBe('Hello there')
   })
+
+  // ─── <Select> extraction ───────────────────────────────────────────────────
+
+  it('extracts <Select> with static string cases as ICU select message', () => {
+    const code = `<template>
+  <Select :value="gender" male="He liked your post" female="She liked your post" other="They liked your post" />
+</template>`
+    const messages = extractFromVue(code, 'App.vue')
+    expect(messages).toHaveLength(1)
+    expect(messages[0]!.message).toContain('{gender, select,')
+    expect(messages[0]!.message).toContain('male {He liked your post}')
+    expect(messages[0]!.message).toContain('female {She liked your post}')
+    expect(messages[0]!.message).toContain('other {They liked your post}')
+  })
+
+  it('extracts <Select> with explicit id prop', () => {
+    const code = `<template>
+  <Select id="gender-post" :value="gender" male="He" female="She" other="They" />
+</template>`
+    const messages = extractFromVue(code, 'App.vue')
+    expect(messages).toHaveLength(1)
+    expect(messages[0]!.id).toBe('gender-post')
+  })
+
+  it('does not extract <Select> when no static case props are present', () => {
+    const code = `<template>
+  <Select :value="role" :options="roleLabels" />
+</template>`
+    const messages = extractFromVue(code, 'App.vue')
+    expect(messages).toHaveLength(0)
+  })
 })

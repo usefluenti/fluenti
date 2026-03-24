@@ -14,6 +14,7 @@ declare module 'gettext-parser' {
   interface POData {
     headers?: Record<string, string>
     translations: Record<string, Record<string, POTranslation>>
+    obsolete?: Record<string, Record<string, POTranslation>>
   }
 
   export const po: {
