@@ -1241,8 +1241,8 @@ importers:
         specifier: ^4.4.2
         version: 4.4.2(magicast@0.5.2)
       '@nuxt/schema':
-        specifier: ^3.0.0
-        version: 3.21.2
+        specifier: ^4.4.2
+        version: 4.4.2
     devDependencies:
       '@vitest/coverage-v8':
         specifier: ^4
@@ -2710,6 +2710,10 @@ packages:
 
   '@nuxt/schema@3.21.2':
     resolution: {integrity: sha512-yZaJrZizRP4OQVCM7qRG3xIJ1xZ59npgg9jd3ng+BDs5ZvLqYP9rXnFikShc8EPUtR6+zhSPgKgy6L8wWcBKzQ==}
+    engines: {node: ^14.18.0 || >=16.10.0}
+
+  '@nuxt/schema@4.4.2':
+    resolution: {integrity: sha512-/q6C7Qhiricgi+PKR7ovBnJlKTL0memCbA1CzRT+itCW/oeYzUfeMdQ35mGntlBoyRPNrMXbzuSUhfDbSCU57w==}
     engines: {node: ^14.18.0 || >=16.10.0}
 
   '@nuxt/telemetry@2.7.0':
@@ -10677,6 +10681,14 @@ snapshots:
       - xml2js
 
   '@nuxt/schema@3.21.2':
+    dependencies:
+      '@vue/shared': 3.5.30
+      defu: 6.1.4
+      pathe: 2.0.3
+      pkg-types: 2.3.0
+      std-env: 4.0.0
+
+  '@nuxt/schema@4.4.2':
     dependencies:
       '@vue/shared': 3.5.30
       defu: 6.1.4
