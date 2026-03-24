@@ -60,6 +60,26 @@
         "types": "./dist/provider.d.ts",
         "default": "./dist/provider.cjs"
       }
+    },
+    "./middleware": {
+      "import": {
+        "types": "./dist/middleware.d.ts",
+        "default": "./dist/middleware.js"
+      },
+      "require": {
+        "types": "./dist/middleware.d.ts",
+        "default": "./dist/middleware.cjs"
+      }
+    },
+    "./navigation": {
+      "import": {
+        "types": "./dist/navigation.d.ts",
+        "default": "./dist/navigation.js"
+      },
+      "require": {
+        "types": "./dist/navigation.d.ts",
+        "default": "./dist/navigation.cjs"
+      }
     }
   },
   "files": [

@@ -7,9 +7,11 @@ export default createPackageConfig({
     server: 'src/server.ts',
     provider: 'src/provider.ts',
     loader: 'src/loader.ts',
+    middleware: 'src/middleware.ts',
+    navigation: 'src/navigation.ts',
   },
-  external: [/^react/, /^react-dom/, 'next', 'webpack', /^@fluenti\/core/, /^@fluenti\/react/, /^node:/],
+  external: [/^react/, /^react-dom/, 'next', /^next\//, 'webpack', /^@fluenti\/core/, /^@fluenti\/react/, /^node:/],
   coverage: { lines: 70, branches: 65, functions: 70, statements: 70 },
   dtsOptions: { exclude: ['src/loader.ts'] },
-  plugins: [useClientPlugin({ files: ['provider'] })],
+  plugins: [useClientPlugin({ files: ['provider', 'navigation'] })],
 })
