@@ -7,7 +7,9 @@ import { setResolvedMode, isBuildMode, getPluginEnvironment } from './mode-detec
 import { resolve } from 'node:path'
 import { createRequire } from 'node:module'
 
-const _require = createRequire(import.meta.url)
+const _require = createRequire(
+  typeof __filename !== 'undefined' ? __filename : import.meta.url,
+)
 import { createDebouncedRunner, runExtractCompile } from './dev-runner'
 import { transformForDynamicSplit, transformForStaticSplit, injectCatalogImport } from './build-transform'
 import { resolveVirtualSplitId, loadVirtualSplitModule } from './virtual-modules'

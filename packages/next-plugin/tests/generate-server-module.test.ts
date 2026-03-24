@@ -149,4 +149,13 @@ describe('generateServerModule', () => {
     expect(serverSource).toContain('// @ts-nocheck')
     expect(clientSource).toContain('// @ts-nocheck')
   })
+
+  it('generates client-provider.d.ts with ClientI18nProvider declaration', () => {
+    generateServerModule('/project', baseConfig)
+    const dts = writtenFiles['/project/node_modules/.fluenti/client-provider.d.ts']!
+    expect(dts).toBeDefined()
+    expect(dts).toContain('ClientI18nProvider')
+    expect(dts).toContain('locale: string')
+    expect(dts).toContain('children: ReactNode')
+  })
 })

@@ -61,7 +61,9 @@ export function startDevWatcher(options: DevWatcherOptions): () => void {
 
   const { cwd, compiledDir, delay = 1000, include, exclude, parallelCompile } = options
   const compiledDirResolved = resolve(cwd, compiledDir)
-  const _require = createRequire(import.meta.url)
+  const _require = createRequire(
+    typeof __filename !== 'undefined' ? __filename : import.meta.url,
+  )
   const picomatch = _require('picomatch') as (patterns: string[]) => (str: string) => boolean
   const isExcluded = exclude?.length ? picomatch(exclude) : () => false
   const runnerOpts: Parameters<typeof createDebouncedRunner>[0] = { cwd }

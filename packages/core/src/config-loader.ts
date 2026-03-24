@@ -4,6 +4,15 @@ import { createRequire } from 'node:module'
 import type { FluentiBuildConfig } from './types'
 import { normalizeConfig } from './types'
 
+// Module-level require that works in both CJS and ESM after bundling.
+// Using createRequire() directly (rather than the `typeof require !== 'undefined'` guard)
+// prevents Rolldown from rewriting bare `require` to its `__require` Proxy shim,
+// which is always "defined" and causes the ESM fallback to never be reached.
+// Pattern mirrors scope-codegen.ts.
+const _moduleRequire = createRequire(
+  typeof __filename !== 'undefined' ? __filename : import.meta.url,
+)
+
 const defaultConfig: FluentiBuildConfig = {
   sourceLocale: 'en',
   locales: ['en'],
@@ -86,7 +95,7 @@ export async function loadConfig(configPath?: string, cwd?: string): Promise<Flu
   if (!configFilePath) return normalizeConfig({ ...defaultConfig })
 
   const { createJiti } = await import('jiti')
-  const jiti = createJiti(import.meta.url)
+  const jiti = createJiti(typeof __filename !== 'undefined' ? __filename : import.meta.url)
 
   const resolved = await resolveConfigChain(configFilePath, jiti, new Set())
   return normalizeConfig(resolved)
@@ -155,10 +164,7 @@ export function loadConfigSync(configPath?: string, cwd?: string): FluentiBuildC
   if (!configFilePath) return normalizeConfig({ ...defaultConfig })
 
   try {
-    // Use createRequire so this works in both CJS and ESM contexts.
-    // Bare `require('jiti')` throws ReferenceError in native ESM (e.g. next.config.mjs).
-    const _require = typeof require !== 'undefined' ? require : createRequire(import.meta.url)
-    const { createJiti } = _require('jiti') as {
+    const { createJiti } = _moduleRequire('jiti') as {
       createJiti: (
         url: string,
         options?: { moduleCache?: boolean; interopDefault?: boolean },

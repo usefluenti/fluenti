@@ -26,13 +26,16 @@ export { defineI18nRoute } from './runtime/define-i18n-route'
 export const MODULE_NAME = '@fluenti/nuxt'
 export const CONFIG_KEY = 'fluenti'
 
+// Module-level require that works in both CJS and ESM after bundling.
+// See packages/core/src/config-loader.ts for explanation of the pattern.
+const _require = createRequire(
+  typeof __filename !== 'undefined' ? __filename : import.meta.url,
+)
+
 /**
  * Resolve the FluentiBuildConfig from the module options.
  */
 function resolveFluentiBuildConfig(configOption: string | FluentiBuildConfig | undefined, rootDir: string): FluentiBuildConfig {
-  // Use native `require` in CJS context (where import.meta.url is unavailable),
-  // fall back to createRequire in ESM context.
-  const _require = typeof require !== 'undefined' ? require : createRequire(import.meta.url)
 
   if (typeof configOption === 'object') {
     // Inline config — merge with defaults

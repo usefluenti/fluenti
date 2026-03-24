@@ -8,7 +8,7 @@ export default createPackageConfig({
     provider: 'src/provider.ts',
     loader: 'src/loader.ts',
   },
-  external: ['react', 'react-dom', 'next', 'webpack', /^@fluenti\/core/, /^@fluenti\/react/, /^node:/],
+  external: [/^react/, /^react-dom/, 'next', 'webpack', /^@fluenti\/core/, /^@fluenti\/react/, /^node:/],
   coverage: { lines: 70, branches: 65, functions: 70, statements: 70 },
   dtsOptions: { exclude: ['src/loader.ts'] },
   plugins: [useClientPlugin({ files: ['provider'] })],

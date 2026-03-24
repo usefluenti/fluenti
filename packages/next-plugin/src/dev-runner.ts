@@ -1,6 +1,4 @@
-import { exec } from 'node:child_process'
-import { existsSync } from 'node:fs'
-import { resolve, dirname, join } from 'node:path'
+import { join } from 'node:path'
 import { createRequire } from 'node:module'
 
 export interface DevRunnerOptions {
@@ -16,24 +14,9 @@ export interface DevRunnerOptions {
 }
 
 /**
- * Walk up from `cwd` to find `node_modules/.bin/fluenti`.
- * Returns the absolute path or null if not found.
- */
-export function resolveCliBin(cwd: string): string | null {
-  let dir = cwd
-  for (;;) {
-    const bin = resolve(dir, 'node_modules/.bin/fluenti')
-    if (existsSync(bin)) return bin
-    const parent = dirname(dir)
-    if (parent === dir) break
-    dir = parent
-  }
-  return null
-}
-
-/**
  * Run compile in-process via `@fluenti/cli` (for compileOnly mode),
- * or fall back to shell-out for extract + compile (dev mode).
+ * or extract + compile in dev mode. Requires `@fluenti/cli` to be installed
+ * as a devDependency.
  */
 export async function runExtractCompile(options: DevRunnerOptions): Promise<void> {
   if (options.compileOnly) {
@@ -57,15 +40,15 @@ export async function runExtractCompile(options: DevRunnerOptions): Promise<void
     }
   }
 
-  // Dev mode: try in-process extract + compile first (avoids shell-out overhead).
-  // Step 1: check if @fluenti/cli is installed — if not, fall back to shell-out.
-  // Step 2: run — errors here mean the CLI ran but failed; surface them, don't fall through.
+  // Dev mode: run in-process extract + compile.
+  // Step 1: load @fluenti/cli — if not installed, guide user to install it.
+  // Step 2: run — errors here mean the CLI ran but failed; surface them.
   let fluentCli: { runExtract: (cwd: string) => Promise<void>; runCompile: (cwd: string, opts?: { parallel: boolean }) => Promise<void> } | null = null
   try {
     const projectRequire = createRequire(join(options.cwd, 'package.json'))
     fluentCli = projectRequire('@fluenti/cli')
   } catch {
-    // @fluenti/cli not installed — fall back to shell-out
+    // @fluenti/cli not installed — will show install guide below
   }
 
   if (fluentCli) {
@@ -88,39 +71,16 @@ export async function runExtractCompile(options: DevRunnerOptions): Promise<void
     }
   }
 
-  const bin = resolveCliBin(options.cwd)
-  if (!bin) {
-    const msg = '[fluenti] CLI not found — skipping auto-compile. Install @fluenti/cli as a devDependency.'
-    if (options.throwOnError) {
-      return Promise.reject(new Error(msg))
-    }
-    console.warn(msg)
-    return Promise.resolve()
+  const msg =
+    '[fluenti] @fluenti/cli is required for auto-compile.\n' +
+    '  Install it as a devDependency:\n' +
+    '    pnpm add -D @fluenti/cli\n' +
+    '  See: https://fluenti.dev/start/introduction/'
+  if (options.throwOnError) {
+    throw new Error(msg)
   }
-
-  const parallelFlag = options.parallelCompile ? ' --parallel' : ''
-  const command = `${bin} extract && ${bin} compile${parallelFlag}`
-  return new Promise<void>((resolve, reject) => {
-    exec(
-      command,
-      { cwd: options.cwd },
-      (err, _stdout, stderr) => {
-        if (err) {
-          const error = new Error(stderr || err.message)
-          if (options.throwOnError) {
-            reject(error)
-            return
-          }
-          console.warn('[fluenti] Extract/compile failed:', error.message)
-          options.onError?.(error)
-        } else {
-          console.log('[fluenti] Extracting and compiling... done')
-          options.onSuccess?.()
-        }
-        resolve()
-      },
-    )
-  })
+  console.warn(msg)
+  options.onError?.(new Error(msg))
 }
 
 /**
