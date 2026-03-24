@@ -74,6 +74,9 @@ jobs:
       - name: Test with coverage gates
         run: pnpm test:coverage
 
+      - name: Smoke test dist output
+        run: node scripts/smoke-test.mjs
+
   bench:
     name: Bench
     runs-on: ubuntu-latest

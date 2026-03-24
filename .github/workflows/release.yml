@@ -110,6 +110,9 @@ jobs:
       - name: Build
         run: pnpm build
 
+      - name: Smoke test dist output
+        run: node scripts/smoke-test.mjs
+
       - name: Publish (dry run)
         if: ${{ inputs.dry-run }}
         run: pnpm -r --filter './packages/*' publish --no-git-checks --dry-run

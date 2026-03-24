@@ -44,6 +44,7 @@
     "test:e2e:remix": "playwright test --project=remix",
     "test:e2e:nextjs": "playwright test --project=nextjs",
     "test:e2e:vue-no-plugin": "playwright test --project=vue-no-plugin",
+    "test:smoke": "pnpm build && node scripts/smoke-test.mjs",
     "bench": "vitest bench",
     "bench:core": "pnpm --filter @fluenti/core bench"
   },
