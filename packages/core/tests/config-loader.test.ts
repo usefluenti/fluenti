@@ -437,12 +437,7 @@ describe('loadConfigSync — extends support', () => {
     writeMjs(configA, configSource({ extends: './b.mjs', sourceLocale: 'en', locales: ['en'], format: 'po' }))
     writeMjs(configB, configSource({ extends: './a.mjs', sourceLocale: 'en', locales: ['en'], format: 'po' }))
 
-    // loadConfigSync catches errors and falls back to defaults, so we test
-    // that circular detection works via the internal chain function indirectly.
-    // The public API returns defaults on any error.
-    const config = loadConfigSync(configA)
-    // Falls back to defaults when circular error is caught internally
-    expect(config.sourceLocale).toBe('en')
+    expect(() => loadConfigSync(configA)).toThrow(/Circular extends detected/)
   })
 })
 
@@ -716,6 +711,22 @@ describe('ESM compatibility — loadConfigSync', () => {
       )
 
       expect(output).toBe('ja')
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+})
+
+describe('loadConfigSync failure behavior', () => {
+  it('throws when the config file exists but cannot be evaluated', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'fluenti-sync-failure-'))
+    try {
+      writeFileSync(
+        join(dir, 'fluenti.config.mjs'),
+        'throw new Error("broken config")\n',
+      )
+
+      expect(() => loadConfigSync(undefined, dir)).toThrow('broken config')
     } finally {
       rmSync(dir, { recursive: true, force: true })
     }

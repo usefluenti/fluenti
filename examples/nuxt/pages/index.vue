@@ -35,12 +35,12 @@ const PAGE_SUBTITLE = msg`A modern i18n framework`
         <div><DateTime :value="Date.now()" /></div>
       </div>
       <div class="demo-item">
-        <div class="demo-label">&lt;DateTime :value="Date.now()" style="short" /&gt;</div>
-        <div><DateTime :value="Date.now()" style="short" /></div>
+        <div class="demo-label">&lt;DateTime :value="Date.now()" format="short" /&gt;</div>
+        <div><DateTime :value="Date.now()" format="short" /></div>
       </div>
       <div class="demo-item">
-        <div class="demo-label">&lt;DateTime :value="Date.now()" style="long" /&gt;</div>
-        <div><DateTime :value="Date.now()" style="long" /></div>
+        <div class="demo-label">&lt;DateTime :value="Date.now()" format="long" /&gt;</div>
+        <div><DateTime :value="Date.now()" format="long" /></div>
       </div>
     </div>
 
@@ -51,16 +51,16 @@ const PAGE_SUBTITLE = msg`A modern i18n framework`
         <div><NumberFormat :value="1234567.89" /></div>
       </div>
       <div class="demo-item">
-        <div class="demo-label">&lt;NumberFormat :value="42.5" style="currency" /&gt;</div>
-        <div><NumberFormat :value="42.5" style="currency" /></div>
+        <div class="demo-label">&lt;NumberFormat :value="42.5" format="currency" /&gt;</div>
+        <div><NumberFormat :value="42.5" format="currency" /></div>
       </div>
       <div class="demo-item">
-        <div class="demo-label">&lt;NumberFormat :value="0.856" style="percent" /&gt;</div>
-        <div><NumberFormat :value="0.856" style="percent" /></div>
+        <div class="demo-label">&lt;NumberFormat :value="0.856" format="percent" /&gt;</div>
+        <div><NumberFormat :value="0.856" format="percent" /></div>
       </div>
       <div class="demo-item">
-        <div class="demo-label">&lt;NumberFormat :value="1234.5" style="decimal" /&gt;</div>
-        <div><NumberFormat :value="1234.5" style="decimal" /></div>
+        <div class="demo-label">&lt;NumberFormat :value="1234.5" format="decimal" /&gt;</div>
+        <div><NumberFormat :value="1234.5" format="decimal" /></div>
       </div>
     </div>
 

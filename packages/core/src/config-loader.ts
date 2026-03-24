@@ -163,20 +163,15 @@ export function loadConfigSync(configPath?: string, cwd?: string): FluentiBuildC
 
   if (!configFilePath) return normalizeConfig({ ...defaultConfig })
 
-  try {
-    const { createJiti } = _moduleRequire('jiti') as {
-      createJiti: (
-        url: string,
-        options?: { moduleCache?: boolean; interopDefault?: boolean },
-      ) => (path: string) => unknown
-    }
-
-    const resolved = resolveConfigChainSync(configFilePath, createJiti, new Set())
-    return normalizeConfig(resolved)
-  } catch (err) {
-    console.warn('[fluenti] Failed to load config, using defaults:', err)
-    return normalizeConfig({ ...defaultConfig })
+  const { createJiti } = _moduleRequire('jiti') as {
+    createJiti: (
+      url: string,
+      options?: { moduleCache?: boolean; interopDefault?: boolean },
+    ) => (path: string) => unknown
   }
+
+  const resolved = resolveConfigChainSync(configFilePath, createJiti, new Set())
+  return normalizeConfig(resolved)
 }
 
 function resolveConfigChainSync(

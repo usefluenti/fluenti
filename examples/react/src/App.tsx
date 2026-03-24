@@ -93,13 +93,13 @@ export function App({ onLocaleChange }: { onLocaleChange: (locale: string) => vo
             <DateTime value={new Date(2025, 0, 15)} />
           </p>
           <p data-testid="datetime-long">
-            <DateTime value={new Date(2025, 0, 15)} style="long" />
+            <DateTime value={new Date(2025, 0, 15)} format="long" />
           </p>
           <p data-testid="number-currency">
-            <NumberFormat value={42.5} style="currency" />
+            <NumberFormat value={42.5} format="currency" />
           </p>
           <p data-testid="number-percent">
-            <NumberFormat value={0.856} style="percent" />
+            <NumberFormat value={0.856} format="percent" />
           </p>
 
           <h3>{t`Advanced ICU`}</h3>

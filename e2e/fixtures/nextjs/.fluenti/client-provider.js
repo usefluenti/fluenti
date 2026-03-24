@@ -8,7 +8,9 @@ import ja from '../src/locales/compiled/ja'
 import ar from '../src/locales/compiled/ar'
 
 const __allMessages = { 'en': en, 'ja': ja, 'ar': ar }
+const __dateFormats = undefined
+const __numberFormats = undefined
 
 export function ClientI18nProvider({ locale, fallbackLocale, fallbackChain, children }) {
-  return createElement(I18nProvider, { locale, fallbackLocale, messages: __allMessages, fallbackChain }, children)
+  return createElement(I18nProvider, { locale, fallbackLocale, messages: __allMessages, fallbackChain, dateFormats: __dateFormats, numberFormats: __numberFormats }, children)
 }

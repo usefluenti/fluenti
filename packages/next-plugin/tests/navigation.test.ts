@@ -90,6 +90,27 @@ describe('getLocalePath', () => {
   it('strips zh-CN prefix when switching', () => {
     expect(getLocalePath('/zh-CN/about', 'ja')).toBe('/ja/about')
   })
+
+  // ── localePrefix: 'always' ────────────────────────────────────────────
+  describe("localePrefix: 'always'", () => {
+    it('adds prefix for source locale', () => {
+      expect(getLocalePath('/about', 'en', { localePrefix: 'always' })).toBe('/en/about')
+    })
+
+    it('adds prefix for source locale on root path', () => {
+      expect(getLocalePath('/', 'en', { localePrefix: 'always' })).toBe('/en/')
+    })
+
+    it('strips and re-adds prefix for non-source locale', () => {
+      expect(getLocalePath('/fr/about', 'ja', { localePrefix: 'always' })).toBe('/ja/about')
+    })
+
+    it('still adds prefix for source locale even when it matches sourceLocale option', () => {
+      expect(
+        getLocalePath('/about', 'fr', { sourceLocale: 'fr', localePrefix: 'always' }),
+      ).toBe('/fr/about')
+    })
+  })
 })
 
 // ── useLocaleSwitcher ────────────────────────────────────────────────────────
@@ -149,5 +170,46 @@ describe('useLocaleSwitcher', () => {
     // mock pathname is /about (no prefix), switching to en (source) stays /about
     switchLocale('en')
     expect(mockPush).toHaveBeenCalledWith('/about')
+  })
+
+  it('writes cookie with default name "locale"', async () => {
+    const useLocaleSwitcher = await getHook()
+    const { switchLocale } = useLocaleSwitcher()
+    const cookies: string[] = []
+    Object.defineProperty(document, 'cookie', {
+      set: (v: string) => { cookies.push(v) },
+      configurable: true,
+    })
+    switchLocale('fr')
+    expect(cookies.some(c => c.startsWith('locale=fr'))).toBe(true)
+  })
+
+  it('writes cookie with custom cookieName', async () => {
+    const useLocaleSwitcher = await getHook()
+    const { switchLocale } = useLocaleSwitcher({ cookieName: 'NEXT_LOCALE' })
+    const cookies: string[] = []
+    Object.defineProperty(document, 'cookie', {
+      set: (v: string) => { cookies.push(v) },
+      configurable: true,
+    })
+    switchLocale('fr')
+    expect(cookies.some(c => c.startsWith('NEXT_LOCALE=fr'))).toBe(true)
+  })
+
+  describe("localePrefix: 'always'", () => {
+    it('adds prefix for source locale when switching', async () => {
+      const useLocaleSwitcher = await getHook()
+      const { switchLocale } = useLocaleSwitcher({ localePrefix: 'always' })
+      switchLocale('en')
+      // source locale gets prefix in 'always' mode
+      expect(mockPush).toHaveBeenCalledWith('/en/about')
+    })
+
+    it('adds prefix for non-source locale when switching', async () => {
+      const useLocaleSwitcher = await getHook()
+      const { switchLocale } = useLocaleSwitcher({ localePrefix: 'always' })
+      switchLocale('fr')
+      expect(mockPush).toHaveBeenCalledWith('/fr/about')
+    })
   })
 })

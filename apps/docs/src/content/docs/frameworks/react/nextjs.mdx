@@ -35,7 +35,7 @@ export default withFluenti()({
 
 `withFluenti()` performs three things at build time:
 
-1. **Generates a server module** (`node_modules/.fluenti/server.js`) that bundles `createServerI18n`, message imports, and a `I18nProvider` component — aliased as `@fluenti/next`
+1. **Generates a server module** (`.fluenti/server.js`) that bundles `createServerI18n`, message imports, and a `I18nProvider` component — aliased as `@fluenti/next`
 2. **Registers a webpack loader** that rewrites direct-import authoring APIs in supported client and server scopes
 3. **Adds a resolve alias** so `@fluenti/next` points to the generated module
 
@@ -61,14 +61,14 @@ export default withFluenti({
 | `resolveLocale` | `string?` | multi-layer fallback | Module path that default-exports `() => string \| Promise<string>` |
 | `cookieName` | `string?` | `'locale'` | Cookie name used for locale detection |
 | `serverModule` | `string?` | auto-generated | Custom server module path (skips generation) |
-| `serverModuleOutDir` | `string?` | `node_modules/.fluenti` | Where to write generated files |
+| `serverModuleOutDir` | `string?` | `.fluenti` | Where to write generated files |
 | `dateFormats` | `DateFormatOptions?` | — | Custom date format presets |
 | `numberFormats` | `NumberFormatOptions?` | — | Custom number format presets |
 | `fallbackChain` | `Record<string, string[]>?` | — | Locale fallback chains |
 
 ### I18nProvider
 
-`withFluenti()` generates a `I18nProvider` **async server component** that handles both server and client i18n setup. It initializes the server-side locale (via `React.cache`), loads messages, and wraps children in a client-side provider with statically imported catalogs — messages contain functions that can't cross the RSC serialization boundary, so this is handled automatically.
+`withFluenti()` generates a `I18nProvider` **async server component** that handles both server and client i18n setup. It initializes the server-side locale (via `React.cache`), loads messages, and wraps children in a client-side provider with statically imported catalogs. That client provider currently bundles the configured locale catalogs up front so function-based compiled messages can cross the RSC boundary safely.
 
 <Aside type="note">
 `@fluenti/next/provider` also exports a `I18nProvider`, but that is a **client-only** wrapper without server-side initialization. Unless you have a custom server setup, always import from `@fluenti/next`.
@@ -244,7 +244,7 @@ export default async function DashboardPage() {
 
 ### Custom Locale Resolution
 
-By default, `withFluenti()` resolves the locale using a multi-layer fallback: Referer URL path segment → cookie → Accept-Language header → default locale. This means Server Actions automatically detect the correct locale from the page URL without middleware. To resolve the locale from a database, JWT, or external API, pass a module path:
+By default, `withFluenti()` resolves the locale using a multi-layer fallback: middleware-injected `x-fluenti-locale` header → cookie → Accept-Language header → default locale. For Server Actions or custom auth flows, you can override this with your own resolver module:
 
 ```typescript
 // next.config.ts

@@ -4,8 +4,8 @@ import { I18nContext } from '../context'
 export interface FluentiDateTimeProps {
   /** Date value to format */
   value: Date | number
-  /** Named format style */
-  style?: string
+  /** Named format key defined in dateFormats config */
+  format?: string
 }
 
 /**
@@ -13,13 +13,13 @@ export interface FluentiDateTimeProps {
  *
  * @example
  * ```tsx
- * <DateTime value={new Date()} style="long" />
+ * <DateTime value={new Date()} format="long" />
  * ```
  */
-export const DateTime = memo(function DateTime({ value, style }: FluentiDateTimeProps) {
+export const DateTime = memo(function DateTime({ value, format }: FluentiDateTimeProps) {
   const ctx = useContext(I18nContext)
   if (!ctx) {
     throw new Error('[fluenti] <DateTime> must be used within an <I18nProvider>')
   }
-  return <>{ctx.d(value, style)}</>
+  return <>{ctx.d(value, format)}</>
 })

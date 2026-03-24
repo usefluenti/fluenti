@@ -8,7 +8,7 @@ export default async function Page({ name }: { name: string }) {
       <Plural value={2} one="# item" other="# items" />
       <Select value="admin" options={{ admin: 'Administrator' }} other="Guest" />
       <DateTime value={new Date(Date.UTC(2025, 0, 15, 12))} />
-      <NumberFormat value={1234.5} style="currency" />
+      <NumberFormat value={1234.5} format="currency" />
     </>
   )
 }

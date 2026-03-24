@@ -147,8 +147,8 @@ import { DateTime, NumberFormat } from '@/lib/i18n.server'
 export default async function Page() {
   return (
     <div>
-      <DateTime value={new Date()} style="long" />
-      <NumberFormat value={1234.5} style="currency" />
+      <DateTime value={new Date()} format="long" />
+      <NumberFormat value={1234.5} format="currency" />
     </div>
   )
 }

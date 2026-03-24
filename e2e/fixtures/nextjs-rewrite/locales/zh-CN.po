@@ -1,0 +1,18 @@
+msgid ""
+msgstr "Content-Type: text/plain; charset=utf-8\n"
+
+#: ./src/app/[locale]/page.tsx:7
+msgid "Welcome to Fluenti"
+msgstr "欢迎使用 Fluenti"
+
+#: ./src/app/[locale]/page.tsx:8
+msgid "This is the home page."
+msgstr "这是首页。"
+
+#: ./src/app/[locale]/about/page.tsx:5
+msgid "About"
+msgstr "关于"
+
+#: ./src/app/[locale]/about/page.tsx:6
+msgid "This is the about page."
+msgstr "这是关于页面。"

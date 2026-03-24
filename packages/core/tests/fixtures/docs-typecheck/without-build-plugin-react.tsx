@@ -7,7 +7,7 @@ export function Banner({ count, role }: { count: number; role: string }) {
       <Plural value={count} one="# item" other="# items" />
       <Select value={role} options={{ admin: 'Admin' }} other="Guest" />
       <DateTime value={new Date(Date.UTC(2025, 0, 15, 12))} />
-      <NumberFormat value={1234.5} style="currency" />
+      <NumberFormat value={1234.5} format="currency" />
     </>
   )
 }

@@ -8,13 +8,13 @@ import { useI18n } from '../use-i18n'
  * @example
  * ```vue
  * <NumberFormat :value="1234.56" />
- * <NumberFormat :value="0.75" style="percent" />
- * <NumberFormat :value="99.99" style="currency" tag="strong" />
+ * <NumberFormat :value="0.75" format="percent" />
+ * <NumberFormat :value="99.99" format="currency" tag="strong" />
  * ```
  */
 const numberFormatProps = {
   value: { type: Number, required: true },
-  style: { type: String, default: undefined },
+  format: { type: String, default: undefined },
   tag: { type: String, default: 'span' },
 } as const
 
@@ -25,6 +25,6 @@ export const NumberFormat = defineComponent({
   props: numberFormatProps,
   setup(props) {
     const { n } = useI18n()
-    return () => h(props.tag, n(props.value, props.style))
+    return () => h(props.tag, n(props.value, props.format))
   },
 })

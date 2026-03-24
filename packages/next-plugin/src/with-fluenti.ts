@@ -104,8 +104,13 @@ function applyFluenti(
   const relativeServerModule = './' + serverModulePath
     .replace(projectRoot + '/', '')
     .replace(projectRoot + '\\', '')
+  const configModulePath = resolve(dirname(serverModulePath), 'i18n-config.js')
+  const relativeConfigModule = './' + configModulePath
+    .replace(projectRoot + '/', '')
+    .replace(projectRoot + '\\', '')
   const fluentTurboAlias: Record<string, string> = {
     '@fluenti/next': relativeServerModule,
+    '@fluenti/next/i18n-config': relativeConfigModule,
   }
 
   // ── Dev auto-compile via standalone watcher (works with both webpack & Turbopack) ──
@@ -154,6 +159,7 @@ function applyFluenti(
       config.resolve = config.resolve ?? {} as WebpackConfig['resolve']
       config.resolve.alias = config.resolve.alias ?? {}
       config.resolve.alias['@fluenti/next$'] = serverModulePath
+      config.resolve.alias['@fluenti/next/i18n-config$'] = configModulePath
 
       // Auto compile before production build via async beforeRun hook
       const buildAutoCompile = fluentiConfig.buildAutoCompile ?? true

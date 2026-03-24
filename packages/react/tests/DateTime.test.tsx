@@ -31,7 +31,7 @@ describe('DateTime', () => {
   it('formats with the built-in "short" style', () => {
     render(
       <I18nProvider locale="en" messages={{ en: {} }}>
-        <DateTime value={fixedDate} style="short" />
+        <DateTime value={fixedDate} format="short" />
       </I18nProvider>,
     )
     const expected = new Intl.DateTimeFormat('en', {
@@ -45,7 +45,7 @@ describe('DateTime', () => {
   it('formats with the built-in "long" style', () => {
     render(
       <I18nProvider locale="en" messages={{ en: {} }}>
-        <DateTime value={fixedDate} style="long" />
+        <DateTime value={fixedDate} format="long" />
       </I18nProvider>,
     )
     const expected = new Intl.DateTimeFormat('en', {
@@ -60,7 +60,7 @@ describe('DateTime', () => {
   it('formats with the built-in "time" style', () => {
     render(
       <I18nProvider locale="en" messages={{ en: {} }}>
-        <DateTime value={fixedDate} style="time" />
+        <DateTime value={fixedDate} format="time" />
       </I18nProvider>,
     )
     const expected = new Intl.DateTimeFormat('en', {
@@ -73,7 +73,7 @@ describe('DateTime', () => {
   it('formats with the built-in "datetime" style', () => {
     render(
       <I18nProvider locale="en" messages={{ en: {} }}>
-        <DateTime value={fixedDate} style="datetime" />
+        <DateTime value={fixedDate} format="datetime" />
       </I18nProvider>,
     )
     const expected = new Intl.DateTimeFormat('en', {
@@ -93,7 +93,7 @@ describe('DateTime', () => {
         messages={{ en: {} }}
         dateFormats={{ custom: { year: '2-digit', month: '2-digit' } }}
       >
-        <DateTime value={fixedDate} style="custom" />
+        <DateTime value={fixedDate} format="custom" />
       </I18nProvider>,
     )
     const expected = new Intl.DateTimeFormat('en', {
@@ -126,7 +126,7 @@ describe('DateTime', () => {
   it('falls back to default when given an unknown style', () => {
     render(
       <I18nProvider locale="en" messages={{ en: {} }}>
-        <DateTime value={fixedDate} style="nonexistent" />
+        <DateTime value={fixedDate} format="nonexistent" />
       </I18nProvider>,
     )
     const expected = new Intl.DateTimeFormat('en').format(fixedDate)

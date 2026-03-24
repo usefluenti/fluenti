@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { useI18n } from '@fluenti/vue'
-import { getSSRLocaleScript, getDirection } from '@fluenti/core'
-import { computed, watch, onMounted } from 'vue'
+import { getDirection } from '@fluenti/core'
+import { useHead } from '#imports'
+import { watch, onMounted } from 'vue'
 
 const { locale, setLocale, getLocales, isLoading, preloadLocale } = useI18n()
 
-const locales = computed(() => getLocales())
+const locales = getLocales()
 
 const localeLabels: Record<string, string> = {
   en: 'English',
@@ -36,20 +37,16 @@ function switchLocale(loc: string) {
   setLocale(loc)
 }
 
-// Inject the SSR locale script into the HTML head for hydration
-const ssrLocaleScript = computed(() => {
-  if (import.meta.server) {
-    return getSSRLocaleScript(locale.value)
-  }
-  return ''
-})
+// Inject SSR locale script into <head> for client-side hydration
+if (import.meta.server) {
+  useHead({
+    script: [{ innerHTML: `window.__FLUENTI_LOCALE__=${JSON.stringify(locale.value)}` }],
+  })
+}
 </script>
 
 <template>
   <div class="app">
-    <Head>
-      <script v-if="ssrLocaleScript" v-html="ssrLocaleScript.replace(/<\/?script>/g, '')" />
-    </Head>
 
     <header>
       <div class="header-top">

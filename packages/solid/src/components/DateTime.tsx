@@ -3,8 +3,8 @@ import { useI18n } from '../use-i18n'
 export interface DateTimeProps {
   /** Date value to format */
   value: Date | number
-  /** Named format style */
-  style?: string
+  /** Named format key defined in dateFormats config */
+  format?: string
 }
 
 /** @alias DateTimeProps */
@@ -15,10 +15,10 @@ export type FluentiDateTimeProps = DateTimeProps
  *
  * @example
  * ```tsx
- * <DateTime value={new Date()} style="long" />
+ * <DateTime value={new Date()} format="long" />
  * ```
  */
 export function DateTime(props: DateTimeProps) {
   const { d } = useI18n()
-  return <>{d(props.value, props.style)}</>
+  return <>{d(props.value, props.format)}</>
 }

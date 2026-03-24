@@ -233,7 +233,7 @@ Date formatting component.
 ```tsx
 import { DateTime } from '@fluenti/react'
 
-<DateTime value={new Date()} style="long" />
+<DateTime value={new Date()} format="long" />
 ```
 
 ## `<NumberFormat>`
@@ -243,7 +243,7 @@ Number formatting component.
 ```tsx
 import { NumberFormat } from '@fluenti/react'
 
-<NumberFormat value={1234.5} style="decimal" />
+<NumberFormat value={1234.5} format="decimal" />
 ```
 
 ## `msg`
@@ -376,7 +376,7 @@ Props are identical to the client `<Plural>`: `value`, `zero`, `one`, `two`, `fe
 ```tsx
 import { DateTime } from '@/lib/i18n.server'
 
-<DateTime value={new Date()} style="long" />
+<DateTime value={new Date()} format="long" />
 ```
 
 ### Server `<NumberFormat>`
@@ -384,7 +384,7 @@ import { DateTime } from '@/lib/i18n.server'
 ```tsx
 import { NumberFormat } from '@/lib/i18n.server'
 
-<NumberFormat value={1234.56} style="currency" />
+<NumberFormat value={1234.56} format="currency" />
 ```
 
 ### `resolveLocale` (Server Actions)

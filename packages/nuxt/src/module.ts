@@ -38,37 +38,19 @@ const _require = createRequire(
 function resolveFluentiBuildConfig(configOption: string | FluentiBuildConfig | undefined, rootDir: string): FluentiBuildConfig {
 
   if (typeof configOption === 'object') {
-    // Inline config — merge with defaults
-    try {
-      const { DEFAULT_FLUENTI_CONFIG } = _require('@fluenti/core/config') as {
-        DEFAULT_FLUENTI_CONFIG: FluentiBuildConfig
-      }
-      return { ...DEFAULT_FLUENTI_CONFIG, ...configOption }
-    } catch {
-      return configOption as FluentiBuildConfig
+    const { DEFAULT_FLUENTI_CONFIG } = _require('@fluenti/core/config') as {
+      DEFAULT_FLUENTI_CONFIG: FluentiBuildConfig
     }
+    return { ...DEFAULT_FLUENTI_CONFIG, ...configOption }
   }
 
-  // string → specified path; undefined → auto-discover
-  try {
-    const { loadConfigSync } = _require('@fluenti/core/config') as {
-      loadConfigSync: (configPath?: string, cwd?: string) => FluentiBuildConfig
-    }
-    return loadConfigSync(
-      typeof configOption === 'string' ? configOption : undefined,
-      rootDir,
-    )
-  } catch {
-    // @fluenti/core not available — return minimal defaults
-    return {
-      sourceLocale: 'en',
-      locales: ['en'],
-      catalogDir: './locales',
-      format: 'po',
-      include: ['./src/**/*.{vue,tsx,jsx,ts,js}'],
-      compileOutDir: './src/locales/compiled',
-    }
+  const { loadConfigSync } = _require('@fluenti/core/config') as {
+    loadConfigSync: (configPath?: string, cwd?: string) => FluentiBuildConfig
   }
+  return loadConfigSync(
+    typeof configOption === 'string' ? configOption : undefined,
+    rootDir,
+  )
 }
 
 export default defineNuxtModule<FluentNuxtOptions>({

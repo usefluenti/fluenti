@@ -70,7 +70,7 @@ describe('NumberFormat', () => {
   it('formats with the built-in "percent" style', () => {
     const Comp = defineComponent({
       setup() {
-        return () => h(NumberFormat, { value: 0.75, style: 'percent' })
+        return () => h(NumberFormat, { value: 0.75, format: 'percent' })
       },
     })
     const wrapper = mountWithPlugin(Comp)
@@ -81,7 +81,7 @@ describe('NumberFormat', () => {
   it('formats with the built-in "decimal" style (fixed fraction digits)', () => {
     const Comp = defineComponent({
       setup() {
-        return () => h(NumberFormat, { value: 3.1, style: 'decimal' })
+        return () => h(NumberFormat, { value: 3.1, format: 'decimal' })
       },
     })
     const wrapper = mountWithPlugin(Comp)
@@ -95,7 +95,7 @@ describe('NumberFormat', () => {
   it('formats with the built-in "currency" style (en locale = USD)', () => {
     const Comp = defineComponent({
       setup() {
-        return () => h(NumberFormat, { value: 99.99, style: 'currency' })
+        return () => h(NumberFormat, { value: 99.99, format: 'currency' })
       },
     })
     const wrapper = mountWithPlugin(Comp)
@@ -109,7 +109,7 @@ describe('NumberFormat', () => {
   it('formats with currency style using locale-appropriate currency (de = EUR)', () => {
     const Comp = defineComponent({
       setup() {
-        return () => h(NumberFormat, { value: 49.99, style: 'currency' })
+        return () => h(NumberFormat, { value: 49.99, format: 'currency' })
       },
     })
     const wrapper = mountWithPlugin(Comp, {
@@ -126,7 +126,7 @@ describe('NumberFormat', () => {
   it('formats with currency style using locale-appropriate currency (ja = JPY)', () => {
     const Comp = defineComponent({
       setup() {
-        return () => h(NumberFormat, { value: 1500, style: 'currency' })
+        return () => h(NumberFormat, { value: 1500, format: 'currency' })
       },
     })
     const wrapper = mountWithPlugin(Comp, {
@@ -143,7 +143,7 @@ describe('NumberFormat', () => {
   it('uses custom numberFormats from the plugin', () => {
     const Comp = defineComponent({
       setup() {
-        return () => h(NumberFormat, { value: 1500, style: 'compact' })
+        return () => h(NumberFormat, { value: 1500, format: 'compact' })
       },
     })
     const wrapper = mountWithPlugin(Comp, {
@@ -172,7 +172,7 @@ describe('NumberFormat', () => {
   it('falls back to default when given an unknown style', () => {
     const Comp = defineComponent({
       setup() {
-        return () => h(NumberFormat, { value: 42, style: 'nonexistent' })
+        return () => h(NumberFormat, { value: 42, format: 'nonexistent' })
       },
     })
     const wrapper = mountWithPlugin(Comp)

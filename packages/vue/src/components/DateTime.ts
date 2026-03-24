@@ -8,13 +8,13 @@ import { useI18n } from '../use-i18n'
  * @example
  * ```vue
  * <DateTime :value="new Date()" />
- * <DateTime :value="Date.now()" style="short" />
- * <DateTime :value="event.date" style="long" tag="time" />
+ * <DateTime :value="Date.now()" format="short" />
+ * <DateTime :value="event.date" format="long" tag="time" />
  * ```
  */
 const dateTimeProps = {
   value: { type: [Date, Number] as PropType<Date | number>, required: true },
-  style: { type: String, default: undefined },
+  format: { type: String, default: undefined },
   tag: { type: String, default: 'span' },
 } as const
 
@@ -25,6 +25,6 @@ export const DateTime = defineComponent({
   props: dateTimeProps,
   setup(props) {
     const { d } = useI18n()
-    return () => h(props.tag, d(props.value as Date | number, props.style))
+    return () => h(props.tag, d(props.value as Date | number, props.format))
   },
 })

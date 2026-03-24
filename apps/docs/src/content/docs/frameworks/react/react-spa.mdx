@@ -114,8 +114,8 @@ import { DateTime, NumberFormat } from '@fluenti/react'
 function OrderSummary({ date, total }: { date: Date; total: number }) {
   return (
     <div>
-      <p>Order placed: <DateTime value={date} style="long" /></p>
-      <p>Total: <NumberFormat value={total} style="currency" /></p>
+      <p>Order placed: <DateTime value={date} format="long" /></p>
+      <p>Total: <NumberFormat value={total} format="currency" /></p>
     </div>
   )
 }

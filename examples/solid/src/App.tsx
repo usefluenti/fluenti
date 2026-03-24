@@ -460,20 +460,20 @@ export const App: Component = () => {
                 <div><DateTime value={Date.now()} /></div>
               </div>
               <div style={demoItemStyle}>
-                <div style={demoLabelStyle}>{'<DateTime value={Date.now()} style="long" />'}</div>
-                <div><DateTime value={Date.now()} style="long" /></div>
+                <div style={demoLabelStyle}>{'<DateTime value={Date.now()} format="long" />'}</div>
+                <div><DateTime value={Date.now()} format="long" /></div>
               </div>
               <div style={demoItemStyle}>
                 <div style={demoLabelStyle}>{'<NumberFormat value={1234567.89} />'}</div>
                 <div><NumberFormat value={1234567.89} /></div>
               </div>
               <div style={demoItemStyle}>
-                <div style={demoLabelStyle}>{'<NumberFormat value={42.5} style="currency" />'}</div>
-                <div><NumberFormat value={42.5} style="currency" /></div>
+                <div style={demoLabelStyle}>{'<NumberFormat value={42.5} format="currency" />'}</div>
+                <div><NumberFormat value={42.5} format="currency" /></div>
               </div>
               <div style={demoItemStyle}>
-                <div style={demoLabelStyle}>{'<NumberFormat value={0.856} style="percent" />'}</div>
-                <div><NumberFormat value={0.856} style="percent" /></div>
+                <div style={demoLabelStyle}>{'<NumberFormat value={0.856} format="percent" />'}</div>
+                <div><NumberFormat value={0.856} format="percent" /></div>
               </div>
             </div>
           </section>

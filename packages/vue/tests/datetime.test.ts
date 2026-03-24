@@ -41,7 +41,7 @@ describe('DateTime', () => {
   it('formats with the built-in "short" style', () => {
     const Comp = defineComponent({
       setup() {
-        return () => h(DateTime, { value: fixedDate, style: 'short' })
+        return () => h(DateTime, { value: fixedDate, format: 'short' })
       },
     })
     const wrapper = mountWithPlugin(Comp)
@@ -56,7 +56,7 @@ describe('DateTime', () => {
   it('formats with the built-in "long" style', () => {
     const Comp = defineComponent({
       setup() {
-        return () => h(DateTime, { value: fixedDate, style: 'long' })
+        return () => h(DateTime, { value: fixedDate, format: 'long' })
       },
     })
     const wrapper = mountWithPlugin(Comp)
@@ -72,7 +72,7 @@ describe('DateTime', () => {
   it('formats with the built-in "time" style', () => {
     const Comp = defineComponent({
       setup() {
-        return () => h(DateTime, { value: fixedDate, style: 'time' })
+        return () => h(DateTime, { value: fixedDate, format: 'time' })
       },
     })
     const wrapper = mountWithPlugin(Comp)
@@ -86,7 +86,7 @@ describe('DateTime', () => {
   it('formats with the built-in "datetime" style', () => {
     const Comp = defineComponent({
       setup() {
-        return () => h(DateTime, { value: fixedDate, style: 'datetime' })
+        return () => h(DateTime, { value: fixedDate, format: 'datetime' })
       },
     })
     const wrapper = mountWithPlugin(Comp)
@@ -103,7 +103,7 @@ describe('DateTime', () => {
   it('uses custom dateFormats from the plugin', () => {
     const Comp = defineComponent({
       setup() {
-        return () => h(DateTime, { value: fixedDate, style: 'custom' })
+        return () => h(DateTime, { value: fixedDate, format: 'custom' })
       },
     })
     const wrapper = mountWithPlugin(Comp, {
@@ -149,7 +149,7 @@ describe('DateTime', () => {
   it('falls back to default when given an unknown style', () => {
     const Comp = defineComponent({
       setup() {
-        return () => h(DateTime, { value: fixedDate, style: 'nonexistent' })
+        return () => h(DateTime, { value: fixedDate, format: 'nonexistent' })
       },
     })
     const wrapper = mountWithPlugin(Comp)

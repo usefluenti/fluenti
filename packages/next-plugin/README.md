@@ -25,7 +25,7 @@ export default function Counter() {
 }
 ```
 
-No runtime parsing. No bundle bloat. Messages are compiled at build time and tree-shaken per locale.
+No runtime parsing. Messages are compiled at build time, and the generated server/runtime helpers are tree-shaken with your app code.
 
 ## Features
 
@@ -36,7 +36,7 @@ No runtime parsing. No bundle bloat. Messages are compiled at build time and tre
 - **`I18nProvider`** — async server component that sets up both server and client i18n in one place
 - **`withLocale()`** — per-component locale isolation in RSC
 - **ICU MessageFormat** — plurals, selects, nested arguments, custom formatters
-- **Code splitting** — messages split per locale, loaded on demand
+- **Per-locale generated modules** — server/runtime helpers are generated per project, while the client provider statically bundles configured locale catalogs for RSC hydration
 - **Cookie-based locale detection** — reads `locale` cookie in server components by default
 
 ## Quick Start

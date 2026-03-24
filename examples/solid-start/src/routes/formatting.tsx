@@ -18,13 +18,13 @@ const Formatting: Component = () => {
           Default: <span data-testid="date-default"><DateTime value={Date.now()} /></span>
         </p>
         <p>
-          Short: <span data-testid="date-short"><DateTime value={Date.now()} style="short" /></span>
+          Short: <span data-testid="date-short"><DateTime value={Date.now()} format="short" /></span>
         </p>
         <p>
-          Long: <span data-testid="date-long"><DateTime value={Date.now()} style="long" /></span>
+          Long: <span data-testid="date-long"><DateTime value={Date.now()} format="long" /></span>
         </p>
         <p>
-          Time: <span data-testid="date-time"><DateTime value={Date.now()} style="time" /></span>
+          Time: <span data-testid="date-time"><DateTime value={Date.now()} format="time" /></span>
         </p>
       </section>
 
@@ -38,14 +38,14 @@ const Formatting: Component = () => {
       <section style={{ 'margin-bottom': '24px' }}>
         <h2>{translate`Percentage:`}</h2>
         <p>
-          <span data-testid="number-percent"><NumberFormat value={0.75} style="percent" /></span>
+          <span data-testid="number-percent"><NumberFormat value={0.75} format="percent" /></span>
         </p>
       </section>
 
       <section>
         <h2>{translate`Currency:`}</h2>
         <p>
-          <span data-testid="number-currency"><NumberFormat value={99.99} style="currency" /></span>
+          <span data-testid="number-currency"><NumberFormat value={99.99} format="currency" /></span>
         </p>
       </section>
     </div>

@@ -73,7 +73,7 @@ const createdAt = new Date()
 Or use the `<DateTime>` component:
 
 ```vue
-<DateTime :value="createdAt" style="long" />
+<DateTime :value="createdAt" format="long" />
 ```
 
 </TabItem>
@@ -100,7 +100,7 @@ function DateExample() {
 Or use the `<DateTime>` component:
 
 ```tsx
-<DateTime value={createdAt} style="long" />
+<DateTime value={createdAt} format="long" />
 ```
 
 </TabItem>
@@ -127,7 +127,7 @@ function DateExample() {
 Or use the `<DateTime>` component:
 
 ```tsx
-<DateTime value={createdAt} style="long" />
+<DateTime value={createdAt} format="long" />
 ```
 
 </TabItem>
@@ -165,7 +165,7 @@ const { n } = useI18n()
 Or use the `<NumberFormat>` component:
 
 ```vue
-<NumberFormat :value="1234.5" style="currency" />
+<NumberFormat :value="1234.5" format="currency" />
 ```
 
 </TabItem>
@@ -190,7 +190,7 @@ function NumberExample() {
 Or use the `<NumberFormat>` component:
 
 ```tsx
-<NumberFormat value={1234.5} style="currency" />
+<NumberFormat value={1234.5} format="currency" />
 ```
 
 </TabItem>
@@ -215,7 +215,7 @@ function NumberExample() {
 Or use the `<NumberFormat>` component:
 
 ```tsx
-<NumberFormat value={1234.5} style="currency" />
+<NumberFormat value={1234.5} format="currency" />
 ```
 
 </TabItem>
@@ -501,23 +501,23 @@ All frameworks provide `<DateTime>` and `<NumberFormat>` components for formatti
 <TabItem label="Vue">
 ```vue
 <template>
-  <p>Created: <DateTime :value="post.createdAt" style="long" /></p>
-  <p>Updated: <DateTime :value="post.updatedAt" style="relative" /></p>
+  <p>Created: <DateTime :value="post.createdAt" format="long" /></p>
+  <p>Updated: <DateTime :value="post.updatedAt" format="relative" /></p>
 </template>
 ```
 </TabItem>
 
 <TabItem label="React">
 ```tsx
-<p>Created: <DateTime value={post.createdAt} style="long" /></p>
-<p>Updated: <DateTime value={post.updatedAt} style="relative" /></p>
+<p>Created: <DateTime value={post.createdAt} format="long" /></p>
+<p>Updated: <DateTime value={post.updatedAt} format="relative" /></p>
 ```
 </TabItem>
 
 <TabItem label="Solid">
 ```tsx
-<p>Created: <DateTime value={post.createdAt} style="long" /></p>
-<p>Updated: <DateTime value={post.updatedAt} style="relative" /></p>
+<p>Created: <DateTime value={post.createdAt} format="long" /></p>
+<p>Updated: <DateTime value={post.updatedAt} format="relative" /></p>
 ```
 </TabItem>
 </Tabs>
@@ -533,23 +533,23 @@ All frameworks provide `<DateTime>` and `<NumberFormat>` components for formatti
 <TabItem label="Vue">
 ```vue
 <template>
-  <p>Price: <NumberFormat :value="item.price" style="currency" /></p>
-  <p>Progress: <NumberFormat :value="0.85" style="percent" /></p>
+  <p>Price: <NumberFormat :value="item.price" format="currency" /></p>
+  <p>Progress: <NumberFormat :value="0.85" format="percent" /></p>
 </template>
 ```
 </TabItem>
 
 <TabItem label="React">
 ```tsx
-<p>Price: <NumberFormat value={item.price} style="currency" /></p>
-<p>Progress: <NumberFormat value={0.85} style="percent" /></p>
+<p>Price: <NumberFormat value={item.price} format="currency" /></p>
+<p>Progress: <NumberFormat value={0.85} format="percent" /></p>
 ```
 </TabItem>
 
 <TabItem label="Solid">
 ```tsx
-<p>Price: <NumberFormat value={item.price} style="currency" /></p>
-<p>Progress: <NumberFormat value={0.85} style="percent" /></p>
+<p>Price: <NumberFormat value={item.price} format="currency" /></p>
+<p>Progress: <NumberFormat value={0.85} format="percent" /></p>
 ```
 </TabItem>
 </Tabs>

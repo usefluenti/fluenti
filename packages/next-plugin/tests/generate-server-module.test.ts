@@ -77,8 +77,8 @@ describe('generateServerModule', () => {
     generateServerModule('/project', baseConfig)
 
     const serverSource = writtenFiles['/project/node_modules/.fluenti/server.js']!
-    // Should contain referer check
-    expect(serverSource).toContain("headerStore.get('referer')")
+    // Should contain middleware header check
+    expect(serverSource).toContain("headerStore.get('x-fluenti-locale')")
     // Should contain cookie check with default name
     expect(serverSource).toContain("cookieStore.get('locale')")
     // Should contain accept-language check
@@ -117,7 +117,7 @@ describe('generateServerModule', () => {
     expect(serverSource).toContain("import __resolveLocale from '../../lib/resolve-locale'")
     expect(serverSource).toContain('resolveLocale: __resolveLocale,')
     // Should skip the default multi-layer fallback
-    expect(serverSource).not.toContain("headerStore.get('referer')")
+    expect(serverSource).not.toContain("headerStore.get('x-fluenti-locale')")
     expect(serverSource).not.toContain("cookieStore.get('locale')")
   })
 
@@ -157,5 +157,96 @@ describe('generateServerModule', () => {
     expect(dts).toContain('ClientI18nProvider')
     expect(dts).toContain('locale: string')
     expect(dts).toContain('children: ReactNode')
+  })
+
+  // ── x-fluenti-locale header in default resolveLocale ──────────────────
+  it('reads x-fluenti-locale header as highest-priority in default resolveLocale', () => {
+    generateServerModule('/project', baseConfig)
+    const serverSource = writtenFiles['/project/node_modules/.fluenti/server.js']!
+    // x-fluenti-locale check must appear before the cookie check
+    const headerIdx = serverSource.indexOf("headerStore.get('x-fluenti-locale')")
+    const cookieIdx = serverSource.indexOf("cookieStore.get('locale')")
+    expect(headerIdx).toBeGreaterThan(-1)
+    expect(cookieIdx).toBeGreaterThan(-1)
+    expect(headerIdx).toBeLessThan(cookieIdx)
+  })
+
+  it('validates x-fluenti-locale against __locales before using it', () => {
+    generateServerModule('/project', baseConfig)
+    const serverSource = writtenFiles['/project/node_modules/.fluenti/server.js']!
+    // The generated code should check that fromMiddleware is in __locales
+    expect(serverSource).toMatch(/fromMiddleware.*__locales\.includes/)
+  })
+
+  // ── i18n-config.js generation ─────────────────────────────────────────
+  it('generates i18n-config.js with locales, sourceLocale, cookieName', () => {
+    generateServerModule('/project', baseConfig)
+    const configSource = writtenFiles['/project/node_modules/.fluenti/i18n-config.js']!
+    expect(configSource).toBeDefined()
+    expect(configSource).toContain('export const locales = ["en","ja"]')
+    expect(configSource).toContain("export const sourceLocale = 'en'")
+    expect(configSource).toContain("export const cookieName = 'locale'")
+  })
+
+  it('generates i18n-config.d.ts with type declarations', () => {
+    generateServerModule('/project', baseConfig)
+    const dts = writtenFiles['/project/node_modules/.fluenti/i18n-config.d.ts']!
+    expect(dts).toBeDefined()
+    expect(dts).toContain('export declare const locales: string[]')
+    expect(dts).toContain('export declare const sourceLocale: string')
+    expect(dts).toContain('export declare const cookieName: string')
+  })
+
+  it('i18n-config.js uses custom cookieName when provided', () => {
+    generateServerModule('/project', { ...baseConfig, cookieName: 'NEXT_LOCALE' })
+    const configSource = writtenFiles['/project/node_modules/.fluenti/i18n-config.js']!
+    expect(configSource).toContain("export const cookieName = 'NEXT_LOCALE'")
+  })
+
+  // ── dateFormats / numberFormats in ClientI18nProvider ─────────────────
+  it('passes dateFormats to generated ClientI18nProvider', () => {
+    generateServerModule('/project', {
+      ...baseConfig,
+      fluentiConfig: {
+        ...baseConfig.fluentiConfig,
+        dateFormats: { short: { dateStyle: 'short' } },
+      },
+    })
+    const clientSource = writtenFiles['/project/node_modules/.fluenti/client-provider.js']!
+    expect(clientSource).toContain('"short"')
+    expect(clientSource).toContain('__dateFormats')
+    expect(clientSource).toContain('dateFormats: __dateFormats')
+  })
+
+  it('passes numberFormats to generated ClientI18nProvider', () => {
+    generateServerModule('/project', {
+      ...baseConfig,
+      fluentiConfig: {
+        ...baseConfig.fluentiConfig,
+        numberFormats: { currency: { style: 'currency', currency: 'USD' } },
+      },
+    })
+    const clientSource = writtenFiles['/project/node_modules/.fluenti/client-provider.js']!
+    expect(clientSource).toContain('"USD"')
+    expect(clientSource).toContain('__numberFormats')
+    expect(clientSource).toContain('numberFormats: __numberFormats')
+  })
+
+  it('sets dateFormats to undefined when not configured', () => {
+    generateServerModule('/project', baseConfig)
+    const clientSource = writtenFiles['/project/node_modules/.fluenti/client-provider.js']!
+    expect(clientSource).toContain('const __dateFormats = undefined')
+    expect(clientSource).toContain('const __numberFormats = undefined')
+  })
+
+  // ── writeFileSync error handling ──────────────────────────────────────
+  it('throws a Fluenti-specific error when writeFileSync fails', async () => {
+    const fsMod = await import('node:fs')
+    vi.mocked(fsMod.writeFileSync).mockImplementationOnce(() => {
+      throw new Error('ENOSPC: no space left on device')
+    })
+    expect(() => generateServerModule('/project', baseConfig)).toThrow(
+      '[fluenti] Failed to write generated module',
+    )
   })
 })

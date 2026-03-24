@@ -139,19 +139,9 @@ export default defineNuxtPlugin(async (nuxtApp) => {
       )
     }
 
-    // Inject $t, $d, $n if @fluenti/vue plugin hasn't already injected them
-    // (the Vue plugin handles injection when installed directly, but in Nuxt
-    // the module may load before the Vue plugin is installed)
-    try {
-      const { useI18n } = await import('@fluenti/vue')
-      const ctx = useI18n()
-      if (!gp['$t']) gp['$t'] = ctx.t
-      if (!gp['$d']) gp['$d'] = ctx.d
-      if (!gp['$n']) gp['$n'] = ctx.n
-    } catch (err) {
-      // @fluenti/vue plugin not yet installed — $t/$d/$n will be provided by it
-      if (import.meta.dev) console.debug('[fluenti] Vue plugin not yet installed, skipping $t/$d/$n injection:', err)
-    }
+    // $t/$d/$n are injected by the @fluenti/vue plugin via globalProperties.
+    // No additional injection needed here — useI18n() cannot be called outside
+    // a component setup() context.
   }
 
   return {

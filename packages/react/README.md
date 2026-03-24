@@ -172,7 +172,7 @@ export default async function Page() {
     <div>
       <Trans>Read the <a href="/docs">documentation</a>.</Trans>
       <Plural value={5} one="# item" other="# items" />
-      <DateTime value={new Date()} style="long" />
+      <DateTime value={new Date()} format="long" />
       <NumberFormat value={1234.56} />
     </div>
   )

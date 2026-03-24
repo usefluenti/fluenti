@@ -217,7 +217,7 @@ ICU select patterns as a component:
 ```tsx
 import { DateTime } from '@fluenti/solid'
 
-<DateTime value={new Date()} style="long" />
+<DateTime value={new Date()} format="long" />
 ```
 
 | Prop | Type | Default | Description |
@@ -230,7 +230,7 @@ import { DateTime } from '@fluenti/solid'
 ```tsx
 import { NumberFormat } from '@fluenti/solid'
 
-<NumberFormat value={1234.56} style="currency" />
+<NumberFormat value={1234.56} format="currency" />
 ```
 
 | Prop | Type | Default | Description |

@@ -4,8 +4,8 @@ import { I18nContext } from '../context'
 export interface NumberFormatProps {
   /** Number value to format */
   value: number
-  /** Named format style */
-  style?: string
+  /** Named format key defined in numberFormats config */
+  format?: string
 }
 
 /** @alias NumberFormatProps */
@@ -16,13 +16,13 @@ export type FluentiNumberFormatProps = NumberFormatProps
  *
  * @example
  * ```tsx
- * <Number value={1234.56} style="currency" />
+ * <Number value={1234.56} format="currency" />
  * ```
  */
-export const NumberFormat = memo(function NumberFormat({ value, style }: NumberFormatProps) {
+export const NumberFormat = memo(function NumberFormat({ value, format }: NumberFormatProps) {
   const ctx = useContext(I18nContext)
   if (!ctx) {
     throw new Error('[fluenti] <Number> must be used within an <I18nProvider>')
   }
-  return <>{ctx.n(value, style)}</>
+  return <>{ctx.n(value, format)}</>
 })

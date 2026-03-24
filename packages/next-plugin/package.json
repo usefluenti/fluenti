@@ -80,6 +80,16 @@
         "types": "./dist/navigation.d.ts",
         "default": "./dist/navigation.cjs"
       }
+    },
+    "./i18n-config": {
+      "import": {
+        "types": "./dist/i18n-config.d.ts",
+        "default": "./dist/i18n-config.js"
+      },
+      "require": {
+        "types": "./dist/i18n-config.d.ts",
+        "default": "./dist/i18n-config.cjs"
+      }
     }
   },
   "files": [

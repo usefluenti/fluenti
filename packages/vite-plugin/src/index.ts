@@ -56,43 +56,50 @@ export function createFluentiPlugins(
   frameworkPlugins: Plugin[],
   runtimeGenerator?: RuntimeGenerator,
 ): Plugin[] {
-  // Resolve the full FluentiBuildConfig from the config option
   let fluentiConfig: FluentiBuildConfig | undefined
+  let rootDir = process.cwd()
 
   function getConfig(cwd?: string): FluentiBuildConfig {
+    const effectiveCwd = cwd ?? rootDir
     if (!fluentiConfig) {
-      fluentiConfig = resolvePluginConfig(options.config, cwd)
+      fluentiConfig = resolvePluginConfig(options.config, effectiveCwd)
     }
     return fluentiConfig
   }
 
-  // Eagerly resolve config for values needed at plugin construction time
-  // (we can't defer these since they're used in resolveId/load which have no cwd context)
-  const earlyConfig = resolvePluginConfig(options.config)
-
-  const catalogDir = earlyConfig.compileOutDir.replace(/^\.\//, '')
-  const catalogExtension = earlyConfig.catalogExtension ?? '.js'
   const framework = options.framework
-  const splitting = earlyConfig.splitting ?? false
-  const sourceLocale = earlyConfig.sourceLocale
-  const localeCodes = resolveLocaleCodes(earlyConfig.locales)
-  const defaultBuildLocale = earlyConfig.defaultBuildLocale ?? sourceLocale
-  const idGenerator = earlyConfig.idGenerator
-  const onBeforeCompile = earlyConfig.onBeforeCompile
-  const onAfterCompile = earlyConfig.onAfterCompile
 
-  let rootDir = process.cwd()
+  function getResolvedSettings(cwd?: string) {
+    const config = getConfig(cwd)
+    const catalogDir = config.compileOutDir.replace(/^\.\//, '')
+    const catalogExtension = config.catalogExtension ?? '.js'
+    const splitting = config.splitting ?? false
+    const sourceLocale = config.sourceLocale
+    const localeCodes = resolveLocaleCodes(config.locales)
+    const defaultBuildLocale = config.defaultBuildLocale ?? sourceLocale
+    return {
+      config,
+      catalogDir,
+      catalogExtension,
+      splitting,
+      sourceLocale,
+      localeCodes,
+      defaultBuildLocale,
+    }
+  }
 
   const virtualPlugin: Plugin = {
     name: 'fluenti:virtual',
     configResolved(config) {
       rootDir = config.root
+      fluentiConfig = resolvePluginConfig(options.config, rootDir)
       setResolvedMode(config.command)
     },
     resolveId(id) {
       if (id.startsWith(VIRTUAL_PREFIX)) {
         return '\0' + id
       }
+      const { splitting } = getResolvedSettings()
       if (splitting) {
         const resolved = resolveVirtualSplitId(id)
         if (resolved) return resolved
@@ -100,6 +107,14 @@ export function createFluentiPlugins(
       return undefined
     },
     load(id) {
+      const {
+        catalogDir,
+        catalogExtension,
+        splitting,
+        localeCodes,
+        sourceLocale,
+        defaultBuildLocale,
+      } = getResolvedSettings()
       if (id.startsWith(RESOLVED_PREFIX)) {
         const locale = id.slice(RESOLVED_PREFIX.length)
         const catalogPath = `${catalogDir}/${locale}${catalogExtension}`
@@ -167,13 +182,14 @@ export function createFluentiPlugins(
   const buildSplitPlugin: Plugin = {
     name: 'fluenti:build-split',
     transform(code, id) {
+      const { splitting, config } = getResolvedSettings()
       if (!splitting) return undefined
       if (!isBuildMode(getPluginEnvironment(this))) return undefined
       if (id.includes('node_modules')) return undefined
       if (!id.match(/\.(vue|tsx|jsx|ts|js)(\?|$)/)) return undefined
 
       const strategy = splitting === 'static' ? 'static' : 'dynamic'
-      const transformOptions = idGenerator ? { hashFn: idGenerator } : undefined
+      const transformOptions = config.idGenerator ? { hashFn: config.idGenerator } : undefined
       const transformed = strategy === 'static'
         ? transformForStaticSplit(code, transformOptions)
         : transformForDynamicSplit(code, transformOptions)
@@ -185,11 +201,17 @@ export function createFluentiPlugins(
       if (!transformed.needsCatalogImport) return undefined
 
       const importStrategy = splitting === 'per-route' ? 'per-route' : strategy
-      const finalCode = injectCatalogImport(transformed.code, importStrategy, transformed.usedHashes, idGenerator)
+      const finalCode = injectCatalogImport(
+        transformed.code,
+        importStrategy,
+        transformed.usedHashes,
+        config.idGenerator,
+      )
       return { code: finalCode, map: null }
     },
 
     generateBundle(_outputOptions, bundle) {
+      const { splitting, localeCodes, catalogDir } = getResolvedSettings()
       if (splitting !== 'per-route') return
       if (moduleMessages.size === 0) return
 
@@ -260,34 +282,33 @@ export function createFluentiPlugins(
     },
   }
 
-  const buildAutoCompile = earlyConfig.buildAutoCompile ?? true
-
   const buildCompilePlugin: Plugin = {
     name: 'fluenti:build-compile',
     async buildStart() {
-      if (!isBuildMode(getPluginEnvironment(this)) || !buildAutoCompile) return
-      if (onBeforeCompile) {
-        const result = await onBeforeCompile()
+      const { config } = getResolvedSettings()
+      if (!isBuildMode(getPluginEnvironment(this))) return
+      const buildAutoCompile = config.buildAutoCompile ?? true
+      if (!buildAutoCompile) return
+      if (config.onBeforeCompile) {
+        const result = await config.onBeforeCompile()
         if (result === false) return
       }
       await runExtractCompile({ cwd: rootDir, throwOnError: true, compileOnly: true })
-      if (onAfterCompile) {
-        await onAfterCompile()
+      if (config.onAfterCompile) {
+        await config.onAfterCompile()
       }
     },
   }
 
-  const devAutoCompile = earlyConfig.devAutoCompile ?? true
-
   const devPlugin: Plugin = {
     name: 'fluenti:dev',
     configureServer(server) {
+      const { config, catalogDir } = getResolvedSettings(server.config.root)
+      const devAutoCompile = config.devAutoCompile ?? true
       if (!devAutoCompile) return
 
-      // Use include/exclude from resolved config
-      const cfg = getConfig(server.config.root)
-      const includePatterns = cfg.include ?? ['src/**/*.{vue,tsx,jsx,ts,js}']
-      const excludePatterns = cfg.exclude ?? []
+      const includePatterns = config.include ?? ['src/**/*.{vue,tsx,jsx,ts,js}']
+      const excludePatterns = config.exclude ?? []
 
       const filter = createFilter(includePatterns, [
         ...excludePatterns,
@@ -301,10 +322,10 @@ export function createFluentiPlugins(
           // Existing hotUpdate will pick up catalog changes
         },
       }
-      if (earlyConfig.parallelCompile) runnerOptions.parallelCompile = true
-      if (onBeforeCompile) runnerOptions.onBeforeCompile = onBeforeCompile
-      if (onAfterCompile) runnerOptions.onAfterCompile = onAfterCompile
-      const debouncedRun = createDebouncedRunner(runnerOptions, earlyConfig.devAutoCompileDelay ?? 500)
+      if (config.parallelCompile) runnerOptions.parallelCompile = true
+      if (config.onBeforeCompile) runnerOptions.onBeforeCompile = config.onBeforeCompile
+      if (config.onAfterCompile) runnerOptions.onAfterCompile = config.onAfterCompile
+      const debouncedRun = createDebouncedRunner(runnerOptions, config.devAutoCompileDelay ?? 500)
 
       debouncedRun()
 
@@ -315,6 +336,7 @@ export function createFluentiPlugins(
       })
     },
     hotUpdate({ file }) {
+      const { catalogDir } = getResolvedSettings()
       if (file.includes(catalogDir)) {
         const modules = [...this.environment.moduleGraph.urlToModuleMap.entries()]
           .filter(([url]) => url.includes('virtual:fluenti'))

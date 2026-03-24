@@ -308,6 +308,40 @@ importers:
         specifier: ^5.9
         version: 5.9.3
 
+  e2e/fixtures/nextjs-rewrite:
+    dependencies:
+      '@fluenti/cli':
+        specifier: workspace:*
+        version: link:../../../packages/cli
+      '@fluenti/core':
+        specifier: workspace:*
+        version: link:../../../packages/core
+      '@fluenti/next':
+        specifier: workspace:*
+        version: link:../../../packages/next-plugin
+      '@fluenti/react':
+        specifier: workspace:*
+        version: link:../../../packages/react
+      next:
+        specifier: '>=15.5.14'
+        version: 15.5.14(@playwright/test@1.58.2)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      react:
+        specifier: ^19.0.0
+        version: 19.2.4
+      react-dom:
+        specifier: ^19.0.0
+        version: 19.2.4(react@19.2.4)
+    devDependencies:
+      '@types/react':
+        specifier: ^19.0.0
+        version: 19.2.14
+      '@types/react-dom':
+        specifier: ^19.0.0
+        version: 19.2.3(@types/react@19.2.14)
+      typescript:
+        specifier: ^5.9
+        version: 5.9.3
+
   e2e/fixtures/nextjs-routes:
     dependencies:
       '@fluenti/cli':

@@ -21,6 +21,7 @@
  */
 import { useRouter, usePathname } from 'next/navigation'
 import { useI18n } from '@fluenti/react'
+import { cookieName as _configCookieName } from '@fluenti/next/i18n-config'
 
 export interface GetLocalePathOptions {
   /** Source/default locale (no prefix in as-needed mode) */
@@ -31,6 +32,12 @@ export interface GetLocalePathOptions {
    * preventing false matches on generic 2-letter path segments like /my or /us.
    */
   locales?: string[]
+  /**
+   * Locale prefix strategy. Matches the middleware `localePrefix` setting.
+   * - `'as-needed'` (default): source locale has no prefix (`/about` for en, `/fr/about` for fr)
+   * - `'always'`: all locales get a prefix (`/en/about`, `/fr/about`)
+   */
+  localePrefix?: 'always' | 'as-needed'
 }
 
 /**
@@ -40,10 +47,11 @@ export interface GetLocalePathOptions {
  *
  * @example
  * ```ts
- * getLocalePath('/about', 'fr')       // → '/fr/about'
- * getLocalePath('/about', 'en')       // → '/about' (source locale, no prefix)
- * getLocalePath('/fr/about', 'en')    // → '/about'
- * getLocalePath('/fr/about', 'ja')    // → '/ja/about'
+ * getLocalePath('/about', 'fr')                           // → '/fr/about'
+ * getLocalePath('/about', 'en')                           // → '/about' (source locale, no prefix)
+ * getLocalePath('/fr/about', 'en')                        // → '/about'
+ * getLocalePath('/fr/about', 'ja')                        // → '/ja/about'
+ * getLocalePath('/about', 'en', { localePrefix: 'always' }) // → '/en/about'
  * ```
  */
 export function getLocalePath(
@@ -52,6 +60,7 @@ export function getLocalePath(
   options?: GetLocalePathOptions,
 ): string {
   const sourceLocale = options?.sourceLocale ?? 'en'
+  const localePrefix = options?.localePrefix ?? 'as-needed'
 
   // Strip existing locale prefix if present
   const segments = pathname.split('/')
@@ -68,8 +77,8 @@ export function getLocalePath(
     ? '/' + segments.slice(2).join('/')
     : pathname
 
-  // Source locale gets no prefix (as-needed mode)
-  if (locale === sourceLocale) {
+  // In 'as-needed' mode, source locale gets no prefix
+  if (localePrefix !== 'always' && locale === sourceLocale) {
     return pathWithoutLocale || '/'
   }
 
@@ -85,6 +94,14 @@ export function getLocalePath(
 export function useLocaleSwitcher(options?: {
   /** Override the source/default locale instead of inferring from locales[0]. */
   sourceLocale?: string
+  /**
+   * Cookie name used by the middleware for locale preference.
+   * Defaults to the value from `fluenti.config.ts` (auto-read at build time).
+   * Must match the middleware `cookieName` option.
+   */
+  cookieName?: string
+  /** Locale prefix strategy — must match the middleware `localePrefix` option. */
+  localePrefix?: 'always' | 'as-needed'
 }) {
   const router = useRouter()
   const pathname = usePathname()
@@ -93,14 +110,16 @@ export function useLocaleSwitcher(options?: {
   // Read locales from I18nProvider context (works on client without fs)
   const locales = getLocales()
   const sourceLocale = options?.sourceLocale ?? locales[0] ?? 'en'
+  const cookieName = options?.cookieName ?? _configCookieName
+  const localePrefix = options?.localePrefix ?? 'as-needed'
 
   const switchLocale = (newLocale: string) => {
-    // 1. Set cookie to remember preference
-    document.cookie = `locale=${newLocale};path=/;max-age=31536000;samesite=lax`
+    // 1. Set cookie to remember preference (uses configured cookie name)
+    document.cookie = `${cookieName}=${newLocale};path=/;max-age=31536000;samesite=lax`
     // 2. Update React context
     setLocale(newLocale)
     // 3. Navigate to new locale path
-    const newPath = getLocalePath(pathname, newLocale, { sourceLocale, locales })
+    const newPath = getLocalePath(pathname, newLocale, { sourceLocale, locales, localePrefix })
     router.push(newPath)
     // 4. Refresh server components
     router.refresh()

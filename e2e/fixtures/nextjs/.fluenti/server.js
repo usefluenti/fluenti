@@ -21,6 +21,10 @@ const serverI18n = createServerI18n({
       const { cookies, headers } = await import('next/headers')
       const [cookieStore, headerStore] = await Promise.all([cookies(), headers()])
 
+      // 0. x-fluenti-locale header (set by createI18nMiddleware — most authoritative)
+      const fromMiddleware = headerStore.get('x-fluenti-locale')
+      if (fromMiddleware && __locales.includes(fromMiddleware)) return fromMiddleware
+
       // 1. Referer URL path segment (available in Server Action context)
       const referer = headerStore.get('referer')
       if (referer) {

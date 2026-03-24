@@ -15,23 +15,23 @@ const pastDate = new Date(Date.now() - 86400000 * 3)
     </div>
 
     <div class="demo-item">
-      <div class="demo-label">&lt;DateTime :value="now" style="short" /&gt;</div>
-      <div><DateTime :value="now" style="short" /></div>
+      <div class="demo-label">&lt;DateTime :value="now" format="short" /&gt;</div>
+      <div><DateTime :value="now" format="short" /></div>
     </div>
 
     <div class="demo-item">
-      <div class="demo-label">&lt;DateTime :value="now" style="long" /&gt;</div>
-      <div><DateTime :value="now" style="long" /></div>
+      <div class="demo-label">&lt;DateTime :value="now" format="long" /&gt;</div>
+      <div><DateTime :value="now" format="long" /></div>
     </div>
 
     <div class="demo-item">
-      <div class="demo-label">&lt;DateTime :value="pastDate" style="relative" /&gt; — past date</div>
-      <div><DateTime :value="pastDate" style="relative" /></div>
+      <div class="demo-label">&lt;DateTime :value="pastDate" format="relative" /&gt; — past date</div>
+      <div><DateTime :value="pastDate" format="relative" /></div>
     </div>
 
     <div class="demo-item">
-      <div class="demo-label">&lt;DateTime :value="now" style="datetime" /&gt;</div>
-      <div><DateTime :value="now" style="datetime" /></div>
+      <div class="demo-label">&lt;DateTime :value="now" format="datetime" /&gt;</div>
+      <div><DateTime :value="now" format="datetime" /></div>
     </div>
   </div>
 
@@ -44,18 +44,18 @@ const pastDate = new Date(Date.now() - 86400000 * 3)
     </div>
 
     <div class="demo-item">
-      <div class="demo-label">&lt;NumberFormat :value="42.5" style="currency" /&gt;</div>
-      <div><NumberFormat :value="42.5" style="currency" /></div>
+      <div class="demo-label">&lt;NumberFormat :value="42.5" format="currency" /&gt;</div>
+      <div><NumberFormat :value="42.5" format="currency" /></div>
     </div>
 
     <div class="demo-item">
-      <div class="demo-label">&lt;NumberFormat :value="0.856" style="percent" /&gt;</div>
-      <div><NumberFormat :value="0.856" style="percent" /></div>
+      <div class="demo-label">&lt;NumberFormat :value="0.856" format="percent" /&gt;</div>
+      <div><NumberFormat :value="0.856" format="percent" /></div>
     </div>
 
     <div class="demo-item">
-      <div class="demo-label">&lt;NumberFormat :value="1234.5" style="decimal" /&gt;</div>
-      <div><NumberFormat :value="1234.5" style="decimal" /></div>
+      <div class="demo-label">&lt;NumberFormat :value="1234.5" format="decimal" /&gt;</div>
+      <div><NumberFormat :value="1234.5" format="decimal" /></div>
     </div>
   </div>
 </template>

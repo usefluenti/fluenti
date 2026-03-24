@@ -14,7 +14,7 @@ export interface WithFluentConfig {
 
   /** Custom serverModule path (skip auto-generation) */
   serverModule?: string
-  /** Where to generate the serverModule (default: node_modules/.fluenti) */
+  /** Where to generate the serverModule (default: .fluenti) */
   serverModuleOutDir?: string
 
   /**

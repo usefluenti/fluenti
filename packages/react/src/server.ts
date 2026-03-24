@@ -119,15 +119,15 @@ export interface ServerSelectProps {
 export interface ServerDateTimeProps {
   /** Date value to format */
   value: Date | number
-  /** Named format style */
-  style?: string
+  /** Named format key defined in dateFormats config */
+  format?: string
 }
 
 export interface ServerNumberProps {
   /** Number value to format */
   value: number
-  /** Named format style */
-  style?: string
+  /** Named format key defined in numberFormats config */
+  format?: string
 }
 
 // ─── Server Component Types ──────────────────────────────────────────────────
@@ -199,7 +199,7 @@ export interface ServerI18n {
    *
    * @example
    * ```tsx
-   * <DateTime value={new Date()} style="long" />
+   * <DateTime value={new Date()} format="long" />
    * ```
    */
   DateTime: ServerDateTimeComponent
@@ -209,7 +209,7 @@ export interface ServerI18n {
    *
    * @example
    * ```tsx
-   * <NumberFormat value={1234.56} style="currency" />
+   * <NumberFormat value={1234.56} format="currency" />
    * ```
    */
   NumberFormat: ServerNumberComponent
@@ -478,14 +478,14 @@ export function createServerI18n(config: ServerI18nConfig): ServerI18n {
     return createElement(Fragment, null, result)
   }
 
-  async function DateTime({ value, style }: ServerDateTimeProps): Promise<ReactElement> {
+  async function DateTime({ value, format }: ServerDateTimeProps): Promise<ReactElement> {
     const i18n = await getI18n()
-    return createElement(Fragment, null, i18n.d(value, style))
+    return createElement(Fragment, null, i18n.d(value, format))
   }
 
-  async function NumberFormat({ value, style }: ServerNumberProps): Promise<ReactElement> {
+  async function NumberFormat({ value, format }: ServerNumberProps): Promise<ReactElement> {
     const i18n = await getI18n()
-    return createElement(Fragment, null, i18n.n(value, style))
+    return createElement(Fragment, null, i18n.n(value, format))
   }
 
   /**

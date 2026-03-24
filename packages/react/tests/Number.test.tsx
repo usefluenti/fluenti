@@ -57,7 +57,7 @@ describe('NumberFormat', () => {
   it('formats with the built-in "percent" style', () => {
     render(
       <I18nProvider locale="en" messages={{ en: {} }}>
-        <NumberFormat value={0.75} style="percent" />
+        <NumberFormat value={0.75} format="percent" />
       </I18nProvider>,
     )
     const expected = new Intl.NumberFormat('en', { style: 'percent' }).format(0.75)
@@ -67,7 +67,7 @@ describe('NumberFormat', () => {
   it('formats with the built-in "decimal" style (fixed fraction digits)', () => {
     render(
       <I18nProvider locale="en" messages={{ en: {} }}>
-        <NumberFormat value={3.1} style="decimal" />
+        <NumberFormat value={3.1} format="decimal" />
       </I18nProvider>,
     )
     const expected = new Intl.NumberFormat('en', {
@@ -80,7 +80,7 @@ describe('NumberFormat', () => {
   it('formats with the built-in "currency" style (en locale = USD)', () => {
     render(
       <I18nProvider locale="en" messages={{ en: {} }}>
-        <NumberFormat value={99.99} style="currency" />
+        <NumberFormat value={99.99} format="currency" />
       </I18nProvider>,
     )
     const expected = new Intl.NumberFormat('en', {
@@ -93,7 +93,7 @@ describe('NumberFormat', () => {
   it('formats with currency style using locale-appropriate currency (de = EUR)', () => {
     const { container } = render(
       <I18nProvider locale="de" messages={{ de: {} }}>
-        <NumberFormat value={49.99} style="currency" />
+        <NumberFormat value={49.99} format="currency" />
       </I18nProvider>,
     )
     const expected = new Intl.NumberFormat('de', {
@@ -106,7 +106,7 @@ describe('NumberFormat', () => {
   it('formats with currency style using locale-appropriate currency (ja = JPY)', () => {
     const { container } = render(
       <I18nProvider locale="ja" messages={{ ja: {} }}>
-        <NumberFormat value={1500} style="currency" />
+        <NumberFormat value={1500} format="currency" />
       </I18nProvider>,
     )
     const expected = new Intl.NumberFormat('ja', {
@@ -123,7 +123,7 @@ describe('NumberFormat', () => {
         messages={{ en: {} }}
         numberFormats={{ compact: { notation: 'compact' as const } }}
       >
-        <NumberFormat value={1500} style="compact" />
+        <NumberFormat value={1500} format="compact" />
       </I18nProvider>,
     )
     const expected = new Intl.NumberFormat('en', { notation: 'compact' }).format(1500)
@@ -143,7 +143,7 @@ describe('NumberFormat', () => {
   it('falls back to default when given an unknown style', () => {
     render(
       <I18nProvider locale="en" messages={{ en: {} }}>
-        <NumberFormat value={42} style="nonexistent" />
+        <NumberFormat value={42} format="nonexistent" />
       </I18nProvider>,
     )
     const expected = new Intl.NumberFormat('en').format(42)
