@@ -11,14 +11,14 @@ vi.mock('node:module', async () => {
   return {
     ...actual,
     createRequire: vi.fn(() => {
-      return vi.fn(() => ({ runExtract: mockRunExtract, runCompile: mockRunCompile }))
+      return vi.fn(() => ({ runExtract: mockRunExtract, runCompile: mockRunCompile })) as unknown as ReturnType<typeof createRequire>
     }),
   }
 })
 
 function resetCreateRequireMock(): void {
   vi.mocked(createRequire).mockImplementation(() => {
-    return vi.fn(() => ({ runExtract: mockRunExtract, runCompile: mockRunCompile }))
+    return vi.fn(() => ({ runExtract: mockRunExtract, runCompile: mockRunCompile })) as unknown as ReturnType<typeof createRequire>
   })
 }
 
@@ -123,7 +123,7 @@ describe('runExtractCompile', () => {
     it('shows install guide when @fluenti/cli is not loadable', async () => {
       vi.mocked(createRequire).mockReturnValue(vi.fn(() => {
         throw new Error('Cannot find module @fluenti/cli')
-      }))
+      }) as unknown as ReturnType<typeof createRequire>)
       const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
       await runExtractCompile({ cwd: '/project' })
@@ -136,7 +136,7 @@ describe('runExtractCompile', () => {
     it('throws install guide message when throwOnError is true and CLI not loadable', async () => {
       vi.mocked(createRequire).mockReturnValue(vi.fn(() => {
         throw new Error('Cannot find module @fluenti/cli')
-      }))
+      }) as unknown as ReturnType<typeof createRequire>)
 
       await expect(
         runExtractCompile({ cwd: '/project', throwOnError: true }),
