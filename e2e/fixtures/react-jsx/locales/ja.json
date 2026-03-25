@@ -1,0 +1,18 @@
+{
+  "Hello World": {
+    "message": "Hello World",
+    "translation": "こんにちは世界"
+  },
+  "1d03gh6": {
+    "message": "Administrator",
+    "translation": "管理者"
+  },
+  "154355u": {
+    "message": "Regular User",
+    "translation": "一般ユーザー"
+  },
+  "You have {count} items.": {
+    "message": "You have {count} items.",
+    "translation": "{count} 個のアイテムがあります。"
+  }
+}

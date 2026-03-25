@@ -1,0 +1,14 @@
+{
+  "Hello World": {
+    "message": "Hello World"
+  },
+  "1d03gh6": {
+    "message": "Administrator"
+  },
+  "154355u": {
+    "message": "Regular User"
+  },
+  "You have {count} items.": {
+    "message": "You have {count} items."
+  }
+}
