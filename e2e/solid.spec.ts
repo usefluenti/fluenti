@@ -200,12 +200,21 @@ test.describe('Solid Playground', () => {
     await expect(page.locator('h1').first()).toContainText('Fluenti へようこそ')
   })
 
-  test('msg() lazy message descriptor translates', async ({ page }) => {
+  test('msg() lazy message descriptor renders in English', async ({ page }) => {
     await page.goto('/')
-    // Switch to Japanese
+    await expect(page.getByTestId('msg-title')).toContainText('Administrator')
+  })
+
+  test('msg() lazy message descriptor translates to Japanese', async ({ page }) => {
+    await page.goto('/')
     await page.locator('button:has-text("日本語")').click()
-    const after = await page.getByTestId('msg-title').textContent()
-    expect(after).toContain('管理者')
+    await expect(page.getByTestId('msg-title')).toContainText('管理者')
+  })
+
+  test('msg() lazy message descriptor translates to Chinese', async ({ page }) => {
+    await page.goto('/')
+    await page.locator('button:has-text("中文")').click()
+    await expect(page.getByTestId('msg-title')).toContainText('管理员')
   })
 })
 

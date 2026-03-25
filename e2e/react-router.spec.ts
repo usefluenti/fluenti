@@ -186,6 +186,12 @@ test.describe('React Router — msg`` lazy descriptors', () => {
     await page.getByTestId('lang-ja').click()
     await expect(page.getByTestId('msg-role')).toContainText('開発者')
   })
+
+  test('msg tagged template translates to Arabic', async ({ page }) => {
+    await page.goto('/')
+    await page.getByTestId('lang-ar').click()
+    await expect(page.getByTestId('msg-role')).toContainText('مطور')
+  })
 })
 
 test.describe('React Router — Fallback', () => {

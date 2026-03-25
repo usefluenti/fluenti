@@ -117,12 +117,12 @@ msgstr ""
 #: ./src/pages/Home.vue:11
 #. msg tagged template
 msgid "Administrator"
-msgstr ""
+msgstr "管理员"
 
 #: ./src/pages/Home.vue:12
 #. msg tagged template
 msgid "Regular User"
-msgstr ""
+msgstr "普通用户"
 
 #: ./src/pages/Plurals.vue:45
 msgid "Plural Demos"

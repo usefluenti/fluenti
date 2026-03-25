@@ -257,14 +257,31 @@ test.describe('SolidStart — Cookie Persistence', () => {
 })
 
 test.describe('SolidStart — msg`` Lazy Messages', () => {
-  test('formatting page title from msg`` translates on locale switch', async ({ page }) => {
+  test('formatting page title from msg`` renders in English', async ({ page }) => {
     await page.goto('/formatting')
     await page.waitForLoadState('networkidle')
     await expect(page.getByTestId('formatting-title')).toContainText('Date & Number Formatting')
+  })
 
+  test('formatting page title from msg`` translates to Japanese', async ({ page }) => {
+    await page.goto('/formatting')
+    await page.waitForLoadState('networkidle')
     await page.getByTestId('lang-ja').click()
     await expect(page.getByTestId('formatting-title')).toContainText('日付と数値のフォーマット')
+  })
 
+  test('formatting page title from msg`` translates to Arabic', async ({ page }) => {
+    await page.goto('/formatting')
+    await page.waitForLoadState('networkidle')
+    await page.getByTestId('lang-ar').click()
+    await expect(page.getByTestId('formatting-title')).toContainText('تنسيق التاريخ والأرقام')
+  })
+
+  test('formatting page title from msg`` restores on back to English', async ({ page }) => {
+    await page.goto('/formatting')
+    await page.waitForLoadState('networkidle')
+    await page.getByTestId('lang-ja').click()
+    await expect(page.getByTestId('formatting-title')).toContainText('日付と数値のフォーマット')
     await page.getByTestId('lang-en').click()
     await expect(page.getByTestId('formatting-title')).toContainText('Date & Number Formatting')
   })

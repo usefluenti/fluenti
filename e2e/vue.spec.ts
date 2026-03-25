@@ -130,9 +130,24 @@ test.describe('Vue Playground', () => {
     await expect(searchInput).toBeVisible()
   })
 
-  test('msg`` tagged template renders lazy messages', async ({ page }) => {
+  test('msg`` tagged template renders lazy messages in English', async ({ page }) => {
     await page.goto('/')
-    await expect(page.locator('text=Admin: Administrator')).toBeVisible()
+    await expect(page.getByTestId('msg-admin')).toContainText('Administrator')
+    await expect(page.getByTestId('msg-user')).toContainText('Regular User')
+  })
+
+  test('msg`` tagged template translates when switching to Japanese', async ({ page }) => {
+    await page.goto('/')
+    await page.locator('.lang-buttons button:has-text("日本語")').click()
+    await expect(page.getByTestId('msg-admin')).toContainText('管理者')
+    await expect(page.getByTestId('msg-user')).toContainText('一般ユーザー')
+  })
+
+  test('msg`` tagged template translates when switching to Chinese', async ({ page }) => {
+    await page.goto('/')
+    await page.locator('.lang-buttons button:has-text("中文")').click()
+    await expect(page.getByTestId('msg-admin')).toContainText('管理员')
+    await expect(page.getByTestId('msg-user')).toContainText('普通用户')
   })
 
   // XSS prevention e2e tests

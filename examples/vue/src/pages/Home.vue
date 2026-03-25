@@ -57,7 +57,7 @@ const ROLES = {
     <h2>msg`` — Lazy Messages from Constants</h2>
     <div class="demo-item">
       <div class="demo-label">msg`` — lazy messages from constants</div>
-      <div>Admin: {{ t(ROLES.admin) }} / User: {{ t(ROLES.user) }}</div>
+      <div>Admin: <span data-testid="msg-admin">{{ t(ROLES.admin) }}</span> / User: <span data-testid="msg-user">{{ t(ROLES.user) }}</span></div>
     </div>
   </div>
 

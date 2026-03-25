@@ -80,6 +80,8 @@ test.describe('TanStack Start — Locale Switching', () => {
     await page.getByTestId('lang-zh').click()
     await expect(page.getByTestId('title')).toContainText('Fluenti TanStack Start 练习场')
     await expect(page.getByTestId('current-locale')).toContainText('zh-CN')
+    await expect(page.getByTestId('msg-admin')).toContainText('管理员')
+    await expect(page.getByTestId('msg-user')).toContainText('普通用户')
   })
 
   test('switch to Japanese then back to English restores content', async ({ page }) => {
