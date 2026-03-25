@@ -1,8 +1,11 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 describe('scopeTransform lazy generator loading', () => {
-  afterEach(() => {
+  beforeEach(() => {
     vi.resetModules()
+  })
+
+  afterEach(() => {
     vi.doUnmock('node:module')
     vi.doUnmock('../src/scope-codegen')
   })
