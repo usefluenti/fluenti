@@ -115,19 +115,8 @@ export function parse(message: string): ASTNode[] {
           textStart = pos
           continue
         }
-        // Quoted sequence: 'anything until next unescaped quote'
-        if (pos + 1 < len) {
-          flushText(pos)
-          pos++ // skip opening quote
-          const qStart = pos
-          while (pos < len && message[pos] !== "'") {
-            pos++
-          }
-          nodes.push({ type: 'text', value: message.slice(qStart, pos) } as TextNode)
-          if (pos < len) pos++ // skip closing quote
-          textStart = pos
-          continue
-        }
+        // Lone apostrophe before non-special text — treat as literal (apostrophe-insensitive mode).
+        // Contractions like "isn't {name}" must not swallow the {name} placeholder.
         pos++
         continue
       }

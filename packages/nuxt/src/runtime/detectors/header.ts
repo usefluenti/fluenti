@@ -29,7 +29,8 @@ function negotiateLocale(acceptLanguage: string, locales: string[]): string | nu
     .split(',')
     .map((part) => {
       const [lang, q] = part.trim().split(';q=')
-      return { lang: lang!.trim().toLowerCase(), q: q ? parseFloat(q) : 1 }
+      const parsed = q ? parseFloat(q) : 1
+      return { lang: lang!.trim().toLowerCase(), q: Number.isFinite(parsed) ? parsed : 0 }
     })
     .sort((a, b) => b.q - a.q)
 

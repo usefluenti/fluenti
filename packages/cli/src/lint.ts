@@ -1,4 +1,5 @@
 import type { CatalogData } from './catalog'
+import { extractPlaceholders } from './validation.js'
 
 /** Severity levels for lint diagnostics */
 export type LintSeverity = 'error' | 'warning' | 'info'
@@ -165,21 +166,6 @@ export function lintCatalogs(
   return diagnostics
 }
 
-/** Extract ICU placeholder names from a message string */
-function extractPlaceholders(message: string): string[] {
-  const placeholders: string[] = []
-  // Match {name}, {name, type}, {name, plural, ...}, etc.
-  // but not the option keywords inside plural/select
-  const regex = /\{(\w+)(?:\s*,\s*(?:plural|select|selectordinal|number|date|time))?/g
-  let match
-  while ((match = regex.exec(message)) !== null) {
-    const name = match[1]!
-    if (!placeholders.includes(name)) {
-      placeholders.push(name)
-    }
-  }
-  return placeholders.sort()
-}
 
 /**
  * Format lint diagnostics for console output.

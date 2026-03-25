@@ -60,9 +60,13 @@ export class CompileCache {
   save(): void {
     if (!this.dirty) return
 
-    mkdirSync(dirname(this.cachePath), { recursive: true })
-    writeFileSync(this.cachePath, JSON.stringify(this.data), 'utf-8')
-    this.dirty = false
+    try {
+      mkdirSync(dirname(this.cachePath), { recursive: true })
+      writeFileSync(this.cachePath, JSON.stringify(this.data), 'utf-8')
+      this.dirty = false
+    } catch {
+      // Cache write failure is non-fatal — next run will re-compile
+    }
   }
 
   private load(): CompileCacheData {

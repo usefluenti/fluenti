@@ -384,9 +384,11 @@ export function extractFromVue(
       }
     }
 
+    // Rebuild the set after template pass to include newly added IDs
+    const afterTemplateIds = new Set(messages.map((m) => m.id))
     const interpolationMessages = extractTemplateInterpolations(descriptor.template.content, filename, idGenerator)
     for (const msg of interpolationMessages) {
-      if (!existingIds.has(msg.id)) {
+      if (!afterTemplateIds.has(msg.id)) {
         messages.push({
           ...msg,
           origin: {

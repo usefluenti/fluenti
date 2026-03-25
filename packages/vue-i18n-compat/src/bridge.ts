@@ -65,16 +65,27 @@ export function createFluentBridge(options: BridgeOptions): BridgePlugin {
   }
 
   function bridgedTc(key: string, count: number, values?: Record<string, unknown>): string {
-    // If fluenti has the key, use ICU plural resolution via t()
-    if (priority === 'fluenti-first' && fluentCtx.te(key)) {
+    if (priority === 'fluenti-first') {
+      // If fluenti has the key, use ICU plural resolution via t()
+      if (fluentCtx.te(key)) {
+        return fluentCtx.t(key, { count, ...values })
+      }
+      // Fall back to vue-i18n's tc (which handles pipe-separated plurals)
+      if (vueI18nGlobal.tc) {
+        return vueI18nGlobal.tc(key, count, values ?? {})
+      }
+      // vue-i18n v10+ removed tc, use t with count
+      return vueI18nGlobal.t(key, { count, ...values } as any)
+    } else {
+      // vue-i18n-first: try vue-i18n first, fall back to fluenti if key is absent
+      if (vueI18nGlobal.te(key)) {
+        if (vueI18nGlobal.tc) {
+          return vueI18nGlobal.tc(key, count, values ?? {})
+        }
+        return vueI18nGlobal.t(key, { count, ...values } as any)
+      }
       return fluentCtx.t(key, { count, ...values })
     }
-    // Fall back to vue-i18n's tc (which handles pipe-separated plurals)
-    if (vueI18nGlobal.tc) {
-      return vueI18nGlobal.tc(key, count, values ?? {})
-    }
-    // vue-i18n v10+ removed tc, use t with count
-    return vueI18nGlobal.t(key, { count, ...values } as any)
   }
 
   function bridgedTe(key: string, locale?: string): boolean {
@@ -125,11 +136,17 @@ export function createFluentBridge(options: BridgeOptions): BridgePlugin {
       app.use(fluenti)
 
       // Set up locale watchers (must be done after install since refs may be set up during install)
-      watch(fluentCtx.locale, (newLocale) => {
+      const unwatchFluenti = watch(fluentCtx.locale, (newLocale) => {
         syncLocale('fluenti', newLocale)
       })
-      watch(vueI18nGlobal.locale, (newLocale) => {
+      const unwatchVueI18n = watch(vueI18nGlobal.locale, (newLocale) => {
         syncLocale('vue-i18n', newLocale)
+      })
+
+      // Clean up watchers when the app is unmounted (prevents SSR memory leaks)
+      app.onUnmount(() => {
+        unwatchFluenti()
+        unwatchVueI18n()
       })
 
       // Override global properties with bridged versions

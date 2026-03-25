@@ -239,8 +239,12 @@ export function createFluenti(options: FluentiConfig): FluentiPlugin {
 
     // Try the missing handler
     if (options.missing) {
-      const result = options.missing(currentLocale, messageId)
-      if (result !== undefined) return result as LocalizedString
+      try {
+        const result = options.missing(currentLocale, messageId)
+        if (result !== undefined) return result as LocalizedString
+      } catch {
+        // Missing handler threw — fall through to next resolution path
+      }
     }
 
     // If we have a fallback message from a MessageDescriptor, interpolate it
@@ -289,6 +293,8 @@ export function createFluenti(options: FluentiConfig): FluentiPlugin {
       if (splitRuntime?.__switchLocale) {
         await splitRuntime.__switchLocale(newLocale)
       }
+      // Re-check after async __switchLocale — a newer setLocale() may have superseded this one
+      if (thisRequest !== _localeRequestId) return
       locale.value = newLocale
     } finally {
       if (thisRequest === _localeRequestId) {

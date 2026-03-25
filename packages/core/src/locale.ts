@@ -85,7 +85,13 @@ export function negotiateLocale(
   const requestedList = Array.isArray(requested) ? requested : [requested]
 
   if (available.length === 0) {
-    return fallback ?? requestedList[0]!
+    const result = fallback ?? requestedList[0]
+    if (result === undefined) {
+      throw new Error(
+        '[fluenti] negotiateLocale: cannot negotiate locale — no available locales configured and no requested locale provided',
+      )
+    }
+    return result
   }
 
   // Build normalized lookup

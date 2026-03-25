@@ -30,9 +30,14 @@ function readCatalog(filePath: string, format: 'json' | 'po'): CatalogData {
 }
 
 function writeCatalog(filePath: string, catalog: CatalogData, format: 'json' | 'po'): void {
-  mkdirSync(dirname(filePath), { recursive: true })
   const content = format === 'json' ? writeJsonCatalog(catalog) : writePoCatalog(catalog)
-  writeFileSync(filePath, content, 'utf-8')
+  try {
+    mkdirSync(dirname(filePath), { recursive: true })
+    writeFileSync(filePath, content, 'utf-8')
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err)
+    throw new Error(`Failed to write catalog "${filePath}": ${message}`)
+  }
 }
 
 async function extractFromFile(filePath: string, code: string): Promise<ExtractedMessage[]> {

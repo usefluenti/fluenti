@@ -18,9 +18,11 @@ function escapeStringLiteral(str: string): string {
     .replace(/\r/g, '\\r')
 }
 
-/** Generate safe JS property access: `v.name` for identifiers, `v[0]` for numeric names */
+/** Generate safe JS property access: `v.name` for valid identifiers, `v['name']` for others */
 function propAccess(obj: string, name: string): string {
-  return /^\d/.test(name) ? `${obj}[${name}]` : `${obj}.${name}`
+  // Names starting with a digit are not valid JS identifiers; use quoted bracket notation.
+  // e.g. {0} → v['0'], {1st} → v['1st']. Pure integers (v['0']) work the same as v[0].
+  return /^\d/.test(name) ? `${obj}['${name}']` : `${obj}.${name}`
 }
 
 function escapeTemplateLiteral(str: string): string {
@@ -32,8 +34,23 @@ function escapeTemplateLiteral(str: string): string {
     .replace(/\r/g, '\\r')
 }
 
+/**
+ * Convert a simple ICU message (only `{varName}` placeholders) into a JS template literal body.
+ * Static segments are escaped independently so literal `${`, backticks, etc. are preserved
+ * without interfering with the ICU variable interpolations that are inserted afterwards.
+ */
 function messageToTemplateString(message: string): string {
-  return message.replace(ICU_VAR_REGEX, (_match, name: string) => `\${${propAccess('v', name)}}`)
+  ICU_VAR_REGEX.lastIndex = 0
+  const parts: string[] = []
+  let lastIndex = 0
+  let m: RegExpExecArray | null
+  while ((m = ICU_VAR_REGEX.exec(message)) !== null) {
+    parts.push(escapeTemplateLiteral(message.slice(lastIndex, m.index)))
+    parts.push(`\${${propAccess('v', m[1]!)}}`)
+    lastIndex = ICU_VAR_REGEX.lastIndex
+  }
+  parts.push(escapeTemplateLiteral(message.slice(lastIndex)))
+  return parts.join('')
 }
 
 
@@ -206,7 +223,7 @@ export function compileCatalog(
       lines.push(`export const ${exportName} = (v) => ${jsExpr}`)
       compiled++
     } else if (hasVariables(translated)) {
-      const templateStr = messageToTemplateString(escapeTemplateLiteral(translated))
+      const templateStr = messageToTemplateString(translated)
       lines.push(`export const ${exportName} = (v) => \`${templateStr}\``)
       compiled++
     } else {

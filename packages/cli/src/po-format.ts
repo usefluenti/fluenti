@@ -49,8 +49,11 @@ function processPoEntries(
       const normalizedOrigin = Array.isArray(origin) && origin.length === 1 ? origin[0] : origin
       const isFuzzy = !isObsolete && (entry.comments?.flag?.includes('fuzzy') ?? false)
       const { comment, customId, sourceMessage } = parseExtractedComment(entry.comments?.extracted)
+      // When a custom ID is present, the msgid may be the custom key (not source text),
+      // so accept sourceMessage directly without requiring a hash match.
+      // For hash-ID entries (no customId), verify the hash to prevent double-hashing.
       const resolvedSourceMessage = sourceMessage
-        && hashMessage(sourceMessage, context) === msgid
+        && (customId !== undefined || hashMessage(sourceMessage, context) === msgid)
         ? sourceMessage
         : undefined
       const id = customId
@@ -95,8 +98,13 @@ export function writePoCatalog(catalog: CatalogData): string {
   const obsolete: POData['obsolete'] = {}
 
   for (const [id, entry] of Object.entries(catalog)) {
+    // Use custom ID as msgid for non-hash entries to prevent collision when two
+    // entries share the same source message but have different custom IDs.
+    // Hash-ID entries keep source message as msgid (PO-friendly for translators).
+    const isHashId = entry.message !== undefined && hashMessage(entry.message, entry.context) === id
+    const msgid = isHashId ? (entry.message ?? id) : id
     const poEntry: POTranslation = {
-      msgid: entry.message ?? id,
+      msgid,
       ...(entry.context !== undefined ? { msgctxt: entry.context } : {}),
       msgstr: [entry.translation ?? ''],
     }
@@ -212,6 +220,8 @@ function buildExtractedComment(
 
   if (id !== hashMessage(message, context)) {
     lines.push(`${CUSTOM_ID_MARKER} ${id}`)
+    // Preserve source message so round-trip works when msgid is the custom ID (not source text)
+    lines.push(`msg\`${message}\``)
   }
 
   return lines.length > 0 ? lines.join('\n') : undefined

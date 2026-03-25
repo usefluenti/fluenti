@@ -150,14 +150,14 @@ describe('createDiagnostics', () => {
 // ─── Edge cases — error recovery and boundaries ──────────────────────────
 
 describe('edge cases — error recovery and boundaries', () => {
-  it('reporter throws — error propagates', () => {
+  it('reporter throws — error is swallowed, missingKey does not throw', () => {
     const diag = createDiagnostics({
       warnMissing: true,
       reporter: () => { throw new Error('reporter boom') },
     })
 
-    // The reporter error should propagate since createDiagnostics does not catch it
-    expect(() => diag.missingKey('en', 'key')).toThrow('reporter boom')
+    // A throwing reporter must not crash t() — the error is silently swallowed
+    expect(() => diag.missingKey('en', 'key')).not.toThrow()
   })
 
   it('events are frozen — mutation throws TypeError', () => {

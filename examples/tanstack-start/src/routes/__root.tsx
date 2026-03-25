@@ -19,7 +19,9 @@ const messages = { en, 'zh-CN': zhCN, ja, ar }
 function getInitialLocale(): string {
   if (typeof document === 'undefined') return 'en'
   const match = document.cookie.match(/(?:^|;\s*)locale=([^;]*)/)
-  if (match) return decodeURIComponent(match[1])
+  if (match) {
+    try { return decodeURIComponent(match[1]) } catch { return match[1] }
+  }
   return 'en'
 }
 

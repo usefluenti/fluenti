@@ -69,6 +69,7 @@ export function reconstruct(
   const COMBINED_RE = /<(\d+)(?:\/>|(>)([\s\S]*?)<\/\1>)/g
   const result: ReactNode[] = []
   let lastIndex = 0
+  let keyCounter = 0
   let match: RegExpExecArray | null
 
   COMBINED_RE.lastIndex = 0
@@ -85,16 +86,17 @@ export function reconstruct(
     const component = components[idx]
 
     if (component) {
+      // Use keyCounter (not idx) so duplicate component indices get unique keys
+      const key = `trans-${keyCounter++}`
       if (isSelfClosing) {
-        result.push(cloneElement(component, { key: `trans-${idx}` }))
+        result.push(cloneElement(component, { key }))
       } else {
         const innerContent = reconstruct(innerText, components)
-        result.push(
-          cloneElement(component, { key: `trans-${idx}` }, innerContent),
-        )
+        result.push(cloneElement(component, { key }, innerContent))
       }
     } else {
-      result.push(innerText)
+      // Only push non-empty text to avoid inserting blank DOM nodes
+      if (innerText) result.push(innerText)
     }
 
     lastIndex = COMBINED_RE.lastIndex

@@ -491,7 +491,11 @@ export function createServerI18n(config: ServerI18nConfig): ServerI18n {
   /**
    * Synchronous accessor for the cached i18n instance.
    * Used by @fluenti/next webpack loader for t`` in RSC.
-   * Throws if getI18n() hasn't been called yet in this request.
+   *
+   * Falls back to creating a minimal instance from the message cache when the
+   * React.cache() request store hasn't been populated yet — this handles
+   * Suspense boundaries and streamed components where React.cache() state
+   * may not propagate from the layout render into streamed children.
    * @internal
    */
   function __getSyncInstance(): FluentiCoreInstanceFull & { locale: string } {

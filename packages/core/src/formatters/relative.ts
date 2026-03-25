@@ -1,11 +1,12 @@
 import type { Locale } from '../types'
+import { LRUCache } from '../lru'
 
 interface TimeUnit {
   unit: Intl.RelativeTimeFormatUnit
   ms: number
 }
 
-const rtfCache = new Map<string, Intl.RelativeTimeFormat>()
+const rtfCache = new LRUCache<string, Intl.RelativeTimeFormat>(200)
 
 const UNITS: TimeUnit[] = [
   { unit: 'year', ms: 365.25 * 24 * 60 * 60 * 1000 },

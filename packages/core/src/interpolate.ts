@@ -60,7 +60,7 @@ export function interpolate(
     return compiled(values)
   }
 
-  const cacheKey = `${effectiveLocale}:${message}`
+  const cacheKey = `${effectiveLocale}\x00${message}`
 
   let compiled = compiledCache.get(cacheKey)
   if (compiled === undefined) {

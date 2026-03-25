@@ -1,11 +1,8 @@
-import { execFile } from 'node:child_process'
-import { promisify } from 'node:util'
 import consola from 'consola'
 import type { CatalogData } from './catalog'
-
-const execFileAsync = promisify(execFile)
-
-export type AIProvider = 'claude' | 'codex'
+import { invokeAI } from './ai-provider'
+import type { AIProvider } from './ai-provider'
+export type { AIProvider } from './ai-provider'
 
 export function buildPrompt(
   sourceLocale: string,
@@ -29,30 +26,6 @@ export function buildPrompt(
   ].join('\n')
 }
 
-async function invokeAI(provider: AIProvider, prompt: string): Promise<string> {
-  const maxBuffer = 10 * 1024 * 1024
-
-  try {
-    if (provider === 'claude') {
-      const { stdout } = await execFileAsync('claude', ['-p', prompt], { maxBuffer })
-      return stdout
-    } else {
-      const { stdout } = await execFileAsync('codex', ['-p', prompt, '--full-auto'], { maxBuffer })
-      return stdout
-    }
-  } catch (error: unknown) {
-    const err = error as Error & { code?: string }
-    if (err.code === 'ENOENT') {
-      throw new Error(
-        `"${provider}" CLI not found. Please install it first:\n` +
-        (provider === 'claude'
-          ? '  npm install -g @anthropic-ai/claude-code'
-          : '  npm install -g @openai/codex'),
-      )
-    }
-    throw error
-  }
-}
 
 export function extractJSON(text: string): Record<string, string> {
   // Try to find a JSON object in the response
@@ -138,7 +111,7 @@ export async function translateCatalog(options: TranslateOptions): Promise<{
     }
 
     const prompt = buildPrompt(sourceLocale, targetLocale, batch, context)
-    const response = await invokeAI(provider, prompt)
+    const { stdout: response } = await invokeAI({ provider, prompt })
     const translations = extractJSON(response)
 
     for (const key of batchKeys) {

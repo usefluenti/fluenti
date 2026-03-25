@@ -2,12 +2,12 @@ import { describe, it, expect, vi } from 'vitest'
 import { buildPrompt, extractJSON, getUntranslatedEntries, chunkEntries, translateCatalog } from '../src/translate'
 import type { CatalogData } from '../src/catalog'
 
-// Mock child_process.execFile for invokeAI tests
-vi.mock('node:child_process', () => ({
-  execFile: vi.fn(),
+// Mock ai-provider to control invokeAI in translate tests
+vi.mock('../src/ai-provider', () => ({
+  invokeAI: vi.fn(),
 }))
 
-import { execFile } from 'node:child_process'
+import { invokeAI } from '../src/ai-provider'
 
 describe('buildPrompt', () => {
   it('includes source and target locale in the prompt', () => {
@@ -240,17 +240,8 @@ describe('translateCatalog', () => {
   })
 
   it('propagates invokeAI errors to the caller', async () => {
-    const mockExecFile = vi.mocked(execFile) as unknown as ReturnType<typeof vi.fn>
-    mockExecFile.mockImplementation((_cmd: string, _args: string[], _opts: unknown, cb?: (err: Error | null, result: unknown) => void) => {
-      // execFile is promisified, so we simulate via callback
-      if (cb) {
-        cb(new Error('AI provider crashed'), null)
-      }
-      return {} as never
-    })
+    vi.mocked(invokeAI).mockRejectedValueOnce(new Error('AI provider crashed'))
 
-    // Re-import to pick up mock — but since execFile is promisified at module level,
-    // we need to directly test with a catalog that has untranslated entries
     const catalog: CatalogData = {
       abc: { message: 'Hello' },
     }
@@ -261,24 +252,27 @@ describe('translateCatalog', () => {
       targetLocale: 'fr',
       catalog,
       batchSize: 10,
-    })).rejects.toThrow()
+    })).rejects.toThrow('AI provider crashed')
   })
 
   it('warns for keys missing from AI translation response', async () => {
-    // Mock execFile to return valid JSON missing some keys
-    const mockExecFile = vi.mocked(execFile) as unknown as ReturnType<typeof vi.fn>
-    mockExecFile.mockImplementation((_cmd: string, _args: string[], _opts: unknown, cb?: (err: Error | null, result: { stdout: string }) => void) => {
-      if (cb) {
-        cb(null, { stdout: '{"abc": "Bonjour"}' })
-      }
-      return {} as never
+    vi.mocked(invokeAI).mockResolvedValueOnce({ stdout: '{"abc": "Bonjour"}', attempts: 1 })
+
+    const catalog: CatalogData = {
+      abc: { message: 'Hello' },
+      def: { message: 'World' },
+    }
+
+    const result = await translateCatalog({
+      provider: 'claude',
+      sourceLocale: 'en',
+      targetLocale: 'fr',
+      catalog,
+      batchSize: 10,
     })
 
-    // This will fail because invokeAI is promisified differently, but we test
-    // that the function handles the case where AI returns partial translations
-    // We can't easily test this without controlling the promisify chain,
-    // so we verify the function's shape at minimum
-    expect(translateCatalog).toBeDefined()
-    expect(typeof translateCatalog).toBe('function')
+    // 'abc' should be translated, 'def' should remain untranslated (key missing from AI response)
+    expect(result.catalog['abc']?.translation).toBe('Bonjour')
+    expect(result.translated).toBe(1)
   })
 })

@@ -11,7 +11,7 @@ describe('PO format', () => {
   describe('writePoCatalog', () => {
     it('writes a catalog to PO format', () => {
       const catalog: CatalogData = {
-        abc: { message: 'Hello', origin: 'App.vue:3' },
+        [key('Hello')]: { message: 'Hello', origin: 'App.vue:3' },
       }
       const po = writePoCatalog(catalog)
 
@@ -22,7 +22,7 @@ describe('PO format', () => {
 
     it('includes translations', () => {
       const catalog: CatalogData = {
-        abc: { message: 'Hello', translation: 'Bonjour' },
+        [key('Hello')]: { message: 'Hello', translation: 'Bonjour' },
       }
       const po = writePoCatalog(catalog)
 
@@ -218,7 +218,7 @@ msgstr "<0>ドキュメント</0>で詳細をご覧ください。"
   describe('writePoCatalog edge cases', () => {
     it('writes valid PO output with header', () => {
       const catalog: CatalogData = {
-        abc: { message: 'Test', translation: 'Teste' },
+        [key('Test')]: { message: 'Test', translation: 'Teste' },
       }
       const po = writePoCatalog(catalog)
       expect(po).toContain('msgid ""')
@@ -414,6 +414,38 @@ msgstr "Fichier"
     })
   })
 
+  describe('collision prevention — same source text, different custom IDs', () => {
+    it('uses custom ID as msgid to prevent same-message collision', () => {
+      const catalog: CatalogData = {
+        'checkout.title': { message: 'Submit', translation: 'Envoyer' },
+        'account.title': { message: 'Submit', translation: 'Valider' },
+      }
+      const po = writePoCatalog(catalog)
+      // Both entries must survive — they use their custom IDs as msgid
+      expect(po).toContain('msgid "checkout.title"')
+      expect(po).toContain('msgid "account.title"')
+      expect(po).toContain('msgstr "Envoyer"')
+      expect(po).toContain('msgstr "Valider"')
+    })
+
+    it('roundtrips two entries sharing the same source message but different custom IDs', () => {
+      const original: CatalogData = {
+        'checkout.title': { message: 'Submit', translation: 'Envoyer' },
+        'account.title': { message: 'Submit', translation: 'Valider' },
+      }
+      const po = writePoCatalog(original)
+      const restored = readPoCatalog(po)
+
+      expect(restored['checkout.title']).toBeDefined()
+      expect(restored['checkout.title']!.message).toBe('Submit')
+      expect(restored['checkout.title']!.translation).toBe('Envoyer')
+
+      expect(restored['account.title']).toBeDefined()
+      expect(restored['account.title']!.message).toBe('Submit')
+      expect(restored['account.title']!.translation).toBe('Valider')
+    })
+  })
+
   describe('custom idGenerator roundtrip', () => {
     it('roundtrips correctly with custom idGenerator IDs', () => {
       // Create catalog data with custom-format IDs
@@ -457,8 +489,8 @@ msgstr "Fichier"
   describe('obsolete entry handling', () => {
     it('writes obsolete entries with #~ prefix', () => {
       const catalog: CatalogData = {
-        old: { message: 'Old message', translation: 'Ancien message', obsolete: true },
-        active: { message: 'Active', translation: 'Actif' },
+        [key('Old message')]: { message: 'Old message', translation: 'Ancien message', obsolete: true },
+        [key('Active')]: { message: 'Active', translation: 'Actif' },
       }
       const po = writePoCatalog(catalog)
       expect(po).toContain('#~ msgid "Old message"')

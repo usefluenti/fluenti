@@ -129,7 +129,7 @@ export function createVtNodeTransform(): NodeTransform {
           type: NT_DIRECTIVE,
           name: 'bind',
           arg: { type: NT_SIMPLE_EXPRESSION, content: attrToTranslate, isStatic: true, loc: attrLoc } as ASTNode,
-          exp: { type: NT_SIMPLE_EXPRESSION, content: `$t('${msgId}')`, isStatic: false, loc: attrLoc } as ASTNode,
+          exp: { type: NT_SIMPLE_EXPRESSION, content: `$t('${msgId.replace(/'/g, "\\'")}')`  , isStatic: false, loc: attrLoc } as ASTNode,
           modifiers: [],
           loc: attrLoc,
         } as ASTNode
@@ -155,6 +155,10 @@ export function createVtNodeTransform(): NodeTransform {
 
     const msgId = explicitId ?? textContent
 
+    // Skip if there is no message content and no explicit ID was given
+    // (e.g. <div v-t></div> or <div v-t>   </div>) — matches guard in transformTransComponent
+    if (!msgId) return
+
     if (isPlural && vtDirective.exp) {
       const countVar = typeof vtDirective.exp.content === 'string'
         ? vtDirective.exp.content
@@ -167,7 +171,7 @@ export function createVtNodeTransform(): NodeTransform {
       const icuMessage = `{${countVar}, plural, ${icuParts.join(' ')}}`
       const pluralMsgId = explicitId ?? icuMessage
 
-      node.children = [makeInterpolation(`$t('${pluralMsgId}', { ${countVar} })`)]
+      node.children = [makeInterpolation(`$t('${pluralMsgId.replace(/'/g, "\\'")}', { ${countVar} })`)]
     } else if (richText.hasElements) {
       // Rich text: child elements exist — use v-html with $vtRich()
       // Serialise element metadata as a JS array literal
@@ -188,8 +192,9 @@ export function createVtNodeTransform(): NodeTransform {
         loc,
       } as ASTNode)
     } else {
-      node.children = [makeInterpolation(`$t('${msgId}')`)]
+      node.children = [makeInterpolation(`$t('${msgId.replace(/'/g, "\\'")}')`)]
     }
+
 
     // Remove v-t directive from props
     node.props!.splice(vtIdx, 1)

@@ -197,6 +197,9 @@ export function scopeTransformAst(
           } else {
             replacement = buildImportedTaggedTemplateCall(code, tagged, helperName)
           }
+          // Save before overwriting: expressions are embedded by-ref in the replacement args.
+          // Walk them after the overwrite so any nested t`` calls inside are also transformed.
+          const expressions = [...tagged.quasi.expressions]
           overwriteNode(tagged, replacement)
           consumedDirectBindings.add(directBinding.local)
           transformed = true
@@ -206,12 +209,21 @@ export function scopeTransformAst(
           if (directBinding.kind === 'server' && importBindings.getI18n.size === 0) {
             needsServerImport = true
           }
+          for (const expr of expressions) {
+            walk(expr, node, scope, activeTargets, insideNonEligibleFn)
+          }
           return
         }
 
         if (trackedTBindings.has(tagged.tag.name) && !isShadowed(scope, tagged.tag.name)) {
+          // Save before overwriting: expressions are embedded by-ref in the replacement args.
+          // Walk them after the overwrite so any nested t`` calls inside are also transformed.
+          const expressions = [...tagged.quasi.expressions]
           overwriteNode(tagged, buildRuntimeTaggedTemplateCall(code, tagged, tagged.tag.name))
           transformed = true
+          for (const expr of expressions) {
+            walk(expr, node, scope, activeTargets, insideNonEligibleFn)
+          }
           return
         }
 

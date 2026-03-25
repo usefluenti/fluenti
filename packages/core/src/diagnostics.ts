@@ -145,25 +145,33 @@ export function createDiagnostics(config: DiagnosticsConfig = {}): Diagnostics {
   const { warnMissing = true, warnFallback = true } = config
   const reporter = config.reporter ?? defaultReporter
 
+  function safeReport(event: DiagnosticEvent): void {
+    try {
+      reporter(event)
+    } catch {
+      // Prevent a throwing reporter from crashing t() / the component render
+    }
+  }
+
   return Object.freeze({
     missingKey: warnMissing
       ? (locale: Locale, messageId: string): void => {
-          reporter(createEvent('missing-key', locale, messageId))
+          safeReport(createEvent('missing-key', locale, messageId))
         }
       : noop,
 
     fallbackUsed: warnFallback
       ? (locale: Locale, fallbackLocale: Locale, messageId: string): void => {
-          reporter(createEvent('fallback-used', locale, messageId, fallbackLocale))
+          safeReport(createEvent('fallback-used', locale, messageId, fallbackLocale))
         }
       : noop,
 
     parseError: (locale: Locale, messageId: string, error: Error): void => {
-      reporter(createEvent('parse-error', locale, messageId, undefined, error))
+      safeReport(createEvent('parse-error', locale, messageId, undefined, error))
     },
 
     formatError: (locale: Locale, messageId: string, error: Error): void => {
-      reporter(createEvent('format-error', locale, messageId, undefined, error))
+      safeReport(createEvent('format-error', locale, messageId, undefined, error))
     },
 
     enabled: true,

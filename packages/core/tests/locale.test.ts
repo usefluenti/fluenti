@@ -210,6 +210,15 @@ describe('negotiateLocale edge cases', () => {
     expect(negotiateLocale([], ['en', 'fr'])).toBe('en')
   })
 
+  it('throws when both available and requested are empty with no fallback', () => {
+    // Both empty + no fallback → cannot determine any locale → throw rather than silently return undefined
+    expect(() => negotiateLocale([], [])).toThrow('[fluenti] negotiateLocale')
+  })
+
+  it('uses fallback when both available and requested are empty', () => {
+    expect(negotiateLocale([], [], 'en')).toBe('en')
+  })
+
   it('handles single string locale (not array)', () => {
     expect(negotiateLocale('fr', ['en', 'fr'])).toBe('fr')
   })

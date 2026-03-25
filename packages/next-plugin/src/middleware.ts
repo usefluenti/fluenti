@@ -227,7 +227,7 @@ export function createI18nMiddleware(config: I18nMiddlewareConfig & { NextRespon
     // rewriteDefaultLocale=false: rewrite to /about (flat app/about/ structure)
     // rewriteDefaultLocale=true:  redirect to /about (browser re-requests, Case 2 rewrites)
     if (localePrefix === 'as-needed' && pathLocale === sourceLocale) {
-      const pathWithoutLocale = '/' + segments.slice(2).join('/')
+      const pathWithoutLocale = ('/' + segments.slice(2).join('/')).replace(/\/+/g, '/')
       if (rewriteDefaultLocale) {
         const redirectUrl = new URL(
           `${basePath}${pathWithoutLocale}${search}`,

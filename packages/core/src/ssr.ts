@@ -92,10 +92,11 @@ function parseAcceptLanguage(header: string): Locale[] {
       const [locale = '', ...rest] = part.trim().split(';')
       const qStr = rest.find(r => r.trim().startsWith('q='))
       const rawQ = qStr ? parseFloat(qStr.trim().slice(2)) : 1
-      const q = Number.isNaN(rawQ) ? 0 : rawQ
+      // Clamp q to [0, 1] per RFC 7231 §5.3.1; q=0 means "not acceptable" → exclude
+      const q = Number.isNaN(rawQ) ? 0 : Math.min(1, Math.max(0, rawQ))
       return { locale: locale.trim(), q }
     })
-    .filter(entry => entry.locale && entry.locale !== '*')
+    .filter(entry => entry.locale && entry.locale !== '*' && entry.q > 0)
     .sort((a, b) => b.q - a.q)
     .map(entry => entry.locale)
 }

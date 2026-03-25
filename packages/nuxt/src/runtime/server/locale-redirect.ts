@@ -60,12 +60,16 @@ export default defineEventHandler((event) => {
   const queryKey = config.queryParamKey ?? 'locale'
   const query = getQuery(event)
   const queryLocale = query[queryKey]
+  // Use a flag: queryLocale may be a string array (e.g. ?locale=en&locale=ja)
+  // in which case it is truthy but not a valid match — must not skip cookie/header detection
+  let queryMatched = false
   if (typeof queryLocale === 'string' && config.locales.includes(queryLocale)) {
     detectedLocale = queryLocale
+    queryMatched = true
   }
 
   // 2. Cookie
-  if (!queryLocale) {
+  if (!queryMatched) {
     const cookieKey = config.detectBrowserLanguage?.cookieKey ?? 'fluenti_locale'
     const cookieLocale = getCookie(event, cookieKey)
     if (cookieLocale && config.locales.includes(cookieLocale)) {
@@ -74,7 +78,7 @@ export default defineEventHandler((event) => {
   }
 
   // 3. Accept-Language header
-  if (!queryLocale) {
+  if (!queryMatched) {
     const acceptLang = getHeader(event, 'accept-language')
     if (acceptLang) {
       const preferred = parseAcceptLanguage(acceptLang, config.locales)

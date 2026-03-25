@@ -57,6 +57,18 @@ describe('transformVtDirectives — v-t attribute binding', () => {
     expect(result).toContain("message: 'Enter your name'")
     expect(result).toContain("id: '")
   })
+
+  it('escapes single quotes in v-t.alt attribute values', () => {
+    const sfc = `<template><img v-t.alt alt="I'm happy" /></template>`
+    const result = transformVtDirectives(sfc)
+    // The message value must have the single quote escaped to avoid breaking the JS expression
+    expect(result).toContain("message: 'I\\'m happy'")
+    // Must NOT contain unescaped single quote that would break $t('...')
+    expect(result).not.toContain("message: 'I'm happy'")
+    // The v-t directive should be removed and replaced with a dynamic :alt binding
+    expect(result).toContain(':alt="$t(')
+    expect(result).not.toContain('v-t.alt')
+  })
 })
 
 describe('transformVtDirectives — v-t content', () => {
@@ -96,6 +108,22 @@ describe('transformVtDirectives — v-t content', () => {
     const result = transformVtDirectives(sfc)
     expect(result).toContain("id: 'hero.greeting'")
     expect(result).toContain('Hello world')
+  })
+
+  it('leaves v-t with no children and no explicit id unchanged (avoids $t("") empty key)', () => {
+    const sfc = '<template><div v-t></div></template>'
+    const result = transformVtDirectives(sfc)
+    // Should not generate $t('') with empty key
+    expect(result).not.toContain("$t('')")
+    // v-t should be preserved as-is (not transformed, let runtime handle or skip)
+    expect(result).toContain('v-t')
+  })
+
+  it('leaves v-t with only whitespace children unchanged', () => {
+    const sfc = '<template><div v-t>   </div></template>'
+    const result = transformVtDirectives(sfc)
+    expect(result).not.toContain("$t('')")
+    expect(result).toContain('v-t')
   })
 })
 

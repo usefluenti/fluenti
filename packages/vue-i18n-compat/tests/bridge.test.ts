@@ -571,4 +571,28 @@ describe('edge cases — createFluentBridge', () => {
     expect(fluenti.global.locale.value).toBe('es')
     app.unmount()
   })
+
+  it('cleans up watchers on app unmount (no SSR memory leak)', async () => {
+    const vueI18n = createMockVueI18n({ locale: 'en', messages: { en: {}, ja: {} } })
+    const fluenti = createFluenti({ locale: 'en', messages: { en: {}, ja: {} } })
+    const bridge = createFluentBridge({ vueI18n, fluenti })
+
+    const { app } = mountApp(() => {}, [bridge])
+
+    // Verify sync works before unmount
+    await bridge.global.setLocale('ja')
+    await nextTick()
+    expect(vueI18n.global.locale.value).toBe('ja')
+
+    // Unmount the app — watchers should be cleaned up
+    app.unmount()
+
+    // Reset locales directly on each library (bypassing bridge)
+    fluenti.global.setLocale('en')
+    await nextTick()
+
+    // After unmount, the watcher should NOT sync fluenti→vue-i18n anymore
+    // vue-i18n should still be 'ja' because the watcher was cleaned up
+    expect(vueI18n.global.locale.value).toBe('ja')
+  })
 })

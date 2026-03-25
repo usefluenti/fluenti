@@ -134,7 +134,8 @@ function renderPlural(
   }
   const branch = node.options[key] ?? node.options['other'] ?? []
 
-  return renderNodes(branch, values, locale, adjustedCount, formatters)
+  // Exact-match branches (=N) render # as the raw count; CLDR categories use adjusted count.
+  return renderNodes(branch, values, locale, exactKey in node.options ? count : adjustedCount, formatters)
 }
 
 function renderSelect(

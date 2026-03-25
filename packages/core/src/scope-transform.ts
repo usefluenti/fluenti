@@ -26,10 +26,17 @@ export function scopeTransform(
     return { code: result.code, transformed: false }
   }
 
-  const output = getGenerateCode()(result.ast as never, {
-    retainLines: true,
-    jsescOption: { quotes: 'single', minimal: true },
-  }).code
+  let output: string
+  try {
+    output = getGenerateCode()(result.ast as never, {
+      retainLines: true,
+      jsescOption: { quotes: 'single', minimal: true },
+    }).code
+  } catch {
+    // Code generation failed (e.g., malformed AST from error-recovery parse).
+    // Fall back to original source to avoid crashing the Vite build.
+    return { code: result.code, transformed: false }
+  }
 
   return { code: output, transformed: true }
 }

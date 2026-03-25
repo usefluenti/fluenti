@@ -90,6 +90,29 @@ describe('priority strategy — comprehensive tests', () => {
     expect(bridgeVueI18nFirst.global.tc('items', 5)).toBe('5 things')
   })
 
+  it('vue-i18n-first: tc() falls back to fluenti when only fluenti has the key', () => {
+    const vueI18n = createMockVueI18n({ messages: { en: {} } })
+    const fluenti = createFluenti({
+      locale: 'en',
+      messages: { en: { count: '{count, plural, one {# item} other {# items}}' } },
+    })
+    const bridge = createFluentBridge({ vueI18n, fluenti, priority: 'vue-i18n-first' })
+    // vue-i18n doesn't have the key → should fall back to fluenti ICU plural
+    expect(bridge.global.tc('count', 1)).toBe('1 item')
+    expect(bridge.global.tc('count', 5)).toBe('5 items')
+  })
+
+  it('fluenti-first: tc() falls back to vue-i18n when only vue-i18n has the key', () => {
+    const vueI18n = createMockVueI18n({
+      messages: { en: { count: '{count} thing | {count} things' } },
+    })
+    const fluenti = createFluenti({ locale: 'en', messages: { en: {} } })
+    const bridge = createFluentBridge({ vueI18n, fluenti, priority: 'fluenti-first' })
+    // fluenti doesn't have the key → should fall back to vue-i18n tc
+    expect(bridge.global.tc('count', 1)).toBe('1 thing')
+    expect(bridge.global.tc('count', 5)).toBe('5 things')
+  })
+
   // --- priority affects tm() ---
 
   it('priority affects tm() behavior', () => {

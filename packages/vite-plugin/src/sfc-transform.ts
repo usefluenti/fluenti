@@ -322,6 +322,10 @@ function collectVtContentOps(node: ASTNode, ops: ReplaceOp[]): void {
   // Plain text, possibly with interpolation
   const { message, vars } = extractVarsFromAST(children)
   const trimmedMessage = message.trim()
+
+  // Skip if there's no message content and no explicit ID — matches guard in collectTransOps
+  if (!trimmedMessage && !explicitId) return
+
   const descriptor = buildDescriptorExpression(trimmedMessage, { id: explicitId })
 
   let replacement: string

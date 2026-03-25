@@ -127,17 +127,22 @@ describe('validateBatch', () => {
 })
 
 describe('extractPlaceholders — edge cases', () => {
-  it('unclosed brace {name does not extract placeholder due to regex requirement', () => {
-    // The regex requires { followed by \w+ and optionally more — no closing brace needed
-    // but the opening brace is enough to match
+  it('unclosed brace {name does not extract placeholder (invalid ICU)', () => {
+    // ICU parser rejects malformed {name (no closing brace) → returns empty
     const result = extractPlaceholders('{name')
+    expect(result).toEqual([])
+  })
+
+  it('space before name { name} is extracted (ICU allows whitespace)', () => {
+    // ICU spec allows whitespace around variable names; { name} is valid
+    const result = extractPlaceholders('{ name}')
     expect(result).toEqual(['name'])
   })
 
-  it('space before name { name} is not matched by regex', () => {
-    // The regex /\{(\w+)/ requires \w immediately after {, space breaks it
-    const result = extractPlaceholders('{ name}')
-    expect(result).toEqual([])
+  it('select case labels are not extracted as placeholders', () => {
+    // Only the controlling variable (gender) should be returned, not case values (he, she, they)
+    const result = extractPlaceholders('{gender, select, male {he} female {she} other {they}}')
+    expect(result).toEqual(['gender'])
   })
 })
 

@@ -258,7 +258,10 @@ export function createFluentiPlugins(
       const absoluteCatalogDir = resolve(rootDir, catalogDir)
       for (const locale of localeCodes) {
         const catalogSource = readCatalogSource(absoluteCatalogDir, locale)
-        if (!catalogSource) continue
+        if (!catalogSource) {
+          this.warn(`[fluenti] per-route splitting: compiled catalog for locale "${locale}" not found in ${absoluteCatalogDir} — skipping chunk generation`)
+          continue
+        }
         const catalogExports = parseCompiledCatalog(catalogSource)
 
         if (sharedHashes.size > 0) {

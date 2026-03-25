@@ -21,6 +21,9 @@ export interface ParallelCompileResult {
   stats: CompileStats
 }
 
+/** Default timeout per worker in milliseconds (30 seconds) */
+const WORKER_TIMEOUT_MS = 30_000
+
 function getWorkerPath(): string {
   const thisDir = typeof __dirname !== 'undefined'
     ? __dirname
@@ -80,7 +83,25 @@ export async function parallelCompile(
       activeWorkers++
       const worker = new Worker(workerPath)
 
+      const timer = setTimeout(() => {
+        if (!rejected) {
+          rejected = true
+          activeWorkers--
+          worker.terminate()
+          rejectAll(new Error(`Worker timed out after ${WORKER_TIMEOUT_MS}ms compiling locale "${task.locale}"`))
+        }
+      }, WORKER_TIMEOUT_MS)
+
       worker.on('message', (response: CompileWorkerResponse) => {
+        clearTimeout(timer)
+        if (rejected) return
+        if (response.error) {
+          rejected = true
+          activeWorkers--
+          worker.terminate()
+          rejectAll(new Error(`Failed to compile locale "${response.locale}": ${response.error}`))
+          return
+        }
         results.push({
           locale: response.locale,
           code: response.code,
@@ -92,10 +113,19 @@ export async function parallelCompile(
       })
 
       worker.on('error', (err: Error) => {
+        clearTimeout(timer)
         if (!rejected) {
           rejected = true
           worker.terminate()
           rejectAll(new Error(`Worker error compiling locale "${task.locale}": ${err.message}`))
+        }
+      })
+
+      worker.on('exit', (code) => {
+        clearTimeout(timer)
+        if (code !== 0 && !rejected) {
+          rejected = true
+          rejectAll(new Error(`Worker exited with code ${code} while compiling locale "${task.locale}"`))
         }
       })
 

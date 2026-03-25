@@ -508,6 +508,7 @@ export function extractFromTsx(
 ): ExtractedMessage[] {
   const ast = parseSourceModule(code)
   if (!ast) {
+    console.warn(`[fluenti] Failed to parse ${filename} — skipping message extraction`)
     return []
   }
 

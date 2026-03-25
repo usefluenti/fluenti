@@ -166,9 +166,13 @@ export function createFluentiContext(config: FluentiCoreConfig | FluentiConfig):
       return undefined
     }
 
-    const result = config.missing(loc, id)
-    if (result !== undefined) {
-      return result as LocalizedString
+    try {
+      const result = config.missing(loc, id)
+      if (result !== undefined) {
+        return result as LocalizedString
+      }
+    } catch {
+      // Missing handler threw — fall through to next resolution path
     }
     return undefined
   }
@@ -242,6 +246,8 @@ export function createFluentiContext(config: FluentiCoreConfig | FluentiConfig):
     setLoadedLocales(new Set(loadedLocalesSet))
   }
 
+  let _localeRequestId = 0
+
   const setLocale = async (newLocale: Locale): Promise<void> => {
     if (!lazyLocaleLoading || !i18nConfig.chunkLoader) {
       setLocaleSignal(newLocale)
@@ -258,24 +264,36 @@ export function createFluentiContext(config: FluentiCoreConfig | FluentiConfig):
       return
     }
 
+    // Race-condition protection: track request ID
+    const thisRequest = ++_localeRequestId
     setIsLoading(true)
     try {
       const loaded = resolveChunkMessages(await i18nConfig.chunkLoader(newLocale))
+      // Always store loaded messages — they may be needed if locale is switched back
       // Intentional mutation: messages record is locally scoped to this context closure
       messages[newLocale] = { ...messages[newLocale], ...loaded }
       loadedLocalesSet.add(newLocale)
       setLoadedLocales(new Set(loadedLocalesSet))
+      // Stale request — a newer setLocale call superseded this one; don't switch locale
+      if (thisRequest !== _localeRequestId) return
       if (splitRuntime?.__switchLocale) {
         await splitRuntime.__switchLocale(newLocale)
       }
+      // Re-check after async __switchLocale — a newer setLocale() may have superseded this one
+      if (thisRequest !== _localeRequestId) return
       setLocaleSignal(newLocale)
     } finally {
-      setIsLoading(false)
+      if (thisRequest === _localeRequestId) {
+        setIsLoading(false)
+      }
     }
   }
 
+  const _preloadInFlight = new Set<string>()
+
   const preloadLocale = (loc: string): void => {
-    if (!lazyLocaleLoading || loadedLocalesSet.has(loc) || !i18nConfig.chunkLoader) return
+    if (!lazyLocaleLoading || loadedLocalesSet.has(loc) || !i18nConfig.chunkLoader || _preloadInFlight.has(loc)) return
+    _preloadInFlight.add(loc)
     const splitRuntime = getSplitRuntimeModule()
     i18nConfig.chunkLoader(loc).then(async (loaded) => {
       const resolved = resolveChunkMessages(loaded)
@@ -288,6 +306,8 @@ export function createFluentiContext(config: FluentiCoreConfig | FluentiConfig):
       }
     }).catch((e: unknown) => {
       console.warn('[fluenti] preload failed:', loc, e)
+    }).finally(() => {
+      _preloadInFlight.delete(loc)
     })
   }
 

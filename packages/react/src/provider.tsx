@@ -99,6 +99,9 @@ function InlineProvider({
   // Guard against out-of-order async locale loads (race condition protection)
   const localeRequestRef = useRef(0)
 
+  // Deduplicates concurrent preloadLocale() calls for the same locale
+  const preloadInFlightRef = useRef(new Set<string>())
+
   const i18n = useMemo(() => {
     const config: Parameters<typeof createFluentiCore>[0] = {
       locale: currentLocale,
@@ -166,11 +169,15 @@ function InlineProvider({
           typeof msgs === 'object' && msgs !== null && 'default' in msgs
             ? (msgs as { default: Messages }).default
             : (msgs as Messages)
-        setLoadedMessages((prev) => ({ ...prev, [newLocale]: resolved }))
-        setLoadedLocales((prev) => [...new Set([...prev, newLocale])])
+        // Run __switchLocale before committing state so a failure leaves no partial state.
+        // If it throws, loadedMessages stays clean and the next setLocale() retries the full path.
         if (splitRuntime?.__switchLocale) {
           await splitRuntime.__switchLocale(newLocale)
         }
+        // Re-check request ID after the async __switchLocale call
+        if (requestId !== localeRequestRef.current) return
+        setLoadedMessages((prev) => ({ ...prev, [newLocale]: resolved }))
+        setLoadedLocales((prev) => [...new Set([...prev, newLocale])])
         setCurrentLocale(newLocale)
       } catch (err) {
         // Only log if this request is still the latest
@@ -190,6 +197,9 @@ function InlineProvider({
     async (loc: string) => {
       const splitRuntime = getSplitRuntimeModule()
       if (loadedMessagesRef.current[loc] || !loadMessages) return
+      // Deduplicate concurrent preload calls for the same locale
+      if (preloadInFlightRef.current.has(loc)) return
+      preloadInFlightRef.current.add(loc)
       try {
         const msgs = await loadMessages(loc)
         const resolved: Messages =
@@ -201,8 +211,10 @@ function InlineProvider({
         if (splitRuntime?.__preloadLocale) {
           await splitRuntime.__preloadLocale(loc)
         }
-      } catch {
-        // Silent fail for preload
+      } catch (e: unknown) {
+        console.warn('[fluenti] preload failed:', loc, e)
+      } finally {
+        preloadInFlightRef.current.delete(loc)
       }
     },
     [loadMessages],

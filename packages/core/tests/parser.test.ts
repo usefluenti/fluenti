@@ -297,17 +297,33 @@ describe('parse', () => {
       expect(result).toEqual([{ type: 'text', value: '\u200Bhello\uFEFF' }])
     })
 
-    it('9. quoted sequence preserves inner text', () => {
+    it('9. lone apostrophe before non-special text is literal (apostrophe-insensitive mode)', () => {
       const result = parse("'hello world'")
-      expect(result).toEqual([{ type: 'text', value: 'hello world' }])
+      const text = result.map(n => (n as any).value).join('')
+      expect(text).toBe("'hello world'")
     })
 
-    it('10. unterminated quote at end consumes remaining text', () => {
-      const result = parse("text 'unterminated")
+    it('9b. contraction apostrophe does not swallow following placeholders', () => {
+      const result = parse("isn't {name}")
       expect(result).toEqual([
-        { type: 'text', value: 'text ' },
-        { type: 'text', value: 'unterminated' },
+        { type: 'text', value: "isn't " },
+        { type: 'variable', name: 'name' },
       ])
+    })
+
+    it('9c. multiple contractions with placeholder', () => {
+      const result = parse("you're {name} and it's {count} items")
+      const text = result.filter((n: any) => n.type === 'text').map((n: any) => n.value).join('')
+      expect(text).toContain("you're ")
+      expect(text).toContain(" and it's ")
+      const vars = result.filter((n: any) => n.type === 'variable')
+      expect(vars).toHaveLength(2)
+    })
+
+    it('10. lone apostrophe before plain text does not consume remaining text', () => {
+      const result = parse("text 'unterminated")
+      const text = result.map(n => (n as any).value).join('')
+      expect(text).toBe("text 'unterminated")
     })
 
     it('11. spaces around commas in function call', () => {
@@ -448,9 +464,10 @@ describe('parse', () => {
       expect(text).toBe("''")
     })
 
-    it('2. single quote at message start starts quoted sequence', () => {
+    it('2. single quote at message start is literal apostrophe (apostrophe-insensitive mode)', () => {
       const result = parse("'hello'")
-      expect(result).toEqual([{ type: 'text', value: 'hello' }])
+      const text = result.map(n => (n as any).value).join('')
+      expect(text).toBe("'hello'")
     })
 
     it('3. single quote at message end — unterminated quote', () => {

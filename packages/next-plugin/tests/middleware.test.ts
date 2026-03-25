@@ -102,6 +102,17 @@ describe('createI18nMiddleware', () => {
       expect(rewriteUrl.pathname).toBe('/about')
     })
 
+    it('normalizes double slashes when stripping source locale prefix (e.g. /en//page → /page)', () => {
+      const mw = createI18nMiddleware(BASE_CONFIG)
+      const req = makeRequest('/en//page')
+
+      mw(req)
+
+      expect(mockNextResponse.rewrite).toHaveBeenCalledOnce()
+      const rewriteUrl: URL = mockNextResponse.rewrite.mock.calls[0]![0]
+      expect(rewriteUrl.pathname).toBe('/page')
+    })
+
     it('passes through for non-source locale with correct prefix', () => {
       const mw = createI18nMiddleware(BASE_CONFIG)
       const req = makeRequest('/ja/about')

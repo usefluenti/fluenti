@@ -115,6 +115,9 @@ export function createLocaleLoader(options: LocaleLoaderOptions): LocaleLoaderSt
         await splitRuntime.__switchLocale(newLocale)
       }
 
+      // Re-check after async __switchLocale — a newer setLocale() may have superseded this one
+      if (thisRequest !== requestId) return
+
       currentLocale = newLocale
       notifyLocale()
     } catch (err) {
@@ -143,8 +146,8 @@ export function createLocaleLoader(options: LocaleLoaderOptions): LocaleLoaderSt
       if (splitRuntime?.__preloadLocale) {
         await splitRuntime.__preloadLocale(locale)
       }
-    } catch {
-      // Silent fail for preload
+    } catch (e: unknown) {
+      console.warn(`[fluenti] preload failed for locale "${locale}"`, e)
     }
   }
 

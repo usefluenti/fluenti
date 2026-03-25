@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import { createFluentiCore } from '../src/index'
+import { createLocaleLoader } from '../src/locale-loader'
 
 // ---------------------------------------------------------------------------
 // Edge cases — error recovery and concurrent loads
@@ -144,5 +145,126 @@ describe('edge cases — error recovery and concurrent loads', () => {
 
     i18n.loadMessages('en', {})
     expect(i18n.t('greeting')).toBe('Hello')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// createLocaleLoader — async race-condition protection
+// ---------------------------------------------------------------------------
+// Tests the standalone createLocaleLoader which supports async loadMessages
+// and split runtime __switchLocale, with request-ID based stale-request
+// detection to prevent race conditions.
+// ---------------------------------------------------------------------------
+
+/** Helper: create a promise that resolves after `ms` milliseconds. */
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+describe('createLocaleLoader — race condition after __switchLocale', () => {
+  it('concurrent setLocale calls: only the last caller wins', async () => {
+    // Regression test: after `await splitRuntime.__switchLocale(newLocale)`,
+    // the loader must re-check if a newer setLocale() call has superseded
+    // the current one. Without the guard, a slow first call would overwrite
+    // the locale set by a faster second call.
+
+    const switchLocaleLog: string[] = []
+
+    const loader = createLocaleLoader({
+      locale: 'en',
+      // Simulate slow message loading — 'ja' is slower than 'fr'
+      loadMessages: async (locale: string) => {
+        if (locale === 'ja') await delay(40)
+        if (locale === 'fr') await delay(10)
+        return { greeting: `greeting-${locale}` }
+      },
+      // Simulate a slow __switchLocale for the first call ('ja')
+      getSplitRuntime: () => ({
+        __switchLocale: async (locale: string) => {
+          switchLocaleLog.push(locale)
+          if (locale === 'ja') await delay(40)
+          if (locale === 'fr') await delay(10)
+        },
+      }),
+    })
+
+    // Fire both calls without awaiting — simulates rapid user clicks
+    const p1 = loader.setLocale('ja')
+    const p2 = loader.setLocale('fr')
+
+    await Promise.all([p1, p2])
+
+    // The final locale MUST be 'fr' (the last call), not 'ja'
+    expect(loader.getLocale()).toBe('fr')
+  })
+
+  it('stale loadMessages result is discarded when superseded', async () => {
+    const localeChanges: string[] = []
+
+    const loader = createLocaleLoader({
+      locale: 'en',
+      loadMessages: async (locale: string) => {
+        // 'ja' takes much longer to load than 'fr'
+        if (locale === 'ja') await delay(60)
+        if (locale === 'fr') await delay(10)
+        return { greeting: `greeting-${locale}` }
+      },
+      onLocaleChange: (locale) => { localeChanges.push(locale) },
+    })
+
+    const p1 = loader.setLocale('ja')
+    const p2 = loader.setLocale('fr')
+
+    await Promise.all([p1, p2])
+
+    // 'fr' finishes first and wins; 'ja' finishes later but is discarded
+    expect(loader.getLocale()).toBe('fr')
+    // onLocaleChange should have been called only for 'fr'
+    expect(localeChanges).toEqual(['fr'])
+  })
+
+  it('three rapid setLocale calls — only the last locale is active', async () => {
+    const loader = createLocaleLoader({
+      locale: 'en',
+      loadMessages: async (locale: string) => {
+        if (locale === 'ja') await delay(50)
+        if (locale === 'de') await delay(30)
+        if (locale === 'fr') await delay(10)
+        return { greeting: `greeting-${locale}` }
+      },
+      getSplitRuntime: () => ({
+        __switchLocale: async (_locale: string) => {
+          await delay(5)
+        },
+      }),
+    })
+
+    const p1 = loader.setLocale('ja')
+    const p2 = loader.setLocale('de')
+    const p3 = loader.setLocale('fr')
+
+    await Promise.all([p1, p2, p3])
+
+    expect(loader.getLocale()).toBe('fr')
+  })
+
+  it('loading state is cleaned up correctly after race', async () => {
+    const loader = createLocaleLoader({
+      locale: 'en',
+      loadMessages: async (locale: string) => {
+        if (locale === 'ja') await delay(40)
+        if (locale === 'fr') await delay(10)
+        return { greeting: `greeting-${locale}` }
+      },
+    })
+
+    const p1 = loader.setLocale('ja')
+    const p2 = loader.setLocale('fr')
+
+    await Promise.all([p1, p2])
+
+    // Loading should be false — the winning request finished
+    expect(loader.isLoading()).toBe(false)
+    expect(loader.getLocale()).toBe('fr')
   })
 })

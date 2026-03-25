@@ -146,6 +146,22 @@ describe('splitting mode', () => {
     expect(ctx.locale()).toBe('en')
   })
 
+  it('preloadLocale deduplicates concurrent calls — chunkLoader called only once per in-flight locale', async () => {
+    const loader = vi.fn().mockResolvedValue({ hello: 'Bonjour' })
+    const ctx = createSplitContext(loader)
+
+    // Call preloadLocale twice before the first resolves
+    ctx.preloadLocale('fr')
+    ctx.preloadLocale('fr')
+    ctx.preloadLocale('fr')
+
+    await new Promise((r) => setTimeout(r, 0))
+
+    // Even though preloadLocale was called 3 times, chunkLoader fires only once
+    expect(loader).toHaveBeenCalledTimes(1)
+    expect(ctx.loadedLocales().has('fr')).toBe(true)
+  })
+
   it('race condition: rapid setLocale calls settle to last locale', async () => {
     let resolveFirst: (v: any) => void
     let resolveSecond: (v: any) => void

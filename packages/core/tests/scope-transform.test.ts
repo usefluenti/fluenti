@@ -1530,6 +1530,40 @@ function CompB() {
     expect(result.code).not.toMatch(/import\s*\{[^}]*\bt\b[^}]*\}\s*from\s*['"]@fluenti\/react['"]/)
   })
 
+  it('transforms nested t`` inside outer t`` expressions (trackedTBindings path)', () => {
+    const code = `
+import { useI18n } from '@fluenti/react'
+function App() {
+  const { t } = useI18n()
+  const msg = t\`Hello \${t\`World\`}\`
+}
+`
+    const result = scopeTransform(code, opts)
+    expect(result.transformed).toBe(true)
+    // Outer t`` becomes a call with {arg0} placeholder for the inner expression
+    expect(result.code).toContain("message: 'Hello {arg0}'")
+    // Inner t`` is also transformed — not left as a raw tagged template at runtime
+    expect(result.code).toContain("message: 'World'")
+    // No raw t`` template syntax should remain
+    expect(result.code).not.toMatch(/t`/)
+  })
+
+  it('transforms nested t`` inside direct-import t`` expressions (directBinding path)', () => {
+    const code = `
+import { t } from '@fluenti/react'
+function App() {
+  const msg = t\`Hello \${t\`World\`}\`
+}
+`
+    const result = scopeTransform(code, opts)
+    expect(result.transformed).toBe(true)
+    // Outer direct t`` is transformed
+    expect(result.code).toContain("message: 'Hello {arg0}'")
+    // Inner direct t`` is also transformed
+    expect(result.code).toContain("message: 'World'")
+    expect(result.code).not.toMatch(/t`/)
+  })
+
   it('shadowed t in nested scope: outer transformed, inner untouched', () => {
     const code = `
 import { useI18n } from '@fluenti/react'

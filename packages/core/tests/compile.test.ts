@@ -46,6 +46,15 @@ describe('compile', () => {
     expect(fn({ count: 2, name: 'Alice' })).toBe('1 other and Alice')
   })
 
+  it('renders # as raw count (not offset-adjusted) inside exact-match branches', () => {
+    // =3 {# item} with offset:2 — # in the exact-match branch must render 3 (raw), not 1 (adjusted)
+    const ast = parse('{count, plural, offset:2 =3 {exactly # items} other {# others}}')
+    const fn = compile(ast, 'en') as Function
+    expect(fn({ count: 3 })).toBe('exactly 3 items')
+    // CLDR branch still uses adjusted count (count - offset = 4 - 2 = 2)
+    expect(fn({ count: 4 })).toBe('2 others')
+  })
+
   it('handles select', () => {
     const ast = parse('{gender, select, male {He} female {She} other {They}}')
     const fn = compile(ast, 'en') as Function
