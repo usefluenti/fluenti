@@ -205,7 +205,7 @@ export function createFluentiContext(config: FluentiCoreConfig | FluentiConfig):
       const strings = idOrStrings as TemplateStringsArray
       const icu = buildICUMessage(strings, rest)
       const values = Object.fromEntries(rest.map((v, i) => [`arg${i}`, v]))
-      return t(icu, values)
+      return resolveMessage(icu, locale(), values)
     }
 
     const id = idOrStrings as string | MessageDescriptor

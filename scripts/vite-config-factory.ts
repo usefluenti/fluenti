@@ -4,8 +4,9 @@
  * Eliminates ~30 lines of duplicated config per package by extracting
  * the common build/test patterns into a single parameterized function.
  */
+import { createRequire } from 'node:module'
+import { join } from 'node:path'
 import { defineConfig, type UserConfig } from 'vitest/config'
-import dts from 'vite-plugin-dts'
 import type { Plugin } from 'vite'
 
 export interface PackageConfigOptions {
@@ -34,33 +35,45 @@ export interface PackageConfigOptions {
   testOverrides?: Record<string, unknown>
 }
 
-export function createPackageConfig(options: PackageConfigOptions): UserConfig {
-  return defineConfig({
-    build: {
-      lib: {
-        entry: options.entry,
-        formats: ['es', 'cjs'],
+function loadDtsPlugin() {
+  const require = createRequire(join(process.cwd(), 'package.json'))
+  const plugin = require('vite-plugin-dts')
+  return plugin.default ?? plugin
+}
+
+export function createPackageConfig(options: PackageConfigOptions) {
+  return defineConfig(async ({ command }) => {
+    const plugins = [...(options.plugins ?? [])]
+
+    if (command === 'build') {
+      const dts = loadDtsPlugin()
+      plugins.unshift(dts({ rollupTypes: false, ...options.dtsOptions }))
+    }
+
+    return {
+      build: {
+        lib: {
+          entry: options.entry,
+          formats: ['es', 'cjs'],
+        },
+        rollupOptions: {
+          external: options.external,
+        },
+        sourcemap: true,
+        emptyOutDir: true,
+        ...(options.minify !== undefined ? { minify: options.minify } : {}),
       },
-      rollupOptions: {
-        external: options.external,
+      plugins,
+      test: {
+        ...(options.testEnv ? { environment: options.testEnv } : {}),
+        coverage: {
+          provider: 'v8',
+          reporter: ['text', 'lcov'],
+          ...(options.coverageExclude ? { exclude: options.coverageExclude } : {}),
+          thresholds: options.coverage,
+        },
+        ...options.testOverrides,
       },
-      sourcemap: true,
-      emptyOutDir: true,
-      ...(options.minify !== undefined ? { minify: options.minify } : {}),
-    },
-    plugins: [
-      dts({ rollupTypes: false, ...options.dtsOptions }),
-      ...(options.plugins ?? []),
-    ],
-    test: {
-      ...(options.testEnv ? { environment: options.testEnv } : {}),
-      coverage: {
-        provider: 'v8',
-        reporter: ['text', 'lcov'],
-        ...(options.coverageExclude ? { exclude: options.coverageExclude } : {}),
-        thresholds: options.coverage,
-      },
-      ...options.testOverrides,
-    },
-  }) as UserConfig
+    } satisfies UserConfig
+  })
 }
