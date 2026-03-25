@@ -1,67 +1,80 @@
 msgid ""
 msgstr "Content-Type: text/plain; charset=utf-8\n"
 
-#: ./pages/index.vue:9
+#: ./pages/index.vue:12
 msgid "Welcome to Fluenti"
 msgstr ""
 
-#: ./pages/index.vue:10
+#: ./pages/index.vue:13
 msgid "A modern i18n library with SSR support"
 msgstr ""
 
-#: ./pages/index.vue:49
+#: ./pages/index.vue:16
+msgid "Compile-time Translations"
+msgstr ""
+
+#: ./pages/index.vue:72
 msgid "Features"
 msgstr ""
 
-#: ./pages/index.vue:51
+#: ./pages/index.vue:74
 msgid "Server-side rendering"
 msgstr ""
 
-#: ./pages/index.vue:52
+#: ./pages/index.vue:75
 msgid "Locale detection from cookies"
 msgstr ""
 
-#: ./pages/index.vue:53
+#: ./pages/index.vue:76
 msgid "Hydration without flash"
 msgstr ""
 
-#: ./pages/index.vue:54
+#: ./pages/index.vue:77
 msgid "Reactive locale switching"
 msgstr ""
 
-#: ./pages/index.vue:16
-msgid "Hello, {name}!"
+#: ./pages/index.vue:19
+msgid "Hello, {arg0}!"
 msgstr ""
 
-#: ./pages/index.vue:20
+#: ./pages/index.vue:23
 msgid "Current locale: {locale}"
 msgstr ""
 
-#: ./pages/index.vue:24
-msgid "You have {count} items in your cart."
+#: ./pages/index.vue:27
+msgid "You have {arg0} items in your cart."
 msgstr ""
 
-#: ./pages/plurals.vue:10
+#: ./pages/index.vue:69
+msgid "This key only exists in English"
+msgstr ""
+
+#: ./pages/index.vue:7
+#. msg tagged template
+msgid "A modern i18n framework"
+msgstr ""
+
+#: ./pages/plurals.vue:11
 msgid "Plural Demos"
 msgstr ""
 
-#: ./pages/plurals.vue:34
+#: ./pages/plurals.vue:35
 msgid "Remove"
 msgstr ""
 
-#: ./pages/plurals.vue:36
+#: ./pages/plurals.vue:37
 msgid "Add"
 msgstr ""
 
-#: ./pages/plurals.vue:37
+#: ./pages/plurals.vue:38
 msgid "Reset"
 msgstr ""
 
-#: ./pages/plurals.vue:22
+#: ./pages/plurals.vue:23
 msgid "{appleCount, plural, =0 {No apples} one {1 apple} other {# apples}}"
 msgstr ""
 
-#: ./pages/plurals.vue:41
+#: ./pages/plurals.vue:42
 msgid ""
 "{messageCount, plural, =0 {No new messages} one {1 new message} other {# "
 "new messages}}"
@@ -81,6 +94,14 @@ msgstr ""
 
 #: ./pages/rich-text.vue:23
 msgid "Please <0>sign in</0> or <1>register</1> to continue."
+msgstr ""
+
+#: ./pages/index.vue:16
+msgid "Hello, {name}!"
+msgstr ""
+
+#: ./pages/index.vue:24
+msgid "You have {count} items in your cart."
 msgstr ""
 
 msgid "Fluenti Nuxt Playground"
@@ -111,7 +132,4 @@ msgid "Rich Text"
 msgstr ""
 
 msgid "Plurals"
-msgstr ""
-
-msgid "A modern i18n framework"
 msgstr ""
