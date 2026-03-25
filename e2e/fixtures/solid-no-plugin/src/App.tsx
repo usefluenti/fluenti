@@ -75,7 +75,7 @@ const App: Component = () => {
         <DateTime value={DEMO_DATE} />
       </p>
       <p data-testid="number-basic">
-        <NumberFormat value={1234.5} style="currency" />
+        <NumberFormat value={1234.5} format="currency" />
       </p>
     </div>
   )

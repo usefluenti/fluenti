@@ -53,7 +53,7 @@ const demoDate = new Date(Date.UTC(2025, 0, 15, 12))
     </p>
 
     <p data-testid="number-basic">
-      <NumberFormat :value="1234.5" style="currency" />
+      <NumberFormat :value="1234.5" format="currency" />
     </p>
 
     <p data-testid="current-locale">Locale: {{ locale }}</p>

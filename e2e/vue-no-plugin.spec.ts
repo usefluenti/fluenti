@@ -6,8 +6,9 @@ function expectedDate(locale: string): string {
   return new Intl.DateTimeFormat(locale).format(DEMO_DATE)
 }
 
-function expectedNumber(locale: string): string {
-  return new Intl.NumberFormat(locale).format(1234.5)
+function expectedCurrency(locale: string): string {
+  const currency = locale === 'ja' ? 'JPY' : locale === 'zh-CN' ? 'CNY' : 'USD'
+  return new Intl.NumberFormat(locale, { style: 'currency', currency }).format(1234.5)
 }
 
 test.describe('Vue No-Plugin (runtime components)', () => {
@@ -20,7 +21,7 @@ test.describe('Vue No-Plugin (runtime components)', () => {
     await expect(page.getByTestId('plural-basic')).toContainText('No items')
     await expect(page.getByTestId('select-basic')).toContainText('Administrator')
     await expect(page.getByTestId('date-basic')).toContainText(expectedDate('en'))
-    await expect(page.getByTestId('number-basic')).toContainText(expectedNumber('en'))
+    await expect(page.getByTestId('number-basic')).toContainText(expectedCurrency('en'))
   })
 
   test('translates and formats after switching to Japanese', async ({ page }) => {
@@ -34,7 +35,7 @@ test.describe('Vue No-Plugin (runtime components)', () => {
     await expect(page.getByTestId('plural-basic')).toContainText('アイテムはありません')
     await expect(page.getByTestId('select-basic')).toContainText('管理者')
     await expect(page.getByTestId('date-basic')).toContainText(expectedDate('ja'))
-    await expect(page.getByTestId('number-basic')).toContainText(expectedNumber('ja'))
+    await expect(page.getByTestId('number-basic')).toContainText(expectedCurrency('ja'))
   })
 
   test('plural and select stay runtime-correct in Chinese', async ({ page }) => {
