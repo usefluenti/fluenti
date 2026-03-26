@@ -85,6 +85,10 @@ jobs:
                      e2e/fixtures/react-router e2e/fixtures/remix e2e/fixtures/nextjs \
                      e2e/fixtures/nextjs-compiler \
                      e2e/fixtures/nextjs-turbo \
+                     e2e/fixtures/nextjs-routes \
+                     e2e/fixtures/nextjs-conflict \
+                     e2e/fixtures/nextjs-multi-layout \
+                     e2e/fixtures/nextjs-rewrite \
                      e2e/fixtures/react-no-plugin e2e/fixtures/solid-no-plugin e2e/fixtures/vue-no-plugin; do
             if [ -f "$dir/fluenti.config.ts" ]; then
               echo "Compiling $dir"

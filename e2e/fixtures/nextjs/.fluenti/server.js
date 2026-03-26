@@ -25,20 +25,11 @@ const serverI18n = createServerI18n({
       const fromMiddleware = headerStore.get('x-fluenti-locale')
       if (fromMiddleware && __locales.includes(fromMiddleware)) return fromMiddleware
 
-      // 1. Referer URL path segment (available in Server Action context)
-      const referer = headerStore.get('referer')
-      if (referer) {
-        try {
-          const seg = new URL(referer).pathname.split('/')[1]
-          if (seg && __locales.includes(seg)) return seg
-        } catch {}
-      }
-
-      // 2. Cookie (configurable name)
+      // 1. Cookie (configurable name)
       const fromCookie = cookieStore.get('locale')?.value
       if (fromCookie && __locales.includes(fromCookie)) return fromCookie
 
-      // 3. Accept-Language header
+      // 2. Accept-Language header
       const acceptLang = headerStore.get('accept-language')
       if (acceptLang) {
         for (const part of acceptLang.split(',')) {
