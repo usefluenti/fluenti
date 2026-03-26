@@ -7,7 +7,6 @@ describe('scopeTransform lazy generator loading', () => {
 
   afterEach(() => {
     vi.doUnmock('node:module')
-    vi.doUnmock('../src/scope-codegen')
   })
 
   it('does not require @babel/generator during module import', async () => {
@@ -25,11 +24,12 @@ describe('scopeTransform lazy generator loading', () => {
   })
 
   it('falls back to original code when @babel/generator throws during code generation', async () => {
-    vi.doMock('../src/scope-codegen', () => ({
-      getGenerateCode: () => () => { throw new Error('generator boom') },
-    }))
-
+    const codegen = await import('../src/scope-codegen')
     const { scopeTransform } = await import('../src/scope-transform')
+
+    vi.spyOn(codegen, 'getGenerateCode').mockReturnValue((() => {
+      throw new Error('generator boom')
+    }) as never)
 
     const code = `
 import { useI18n } from '@fluenti/react'
