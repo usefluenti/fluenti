@@ -43,6 +43,11 @@ vi.mock('../src/dev-watcher', () => ({
   startDevWatcher: vi.fn(() => vi.fn()),
 }))
 
+// Mock child_process.execSync to avoid actually running npx fluenti compile
+vi.mock('node:child_process', () => ({
+  execSync: vi.fn(),
+}))
+
 describe('withFluenti', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -322,9 +327,9 @@ describe('withFluenti', () => {
     expect(result['plugins']).toBeUndefined()
   })
 
-  // --- Production build: beforeRun plugin tests ---
+  // --- Production build: buildAutoCompile via execSync ---
 
-  it('injects a beforeRun plugin in production build mode', () => {
+  it('does not inject webpack plugins (buildAutoCompile moved to config phase)', () => {
     const wrapper = withFluenti()
     const config = wrapper({})
     const webpackFn = config['webpack'] as (cfg: unknown, opts: unknown) => unknown
@@ -334,99 +339,7 @@ describe('withFluenti', () => {
       resolve: { alias: {} as Record<string, string> },
     }
 
-    const result = webpackFn(webpackConfig, { isServer: true, dev: false }) as {
-      plugins: Array<{ apply: (compiler: unknown) => void }>
-    }
-    expect(result.plugins).toHaveLength(1)
-    expect(typeof result.plugins[0]!.apply).toBe('function')
-  })
-
-  it('beforeRun plugin calls tapPromise on compiler.hooks.beforeRun', () => {
-    const wrapper = withFluenti()
-    const config = wrapper({})
-    const webpackFn = config['webpack'] as (cfg: unknown, opts: unknown) => unknown
-
-    const webpackConfig = {
-      module: { rules: [] as unknown[] },
-      resolve: { alias: {} as Record<string, string> },
-    }
-
-    const result = webpackFn(webpackConfig, { isServer: true, dev: false }) as {
-      plugins: Array<{ apply: (compiler: unknown) => void }>
-    }
-
-    const mockTapPromise = vi.fn()
-    const mockCompiler = {
-      hooks: {
-        beforeRun: { tapPromise: mockTapPromise },
-      },
-    }
-
-    result.plugins[0]!.apply(mockCompiler)
-    expect(mockTapPromise).toHaveBeenCalledWith('fluenti-compile', expect.any(Function))
-  })
-
-  it('beforeRun callback only runs once across server+client passes', async () => {
-    const wrapper = withFluenti()
-    const config = wrapper({})
-    const webpackFn = config['webpack'] as (cfg: unknown, opts: unknown) => unknown
-
-    const makeWebpackConfig = () => ({
-      module: { rules: [] as unknown[] },
-      resolve: { alias: {} as Record<string, string> },
-    })
-
-    // Collect all plugins from both passes
-    const result1 = webpackFn(makeWebpackConfig(), { isServer: true, dev: false }) as {
-      plugins: Array<{ apply: (compiler: unknown) => void }>
-    }
-    const result2 = webpackFn(makeWebpackConfig(), { isServer: false, dev: false }) as {
-      plugins: Array<{ apply: (compiler: unknown) => void }>
-    }
-
-    // Both passes get plugins
-    expect(result1.plugins).toHaveLength(1)
-    expect(result2.plugins).toHaveLength(1)
-
-    // Simulate both compilers calling tapPromise callbacks
-    let tapCallback1: (() => Promise<void>) | null = null
-    let tapCallback2: (() => Promise<void>) | null = null
-
-    result1.plugins[0]!.apply({
-      hooks: {
-        beforeRun: {
-          tapPromise: (_name: string, cb: () => Promise<void>) => { tapCallback1 = cb },
-        },
-      },
-    })
-    result2.plugins[0]!.apply({
-      hooks: {
-        beforeRun: {
-          tapPromise: (_name: string, cb: () => Promise<void>) => { tapCallback2 = cb },
-        },
-      },
-    })
-
-    // Both callbacks should exist but only one should actually run compile
-    // (buildCompileRan guard prevents double execution)
-    await tapCallback1!()
-    await tapCallback2!()
-    // No assertion on import call count since we can't mock dynamic import easily,
-    // but the guard logic is tested by the code not throwing
-  })
-
-  it('does not run compile in dev mode', () => {
-    const wrapper = withFluenti()
-    const config = wrapper({})
-    const webpackFn = config['webpack'] as (cfg: unknown, opts: unknown) => unknown
-
-    const webpackConfig = {
-      module: { rules: [] as unknown[] },
-      resolve: { alias: {} as Record<string, string> },
-    }
-
-    const result = webpackFn(webpackConfig, { isServer: true, dev: true }) as Record<string, unknown>
-    // No plugins injected in dev mode
+    const result = webpackFn(webpackConfig, { isServer: true, dev: false }) as Record<string, unknown>
     expect(result['plugins']).toBeUndefined()
   })
 
@@ -620,46 +533,66 @@ describe('withFluenti', () => {
 })
 
 // ---------------------------------------------------------------------------
-// buildAutoCompile error handling
+// buildAutoCompile via execSync (bundler-agnostic)
 // ---------------------------------------------------------------------------
 
-describe('buildAutoCompile — error handling', () => {
-  function getBeforeRunCallback() {
-    const wrapper = withFluenti()
-    const config = wrapper({})
-    const webpackFn = config['webpack'] as (cfg: unknown, opts: unknown) => unknown
-    const webpackConfig = {
-      module: { rules: [] as unknown[] },
-      resolve: { alias: {} as Record<string, string> },
-    }
-    const result = webpackFn(webpackConfig, { isServer: true, dev: false }) as {
-      plugins: Array<{ apply: (compiler: unknown) => void }>
-    }
-    let tapCallback: (() => Promise<void>) | null = null
-    result.plugins[0]!.apply({
-      hooks: {
-        beforeRun: {
-          tapPromise: (_name: string, cb: () => Promise<void>) => { tapCallback = cb },
-        },
-      },
-    })
-    return tapCallback!
-  }
+describe('buildAutoCompile — execSync', () => {
+  it('calls execSync with fluenti compile in non-dev mode', async () => {
+    const { execSync } = await import('node:child_process')
+    vi.mocked(execSync).mockClear()
 
-  it('propagates compile errors so the production build fails loudly', async () => {
-    // @fluenti/cli is available (mocked) but runCompile throws — the build should fail
-    const { runCompile } = await import('@fluenti/cli')
-    vi.mocked(runCompile).mockRejectedValueOnce(new Error('ICU syntax error at line 5'))
+    // Force non-dev by ensuring NODE_ENV is not 'development' and no 'dev' in argv
+    const origEnv = process.env['NODE_ENV']
+    const origArgv = process.argv
+    process.env['NODE_ENV'] = 'production'
+    process.argv = ['node', 'next', 'build']
 
-    const cb = getBeforeRunCallback()
-    await expect(cb()).rejects.toThrow('ICU syntax error at line 5')
+    try {
+      const wrapper = withFluenti()
+      wrapper({})
+      expect(vi.mocked(execSync)).toHaveBeenCalledWith(
+        'npx fluenti compile',
+        expect.objectContaining({ stdio: 'inherit' }),
+      )
+    } finally {
+      process.env['NODE_ENV'] = origEnv
+      process.argv = origArgv
+    }
   })
 
-  it('completes silently when compile succeeds', async () => {
-    const { runCompile } = await import('@fluenti/cli')
-    vi.mocked(runCompile).mockResolvedValueOnce(undefined)
+  it('does not call execSync in dev mode', async () => {
+    const { execSync } = await import('node:child_process')
+    vi.mocked(execSync).mockClear()
 
-    const cb = getBeforeRunCallback()
-    await expect(cb()).resolves.toBeUndefined()
+    const origEnv = process.env['NODE_ENV']
+    process.env['NODE_ENV'] = 'development'
+
+    try {
+      const wrapper = withFluenti()
+      wrapper({})
+      expect(vi.mocked(execSync)).not.toHaveBeenCalled()
+    } finally {
+      process.env['NODE_ENV'] = origEnv
+    }
+  })
+
+  it('swallows execSync errors gracefully (CLI not installed)', async () => {
+    const { execSync } = await import('node:child_process')
+    vi.mocked(execSync).mockImplementation(() => { throw new Error('npx: command not found') })
+
+    const origEnv = process.env['NODE_ENV']
+    const origArgv = process.argv
+    process.env['NODE_ENV'] = 'production'
+    process.argv = ['node', 'next', 'build']
+
+    try {
+      // Should not throw
+      const wrapper = withFluenti()
+      expect(() => wrapper({})).not.toThrow()
+    } finally {
+      process.env['NODE_ENV'] = origEnv
+      process.argv = origArgv
+      vi.mocked(execSync).mockReset()
+    }
   })
 })

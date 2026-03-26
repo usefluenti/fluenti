@@ -1,12 +1,16 @@
 import { existsSync } from 'node:fs'
-import { resolve, dirname } from 'node:path'
+import { execSync } from 'node:child_process'
+import { resolve, dirname, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import type { WithFluentConfig } from './types'
 import { resolveConfig } from './read-config'
 import { generateServerModule } from './generate-server-module'
 import { startDevWatcher } from './dev-watcher'
 
-type NextConfig = Record<string, unknown>
+// Use Record<string, any> to accept both Next 15's and 16's NextConfig types
+// (Next 16 removed the index signature from NextConfig)
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type NextConfig = Record<string, any>
 
 /**
  * Wrap your Next.js config with Fluenti support.
@@ -101,21 +105,32 @@ function applyFluenti(
 
   // Turbopack resolveAlias requires relative paths (absolute paths get
   // misinterpreted as "./abs/path"). Use "./" + relative-from-cwd.
-  const relativeServerModule = './' + serverModulePath
-    .replace(projectRoot + '/', '')
-    .replace(projectRoot + '\\', '')
   const configModulePath = resolve(dirname(serverModulePath), 'i18n-config.js')
-  const relativeConfigModule = './' + configModulePath
-    .replace(projectRoot + '/', '')
-    .replace(projectRoot + '\\', '')
+  const relativeServerModule = './' + relative(projectRoot, serverModulePath).split('\\').join('/')
+  const relativeConfigModule = './' + relative(projectRoot, configModulePath).split('\\').join('/')
   const fluentTurboAlias: Record<string, string> = {
     '@fluenti/next': relativeServerModule,
     '@fluenti/next/i18n-config': relativeConfigModule,
   }
 
-  // ── Dev auto-compile via standalone watcher (works with both webpack & Turbopack) ──
+  // ── Build auto-compile (bundler-agnostic — runs at config time) ──
   const isDev = process.env['NODE_ENV'] === 'development'
     || process.argv.some(a => a === 'dev')
+  const buildAutoCompile = fluentiConfig.buildAutoCompile ?? true
+
+  if (!isDev && buildAutoCompile && !buildCompileRan) {
+    buildCompileRan = true
+    try {
+      execSync(
+        'npx fluenti compile' + (fluentiConfig.parallelCompile ? ' --parallel' : ''),
+        { cwd: projectRoot, stdio: 'inherit' },
+      )
+    } catch {
+      // @fluenti/cli not installed or compile failed — user sees stdio output
+    }
+  }
+
+  // ── Dev auto-compile via standalone watcher (works with both webpack & Turbopack) ──
   const devAutoCompile = fluentiConfig.devAutoCompile ?? true
 
   if (isDev && devAutoCompile) {
@@ -161,31 +176,6 @@ function applyFluenti(
       config.resolve.alias['@fluenti/next$'] = serverModulePath
       config.resolve.alias['@fluenti/next/i18n-config$'] = configModulePath
 
-      // Auto compile before production build via async beforeRun hook
-      const buildAutoCompile = fluentiConfig.buildAutoCompile ?? true
-      if (!options.dev && buildAutoCompile) {
-        config.plugins = config.plugins ?? []
-        config.plugins.push({
-          apply(compiler: WebpackCompiler) {
-            compiler.hooks.beforeRun.tapPromise('fluenti-compile', async () => {
-              if (buildCompileRan) return
-              buildCompileRan = true
-              // Step 1: try to load @fluenti/cli — if not installed, skip silently
-              let fluentCli: { runCompile: (cwd: string, opts?: { parallel?: boolean }) => Promise<void> }
-              try {
-                // @ts-expect-error — @fluenti/cli is an optional peer dependency
-                fluentCli = await import('@fluenti/cli')
-              } catch {
-                // @fluenti/cli not installed — optional peer dep, nothing to do
-                return
-              }
-              // Step 2: run compile — errors here mean compilation failed, let them surface
-              await fluentCli.runCompile(projectRoot, fluentiConfig.parallelCompile ? { parallel: true } : undefined)
-            })
-          },
-        })
-      }
-
       // Call user's webpack config if provided
       if (existingWebpack) {
         return existingWebpack(config, options)
@@ -222,14 +212,6 @@ function mergeTurbopackConfig(
 }
 
 // Minimal webpack types for the config function
-interface WebpackCompiler {
-  hooks: {
-    beforeRun: {
-      tapPromise(name: string, cb: () => Promise<void>): void
-    }
-  }
-}
-
 interface WebpackConfig {
   module: {
     rules: Array<Record<string, unknown>>
@@ -237,7 +219,6 @@ interface WebpackConfig {
   resolve: {
     alias?: Record<string, string>
   }
-  plugins?: Array<{ apply(compiler: WebpackCompiler): void }>
 }
 
 interface WebpackOptions {

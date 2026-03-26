@@ -1,12 +1,10 @@
 {
-  "name": "playground-nextjs",
+  "name": "e2e-nextjs-turbo",
   "private": true,
   "scripts": {
-    "dev": "next dev --port 5178",
     "compile": "fluenti compile",
     "build": "next build",
-    "start": "next start -p 5178",
-    "preview": "next start -p 5178"
+    "start": "next start"
   },
   "dependencies": {
     "@fluenti/cli": "workspace:*",

@@ -81,6 +81,10 @@
         "default": "./dist/navigation.cjs"
       }
     },
+    "./loader": {
+      "import": "./dist/loader.js",
+      "require": "./dist/loader.cjs"
+    },
     "./i18n-config": {
       "import": {
         "types": "./dist/i18n-config.d.ts",
@@ -117,7 +121,7 @@
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "@vitest/coverage-v8": "^4",
-    "next": "^15",
+    "next": "^16",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "typescript": "^5.9",

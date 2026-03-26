@@ -27,6 +27,7 @@ jobs:
           - nuxt-fixtures
           - react-fixtures
           - solid-fixtures
+          - nextjs-fixtures
 
         include:
           # examples
@@ -50,6 +51,8 @@ jobs:
             projects: react-router,remix,splitting-react,react-no-plugin,react-compiler
           - shard: solid-fixtures
             projects: solid-no-plugin,splitting-solid
+          - shard: nextjs-fixtures
+            projects: nextjs-routes,nextjs-conflict,nextjs-multi-layout,nextjs-rewrite,nextjs-turbo
 
     steps:
       - name: Checkout
@@ -81,6 +84,7 @@ jobs:
                      examples/nuxt examples/solid-start \
                      e2e/fixtures/react-router e2e/fixtures/remix e2e/fixtures/nextjs \
                      e2e/fixtures/nextjs-compiler \
+                     e2e/fixtures/nextjs-turbo \
                      e2e/fixtures/react-no-plugin e2e/fixtures/solid-no-plugin e2e/fixtures/vue-no-plugin; do
             if [ -f "$dir/fluenti.config.ts" ]; then
               echo "Compiling $dir"

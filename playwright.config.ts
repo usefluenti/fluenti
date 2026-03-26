@@ -37,6 +37,7 @@ const serverMap: Record<string, { command: string; port: number; timeout?: numbe
   'nextjs-compiler': { command: 'cd e2e/fixtures/nextjs-compiler && pnpm build && pnpm start -p 5207', port: 5207, timeout: 120_000 },
   'nextjs-rewrite':  { command: 'cd e2e/fixtures/nextjs-rewrite && pnpm build && pnpm start -p 5208', port: 5208, timeout: 120_000 },
   'react-jsx':       { command: 'cd e2e/fixtures/react-jsx && pnpm build && pnpm preview --port 5209', port: 5209, timeout: 120_000 },
+  'nextjs-turbo':    { command: 'cd e2e/fixtures/nextjs-turbo && pnpm build && pnpm start -p 5210', port: 5210, timeout: 120_000 },
 }
 
 // Filter webServers to only those needed by the selected projects.
@@ -96,6 +97,7 @@ export default defineConfig({
     { name: 'nextjs-compiler', use: { baseURL: 'http://localhost:5207' }, testMatch: '**/nextjs-compiler.spec.ts' },
     { name: 'nextjs-rewrite', use: { baseURL: 'http://localhost:5208' }, testMatch: '**/nextjs-rewrite.spec.ts' },
     { name: 'react-jsx', use: { baseURL: 'http://localhost:5209' }, testMatch: '**/react-jsx.spec.ts' },
+    { name: 'nextjs-turbo', use: { baseURL: 'http://localhost:5210' }, testMatch: '**/nextjs-turbo.spec.ts' },
   ],
   webServer,
 })
