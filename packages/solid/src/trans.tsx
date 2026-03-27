@@ -46,6 +46,8 @@ interface TagToken {
 
 type Token = TextToken | TagToken
 
+const MAX_TOKEN_DEPTH = 100
+
 /**
  * Parse a message string containing XML-like tags into a token tree.
  *
@@ -54,7 +56,11 @@ type Token = TextToken | TagToken
  * - Self-closing tags: `<br/>`
  * - Nested tags: `<bold>hello <italic>world</italic></bold>`
  */
-function parseTokens(input: string): readonly Token[] {
+function parseTokens(input: string, depth: number = 0): readonly Token[] {
+  if (depth > MAX_TOKEN_DEPTH) {
+    // Bail out as plain text to prevent stack overflow
+    return [{ type: 'text', value: input }]
+  }
   const tokens: Token[] = []
   let pos = 0
 
@@ -106,7 +112,7 @@ function parseTokens(input: string): readonly Token[] {
     tokens.push({
       type: 'tag',
       name: tagName,
-      children: parseTokens(innerContent),
+      children: parseTokens(innerContent, depth + 1),
     })
     pos = innerEnd + closingTag.length
   }

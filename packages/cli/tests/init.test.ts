@@ -75,9 +75,9 @@ describe('generateFluentiConfig', () => {
     })
 
     expect(config).toContain('defineConfig')
-    expect(config).toContain("sourceLocale: 'en'")
-    expect(config).toContain("'en', 'ja', 'zh-CN'")
-    expect(config).toContain("format: 'po'")
+    expect(config).toContain('sourceLocale: "en"')
+    expect(config).toContain('"en", "ja", "zh-CN"')
+    expect(config).toContain('format: "po"')
   })
 
   it('generates config with json format', () => {
@@ -87,7 +87,7 @@ describe('generateFluentiConfig', () => {
       format: 'json',
     })
 
-    expect(config).toContain("format: 'json'")
+    expect(config).toContain('format: "json"')
   })
 
   it('includes standard directory defaults', () => {

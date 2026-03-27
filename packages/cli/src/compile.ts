@@ -121,7 +121,7 @@ function pluralToJs(node: PluralNode, locale: string): string {
     for (const key of cldrKeys) {
       if (key === 'other') continue
       const body = astToJsExpression(node.options[key]!, locale)
-      lines.push(`if (__cat === '${key}') return ${body}; `)
+      lines.push(`if (__cat === '${escapeStringLiteral(key)}') return ${body}; `)
     }
   }
 

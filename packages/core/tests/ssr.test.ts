@@ -201,7 +201,7 @@ describe('getSSRLocaleScript', () => {
 
   it('throws on locale exceeding 255 characters', () => {
     const longLocale = 'a'.repeat(256)
-    expect(() => getSSRLocaleScript(longLocale)).toThrow('Locale exceeds maximum length of 255')
+    expect(() => getSSRLocaleScript(longLocale)).toThrow(/locale exceeds maximum length of 255/i)
   })
 
   it('throws on invalid locale format', () => {
@@ -491,5 +491,54 @@ describe('edge cases — SSR error recovery and boundaries', () => {
     for (const payload of xssPayloads) {
       expect(() => getSSRLocaleScript(payload)).toThrow()
     }
+  })
+})
+
+describe('Accept-Language header limits', () => {
+  it('handles very long Accept-Language headers without crashing', () => {
+    // Build a header with 200 locales (well over 1024 chars)
+    const longHeader = Array.from({ length: 200 }, (_, i) =>
+      `locale-${i};q=${(1 - i * 0.004).toFixed(3)}`,
+    ).join(',')
+
+    expect(longHeader.length).toBeGreaterThan(1024)
+
+    // Should not throw, should return some locales
+    const result = detectLocale({
+      available: ['en', 'locale-0'],
+      fallback: 'en',
+      headers: { 'accept-language': longHeader },
+    })
+    expect(typeof result).toBe('string')
+  })
+
+  it('still detects valid locales from truncated header', () => {
+    // First locale should be detected even if header is very long
+    const longHeader = 'en-US,en;q=0.9,' + 'x'.repeat(2000)
+
+    const result = detectLocale({
+      available: ['en', 'en-US'],
+      fallback: 'en',
+      headers: { 'accept-language': longHeader },
+    })
+    expect(result).toBe('en-US')
+  })
+
+  it('does not produce partial locale tags when truncating', () => {
+    // Build a header where the 1024th char falls in the middle of "zh-CN"
+    // Fill with valid locales up to near the limit, then add zh-CN at the boundary
+    const filler = Array.from({ length: 100 }, (_, i) =>
+      `x${String(i).padStart(3, '0')};q=0.5`,
+    ).join(',')
+    // filler is ~1399 chars, well over 1024, so truncation will happen
+    // Put a high-priority locale at the start to verify it's still detected
+    const header = `fr-FR,${filler}`
+
+    const result = detectLocale({
+      available: ['en', 'fr-FR'],
+      fallback: 'en',
+      headers: { 'accept-language': header },
+    })
+    expect(result).toBe('fr-FR')
   })
 })

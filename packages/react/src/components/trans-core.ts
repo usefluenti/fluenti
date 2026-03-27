@@ -83,6 +83,14 @@ export function reconstruct(
     const idx = Number(match[1])
     const isSelfClosing = match[2] === undefined
     const innerText = match[3] ?? ''
+
+    if (!Number.isInteger(idx) || idx < 0 || idx >= components.length) {
+      if (innerText) result.push(innerText)
+      lastIndex = COMBINED_RE.lastIndex
+      match = COMBINED_RE.exec(translated)
+      continue
+    }
+
     const component = components[idx]
 
     if (component) {

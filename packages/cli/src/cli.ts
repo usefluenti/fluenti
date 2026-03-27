@@ -18,6 +18,7 @@ import { ExtractCache } from './extract-cache'
 import { CompileCache } from './compile-cache'
 import { translateCatalog } from './translate'
 import type { AIProvider } from './translate'
+import { loadGlossary, getGlossaryForLocale } from './glossary'
 import { runMigrate } from './migrate'
 import { runInit } from './init'
 import { loadConfig } from './config-loader'
@@ -541,6 +542,26 @@ const check = defineCommand({
   },
 })
 
+async function mapConcurrent<T, R>(
+  items: readonly T[],
+  fn: (item: T) => Promise<R>,
+  concurrency: number,
+): Promise<R[]> {
+  const results: R[] = new Array(items.length)
+  let index = 0
+  const workers = Array.from(
+    { length: Math.min(concurrency, items.length) },
+    async () => {
+      while (index < items.length) {
+        const i = index++
+        results[i] = await fn(items[i]!)
+      }
+    },
+  )
+  await Promise.all(workers)
+  return results
+}
+
 const translate = defineCommand({
   meta: { name: 'translate', description: 'Translate messages using AI (Claude Code or Codex CLI)' },
   args: {
@@ -550,6 +571,9 @@ const translate = defineCommand({
     'batch-size': { type: 'string', description: 'Messages per batch', default: '50' },
     'dry-run': { type: 'boolean', description: 'Preview translation results without writing files', default: false },
     context: { type: 'string', description: 'Project context description to improve translation quality' },
+    'glossary': { type: 'string', description: 'Path to glossary JSON file' },
+    'concurrency': { type: 'string', description: 'Max parallel locale translations (default: 3)' },
+    'timeout': { type: 'string', description: 'AI call timeout in seconds (default: 120)' },
   },
   async run({ args }) {
     const config = await loadConfig(args.config)
@@ -567,6 +591,21 @@ const translate = defineCommand({
       return
     }
 
+    const glossary = args.glossary ? loadGlossary(resolve(args.glossary)) : undefined
+
+    const concurrency = args.concurrency ? parseInt(args.concurrency, 10) : 3
+    if (isNaN(concurrency) || concurrency < 1) {
+      consola.error('Invalid concurrency. Must be a positive integer.')
+      return
+    }
+
+    const timeoutSec = args.timeout ? parseInt(args.timeout, 10) : 120
+    if (isNaN(timeoutSec) || timeoutSec < 1) {
+      consola.error('Invalid timeout. Must be a positive integer (seconds).')
+      return
+    }
+    const timeoutMs = timeoutSec * 1000
+
     const targetLocales = args.locale
       ? [args.locale]
       : localeCodes.filter((l: string) => l !== config.sourceLocale)
@@ -579,7 +618,7 @@ const translate = defineCommand({
     consola.info(`Translating with ${provider} (batch size: ${batchSize})`)
     const ext = config.format === 'json' ? '.json' : '.po'
 
-    for (const locale of targetLocales) {
+    await mapConcurrent(targetLocales, async (locale) => {
       consola.info(`\n[${locale}]`)
       const catalogPath = resolve(config.catalogDir, `${locale}${ext}`)
       const catalog = readCatalog(catalogPath, config.format)
@@ -596,15 +635,18 @@ const translate = defineCommand({
         } else {
           consola.success(`  ${locale}: already fully translated`)
         }
-        continue
+        return
       }
 
-      const { catalog: updated, translated } = await translateCatalog({
+      const terms = glossary ? getGlossaryForLocale(glossary, locale) : undefined
+      const { catalog: updated, translated, warnings } = await translateCatalog({
         provider,
         sourceLocale: config.sourceLocale,
         targetLocale: locale,
         catalog,
         batchSize,
+        glossary: terms,
+        timeoutMs,
         ...(args.context ? { context: args.context } : {}),
       })
 
@@ -614,7 +656,11 @@ const translate = defineCommand({
       } else {
         consola.success(`  ${locale}: already fully translated`)
       }
-    }
+
+      if (warnings.length > 0) {
+        consola.warn(`  ${locale}: ${warnings.length} QA warnings`)
+      }
+    }, concurrency)
   },
 })
 

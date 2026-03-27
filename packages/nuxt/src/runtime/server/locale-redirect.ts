@@ -103,9 +103,11 @@ function parseAcceptLanguage(header: string, locales: string[]): string | null {
     .split(',')
     .map((part) => {
       const [lang = '', q = ''] = part.trim().split(';q=')
+      const parsed = q ? parseFloat(q) : 1.0
+      const quality = Number.isFinite(parsed) ? Math.min(1, Math.max(0, parsed)) : 0
       return {
         lang: lang!.trim().toLowerCase(),
-        quality: q ? parseFloat(q) : 1.0,
+        quality,
       }
     })
     .filter((e) => e.quality > 0)

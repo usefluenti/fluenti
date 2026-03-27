@@ -299,7 +299,12 @@ export declare const cookieName: string
 
 /** Escape a string for safe embedding inside a single-quoted JS string literal. */
 function escapeJsSingleQuoted(s: string): string {
-  return s.replace(/\\/g, '\\\\').replace(/'/g, "\\'")
+  return s
+    .replace(/\\/g, '\\\\')
+    .replace(/'/g, "\\'")
+    .replace(/\n/g, '\\n')
+    .replace(/\r/g, '\\r')
+    .replace(/\0/g, '\\0')
 }
 
 function toForwardSlash(p: string): string {

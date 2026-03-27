@@ -54,6 +54,12 @@ export function formatNumber(
   style?: string,
   styles?: Record<string, Intl.NumberFormatOptions | ((locale: Locale) => Intl.NumberFormatOptions)>,
 ): string {
+  if (typeof process !== 'undefined' && process.env?.['NODE_ENV'] !== 'production') {
+    if (!Number.isFinite(value)) {
+      console.warn(`[fluenti] formatNumber received non-finite value: ${value}`)
+    }
+  }
+
   let options: Intl.NumberFormatOptions = {}
 
   // Merge user styles over defaults
@@ -61,6 +67,10 @@ export function formatNumber(
   if (style && style in mergedStyles) {
     const styleDef = mergedStyles[style]!
     options = typeof styleDef === 'function' ? styleDef(locale) : styleDef
+  } else if (style && !(style in mergedStyles)) {
+    if (typeof process !== 'undefined' && process.env?.['NODE_ENV'] !== 'production') {
+      console.warn(`[fluenti] formatNumber: unknown style "${style}", using default format`)
+    }
   }
 
   const cacheKey = stableCacheKey(locale, options as Record<string, unknown>)

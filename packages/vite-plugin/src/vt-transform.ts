@@ -129,7 +129,7 @@ export function createVtNodeTransform(): NodeTransform {
           type: NT_DIRECTIVE,
           name: 'bind',
           arg: { type: NT_SIMPLE_EXPRESSION, content: attrToTranslate, isStatic: true, loc: attrLoc } as ASTNode,
-          exp: { type: NT_SIMPLE_EXPRESSION, content: `$t('${msgId.replace(/'/g, "\\'")}')`  , isStatic: false, loc: attrLoc } as ASTNode,
+          exp: { type: NT_SIMPLE_EXPRESSION, content: `$t(${JSON.stringify(msgId)})`, isStatic: false, loc: attrLoc } as ASTNode,
           modifiers: [],
           loc: attrLoc,
         } as ASTNode
@@ -171,7 +171,7 @@ export function createVtNodeTransform(): NodeTransform {
       const icuMessage = `{${countVar}, plural, ${icuParts.join(' ')}}`
       const pluralMsgId = explicitId ?? icuMessage
 
-      node.children = [makeInterpolation(`$t('${pluralMsgId.replace(/'/g, "\\'")}', { ${countVar} })`)]
+      node.children = [makeInterpolation(`$t(${JSON.stringify(pluralMsgId)}, { ${countVar} })`)]
     } else if (richText.hasElements) {
       // Rich text: child elements exist — use v-html with $vtRich()
       // Serialise element metadata as a JS array literal
@@ -184,7 +184,7 @@ export function createVtNodeTransform(): NodeTransform {
         name: 'html',
         exp: {
           type: NT_SIMPLE_EXPRESSION,
-          content: `$vtRich('${msgId.replace(/'/g, "\\'")}', ${elementsLiteral})`,
+          content: `$vtRich(${JSON.stringify(msgId)}, ${elementsLiteral})`,
           isStatic: false,
           loc,
         } as ASTNode,
@@ -192,7 +192,7 @@ export function createVtNodeTransform(): NodeTransform {
         loc,
       } as ASTNode)
     } else {
-      node.children = [makeInterpolation(`$t('${msgId.replace(/'/g, "\\'")}')`)]
+      node.children = [makeInterpolation(`$t(${JSON.stringify(msgId)})`)]
     }
 
 
@@ -256,7 +256,7 @@ function transformTransComponent(node: ASTNode): void {
       name: 'html',
       exp: {
         type: NT_SIMPLE_EXPRESSION,
-        content: `$vtRich('${translationId.replace(/'/g, "\\'")}', ${elementsLiteral})`,
+        content: `$vtRich(${JSON.stringify(translationId)}, ${elementsLiteral})`,
         isStatic: false,
         loc,
       } as ASTNode,
@@ -270,7 +270,7 @@ function transformTransComponent(node: ASTNode): void {
       loc,
       content: {
         type: NT_SIMPLE_EXPRESSION,
-        content: `$t('${translationId.replace(/'/g, "\\'")}')`,
+        content: `$t(${JSON.stringify(translationId)})`,
         isStatic: false,
         loc,
       },
@@ -364,7 +364,7 @@ function transformPluralComponent(node: ASTNode): void {
       name: 'html',
       exp: {
         type: NT_SIMPLE_EXPRESSION,
-        content: `$vtRich('${icuMessage.replace(/'/g, "\\'")}', ${elementsLiteral}, { count: ${valueExpr} })`,
+        content: `$vtRich(${JSON.stringify(icuMessage)}, ${elementsLiteral}, { count: ${valueExpr} })`,
         isStatic: false,
         loc,
       } as ASTNode,
@@ -409,7 +409,7 @@ function transformPluralComponent(node: ASTNode): void {
     name: 'text',
     exp: {
       type: NT_SIMPLE_EXPRESSION,
-      content: `$t('${icuMessage.replace(/'/g, "\\'")}', { count: ${valueExpr} })`,
+      content: `$t(${JSON.stringify(icuMessage)}, { count: ${valueExpr} })`,
       isStatic: false,
       loc,
     } as ASTNode,

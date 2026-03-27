@@ -49,14 +49,14 @@ export function generateFluentiConfig(opts: {
   locales: string[]
   format: 'po' | 'json'
 }): string {
-  const localesList = opts.locales.map((l) => `'${l}'`).join(', ')
+  const localesList = opts.locales.map((l) => JSON.stringify(l)).join(', ')
   return `import { defineConfig } from '@fluenti/cli'
 
 export default defineConfig({
-  sourceLocale: '${opts.sourceLocale}',
+  sourceLocale: ${JSON.stringify(opts.sourceLocale)},
   locales: [${localesList}],
   catalogDir: './locales',
-  format: '${opts.format}',
+  format: ${JSON.stringify(opts.format)},
   include: ['./src/**/*.{vue,tsx,jsx,ts,js}'],
   compileOutDir: './src/locales/compiled',
 })

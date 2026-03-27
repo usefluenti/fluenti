@@ -605,4 +605,77 @@ describe('parse', () => {
       expect(() => parse(msg)).toThrow(FluentParseError)
     })
   })
+
+  // ---- Boundary handling ----
+
+  describe('boundary handling', () => {
+    it('throws on unterminated placeholder at EOF', () => {
+      expect(() => parse('Hello {name')).toThrow(FluentParseError)
+      expect(() => parse('Hello {name')).toThrow(/unterminated placeholder/i)
+    })
+
+    it('throws on unterminated placeholder with comma at EOF', () => {
+      expect(() => parse('Hello {name,')).toThrow(FluentParseError)
+    })
+
+    it('throws on empty braces', () => {
+      expect(() => parse('Hello { }')).toThrow(FluentParseError)
+      expect(() => parse('Hello { }')).toThrow(/expected identifier/i)
+    })
+
+    it('throws on identifier exceeding max length', () => {
+      const longIdent = 'a'.repeat(257)
+      expect(() => parse(`Hello {${longIdent}}`)).toThrow(FluentParseError)
+      expect(() => parse(`Hello {${longIdent}}`)).toThrow(/identifier exceeds maximum length/i)
+    })
+
+    it('accepts identifier at max length boundary', () => {
+      const ident = 'a'.repeat(256)
+      const result = parse(`{${ident}}`)
+      expect(result).toEqual([{ type: 'variable', name: ident }])
+    })
+
+    it('handles emoji in text content', () => {
+      const result = parse('Hello 👍 {name}')
+      expect(result).toEqual([
+        { type: 'text', value: 'Hello 👍 ' },
+        { type: 'variable', name: 'name' },
+      ])
+    })
+
+    it('handles zero-width characters in text', () => {
+      const result = parse('Hello\u200B{name}')
+      expect(result).toEqual([
+        { type: 'text', value: 'Hello\u200B' },
+        { type: 'variable', name: 'name' },
+      ])
+    })
+
+    it('throws on message exceeding MAX_MESSAGE_LENGTH', () => {
+      const longMessage = 'a'.repeat(100_001)
+      expect(() => parse(longMessage)).toThrow(FluentParseError)
+      expect(() => parse(longMessage)).toThrow(/exceeds maximum of 100000/i)
+    })
+
+    it('accepts message at exactly MAX_MESSAGE_LENGTH', () => {
+      const message = 'a'.repeat(100_000)
+      const result = parse(message)
+      expect(result).toEqual([{ type: 'text', value: message }])
+    })
+
+    it('throws when AST node count exceeds MAX_NODE_COUNT', () => {
+      // Each {v_N} produces a text node (space) + variable node = 2 nodes per variable
+      // 5001 variables with spaces between them = ~10002 nodes > 10000
+      const vars = Array.from({ length: 5001 }, (_, i) => `{v${i}}`).join(' ')
+      expect(() => parse(vars)).toThrow(FluentParseError)
+      expect(() => parse(vars)).toThrow(/exceeds maximum of 10000 AST nodes/i)
+    })
+
+    it('accepts message with node count at limit', () => {
+      // 5000 variables with no separating text = exactly 5000 nodes
+      const vars = Array.from({ length: 5000 }, (_, i) => `{v${i}}`).join('')
+      const result = parse(vars)
+      expect(result).toHaveLength(5000)
+    })
+  })
 })

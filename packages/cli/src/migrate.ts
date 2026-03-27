@@ -278,6 +278,11 @@ interface MigrateResult {
 }
 
 export function parseResponse(response: string): MigrateResult {
+  const MAX_RESPONSE_LENGTH = 500_000 // 500KB
+  const safeResponse = response.length > MAX_RESPONSE_LENGTH
+    ? response.slice(0, MAX_RESPONSE_LENGTH)
+    : response
+
   const result: MigrateResult = {
     config: undefined,
     localeFiles: [],
@@ -286,13 +291,13 @@ export function parseResponse(response: string): MigrateResult {
   }
 
   // Extract fluenti.config.ts
-  const configMatch = response.match(/### FLUENTI_CONFIG[\s\S]*?```(?:ts|typescript)?\n([\s\S]*?)```/)
+  const configMatch = safeResponse.match(/### FLUENTI_CONFIG[\s\S]*?```(?:ts|typescript)?\n([\s\S]*?)```/)
   if (configMatch) {
     result.config = configMatch[1]!.trim()
   }
 
   // Extract locale files
-  const localeSection = response.match(/### LOCALE_FILES([\s\S]*?)(?=### MIGRATION_STEPS|### INSTALL_COMMANDS|$)/)
+  const localeSection = safeResponse.match(/### LOCALE_FILES([\s\S]*?)(?=### MIGRATION_STEPS|### INSTALL_COMMANDS|$)/)
   if (localeSection) {
     const localeRegex = /#### LOCALE:\s*(\S+)\s*\n```(?:po)?\n([\s\S]*?)```/g
     let match
@@ -305,13 +310,13 @@ export function parseResponse(response: string): MigrateResult {
   }
 
   // Extract migration steps
-  const stepsMatch = response.match(/### MIGRATION_STEPS\s*\n([\s\S]*?)(?=### INSTALL_COMMANDS|$)/)
+  const stepsMatch = safeResponse.match(/### MIGRATION_STEPS\s*\n([\s\S]*?)(?=### INSTALL_COMMANDS|$)/)
   if (stepsMatch) {
     result.steps = stepsMatch[1]!.trim()
   }
 
   // Extract install commands
-  const installMatch = response.match(/### INSTALL_COMMANDS[\s\S]*?```(?:bash|sh)?\n([\s\S]*?)```/)
+  const installMatch = safeResponse.match(/### INSTALL_COMMANDS[\s\S]*?```(?:bash|sh)?\n([\s\S]*?)```/)
   if (installMatch) {
     result.installCommands = installMatch[1]!.trim()
   }

@@ -4,6 +4,9 @@ const WS_REGEX = /\s/
 const IDENT_REGEX = /[a-zA-Z0-9_]/
 const DIGIT_REGEX = /[0-9]/
 const MAX_NESTING_DEPTH = 10
+const MAX_IDENTIFIER_LENGTH = 256
+const MAX_MESSAGE_LENGTH = 100_000
+const MAX_NODE_COUNT = 10_000
 
 /**
  * Error thrown when parsing an ICU MessageFormat string fails.
@@ -33,9 +36,28 @@ export class FluentParseError extends Error {
  * @internal Low-level API — most users should use `createFluent()` instead.
  */
 export function parse(message: string): ASTNode[] {
+  if (message.length > MAX_MESSAGE_LENGTH) {
+    throw new FluentParseError(
+      `Message length ${message.length} exceeds maximum of ${MAX_MESSAGE_LENGTH}`,
+      0,
+      message.slice(0, 100), // truncate for error display
+    )
+  }
+
   let pos = 0
   const len = message.length
   let pluralDepth = 0
+  let nodeCount = 0
+
+  function trackNode(): void {
+    if (++nodeCount > MAX_NODE_COUNT) {
+      throw new FluentParseError(
+        `Message exceeds maximum of ${MAX_NODE_COUNT} AST nodes`,
+        pos,
+        message.slice(0, 100),
+      )
+    }
+  }
 
   function skipWhitespace(): void {
     while (pos < len && WS_REGEX.test(message[pos]!)) {
@@ -55,6 +77,13 @@ export function parse(message: string): ASTNode[] {
     if (pos === start) {
       throw new FluentParseError('Expected identifier', pos, message)
     }
+    if (pos - start > MAX_IDENTIFIER_LENGTH) {
+      throw new FluentParseError(
+        `Identifier exceeds maximum length of ${MAX_IDENTIFIER_LENGTH}`,
+        start,
+        message,
+      )
+    }
     return message.slice(start, pos)
   }
 
@@ -73,6 +102,7 @@ export function parse(message: string): ASTNode[] {
       if (end > textStart) {
         const value = message.slice(textStart, end)
         if (value.length > 0) {
+          trackNode()
           nodes.push({ type: 'text', value } as TextNode)
         }
       }
@@ -88,6 +118,7 @@ export function parse(message: string): ASTNode[] {
 
       if (ch === '#' && pluralDepth > 0) {
         flushText(pos)
+        trackNode()
         nodes.push({ type: 'variable', name: '#' } as VariableNode)
         pos++
         textStart = pos
@@ -99,6 +130,7 @@ export function parse(message: string): ASTNode[] {
         if (pos + 1 < len && message[pos + 1] === "'") {
           flushText(pos)
           pos += 2
+          trackNode()
           nodes.push({ type: 'text', value: "'" } as TextNode)
           textStart = pos
           continue
@@ -111,6 +143,7 @@ export function parse(message: string): ASTNode[] {
           if (pos < len && message[pos] === "'") {
             pos++
           }
+          trackNode()
           nodes.push({ type: 'text', value: escaped } as TextNode)
           textStart = pos
           continue
@@ -133,6 +166,7 @@ export function parse(message: string): ASTNode[] {
         if (pos < len && message[pos] === '}') {
           // Simple variable: {name}
           pos++ // skip }
+          trackNode()
           nodes.push({ type: 'variable', name } as VariableNode)
           textStart = pos
           continue
@@ -186,6 +220,7 @@ export function parse(message: string): ASTNode[] {
             if (keyword === 'selectordinal') {
               node.ordinal = true
             }
+            trackNode()
             nodes.push(node)
             textStart = pos
             continue
@@ -207,6 +242,7 @@ export function parse(message: string): ASTNode[] {
               )
             }
 
+            trackNode()
             nodes.push({
               type: 'select',
               variable: name,
@@ -242,11 +278,15 @@ export function parse(message: string): ASTNode[] {
           if (style) {
             fnNode.style = style
           }
+          trackNode()
           nodes.push(fnNode)
           textStart = pos
           continue
         }
 
+        if (pos >= len) {
+          throw new FluentParseError('Unterminated placeholder: expected closing }', pos, message)
+        }
         throw new FluentParseError(`Unexpected character '${message[pos]}'`, pos, message)
       }
 

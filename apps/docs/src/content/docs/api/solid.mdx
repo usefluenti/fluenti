@@ -243,6 +243,24 @@ function RoleBadge(props: { role: string }) {
 }
 ```
 
+## `createFluentiContext(config)`
+
+Low-level factory that creates the i18n context object used internally by `I18nProvider`. Useful for advanced scenarios like testing, SSR without components, or custom context management.
+
+```tsx
+import { createFluentiContext } from '@fluenti/solid'
+
+const ctx = createFluentiContext({
+  locale: 'en',
+  messages: { en: compiledMessages },
+})
+
+// Access the same API as useI18n()
+const translated = ctx.t`Hello`
+```
+
+Returns a `FluentiContext` with the same shape as `useI18n()`.
+
 ## Reactivity
 
 When you call `t` inside a JSX expression, the transformed runtime lookup reads `locale()` and Solid tracks that reactive scope for you. Direct-import `t` does not return a memo wrapper by itself.

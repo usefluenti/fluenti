@@ -40,6 +40,8 @@ export class LRUCache<K, V> {
   }
 }
 
+const MAX_CACHE_KEY_LENGTH = 2048
+
 /**
  * Generate a stable cache key from a locale and an options object.
  * Sorts object keys to ensure `{ a: 1, b: 2 }` and `{ b: 2, a: 1 }` produce the same key.
@@ -47,5 +49,10 @@ export class LRUCache<K, V> {
 export function stableCacheKey(locale: string, options?: Record<string, unknown>): string {
   if (!options || Object.keys(options).length === 0) return locale
   const sorted = Object.keys(options).sort().map(k => `${k}:${JSON.stringify(options[k])}`).join(',')
-  return `${locale}:{${sorted}}`
+  const key = `${locale}:{${sorted}}`
+  if (key.length > MAX_CACHE_KEY_LENGTH) {
+    // Truncate to prevent memory abuse; cache miss is safe (just slower)
+    return `${locale}:{${sorted.slice(0, MAX_CACHE_KEY_LENGTH)}}`
+  }
+  return key
 }

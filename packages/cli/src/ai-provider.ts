@@ -12,6 +12,7 @@ export interface AIInvokeOptions {
   readonly maxRetries?: number
   readonly initialDelayMs?: number
   readonly maxBuffer?: number
+  readonly timeoutMs?: number  // default: 120_000 (2 minutes)
 }
 
 export interface AIInvokeResult {
@@ -41,6 +42,7 @@ export async function invokeAI(options: AIInvokeOptions): Promise<AIInvokeResult
     maxRetries = 3,
     initialDelayMs = 1000,
     maxBuffer = 10 * 1024 * 1024,
+    timeoutMs = 120_000,
   } = options
 
   const args = buildArgs(provider, prompt)
@@ -49,13 +51,22 @@ export async function invokeAI(options: AIInvokeOptions): Promise<AIInvokeResult
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
-      const { stdout } = await execFileAsync(command, [...args], { maxBuffer })
+      const execPromise = execFileAsync(command, [...args], { maxBuffer })
+      const { stdout } = await Promise.race([
+        execPromise,
+        sleep(timeoutMs).then<never>(() => {
+          throw new Error(`AI provider timed out after ${timeoutMs}ms`)
+        }),
+      ])
       return { stdout, attempts: attempt + 1 }
     } catch (error: unknown) {
       if (isEnoent(error)) {
         throw new Error(
           `"${provider}" CLI not found. Please install it first:\n  ${INSTALL_COMMANDS[provider]}`,
         )
+      }
+      if (error instanceof Error && error.message.includes('timed out')) {
+        throw error
       }
       lastError = error
       if (attempt < maxRetries) {

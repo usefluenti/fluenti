@@ -98,7 +98,7 @@ describe('createVtNodeTransform — v-t simple text', () => {
     expect(node.children).toHaveLength(1)
     expect(node.children![0]!.type).toBe(NT_INTERPOLATION)
     const expr = (node.children![0]!.content as ASTNode).content as string
-    expect(expr).toContain("$t('Hello world')")
+    expect(expr).toContain('$t("Hello world")')
     // v-t directive should be removed
     expect(node.props).toHaveLength(0)
   })
@@ -111,7 +111,7 @@ describe('createVtNodeTransform — v-t:explicitId', () => {
     transform(node, makeContext())
 
     const expr = (node.children![0]!.content as ASTNode).content as string
-    expect(expr).toContain("$t('hero.title')")
+    expect(expr).toContain('$t("hero.title")')
   })
 })
 
@@ -132,7 +132,7 @@ describe('createVtNodeTransform — v-t.alt attribute binding', () => {
     const argContent = (node.props![0]!.arg as ASTNode).content as string
     expect(argContent).toBe('alt')
     const expContent = (node.props![0]!.exp as ASTNode).content as string
-    expect(expContent).toContain("$t('Profile photo')")
+    expect(expContent).toContain('$t("Profile photo")')
   })
 })
 
@@ -615,7 +615,7 @@ describe('createVtNodeTransform — v-t plural with explicit id', () => {
     transform(node, makeContext())
 
     const expr = (node.children![0]!.content as ASTNode).content as string
-    expect(expr).toContain("$t('items'")
+    expect(expr).toContain('$t("items"')
   })
 })
 

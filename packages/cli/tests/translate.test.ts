@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { buildPrompt, extractJSON, getUntranslatedEntries, chunkEntries, translateCatalog } from '../src/translate'
+import { getUntranslatedEntries, chunkEntries, translateCatalog } from '../src/translate'
 import type { CatalogData } from '../src/catalog'
 
 // Mock ai-provider to control invokeAI in translate tests
@@ -8,100 +8,6 @@ vi.mock('../src/ai-provider', () => ({
 }))
 
 import { invokeAI } from '../src/ai-provider'
-
-describe('buildPrompt', () => {
-  it('includes source and target locale in the prompt', () => {
-    const result = buildPrompt('en', 'ja', { greeting: 'Hello' })
-
-    expect(result).toContain('"en"')
-    expect(result).toContain('"ja"')
-  })
-
-  it('includes the messages as JSON', () => {
-    const messages = { greeting: 'Hello', farewell: 'Goodbye' }
-    const result = buildPrompt('en', 'fr', messages)
-
-    expect(result).toContain('"greeting": "Hello"')
-    expect(result).toContain('"farewell": "Goodbye"')
-  })
-
-  it('includes translation rules', () => {
-    const result = buildPrompt('en', 'de', { key: 'value' })
-
-    expect(result).toContain('ICU MessageFormat')
-    expect(result).toContain('HTML tags')
-    expect(result).toContain('valid JSON')
-  })
-
-  it('includes project context when provided', () => {
-    const result = buildPrompt('en', 'ja', { greeting: 'Hello' }, 'E-commerce application')
-
-    expect(result).toContain('Project context: E-commerce application')
-  })
-
-  it('omits project context when not provided', () => {
-    const result = buildPrompt('en', 'ja', { greeting: 'Hello' })
-
-    expect(result).not.toContain('Project context')
-  })
-})
-
-describe('extractJSON', () => {
-  it('extracts a JSON object from plain text', () => {
-    const text = 'Here is the translation:\n{"greeting": "Bonjour"}\nDone.'
-    const result = extractJSON(text)
-
-    expect(result).toEqual({ greeting: 'Bonjour' })
-  })
-
-  it('extracts JSON from markdown code fence', () => {
-    const text = '```json\n{"key": "value"}\n```'
-    const result = extractJSON(text)
-
-    expect(result).toEqual({ key: 'value' })
-  })
-
-  it('throws when no JSON object is found', () => {
-    expect(() => extractJSON('no json here')).toThrow('No JSON object found')
-  })
-
-  it('throws when response contains no curly-braced object', () => {
-    expect(() => extractJSON('[1, 2, 3]')).toThrow('No JSON object found')
-  })
-
-  it('throws on invalid JSON syntax', () => {
-    expect(() => extractJSON('{broken json}')).toThrow()
-  })
-
-  it('extracts JSON when surrounded by extra text', () => {
-    const text = 'Here is your translation:\n{"greeting": "Hola", "farewell": "Adios"}\nEnd.'
-    const result = extractJSON(text)
-
-    expect(result).toEqual({ greeting: 'Hola', farewell: 'Adios' })
-  })
-
-  it('handles escaped quotes inside JSON values', () => {
-    const text = '{"greeting": "He said \\"hello\\""}'
-    const result = extractJSON(text)
-
-    expect(result).toEqual({ greeting: 'He said "hello"' })
-  })
-
-  it('extracts only the first JSON object when multiple are present', () => {
-    // The regex /\{[\s\S]*\}/ is greedy so it matches from first { to last }
-    // With two separate objects it will greedily match across both
-    const text = '{"first": "one"} and then {"second": "two"}'
-    // The greedy match will capture: {"first": "one"} and then {"second": "two"}
-    // which is not valid JSON, so it should throw
-    expect(() => extractJSON(text)).toThrow('Failed to parse JSON')
-  })
-
-  it('throws on unclosed braces', () => {
-    const text = 'Here is some output: {"key": "value"'
-    // No closing brace, so the regex /\{[\s\S]*\}/ will not match
-    expect(() => extractJSON(text)).toThrow('No JSON object found')
-  })
-})
 
 describe('getUntranslatedEntries', () => {
   it('returns entries without translation', () => {
@@ -203,7 +109,7 @@ describe('translateCatalog', () => {
       def: { message: 'World', translation: 'Monde' },
     }
 
-    const { catalog } = await translateModule.translateCatalog({
+    const { catalog, warnings } = await translateModule.translateCatalog({
       provider: 'claude',
       sourceLocale: 'en',
       targetLocale: 'fr',
@@ -220,6 +126,7 @@ describe('translateCatalog', () => {
     // Returned catalog should be a different object
     expect(catalog).not.toBe(allTranslated)
     expect(catalog).toEqual(allTranslated)
+    expect(warnings).toEqual([])
   })
 
   it('returns translated count of 0 when nothing to translate', async () => {
@@ -237,22 +144,27 @@ describe('translateCatalog', () => {
 
     expect(result.translated).toBe(0)
     expect(result.catalog).toEqual(catalog)
+    expect(result.warnings).toEqual([])
   })
 
-  it('propagates invokeAI errors to the caller', async () => {
+  it('recovers from invokeAI errors and reports them as warnings', async () => {
     vi.mocked(invokeAI).mockRejectedValueOnce(new Error('AI provider crashed'))
 
     const catalog: CatalogData = {
       abc: { message: 'Hello' },
     }
 
-    await expect(translateCatalog({
+    const result = await translateCatalog({
       provider: 'claude',
       sourceLocale: 'en',
       targetLocale: 'fr',
       catalog,
       batchSize: 10,
-    })).rejects.toThrow('AI provider crashed')
+    })
+
+    expect(result.translated).toBe(0)
+    expect(result.warnings).toContainEqual(expect.stringContaining('Batch 1 failed'))
+    expect(result.warnings).toContainEqual(expect.stringContaining('AI provider crashed'))
   })
 
   it('warns for keys missing from AI translation response', async () => {
@@ -274,5 +186,53 @@ describe('translateCatalog', () => {
     // 'abc' should be translated, 'def' should remain untranslated (key missing from AI response)
     expect(result.catalog['abc']?.translation).toBe('Bonjour')
     expect(result.translated).toBe(1)
+    expect(result.warnings).toContainEqual(expect.stringContaining('Missing translation for key'))
+    expect(result.warnings).toContainEqual(expect.stringContaining('def'))
+  })
+
+  it('continues translating after a batch failure (partial success)', async () => {
+    // Batch 1 fails, batch 2 succeeds
+    vi.mocked(invokeAI)
+      .mockRejectedValueOnce(new Error('rate limited'))
+      .mockResolvedValueOnce({ stdout: '{"key2": "翻訳2"}', attempts: 1 })
+
+    const catalog: CatalogData = {
+      key1: { message: 'Hello' },
+      key2: { message: 'World' },
+    }
+
+    const result = await translateCatalog({
+      provider: 'claude',
+      sourceLocale: 'en',
+      targetLocale: 'ja',
+      catalog,
+      batchSize: 1,
+    })
+
+    expect(result.translated).toBe(1)
+    expect(result.catalog['key2']?.translation).toBe('翻訳2')
+    expect(result.catalog['key1']?.translation).toBeUndefined()
+    expect(result.warnings).toContainEqual(expect.stringContaining('Batch 1 failed'))
+    expect(result.warnings).toContainEqual(expect.stringContaining('rate limited'))
+  })
+
+  it('returns zero translations when all batches fail', async () => {
+    vi.mocked(invokeAI).mockRejectedValue(new Error('service down'))
+
+    const catalog: CatalogData = {
+      key1: { message: 'Hello' },
+    }
+
+    const result = await translateCatalog({
+      provider: 'claude',
+      sourceLocale: 'en',
+      targetLocale: 'ja',
+      catalog,
+      batchSize: 10,
+    })
+
+    expect(result.translated).toBe(0)
+    expect(result.warnings.length).toBeGreaterThan(0)
+    expect(result.warnings).toContainEqual(expect.stringContaining('failed'))
   })
 })

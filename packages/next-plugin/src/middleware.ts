@@ -287,7 +287,7 @@ function maybeSetCookie(
   if (request.cookies.get(cookieName)?.value === locale) return
   response.headers.set(
     'set-cookie',
-    `${cookieName}=${locale};path=/;max-age=31536000;samesite=lax`,
+    `${cookieName}=${encodeURIComponent(locale)};path=/;max-age=31536000;samesite=lax`,
   )
 }
 

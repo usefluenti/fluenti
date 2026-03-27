@@ -117,6 +117,9 @@ export function createFluentiPlugins(
       } = getResolvedSettings()
       if (id.startsWith(RESOLVED_PREFIX)) {
         const locale = id.slice(RESOLVED_PREFIX.length)
+        if (!localeCodes.includes(locale)) {
+          return undefined
+        }
         const catalogPath = `${catalogDir}/${locale}${catalogExtension}`
         return `export { default } from '${catalogPath}'`
       }

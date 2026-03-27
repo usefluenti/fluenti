@@ -1,6 +1,23 @@
 import { switchLocalePath } from './path-utils'
 import type { FluentNuxtRuntimeConfig } from '../types'
 
+/**
+ * Safely construct an href from a base URL and path.
+ * Guards against protocol injection and malformed URLs.
+ */
+function buildSafeHref(baseUrl: string, path: string): string {
+  if (!baseUrl) return path
+  try {
+    const url = new URL(path, baseUrl)
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+      return path
+    }
+    return url.href
+  } catch {
+    return path
+  }
+}
+
 /** Head metadata for locale SEO */
 export interface LocaleHeadMeta {
   htmlAttrs: { lang: string; dir?: string }
@@ -57,7 +74,7 @@ export function buildLocaleHead(
           head.link.push({
             rel: 'alternate',
             hreflang: locIso,
-            href: `${protocol}://${domainEntry.domain}${currentPath}`,
+            href: buildSafeHref(`${protocol}://${domainEntry.domain}`, currentPath),
           })
         }
       } else {
@@ -71,7 +88,7 @@ export function buildLocaleHead(
         head.link.push({
           rel: 'alternate',
           hreflang: locIso,
-          href: `${baseUrl}${path}`,
+          href: buildSafeHref(baseUrl, path),
         })
       }
     }
@@ -84,7 +101,7 @@ export function buildLocaleHead(
         head.link.push({
           rel: 'alternate',
           hreflang: 'x-default',
-          href: `${protocol}://${defaultDomain.domain}${currentPath}`,
+          href: buildSafeHref(`${protocol}://${defaultDomain.domain}`, currentPath),
         })
       }
     } else {
@@ -98,7 +115,7 @@ export function buildLocaleHead(
       head.link.push({
         rel: 'alternate',
         hreflang: 'x-default',
-        href: `${baseUrl}${defaultPath}`,
+        href: buildSafeHref(baseUrl, defaultPath),
       })
     }
 
@@ -111,7 +128,7 @@ export function buildLocaleHead(
           head.link.push({
             rel: 'canonical',
             hreflang: '',
-            href: `${protocol}://${domainEntry.domain}${currentPath}`,
+            href: buildSafeHref(`${protocol}://${domainEntry.domain}`, currentPath),
           })
         }
       } else {
@@ -125,7 +142,7 @@ export function buildLocaleHead(
         head.link.push({
           rel: 'canonical',
           hreflang: '',
-          href: `${baseUrl}${canonicalPath}`,
+          href: buildSafeHref(baseUrl, canonicalPath),
         })
       }
     }

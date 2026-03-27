@@ -85,8 +85,19 @@ function getHeader(
  * parseAcceptLanguage('en-US,en;q=0.9,zh-CN;q=0.8')
  * // -> ['en-US', 'en', 'zh-CN']
  */
+const MAX_ACCEPT_LANGUAGE_LENGTH = 1024
+
 function parseAcceptLanguage(header: string): Locale[] {
-  return header
+  let safeHeader = header
+  if (safeHeader.length > MAX_ACCEPT_LANGUAGE_LENGTH) {
+    safeHeader = safeHeader.slice(0, MAX_ACCEPT_LANGUAGE_LENGTH)
+    const lastComma = safeHeader.lastIndexOf(',')
+    if (lastComma > 0) {
+      safeHeader = safeHeader.slice(0, lastComma)
+    }
+  }
+
+  return safeHeader
     .split(',')
     .map(part => {
       const [locale = '', ...rest] = part.trim().split(';')
@@ -129,7 +140,7 @@ function validateSSRKey(key: string): void {
  */
 export function getSSRLocaleScript(locale: Locale, options?: SSRLocaleScriptOptions): string {
   if (locale.length > 255) {
-    throw new Error('Locale exceeds maximum length of 255')
+    throw new Error(`getSSRLocaleScript: locale exceeds maximum length of 255 (got ${locale.length} characters)`)
   }
   validateLocale(locale, 'getSSRLocaleScript')
 

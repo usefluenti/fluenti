@@ -104,8 +104,8 @@ describe('invokeAI', () => {
 
     // 1 initial + 2 retries = 3 calls
     expect(vi.mocked(execFile)).toHaveBeenCalledTimes(3)
-    // sleep called between retries: 2 times
-    expect(vi.mocked(sleep)).toHaveBeenCalledTimes(2)
+    // sleep called: 3 timeout races + 2 retry delays = 5 times
+    expect(vi.mocked(sleep)).toHaveBeenCalledTimes(5)
   })
 
   it('successful retry after transient failure returns correct attempt count', async () => {
@@ -171,7 +171,49 @@ describe('invokeAI', () => {
 
     // Only 1 call (initial attempt, no retries)
     expect(vi.mocked(execFile)).toHaveBeenCalledTimes(1)
-    // No sleep calls since there are no retries
-    expect(vi.mocked(sleep)).not.toHaveBeenCalled()
+    // sleep called once for the timeout race (no retry delays)
+    expect(vi.mocked(sleep)).toHaveBeenCalledTimes(1)
+  })
+
+  it('throws timeout error when AI call exceeds timeoutMs', async () => {
+    // Mock execFile to never resolve (simulate hung process)
+    vi.mocked(execFile).mockImplementation(() => {
+      return {} as never  // callback never called → promise never resolves
+    })
+
+    await expect(invokeAI({
+      provider: 'claude',
+      prompt: 'test',
+      timeoutMs: 100,
+      maxRetries: 0,
+    })).rejects.toThrow(/timed out/i)
+  })
+
+  it('timeout error is not retried', async () => {
+    vi.mocked(execFile).mockImplementation(() => {
+      return {} as never
+    })
+
+    await expect(invokeAI({
+      provider: 'claude',
+      prompt: 'test',
+      timeoutMs: 100,
+      maxRetries: 3,
+    })).rejects.toThrow(/timed out/i)
+
+    // Should only attempt once — timeout is not retried
+    expect(vi.mocked(execFile)).toHaveBeenCalledTimes(1)
+  })
+
+  it('succeeds when response arrives before timeout', async () => {
+    mockExecFile(() => ({ stdout: 'fast response', stderr: '' }))
+
+    const result = await invokeAI({
+      provider: 'claude',
+      prompt: 'test',
+      timeoutMs: 120_000,
+    })
+
+    expect(result.stdout).toBe('fast response')
   })
 })

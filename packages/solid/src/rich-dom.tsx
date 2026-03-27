@@ -90,6 +90,16 @@ export function reconstruct(
 
     const idx = Number(match[1])
     const isSelfClosing = match[2] === undefined
+
+    if (!Number.isInteger(idx) || idx < 0 || idx >= components.length) {
+      if (!isSelfClosing) {
+        result.push(match[3] ?? '')
+      }
+      lastIndex = combinedRe.lastIndex
+      match = combinedRe.exec(translated)
+      continue
+    }
+
     const template = components[idx]
 
     if (isSelfClosing) {

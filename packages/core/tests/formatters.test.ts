@@ -533,3 +533,73 @@ describe('edge cases — error recovery and boundaries', () => {
     expect(result.toLowerCase()).toContain('year')
   })
 })
+
+// ---------------------------------------------------------------------------
+// Boundary & edge case tests
+// ---------------------------------------------------------------------------
+
+describe('formatter boundary handling', () => {
+  describe('formatNumber edge cases', () => {
+    it('formats NaN without throwing', () => {
+      const result = formatNumber(NaN, 'en')
+      expect(result).toBe('NaN')
+    })
+
+    it('formats Infinity without throwing', () => {
+      const result = formatNumber(Infinity, 'en')
+      expect(result).toBe('∞')
+    })
+
+    it('formats negative Infinity without throwing', () => {
+      const result = formatNumber(-Infinity, 'en')
+      expect(result).toBe('-∞')
+    })
+
+    it('formats negative zero', () => {
+      const result = formatNumber(-0, 'en')
+      expect(typeof result).toBe('string')
+    })
+
+    it('uses default format for unknown style', () => {
+      // Should not throw, should use default formatting
+      const result = formatNumber(42, 'en', 'nonexistent_style')
+      expect(result).toBe('42')
+    })
+  })
+
+  describe('formatDate edge cases', () => {
+    it('returns empty string for invalid date', () => {
+      const result = formatDate(new Date('invalid'), 'en')
+      expect(result).toBe('')
+    })
+
+    it('returns empty string for NaN timestamp', () => {
+      const result = formatDate(NaN, 'en')
+      expect(result).toBe('')
+    })
+
+    it('formats Date.now() timestamp', () => {
+      const result = formatDate(Date.now(), 'en')
+      expect(typeof result).toBe('string')
+      expect(result.length).toBeGreaterThan(0)
+    })
+  })
+
+  describe('formatRelativeTime edge cases', () => {
+    it('returns empty string for NaN', () => {
+      expect(formatRelativeTime(NaN, 'en')).toBe('')
+    })
+
+    it('returns empty string for Infinity', () => {
+      expect(formatRelativeTime(Infinity, 'en')).toBe('')
+    })
+
+    it('returns empty string for -Infinity', () => {
+      expect(formatRelativeTime(-Infinity, 'en')).toBe('')
+    })
+
+    it('returns empty string for invalid Date', () => {
+      expect(formatRelativeTime(new Date('invalid'), 'en')).toBe('')
+    })
+  })
+})

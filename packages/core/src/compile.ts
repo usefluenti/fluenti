@@ -119,6 +119,11 @@ function renderPlural(
   formatters?: Record<string, CustomFormatter>,
 ): string {
   const raw = values[node.variable]
+  if (typeof process !== 'undefined' && process.env?.['NODE_ENV'] !== 'production') {
+    if (raw !== undefined && raw !== null && !Number.isFinite(Number(raw))) {
+      console.warn(`[fluenti] Plural variable "${node.variable}" received non-numeric value: ${String(raw)}`)
+    }
+  }
   const count = typeof raw === 'number' ? raw : (Number(raw) || 0)
   const offset = node.offset ?? 0
   const adjustedCount = count - offset
@@ -166,7 +171,7 @@ function renderFunction(
   const customFn = formatters?.[node.fn]
   if (customFn) {
     try {
-      return customFn(val, node.style ?? '', locale)
+      return String(customFn(val, node.style ?? '', locale))
     } catch (err) {
       if (typeof process !== 'undefined' && process.env?.['NODE_ENV'] !== 'production') {
         console.warn(`[fluenti] Custom formatter "${node.fn}" threw for variable "${node.variable}":`, err)
@@ -222,7 +227,7 @@ function renderFunction(
     }
   } catch (err) {
     if (typeof process !== 'undefined' && process.env?.['NODE_ENV'] !== 'production') {
-      console.warn(`[fluenti] Built-in formatter "${node.fn}" threw for variable "${node.variable}":`, err)
+      console.warn(`[fluenti] Built-in formatter "${node.fn}" threw for variable "${node.variable}" (locale: "${locale}"):`, err)
     }
     return `{${node.variable}}`
   }

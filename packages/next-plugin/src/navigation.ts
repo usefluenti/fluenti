@@ -114,8 +114,15 @@ export function useLocaleSwitcher(options?: {
   const localePrefix = options?.localePrefix ?? 'as-needed'
 
   const switchLocale = (newLocale: string) => {
+    // Validate locale against known locales to prevent cookie injection
+    if (!locales.includes(newLocale)) {
+      if (typeof process !== 'undefined' && process.env?.NODE_ENV !== 'production') {
+        console.warn(`[fluenti] switchLocale: invalid locale "${newLocale}"`)
+      }
+      return
+    }
     // 1. Set cookie to remember preference (uses configured cookie name)
-    document.cookie = `${cookieName}=${newLocale};path=/;max-age=31536000;samesite=lax`
+    document.cookie = `${cookieName}=${encodeURIComponent(newLocale)};path=/;max-age=31536000;samesite=lax`
     // 2. Update React context
     setLocale(newLocale)
     // 3. Navigate to new locale path

@@ -365,6 +365,17 @@ import { clearAllCaches } from '@fluenti/core'
 clearAllCaches()
 ```
 
+### Internal cache sizes
+
+| Cache | Default size | Purpose |
+|-------|-------------|---------|
+| Compiled messages | 500 (LRU) | Avoids re-parsing identical ICU messages |
+| `Intl.NumberFormat` | 200 (LRU) | Caches formatter instances per locale + options |
+| `Intl.DateTimeFormat` | 200 (LRU) | Caches formatter instances per locale + options |
+| `Intl.RelativeTimeFormat` | 200 (LRU) | Caches formatter instances per locale |
+
+Use `setMessageCacheSize(n)` to adjust the compiled message cache. The value must be a positive integer (minimum 1).
+
 ## `Catalog`
 
 In-memory catalog manager for compiled messages. Supports namespace-aware message IDs and locale enumeration.
@@ -402,6 +413,31 @@ try {
   }
 }
 ```
+
+### Common parse errors
+
+| Error | Cause |
+|-------|-------|
+| `Expected identifier` | Empty braces `{ }` or invalid character after `{` |
+| `Unterminated placeholder` | Missing closing `}` (e.g. `Hello {name`) |
+| `Expected closing }` | Mismatched braces in function or plural/select |
+| `Plural/selectordinal must have an 'other' option` | Missing required `other` branch |
+| `Maximum nesting depth of 10 exceeded` | ICU message nesting too deep |
+| `Identifier exceeds maximum length of 256` | Variable name longer than 256 characters |
+
+## Parser limits
+
+The ICU parser enforces the following limits:
+
+- **Maximum nesting depth**: 10 levels of nested plural/select
+- **Maximum identifier length**: 256 characters per variable name
+- **Unterminated placeholders**: Always detected and reported with position info
+
+## Error handling in formatters
+
+Built-in formatters (`number`, `date`, `time`) catch `Intl` errors and return a fallback placeholder in development mode with a `console.warn`. In production, the fallback is returned silently.
+
+Custom formatters registered via `createFluentiCore({ formatters })` are also wrapped in try-catch — a throwing formatter will not crash the render.
 
 ## Plural Resolution
 
