@@ -17,6 +17,25 @@ export function buildICUMessage(strings: TemplateStringsArray, exprs: unknown[])
 }
 
 /**
+ * Pass through a message descriptor unchanged.
+ * Used for explicit ID declarations that can be statically extracted.
+ *
+ * @example
+ * ```ts
+ * const desc = descriptor({ id: 'greeting', message: 'Hello {name}' })
+ * ```
+ */
+export function descriptor(desc: MessageDescriptor): MessageDescriptor {
+  if ((desc.id === undefined || desc.id === '') && desc.message !== undefined) {
+    return {
+      ...desc,
+      id: createMessageId(desc.message, desc.context),
+    }
+  }
+  return desc
+}
+
+/**
  * Tagged template for creating lazy message descriptors.
  *
  * @example
@@ -33,21 +52,5 @@ export function msg(
   return { id: createMessageId(message), message }
 }
 
-/**
- * Pass through a message descriptor unchanged.
- * Used for explicit ID declarations that can be statically extracted.
- *
- * @example
- * ```ts
- * const desc = msg.descriptor({ id: 'greeting', message: 'Hello {name}' })
- * ```
- */
-msg.descriptor = (desc: MessageDescriptor): MessageDescriptor => {
-  if ((desc.id === undefined || desc.id === '') && desc.message !== undefined) {
-    return {
-      ...desc,
-      id: createMessageId(desc.message, desc.context),
-    }
-  }
-  return desc
-}
+// Backward compat: msg.descriptor = descriptor
+msg.descriptor = descriptor
