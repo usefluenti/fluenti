@@ -1,6 +1,7 @@
-import { describe, it, expect, afterEach } from 'vitest'
+import { describe, it, expect, vi, afterEach } from 'vitest'
 import { render, screen, cleanup } from '@testing-library/react'
 import { I18nProvider, useI18n, createFluenti } from '../src'
+import { interpolate } from '../../core/src/interpolate'
 
 const messages = {
   en: { hello: 'Hello', greeting: 'Hello {name}!' },
@@ -98,5 +99,58 @@ describe('createFluenti', () => {
     render(<Wrapper />)
     expect(screen.getByTestId('raw').textContent).toBe('Hello')
     expect(screen.getByTestId('raw-missing').textContent).toBe('undefined')
+  })
+})
+
+describe('new config options', () => {
+  afterEach(cleanup)
+
+  it('createFluenti with interpolate option enables ICU messages', () => {
+    const icuMessages = {
+      en: { apples: '{count, plural, one {# apple} other {# apples}}' },
+    }
+
+    function Wrapper() {
+      const instance = createFluenti({ locale: 'en', messages: icuMessages, interpolate })
+      return <span data-testid="text">{instance.t('apples', { count: 5 })}</span>
+    }
+
+    render(<Wrapper />)
+    expect(screen.getByTestId('text').textContent).toBe('5 apples')
+  })
+
+  it('createFluenti with diagnostics option', () => {
+    const diag = {
+      missingKey: vi.fn(),
+      fallbackUsed: vi.fn(),
+      parseError: vi.fn(),
+      formatError: vi.fn(),
+      enabled: true,
+    }
+
+    function Wrapper() {
+      const instance = createFluenti({ locale: 'en', messages: { en: {} }, diagnostics: diag })
+      return <span data-testid="text">{instance.t('missing_key')}</span>
+    }
+
+    render(<Wrapper />)
+    expect(diag.missingKey).toHaveBeenCalledWith('en', 'missing_key')
+  })
+
+  it('createFluenti with minimal config (no messages, no loadMessages)', () => {
+    function Wrapper() {
+      const instance = createFluenti({ locale: 'en' })
+      return (
+        <div>
+          <span data-testid="locale">{instance.locale}</span>
+          <span data-testid="text">{instance.t('hello')}</span>
+        </div>
+      )
+    }
+
+    render(<Wrapper />)
+    expect(screen.getByTestId('locale').textContent).toBe('en')
+    // With no messages, key should be returned as fallback
+    expect(screen.getByTestId('text').textContent).toBe('hello')
   })
 })

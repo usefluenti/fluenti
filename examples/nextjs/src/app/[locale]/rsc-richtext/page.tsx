@@ -1,4 +1,5 @@
-import { t, Trans, Plural, DateTime, NumberFormat } from '@fluenti/react'
+import { t } from '@fluenti/react'
+import { Trans, Plural, DateTime, NumberFormat } from '@fluenti/next'
 
 export default async function RSCRichTextPage() {
   return (

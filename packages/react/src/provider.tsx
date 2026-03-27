@@ -1,34 +1,9 @@
-import { useState, useCallback, useEffect, useMemo, useRef } from 'react'
-import { createFluentiCore } from '@fluenti/core'
-import type { Messages } from '@fluenti/core'
+import { useEffect, useMemo } from 'react'
 import { I18nContext } from './context'
 import type { FluentiProviderProps, FluentiContext } from './types'
 import type { FluentiInstance } from './create-fluenti'
+import { createFluenti } from './create-fluenti'
 import { setGlobalI18n } from './global-registry'
-
-interface SplitRuntimeModule {
-  __switchLocale?: (locale: string) => Promise<void>
-  __preloadLocale?: (locale: string) => Promise<void>
-}
-
-function unwrapMessages(allMessages: Record<string, unknown>): Record<string, Messages> {
-  const result: Record<string, Messages> = {}
-  for (const [locale, msgs] of Object.entries(allMessages)) {
-    result[locale] = typeof msgs === 'object' && msgs !== null && 'default' in msgs
-      ? (msgs as { default: Messages }).default
-      : msgs as Messages
-  }
-  return result
-}
-
-const SPLIT_RUNTIME_KEY = Symbol.for('fluenti.runtime.react.v1')
-
-function getSplitRuntimeModule(): SplitRuntimeModule | null {
-  const runtime = (globalThis as Record<PropertyKey, unknown>)[SPLIT_RUNTIME_KEY]
-  return typeof runtime === 'object' && runtime !== null
-    ? runtime as SplitRuntimeModule
-    : null
-}
 
 /**
  * Internal provider that uses a pre-created `FluentiInstance`.
@@ -108,10 +83,10 @@ export function I18nProvider(props: FluentiProviderProps) {
 }
 
 /**
- * Original inline provider that manages its own state.
+ * Inline provider that delegates to `createFluenti()` for state management.
  */
 function InlineProvider({
-  locale: localeProp,
+  locale,
   fallbackLocale,
   messages,
   loadMessages,
@@ -120,184 +95,26 @@ function InlineProvider({
   numberFormats,
   missing,
   diagnostics,
+  interpolate,
   children,
 }: FluentiProviderProps) {
-  const locale = localeProp ?? 'en'
-
-  const [currentLocale, setCurrentLocale] = useState(locale)
-  const [isLoading, setIsLoading] = useState(false)
-  const [loadedMessages, setLoadedMessages] = useState<Record<string, Messages>>(
-    messages ? unwrapMessages(messages) : {},
-  )
-  const [loadedLocales, setLoadedLocales] = useState<string[]>(
-    messages ? Object.keys(messages) : [],
-  )
-
-  // Use ref to avoid stale closures in callbacks
-  const loadedMessagesRef = useRef(loadedMessages)
-  loadedMessagesRef.current = loadedMessages
-
-  // Guard against out-of-order async locale loads (race condition protection)
-  const localeRequestRef = useRef(0)
-
-  // Deduplicates concurrent preloadLocale() calls for the same locale
-  const preloadInFlightRef = useRef(new Set<string>())
-
-  const i18n = useMemo(() => {
-    const config: Parameters<typeof createFluentiCore>[0] = {
-      locale: currentLocale,
-      messages: loadedMessages,
-    }
-    if (fallbackLocale !== undefined) config.fallbackLocale = fallbackLocale
-    if (fallbackChain !== undefined) config.fallbackChain = fallbackChain
-    if (dateFormats !== undefined) config.dateFormats = dateFormats
-    if (numberFormats !== undefined) config.numberFormats = numberFormats
-    if (missing !== undefined) config.missing = missing
-    if (diagnostics !== undefined) config.diagnostics = diagnostics
-    return createFluentiCore(config)
-  }, [currentLocale, loadedMessages, fallbackLocale, fallbackChain, dateFormats, numberFormats, missing, diagnostics])
+  const instance = createFluenti({
+    locale: locale ?? 'en',
+    messages,
+    loadMessages,
+    fallbackLocale,
+    fallbackChain,
+    dateFormats,
+    numberFormats,
+    missing,
+    diagnostics,
+    interpolate,
+  })
 
   // Set global i18n instance for webpack loader / vite plugin access
   useEffect(() => {
-    setGlobalI18n(i18n)
-  }, [i18n])
+    setGlobalI18n(instance.i18n)
+  }, [instance.i18n])
 
-  // Sync external locale prop changes
-  useEffect(() => {
-    if (locale !== currentLocale) {
-      void handleSetLocale(locale)
-    }
-    // Intentionally only depend on `locale` — we want to sync when the
-    // external prop changes, not when internal state (`currentLocale`,
-    // `handleSetLocale`) updates, which would cause infinite re-renders.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [locale])
-
-  const handleSetLocale = useCallback(
-    async (newLocale: string) => {
-      const requestId = ++localeRequestRef.current
-
-      if (loadedMessagesRef.current[newLocale] && !loadMessages) {
-        setCurrentLocale(newLocale)
-        return
-      }
-
-      const splitRuntime = loadMessages ? getSplitRuntimeModule() : null
-
-      if (loadedMessagesRef.current[newLocale]) {
-        if (splitRuntime?.__switchLocale) {
-          await splitRuntime.__switchLocale(newLocale)
-        }
-        setCurrentLocale(newLocale)
-        return
-      }
-
-      if (!loadMessages) {
-        console.warn(
-          `[fluenti] No messages for locale "${newLocale}" and no loadMessages function provided`,
-        )
-        return
-      }
-
-      setIsLoading(true)
-      try {
-        const msgs = await loadMessages(newLocale)
-
-        // A newer request has superseded this one — discard stale result
-        if (requestId !== localeRequestRef.current) return
-
-        const resolved: Messages =
-          typeof msgs === 'object' && msgs !== null && 'default' in msgs
-            ? (msgs as { default: Messages }).default
-            : (msgs as Messages)
-        // Run __switchLocale before committing state so a failure leaves no partial state.
-        // If it throws, loadedMessages stays clean and the next setLocale() retries the full path.
-        if (splitRuntime?.__switchLocale) {
-          await splitRuntime.__switchLocale(newLocale)
-        }
-        // Re-check request ID after the async __switchLocale call
-        if (requestId !== localeRequestRef.current) return
-        setLoadedMessages((prev) => ({ ...prev, [newLocale]: resolved }))
-        setLoadedLocales((prev) => [...new Set([...prev, newLocale])])
-        setCurrentLocale(newLocale)
-      } catch (err) {
-        // Only log if this request is still the latest
-        if (requestId === localeRequestRef.current) {
-          console.error(`[fluenti] Failed to load locale "${newLocale}"`, err)
-        }
-      } finally {
-        if (requestId === localeRequestRef.current) {
-          setIsLoading(false)
-        }
-      }
-    },
-    [loadMessages],
-  )
-
-  const preloadLocale = useCallback(
-    async (loc: string) => {
-      const splitRuntime = getSplitRuntimeModule()
-      if (loadedMessagesRef.current[loc] || !loadMessages) return
-      // Deduplicate concurrent preload calls for the same locale
-      if (preloadInFlightRef.current.has(loc)) return
-      preloadInFlightRef.current.add(loc)
-      try {
-        const msgs = await loadMessages(loc)
-        const resolved: Messages =
-          typeof msgs === 'object' && msgs !== null && 'default' in msgs
-            ? (msgs as { default: Messages }).default
-            : (msgs as Messages)
-        setLoadedMessages((prev) => ({ ...prev, [loc]: resolved }))
-        setLoadedLocales((prev) => [...new Set([...prev, loc])])
-        if (splitRuntime?.__preloadLocale) {
-          await splitRuntime.__preloadLocale(loc)
-        }
-      } catch (e: unknown) {
-        console.warn('[fluenti] preload failed:', loc, e)
-      } finally {
-        preloadInFlightRef.current.delete(loc)
-      }
-    },
-    [loadMessages],
-  )
-
-  const te = useCallback(
-    (key: string, loc?: string): boolean => {
-      const msgs = loadedMessagesRef.current[loc ?? currentLocale]
-      return msgs !== undefined && key in msgs
-    },
-    [currentLocale],
-  )
-
-  const tm = useCallback(
-    (key: string, loc?: string): Messages[string] | undefined => {
-      const msgs = loadedMessagesRef.current[loc ?? currentLocale]
-      if (!msgs) return undefined
-      return msgs[key]
-    },
-    [currentLocale],
-  )
-
-  const ctx = useMemo(
-    () => ({
-      t: i18n.t.bind(i18n),
-      d: i18n.d.bind(i18n),
-      n: i18n.n.bind(i18n),
-      format: i18n.format.bind(i18n),
-      loadMessages: i18n.loadMessages.bind(i18n),
-      getLocales: i18n.getLocales.bind(i18n),
-      locale: currentLocale,
-      setLocale: handleSetLocale,
-      isLoading,
-      loadedLocales,
-      preloadLocale,
-      te,
-      tm,
-      // Internal: used by __useI18n hook and compiled components — not part of public API
-      i18n,
-    }) as FluentiContext,
-    [i18n, currentLocale, handleSetLocale, isLoading, loadedLocales, preloadLocale, te, tm],
-  )
-
-  return <I18nContext.Provider value={ctx}>{children}</I18nContext.Provider>
+  return <InstanceProvider instance={instance}>{children}</InstanceProvider>
 }

@@ -39,6 +39,14 @@
       "import": { "types": "./dist/server.d.ts", "default": "./dist/server.js" },
       "require": { "types": "./dist/server.d.ts", "default": "./dist/server.cjs" }
     },
+    "./components": {
+      "solid": {
+        "types": "./dist/components-entry.d.ts",
+        "default": "./src/components-entry.ts"
+      },
+      "import": { "types": "./dist/components-entry.d.ts", "default": "./dist/components-entry.js" },
+      "require": { "types": "./dist/components-entry.d.ts", "default": "./dist/components-entry.cjs" }
+    },
     "./vite-plugin": {
       "import": { "types": "./dist/vite-plugin.d.ts", "default": "./dist/vite-plugin.js" },
       "require": { "types": "./dist/vite-plugin.d.ts", "default": "./dist/vite-plugin.cjs" }

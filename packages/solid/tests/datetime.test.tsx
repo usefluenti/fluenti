@@ -1,6 +1,7 @@
 import { describe, it, expect, afterEach } from 'vitest'
 import { render, cleanup } from '@solidjs/testing-library'
-import { DateTime, I18nProvider } from '../src'
+import { I18nProvider } from '../src'
+import { DateTime } from '../src/components/DateTime'
 
 describe('DateTime', () => {
   afterEach(() => {

@@ -5,8 +5,11 @@
  * when used together (e.g., hash IDs match, compiled catalogs are consumable).
  */
 import { describe, it, expect } from 'vitest'
-import { msg, parse, compile, createFluentiCore, detectLocale, getDirection } from '../src/index'
+import { msg, createFluentiCore, getDirection } from '../src/index'
 import { hashMessage, interpolate } from '../src/internal'
+import { parse } from '../src/parser'
+import { compile } from '../src/compile'
+import { detectLocale } from '../src/ssr'
 
 describe('cross-package: hash consistency', () => {
   it('core msg() ID matches cli hashMessage()', () => {

@@ -1,13 +1,15 @@
 import { describe, it, expect, afterEach } from 'vitest'
 import { render, screen, cleanup } from '@testing-library/react'
-import { NumberFormat, I18nProvider } from '../src'
+import { interpolate } from '../../core/src/interpolate'
+import { I18nProvider } from '../src'
+import { NumberFormat } from '../src/components-entry'
 
 describe('NumberFormat', () => {
   afterEach(cleanup)
 
   it('formats an integer with grouping separators', () => {
     render(
-      <I18nProvider locale="en" messages={{ en: {} }}>
+      <I18nProvider locale="en" messages={{ en: {} }} interpolate={interpolate}>
         <NumberFormat value={1234567} />
       </I18nProvider>,
     )
@@ -17,7 +19,7 @@ describe('NumberFormat', () => {
 
   it('formats a decimal number', () => {
     render(
-      <I18nProvider locale="en" messages={{ en: {} }}>
+      <I18nProvider locale="en" messages={{ en: {} }} interpolate={interpolate}>
         <NumberFormat value={1234.56} />
       </I18nProvider>,
     )
@@ -27,7 +29,7 @@ describe('NumberFormat', () => {
 
   it('formats zero', () => {
     render(
-      <I18nProvider locale="en" messages={{ en: {} }}>
+      <I18nProvider locale="en" messages={{ en: {} }} interpolate={interpolate}>
         <NumberFormat value={0} />
       </I18nProvider>,
     )
@@ -36,7 +38,7 @@ describe('NumberFormat', () => {
 
   it('formats negative numbers', () => {
     const { container } = render(
-      <I18nProvider locale="en" messages={{ en: {} }}>
+      <I18nProvider locale="en" messages={{ en: {} }} interpolate={interpolate}>
         <NumberFormat value={-42.5} />
       </I18nProvider>,
     )
@@ -46,7 +48,7 @@ describe('NumberFormat', () => {
 
   it('formats very large numbers', () => {
     render(
-      <I18nProvider locale="en" messages={{ en: {} }}>
+      <I18nProvider locale="en" messages={{ en: {} }} interpolate={interpolate}>
         <NumberFormat value={9999999.99} />
       </I18nProvider>,
     )
@@ -56,7 +58,12 @@ describe('NumberFormat', () => {
 
   it('formats with the built-in "percent" style', () => {
     render(
-      <I18nProvider locale="en" messages={{ en: {} }}>
+      <I18nProvider
+        locale="en"
+        messages={{ en: {} }}
+        interpolate={interpolate}
+        numberFormats={{ percent: { style: 'percent' } }}
+      >
         <NumberFormat value={0.75} format="percent" />
       </I18nProvider>,
     )
@@ -66,7 +73,12 @@ describe('NumberFormat', () => {
 
   it('formats with the built-in "decimal" style (fixed fraction digits)', () => {
     render(
-      <I18nProvider locale="en" messages={{ en: {} }}>
+      <I18nProvider
+        locale="en"
+        messages={{ en: {} }}
+        interpolate={interpolate}
+        numberFormats={{ decimal: { minimumFractionDigits: 2, maximumFractionDigits: 2 } }}
+      >
         <NumberFormat value={3.1} format="decimal" />
       </I18nProvider>,
     )
@@ -79,7 +91,12 @@ describe('NumberFormat', () => {
 
   it('formats with the built-in "currency" style (en locale = USD)', () => {
     render(
-      <I18nProvider locale="en" messages={{ en: {} }}>
+      <I18nProvider
+        locale="en"
+        messages={{ en: {} }}
+        interpolate={interpolate}
+        numberFormats={{ currency: (locale) => ({ style: 'currency', currency: locale === 'en' ? 'USD' : 'USD' }) }}
+      >
         <NumberFormat value={99.99} format="currency" />
       </I18nProvider>,
     )
@@ -92,7 +109,12 @@ describe('NumberFormat', () => {
 
   it('formats with currency style using locale-appropriate currency (de = EUR)', () => {
     const { container } = render(
-      <I18nProvider locale="de" messages={{ de: {} }}>
+      <I18nProvider
+        locale="de"
+        messages={{ de: {} }}
+        interpolate={interpolate}
+        numberFormats={{ currency: (locale) => ({ style: 'currency', currency: locale === 'de' ? 'EUR' : 'USD' }) }}
+      >
         <NumberFormat value={49.99} format="currency" />
       </I18nProvider>,
     )
@@ -105,7 +127,12 @@ describe('NumberFormat', () => {
 
   it('formats with currency style using locale-appropriate currency (ja = JPY)', () => {
     const { container } = render(
-      <I18nProvider locale="ja" messages={{ ja: {} }}>
+      <I18nProvider
+        locale="ja"
+        messages={{ ja: {} }}
+        interpolate={interpolate}
+        numberFormats={{ currency: (locale) => ({ style: 'currency', currency: locale === 'ja' ? 'JPY' : 'USD' }) }}
+      >
         <NumberFormat value={1500} format="currency" />
       </I18nProvider>,
     )
@@ -122,6 +149,7 @@ describe('NumberFormat', () => {
         locale="en"
         messages={{ en: {} }}
         numberFormats={{ compact: { notation: 'compact' as const } }}
+        interpolate={interpolate}
       >
         <NumberFormat value={1500} format="compact" />
       </I18nProvider>,
@@ -132,7 +160,7 @@ describe('NumberFormat', () => {
 
   it('respects a different locale for default formatting (de)', () => {
     const { container } = render(
-      <I18nProvider locale="de" messages={{ de: {} }}>
+      <I18nProvider locale="de" messages={{ de: {} }} interpolate={interpolate}>
         <NumberFormat value={1234.56} />
       </I18nProvider>,
     )
@@ -142,7 +170,7 @@ describe('NumberFormat', () => {
 
   it('falls back to default when given an unknown style', () => {
     render(
-      <I18nProvider locale="en" messages={{ en: {} }}>
+      <I18nProvider locale="en" messages={{ en: {} }} interpolate={interpolate}>
         <NumberFormat value={42} format="nonexistent" />
       </I18nProvider>,
     )

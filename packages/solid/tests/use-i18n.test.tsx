@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render } from '@solidjs/testing-library'
+import { interpolate } from '@fluenti/core/internal'
 import { I18nProvider, useI18n } from '../src'
 
 const messages = {
@@ -396,5 +397,225 @@ describe('useI18n reactivity', () => {
 
     // After reactivity settles, t() should return the new locale's value
     expect(translate!('hello')).toBe('Bonjour')
+  })
+})
+
+// ─── #8 Signal-wrapped method reactivity ──────────────────────────────────────
+
+describe('Signal-wrapped method reactivity', () => {
+  it('d(date) re-computes when locale changes', async () => {
+    const testDate = new Date(2025, 0, 15)
+    let changeLocale: (l: string) => void
+
+    function Child() {
+      const { d, setLocale } = useI18n()
+      changeLocale = setLocale
+      return <span data-testid="date">{d(testDate)}</span>
+    }
+
+    const { getByTestId } = render(() => (
+      <I18nProvider locale="en" messages={{ en: {}, fr: {} }}>
+        <Child />
+      </I18nProvider>
+    ))
+
+    const enFormatted = getByTestId('date').textContent!
+    expect(enFormatted).toBeTruthy()
+
+    changeLocale!('fr')
+    await Promise.resolve()
+
+    const frFormatted = getByTestId('date').textContent!
+    expect(frFormatted).toBeTruthy()
+    // en and fr format dates differently (e.g. "1/15/2025" vs "15/01/2025")
+    expect(frFormatted).not.toBe(enFormatted)
+  })
+
+  it('n(num) re-computes when locale changes', async () => {
+    let changeLocale: (l: string) => void
+
+    function Child() {
+      const { n, setLocale } = useI18n()
+      changeLocale = setLocale
+      return <span data-testid="num">{n(1234.5)}</span>
+    }
+
+    const { getByTestId } = render(() => (
+      <I18nProvider locale="en" messages={{ en: {}, de: {} }}>
+        <Child />
+      </I18nProvider>
+    ))
+
+    const enFormatted = getByTestId('num').textContent!
+    expect(enFormatted).toBeTruthy()
+
+    changeLocale!('de')
+    await Promise.resolve()
+
+    const deFormatted = getByTestId('num').textContent!
+    expect(deFormatted).toBeTruthy()
+    // en uses "1,234.5", de uses "1.234,5"
+    expect(deFormatted).not.toBe(enFormatted)
+  })
+
+  it('format(msg, values) re-computes when locale changes', async () => {
+    let changeLocale: (l: string) => void
+
+    function Child() {
+      const { format, setLocale } = useI18n()
+      changeLocale = setLocale
+      return (
+        <span data-testid="fmt">
+          {format('{count, plural, one {# item} other {# items}}', { count: 1 })}
+        </span>
+      )
+    }
+
+    const { getByTestId } = render(() => (
+      <I18nProvider
+        locale="en"
+        messages={{ en: {}, fr: {} }}
+        interpolate={interpolate}
+      >
+        <Child />
+      </I18nProvider>
+    ))
+
+    const enResult = getByTestId('fmt').textContent!
+    expect(enResult).toBe('1 item')
+
+    changeLocale!('fr')
+    await Promise.resolve()
+
+    // After locale change, format() should re-compute (even if result looks similar,
+    // the signal dependency ensures it re-ran)
+    const frResult = getByTestId('fmt').textContent!
+    expect(frResult).toBeTruthy()
+  })
+})
+
+// ─── #9 te() and tm() ────────────────────────────────────────────────────────
+
+describe('te() and tm()', () => {
+  const teMsgs = {
+    en: { hello: 'Hello', compiled: (vals?: Record<string, unknown>) => `Count: ${vals?.['count'] ?? 0}` },
+    fr: { hello: 'Bonjour' },
+  }
+
+  it('te(existing_key) returns true', () => {
+    let result = false
+
+    function Child() {
+      const { te } = useI18n()
+      result = te('hello')
+      return <span>test</span>
+    }
+
+    render(() => (
+      <I18nProvider locale="en" messages={teMsgs}>
+        <Child />
+      </I18nProvider>
+    ))
+
+    expect(result).toBe(true)
+  })
+
+  it('te(missing_key) returns false', () => {
+    let result = true
+
+    function Child() {
+      const { te } = useI18n()
+      result = te('missing_key')
+      return <span>test</span>
+    }
+
+    render(() => (
+      <I18nProvider locale="en" messages={teMsgs}>
+        <Child />
+      </I18nProvider>
+    ))
+
+    expect(result).toBe(false)
+  })
+
+  it('te(key, specific_locale) checks the specified locale', () => {
+    let resultEn = false
+    let resultFr = false
+    let resultFrMissing = true
+
+    function Child() {
+      const { te } = useI18n()
+      resultEn = te('hello', 'en')
+      resultFr = te('hello', 'fr')
+      resultFrMissing = te('compiled', 'fr')
+      return <span>test</span>
+    }
+
+    render(() => (
+      <I18nProvider locale="en" messages={teMsgs}>
+        <Child />
+      </I18nProvider>
+    ))
+
+    expect(resultEn).toBe(true)
+    expect(resultFr).toBe(true)
+    expect(resultFrMissing).toBe(false)
+  })
+
+  it('tm(key) returns raw compiled message (string or function)', () => {
+    let strMsg: unknown
+    let fnMsg: unknown
+
+    function Child() {
+      const { tm } = useI18n()
+      strMsg = tm('hello')
+      fnMsg = tm('compiled')
+      return <span>test</span>
+    }
+
+    render(() => (
+      <I18nProvider locale="en" messages={teMsgs}>
+        <Child />
+      </I18nProvider>
+    ))
+
+    expect(strMsg).toBe('Hello')
+    expect(typeof fnMsg).toBe('function')
+  })
+
+  it('tm(missing) returns undefined', () => {
+    let result: unknown = 'not-undefined'
+
+    function Child() {
+      const { tm } = useI18n()
+      result = tm('missing')
+      return <span>test</span>
+    }
+
+    render(() => (
+      <I18nProvider locale="en" messages={teMsgs}>
+        <Child />
+      </I18nProvider>
+    ))
+
+    expect(result).toBeUndefined()
+  })
+
+  it('tm(key, specific_locale) checks the specified locale', () => {
+    let result: unknown
+
+    function Child() {
+      const { tm } = useI18n()
+      result = tm('hello', 'fr')
+      return <span>test</span>
+    }
+
+    render(() => (
+      <I18nProvider locale="en" messages={teMsgs}>
+        <Child />
+      </I18nProvider>
+    ))
+
+    expect(result).toBe('Bonjour')
   })
 })

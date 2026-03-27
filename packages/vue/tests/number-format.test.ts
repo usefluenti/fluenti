@@ -67,24 +67,32 @@ describe('NumberFormat', () => {
     expect(wrapper.text()).toBe(expected)
   })
 
-  it('formats with the built-in "percent" style', () => {
+  it('formats with "percent" style when provided via numberFormats', () => {
     const Comp = defineComponent({
       setup() {
         return () => h(NumberFormat, { value: 0.75, format: 'percent' })
       },
     })
-    const wrapper = mountWithPlugin(Comp)
+    const wrapper = mountWithPlugin(Comp, {
+      locale: 'en',
+      messages: { en: {} },
+      numberFormats: { percent: { style: 'percent' } },
+    })
     const expected = new Intl.NumberFormat('en', { style: 'percent' }).format(0.75)
     expect(wrapper.text()).toBe(expected)
   })
 
-  it('formats with the built-in "decimal" style (fixed fraction digits)', () => {
+  it('formats with "decimal" style when provided via numberFormats', () => {
     const Comp = defineComponent({
       setup() {
         return () => h(NumberFormat, { value: 3.1, format: 'decimal' })
       },
     })
-    const wrapper = mountWithPlugin(Comp)
+    const wrapper = mountWithPlugin(Comp, {
+      locale: 'en',
+      messages: { en: {} },
+      numberFormats: { decimal: { minimumFractionDigits: 2, maximumFractionDigits: 2 } },
+    })
     const expected = new Intl.NumberFormat('en', {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
@@ -92,13 +100,17 @@ describe('NumberFormat', () => {
     expect(wrapper.text()).toBe(expected)
   })
 
-  it('formats with the built-in "currency" style (en locale = USD)', () => {
+  it('formats with "currency" style when provided via numberFormats (en = USD)', () => {
     const Comp = defineComponent({
       setup() {
         return () => h(NumberFormat, { value: 99.99, format: 'currency' })
       },
     })
-    const wrapper = mountWithPlugin(Comp)
+    const wrapper = mountWithPlugin(Comp, {
+      locale: 'en',
+      messages: { en: {} },
+      numberFormats: { currency: { style: 'currency', currency: 'USD' } },
+    })
     const expected = new Intl.NumberFormat('en', {
       style: 'currency',
       currency: 'USD',
@@ -115,6 +127,7 @@ describe('NumberFormat', () => {
     const wrapper = mountWithPlugin(Comp, {
       locale: 'de',
       messages: { de: {} },
+      numberFormats: { currency: { style: 'currency', currency: 'EUR' } },
     })
     const expected = new Intl.NumberFormat('de', {
       style: 'currency',
@@ -132,6 +145,7 @@ describe('NumberFormat', () => {
     const wrapper = mountWithPlugin(Comp, {
       locale: 'ja',
       messages: { ja: {} },
+      numberFormats: { currency: { style: 'currency', currency: 'JPY' } },
     })
     const expected = new Intl.NumberFormat('ja', {
       style: 'currency',

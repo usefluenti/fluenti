@@ -1,13 +1,15 @@
 import { describe, it, expect } from 'vitest'
 import { createSignal } from 'solid-js'
 import { render } from '@solidjs/testing-library'
-import { I18nProvider, Select } from '../src'
+import { interpolate } from '@fluenti/core/internal'
+import { I18nProvider } from '../src'
+import { SelectComp as Select } from '../src/select'
 
 describe('Select component', () => {
   describe('options prop API (type-safe)', () => {
     it('selects matching option from options prop', () => {
       const { container } = render(() => (
-        <I18nProvider locale="en" messages={{ en: {} }}>
+        <I18nProvider locale="en" messages={{ en: {} }} interpolate={interpolate}>
           <Select
             value="male"
             options={{ male: 'He liked it', female: 'She liked it' }}
@@ -21,7 +23,7 @@ describe('Select component', () => {
 
     it('falls back to "other" when no match in options', () => {
       const { container } = render(() => (
-        <I18nProvider locale="en" messages={{ en: {} }}>
+        <I18nProvider locale="en" messages={{ en: {} }} interpolate={interpolate}>
           <Select
             value="nonbinary"
             options={{ male: 'He liked it', female: 'She liked it' }}
@@ -35,7 +37,7 @@ describe('Select component', () => {
 
     it('works with empty options object', () => {
       const { container } = render(() => (
-        <I18nProvider locale="en" messages={{ en: {} }}>
+        <I18nProvider locale="en" messages={{ en: {} }} interpolate={interpolate}>
           <Select value="male" options={{}} other="Fallback" />
         </I18nProvider>
       ))
@@ -53,6 +55,7 @@ describe('Select component', () => {
                 '{value, select, male {彼が気に入りました} female {彼女が気に入りました} other {その人が気に入りました}}',
             },
           }}
+          interpolate={interpolate}
         >
           <Select
             value="male"
@@ -69,7 +72,7 @@ describe('Select component', () => {
   describe('attrs-based API (backwards compatible)', () => {
     it('selects matching option from dynamic attrs', () => {
       const { container } = render(() => (
-        <I18nProvider locale="en" messages={{ en: {} }}>
+        <I18nProvider locale="en" messages={{ en: {} }} interpolate={interpolate}>
           <Select
             value="male"
             male="He liked it"
@@ -84,7 +87,7 @@ describe('Select component', () => {
 
     it('falls back to "other" from attrs when no match', () => {
       const { container } = render(() => (
-        <I18nProvider locale="en" messages={{ en: {} }}>
+        <I18nProvider locale="en" messages={{ en: {} }} interpolate={interpolate}>
           <Select
             value="nonbinary"
             male="He liked it"
@@ -101,7 +104,7 @@ describe('Select component', () => {
   describe('options prop takes precedence over attrs', () => {
     it('uses options prop value when both options and attrs are present', () => {
       const { container } = render(() => (
-        <I18nProvider locale="en" messages={{ en: {} }}>
+        <I18nProvider locale="en" messages={{ en: {} }} interpolate={interpolate}>
           <Select
             value="male"
             options={{ male: 'From options' }}
@@ -116,7 +119,7 @@ describe('Select component', () => {
 
     it('falls back to other (not attrs) when options prop is set but has no match', () => {
       const { container } = render(() => (
-        <I18nProvider locale="en" messages={{ en: {} }}>
+        <I18nProvider locale="en" messages={{ en: {} }} interpolate={interpolate}>
           <Select
             value="female"
             options={{ male: 'He' }}
@@ -133,7 +136,7 @@ describe('Select component', () => {
   describe('tag prop', () => {
     it('renders without wrapper by default (Fragment)', () => {
       const { container } = render(() => (
-        <I18nProvider locale="en" messages={{ en: {} }}>
+        <I18nProvider locale="en" messages={{ en: {} }} interpolate={interpolate}>
           <Select value="x" other="text" />
         </I18nProvider>
       ))
@@ -144,7 +147,7 @@ describe('Select component', () => {
 
     it('uses custom tag prop', () => {
       const { container } = render(() => (
-        <I18nProvider locale="en" messages={{ en: {} }}>
+        <I18nProvider locale="en" messages={{ en: {} }} interpolate={interpolate}>
           <Select value="x" other="text" tag="div" />
         </I18nProvider>
       ))
@@ -160,7 +163,7 @@ describe('Select component', () => {
       const [gender, setGender] = createSignal('male')
 
       const { container } = render(() => (
-        <I18nProvider locale="en" messages={{ en: {} }}>
+        <I18nProvider locale="en" messages={{ en: {} }} interpolate={interpolate}>
           <Select
             value={gender()}
             options={{ male: 'He', female: 'She' }}
@@ -188,7 +191,7 @@ describe('Select component', () => {
   describe('edge cases', () => {
     it('renders "other" when no case matches and no options defined', () => {
       const { container } = render(() => (
-        <I18nProvider locale="en" messages={{ en: {} }}>
+        <I18nProvider locale="en" messages={{ en: {} }} interpolate={interpolate}>
           <Select
             value="unknown_value"
             other="No match found"
@@ -201,7 +204,7 @@ describe('Select component', () => {
 
     it('handles empty string value', () => {
       const { container } = render(() => (
-        <I18nProvider locale="en" messages={{ en: {} }}>
+        <I18nProvider locale="en" messages={{ en: {} }} interpolate={interpolate}>
           <Select
             value=""
             options={{ '': 'Empty match', other: 'Other' }}
@@ -217,7 +220,7 @@ describe('Select component', () => {
       const [val, setVal] = createSignal('a')
 
       const { container } = render(() => (
-        <I18nProvider locale="en" messages={{ en: {} }}>
+        <I18nProvider locale="en" messages={{ en: {} }} interpolate={interpolate}>
           <Select
             value={val()}
             options={{ a: 'Option A', b: 'Option B' }}
@@ -241,7 +244,7 @@ describe('Select component', () => {
   describe('JSX element props (rich text)', () => {
     it('renders JSX element option from options prop', () => {
       const { container } = render(() => (
-        <I18nProvider locale="en" messages={{ en: {} }}>
+        <I18nProvider locale="en" messages={{ en: {} }} interpolate={interpolate}>
           <Select
             value="male"
             options={{
@@ -259,7 +262,7 @@ describe('Select component', () => {
 
     it('falls back to JSX other when no option matches', () => {
       const { container } = render(() => (
-        <I18nProvider locale="en" messages={{ en: {} }}>
+        <I18nProvider locale="en" messages={{ en: {} }} interpolate={interpolate}>
           <Select
             value="nonbinary"
             options={{
@@ -275,7 +278,7 @@ describe('Select component', () => {
 
     it('renders mixed string + JSX options', () => {
       const { container } = render(() => (
-        <I18nProvider locale="en" messages={{ en: {} }}>
+        <I18nProvider locale="en" messages={{ en: {} }} interpolate={interpolate}>
           <Select
             value="male"
             options={{
@@ -300,6 +303,7 @@ describe('Select component', () => {
                 '{value, select, male {<0>彼</0>が気に入りました} other {<1>その人</1>が気に入りました}}',
             },
           }}
+          interpolate={interpolate}
         >
           <Select
             value="male"

@@ -15,8 +15,9 @@ import { PLURAL_CATEGORIES, type PluralCategory } from './components/plural-core
 import { buildICUPluralMessage, buildICUSelectMessage, normalizeSelectForms, renderRichTranslation, serializeRichForms } from './components/icu-rich'
 
 // Re-export SSR utilities from core for convenience
-export { detectLocale, getSSRLocaleScript, getHydratedLocale, isRTL, getDirection } from '@fluenti/core'
-export type { DetectLocaleOptions } from '@fluenti/core'
+export { detectLocale, getSSRLocaleScript, getHydratedLocale } from '@fluenti/core/ssr'
+export type { DetectLocaleOptions } from '@fluenti/core/ssr'
+export { isRTL, getDirection } from '@fluenti/core'
 
 /**
  * Configuration for `createServerI18n`.
@@ -57,6 +58,20 @@ export interface ServerI18nConfig {
   numberFormats?: NumberFormatOptions
   /** Handler for missing translation keys */
   missing?: (locale: Locale, id: string) => string | undefined
+  /**
+   * Custom interpolation function for ICU MessageFormat parsing.
+   *
+   * By default, the runtime uses a lightweight `{key}` replacer.
+   * Pass the full `interpolate` from `@fluenti/core` for runtime
+   * ICU MessageFormat parsing (plurals, selects, nested arguments).
+   *
+   * @example
+   * ```ts
+   * import { interpolate } from '@fluenti/core'
+   * createServerI18n({ interpolate, ... })
+   * ```
+   */
+  interpolate?: FluentiCoreConfigFull['interpolate']
 }
 
 // ─── Server Component Props ──────────────────────────────────────────────────
@@ -359,6 +374,7 @@ export function createServerI18n(config: ServerI18nConfig): ServerI18n {
     if (config.dateFormats !== undefined) fluentConfig.dateFormats = config.dateFormats
     if (config.numberFormats !== undefined) fluentConfig.numberFormats = config.numberFormats
     if (config.missing !== undefined) fluentConfig.missing = config.missing
+    if (config.interpolate !== undefined) fluentConfig.interpolate = config.interpolate
 
     store.instance = createFluentiCore(fluentConfig)
     _lastInstance = store.instance
@@ -530,6 +546,7 @@ export function createServerI18n(config: ServerI18nConfig): ServerI18n {
     if (config.dateFormats !== undefined) fluentConfig.dateFormats = config.dateFormats
     if (config.numberFormats !== undefined) fluentConfig.numberFormats = config.numberFormats
     if (config.missing !== undefined) fluentConfig.missing = config.missing
+    if (config.interpolate !== undefined) fluentConfig.interpolate = config.interpolate
 
     store.instance = createFluentiCore(fluentConfig)
     return store.instance

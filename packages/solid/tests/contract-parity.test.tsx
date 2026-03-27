@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { render } from '@solidjs/testing-library'
 import type { JSX } from 'solid-js'
+import { interpolate } from '@fluenti/core/internal'
 import {
   contractLocale,
   contractMessages,
@@ -8,11 +9,14 @@ import {
   selectContract,
   transContract,
 } from '../../core/tests/fixtures/cross-framework-contract'
-import { I18nProvider, Plural, Select, Trans } from '../src'
+import { I18nProvider } from '../src'
+import { Trans } from '../src/trans'
+import { Plural } from '../src/plural'
+import { SelectComp as Select } from '../src/select'
 
 function renderWithI18n(node: () => JSX.Element) {
   return render(() => (
-    <I18nProvider locale={contractLocale} messages={contractMessages}>
+    <I18nProvider locale={contractLocale} messages={contractMessages} interpolate={interpolate}>
       {node()}
     </I18nProvider>
   ))

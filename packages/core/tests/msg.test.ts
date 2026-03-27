@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { msg } from '../src/msg'
+import { msg, descriptor } from '../src/msg'
 
 describe('msg', () => {
   it('creates a message descriptor from tagged template', () => {
@@ -140,5 +140,32 @@ describe('edge cases - exhaustive', () => {
   it('contains regex special characters', () => {
     const result = msg`price is ${'$'}10.00 (USD)`
     expect(result.message).toBe('price is {arg0}10.00 (USD)')
+  })
+})
+
+// ─── msg.descriptor() backward compat and descriptor() standalone (#9) ────
+
+describe('msg.descriptor and standalone descriptor', () => {
+  it('msg.descriptor() backward compat still works', () => {
+    const desc = { id: 'test', message: 'Hello {name}' }
+    const result = msg.descriptor(desc)
+    expect(result).toBe(desc)
+    expect(result.id).toBe('test')
+    expect(result.message).toBe('Hello {name}')
+  })
+
+  it('descriptor() standalone export from msg module', () => {
+    const desc = { id: 'greet', message: 'Hi {name}' }
+    const result = descriptor(desc)
+    expect(result).toBe(desc)
+    expect(result.id).toBe('greet')
+  })
+
+  it('both msg.descriptor() and descriptor() produce identical results', () => {
+    const desc = { id: 'nav.home', message: 'Home', comment: 'Nav item', context: 'header' }
+    const fromMethod = msg.descriptor(desc)
+    const fromExport = descriptor(desc)
+    expect(fromMethod).toBe(fromExport)
+    expect(fromMethod).toBe(desc) // both return same reference
   })
 })

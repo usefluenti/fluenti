@@ -3,6 +3,7 @@ import { createPackageConfig } from '../../scripts/vite-config-factory'
 export default createPackageConfig({
   entry: {
     index: 'src/index.ts',
+    'components-entry': 'src/components-entry.ts',
     server: 'src/server.ts',
     'vite-plugin': 'src/vite-plugin.ts',
   },

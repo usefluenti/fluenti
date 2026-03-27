@@ -1,12 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import {
-  clearAllCaches,
-  formatNumber,
-  formatDate,
-  formatRelativeTime,
-  compile,
-  parse,
-} from '../src'
+import { clearAllCaches } from '../src'
 import {
   interpolate,
   clearInterpolationCache,
@@ -19,6 +12,11 @@ import {
   DEFAULT_MESSAGE_CACHE_SIZE,
   resolvePlural,
 } from '../src/internal'
+import { parse } from '../src/parser'
+import { compile } from '../src/compile'
+import { formatNumber } from '../src/formatters/number'
+import { formatDate } from '../src/formatters/date'
+import { formatRelativeTime } from '../src/formatters/relative'
 
 describe('DEFAULT_MESSAGE_CACHE_SIZE', () => {
   it('is 500', () => {
@@ -187,5 +185,49 @@ describe('clearAllCaches', () => {
     expect(() => clearNumberFormatCache()).not.toThrow()
     expect(() => clearDateFormatCache()).not.toThrow()
     expect(() => clearRelativeTimeFormatCache()).not.toThrow()
+  })
+})
+
+// ─── clearAllCaches scope changes (#7) ─────────────────────────────────
+
+describe('clearAllCaches scope (runtime-slim)', () => {
+  it('clearAllCaches() clears plural cache', () => {
+    // Populate plural cache
+    resolvePlural(1, { one: 'one', other: 'other' }, 'en')
+    resolvePlural(5, { one: 'one', other: 'other' }, 'fr')
+
+    // clearAllCaches now only clears plural cache in main entry
+    expect(() => clearAllCaches()).not.toThrow()
+
+    // Plural still works (re-creates Intl.PluralRules)
+    expect(resolvePlural(1, { one: 'one', other: 'other' }, 'en')).toBe('one')
+  })
+
+  it('clearAllCaches() does NOT clear interpolation/compile/formatter caches (moved to subpath)', () => {
+    // Populate subpath caches
+    interpolate('Hello {name}', { name: 'World' })
+    compile(parse('{n, number}'), 'en')
+    formatNumber(42, 'en')
+    formatDate(Date.now(), 'en')
+
+    // clearAllCaches only touches plural cache in the main entry
+    clearAllCaches()
+
+    // These subpath caches still work (they have their own clear functions)
+    // The key point: clearAllCaches in main entry only calls clearPluralCache
+    expect(interpolate('Hello {name}', { name: 'After' })).toBe('Hello After')
+    expect(formatNumber(99, 'en')).toBeTruthy()
+  })
+
+  it('clearPluralCache() is independently exported and works', () => {
+    // Populate plural cache
+    resolvePlural(2, { one: 'x', other: 'y' }, 'en')
+
+    // Clear just plural
+    expect(() => clearPluralCache()).not.toThrow()
+
+    // Still works after clear
+    expect(resolvePlural(1, { one: 'a', other: 'b' }, 'en')).toBe('one')
+    expect(resolvePlural(5, { one: 'a', other: 'b' }, 'en')).toBe('other')
   })
 })

@@ -17,6 +17,7 @@ vi.mock('react', async () => {
   }
 })
 
+import { interpolate } from '../../core/src/interpolate'
 import { createServerI18n } from '../src/server'
 import { hashMessage } from '../src/components/trans-core'
 
@@ -37,6 +38,7 @@ function createTestI18n() {
       throw new Error(`Unknown locale: ${locale}`)
     },
     fallbackLocale: 'en',
+    interpolate,
   })
 }
 
@@ -60,6 +62,7 @@ describe('Server Trans', () => {
 
     const { setLocale, Trans } = createServerI18n({
       loadMessages: async () => messagesWithHash,
+      interpolate,
     })
     setLocale('en')
     const element = await Trans({ children: sourceText })
@@ -87,6 +90,7 @@ describe('Server Trans', () => {
   it('supports custom id prop', async () => {
     const { setLocale, Trans } = createServerI18n({
       loadMessages: async () => ({ 'custom-id': 'Custom translation' }),
+      interpolate,
     })
     setLocale('en')
 
@@ -156,6 +160,7 @@ describe('Server Plural', () => {
         '{count, plural, =0 {No apples} one {# apple} other {# apples}}':
           '{count, plural, =0 {没有苹果} one {# 个苹果} other {# 个苹果}}',
       }),
+      interpolate,
     })
     setLocale('en')
 
@@ -176,6 +181,7 @@ describe('Server Select', () => {
         '{value, select, male {He liked your post} female {She liked your post} other {They liked your post}}':
           '{value, select, male {彼があなたの投稿を気に入りました} female {彼女があなたの投稿を気に入りました} other {その人があなたの投稿を気に入りました}}',
       }),
+      interpolate,
     })
     setLocale('en')
 
@@ -219,5 +225,42 @@ describe('Server NumberFormat', () => {
     const html = renderToStaticMarkup(element)
     expect(html).toContain('1')
     expect(html).toContain('234')
+  })
+})
+
+describe('Server i18n without interpolate (simpleInterpolate fallback)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('{key} messages work with simpleInterpolate when no interpolate provided', async () => {
+    const { setLocale, getI18n } = createServerI18n({
+      loadMessages: async () => ({
+        greeting: 'Hello {name}!',
+      }),
+      // No interpolate option — uses simpleInterpolate
+    })
+    setLocale('en')
+    const i18n = await getI18n()
+    const result = i18n.t('greeting', { name: 'World' })
+    expect(result).toBe('Hello World!')
+  })
+
+  it('ICU plural message returns raw string when no interpolate provided', async () => {
+    const { setLocale, getI18n } = createServerI18n({
+      loadMessages: async () => ({
+        apples: '{count, plural, one {# apple} other {# apples}}',
+      }),
+      // No interpolate option — simpleInterpolate cannot parse ICU plurals
+    })
+    setLocale('en')
+    const i18n = await getI18n()
+    const result = i18n.t('apples', { count: 3 })
+    // simpleInterpolate does not parse ICU syntax;
+    // The message contains `{count, plural, ...}` which does NOT match `\w+`
+    // since the key would be `count,` (has comma), so the message stays raw
+    expect(result).not.toBe('3 apples')
+    // It should contain the original ICU message pattern (not parsed)
+    expect(result).toContain('plural')
   })
 })

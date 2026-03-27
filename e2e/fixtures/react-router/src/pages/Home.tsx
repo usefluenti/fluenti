@@ -1,4 +1,5 @@
-import { t, msg, useI18n, DateTime, NumberFormat } from '@fluenti/react'
+import { t, msg, useI18n } from '@fluenti/react'
+import { DateTime, NumberFormat } from '@fluenti/react/components'
 
 const PAGE_ROLE = msg`Developer`
 

@@ -32,6 +32,10 @@ export interface FluentiConfig {
   numberFormats?: NumberFormatOptions
   /** Missing message handler */
   missing?: (locale: Locale, id: string) => string | undefined
+  /** Runtime diagnostics (pre-created instance or config) */
+  diagnostics?: unknown
+  /** Custom interpolation function for full ICU support at runtime */
+  interpolate?: (message: string, values: Record<string, unknown> | undefined, locale: string, formatters?: Record<string, unknown>) => string
 }
 
 /**
@@ -116,6 +120,8 @@ export function createFluenti(config: FluentiConfig): FluentiInstance {
     dateFormats,
     numberFormats,
     missing,
+    diagnostics,
+    interpolate,
   } = config
 
   const [currentLocale, setCurrentLocale] = useState(initialLocale)
@@ -142,8 +148,10 @@ export function createFluenti(config: FluentiConfig): FluentiInstance {
     if (dateFormats !== undefined) cfg.dateFormats = dateFormats
     if (numberFormats !== undefined) cfg.numberFormats = numberFormats
     if (missing !== undefined) cfg.missing = missing
+    if (diagnostics !== undefined) cfg.diagnostics = diagnostics as Parameters<typeof createFluentiCore>[0]['diagnostics']
+    if (interpolate !== undefined) cfg.interpolate = interpolate
     return createFluentiCore(cfg)
-  }, [currentLocale, loadedMessages, fallbackLocale, fallbackChain, dateFormats, numberFormats, missing])
+  }, [currentLocale, loadedMessages, fallbackLocale, fallbackChain, dateFormats, numberFormats, missing, diagnostics, interpolate])
 
   // Sync external locale changes
   useEffect(() => {

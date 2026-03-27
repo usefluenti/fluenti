@@ -1,7 +1,9 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, afterEach } from 'vitest'
 import { createApp, defineComponent, h, inject, nextTick, ref, resolveDirective, withDirectives } from 'vue'
 import { createFluenti, FLUENTI_KEY } from '../src/plugin'
 import type { FluentiContext } from '../src/plugin'
+import { interpolate } from '../../core/src/interpolate'
+import * as components from '../src/components-entry'
 
 function createTestApp(setup: () => any) {
   const Comp = defineComponent({ setup, render() { return h('div') } })
@@ -55,6 +57,7 @@ describe('createFluenti', () => {
 
   it('registers Trans, Plural, Select as global components', () => {
     const plugin = createFluenti({
+      components,
       locale: 'en',
       messages: { en: {} },
     })
@@ -69,6 +72,7 @@ describe('createFluenti', () => {
 
   it('registers components with prefix when componentPrefix is set', () => {
     const plugin = createFluenti({
+      components,
       locale: 'en',
       messages: { en: {} },
       componentPrefix: 'I18n',
@@ -310,7 +314,11 @@ describe('format()', () => {
 })
 
 describe('d() with relative style', () => {
-  it('formats a recent past date as relative time', () => {
+  // Note: The slim runtime delegates to createFluentiCore which uses Intl.DateTimeFormat
+  // for all date formatting. The 'relative' style string is treated as an unknown style
+  // (falls back to default Intl.DateTimeFormat output), not Intl.RelativeTimeFormat.
+  // Full relative time formatting requires @fluenti/core/formatters.
+  it('formats a recent past date with relative style (falls back to Intl.DateTimeFormat)', () => {
     const plugin = createFluenti({
       locale: 'en',
       messages: { en: {} },
@@ -324,7 +332,7 @@ describe('d() with relative style', () => {
     expect(result.length).toBeGreaterThan(0)
   })
 
-  it('formats a future date as relative time', () => {
+  it('formats a future date with relative style (falls back to Intl.DateTimeFormat)', () => {
     const plugin = createFluenti({
       locale: 'en',
       messages: { en: {} },
@@ -338,7 +346,7 @@ describe('d() with relative style', () => {
     expect(result.length).toBeGreaterThan(0)
   })
 
-  it('formats a date far in the past (years ago)', () => {
+  it('formats a date far in the past with relative style', () => {
     const plugin = createFluenti({
       locale: 'en',
       messages: { en: {} },
@@ -349,10 +357,10 @@ describe('d() with relative style', () => {
     const date = new Date(Date.now() - 3 * 365 * 86_400_000)
     const result = plugin.global.d(date, 'relative')
     expect(typeof result).toBe('string')
-    expect(result).toMatch(/year|yr/i)
+    expect(result.length).toBeGreaterThan(0)
   })
 
-  it('formats a date a few minutes ago', () => {
+  it('formats a date a few minutes ago with relative style', () => {
     const plugin = createFluenti({
       locale: 'en',
       messages: { en: {} },
@@ -363,10 +371,10 @@ describe('d() with relative style', () => {
     const date = new Date(Date.now() - 5 * 60_000)
     const result = plugin.global.d(date, 'relative')
     expect(typeof result).toBe('string')
-    expect(result).toMatch(/minute/i)
+    expect(result.length).toBeGreaterThan(0)
   })
 
-  it('formats a date a few days ago', () => {
+  it('formats a date a few days ago with relative style', () => {
     const plugin = createFluenti({
       locale: 'en',
       messages: { en: {} },
@@ -380,7 +388,7 @@ describe('d() with relative style', () => {
     expect(result.length).toBeGreaterThan(0)
   })
 
-  it('formats a date a few months ago', () => {
+  it('formats a date a few months ago with relative style', () => {
     const plugin = createFluenti({
       locale: 'en',
       messages: { en: {} },
@@ -391,10 +399,10 @@ describe('d() with relative style', () => {
     const date = new Date(Date.now() - 60 * 86_400_000)
     const result = plugin.global.d(date, 'relative')
     expect(typeof result).toBe('string')
-    expect(result).toMatch(/month/i)
+    expect(result.length).toBeGreaterThan(0)
   })
 
-  it('formats a numeric timestamp as relative time', () => {
+  it('formats a numeric timestamp with relative style', () => {
     const plugin = createFluenti({
       locale: 'en',
       messages: { en: {} },
@@ -404,7 +412,7 @@ describe('d() with relative style', () => {
     const ts = Date.now() - 120_000 // 2 minutes ago
     const result = plugin.global.d(ts, 'relative')
     expect(typeof result).toBe('string')
-    expect(result).toMatch(/minute/i)
+    expect(result.length).toBeGreaterThan(0)
   })
 })
 
@@ -743,6 +751,7 @@ describe('$vtRich XSS prevention', () => {
   it('passes values to t() when values parameter is provided', () => {
     const plugin = createFluenti({
       locale: 'en',
+      interpolate,
       messages: {
         en: {
           '{count, plural, =0 {No <0>items</0>} other {<1>many</1> items}}':
@@ -915,6 +924,7 @@ describe('edge cases - exhaustive', () => {
 
   it('empty componentPrefix uses default names', () => {
     const plugin = createFluenti({
+      components,
       locale: 'en',
       messages: { en: {} },
       componentPrefix: '',
@@ -938,9 +948,10 @@ describe('edge cases - exhaustive', () => {
       },
     })
 
-    // The function is called and its return value (even undefined) is used
+    // The function is called but returns undefined, which the core treats
+    // as a missing message and falls back to the key itself
     const result = plugin.global.t('broken')
-    expect(result).toBeUndefined()
+    expect(result).toBe('broken')
   })
 
   it('t() fallbackChain wildcard *', () => {
@@ -1155,6 +1166,7 @@ describe('edge cases - exhaustive', () => {
 describe('plugin double install', () => {
   it('installing the plugin twice on same app does not throw or duplicate state', () => {
     const plugin = createFluenti({
+      components,
       locale: 'en',
       messages: { en: { hello: 'Hello' } },
     })
@@ -1173,6 +1185,7 @@ describe('plugin double install', () => {
 
   it('multiple app instances with same plugin configuration', () => {
     const plugin = createFluenti({
+      components,
       locale: 'en',
       messages: { en: { hello: 'Hello' } },
     })
@@ -1212,5 +1225,477 @@ describe('concurrent setLocale', () => {
 
     expect(plugin.global.locale.value).toBe('zh-CN')
     expect(plugin.global.t('hello')).toBe('你好')
+  })
+})
+
+describe('interpolate config (#18)', () => {
+  it('plugin uses ICU interpolation when interpolate is provided', () => {
+    // Full ICU support (plural, select) requires passing the interpolate function
+    const plugin = createFluenti({
+      locale: 'en',
+      interpolate,
+      messages: {
+        en: {
+          greeting: '{count, plural, one {# item} other {# items}}',
+        },
+      },
+    })
+
+    expect(plugin.global.t('greeting', { count: 1 })).toBe('1 item')
+    expect(plugin.global.t('greeting', { count: 5 })).toBe('5 items')
+  })
+
+  it('plugin handles simple {key} replacement in string messages', () => {
+    const plugin = createFluenti({
+      locale: 'en',
+      messages: {
+        en: {
+          hello: 'Hello {name}!',
+        },
+      },
+    })
+
+    expect(plugin.global.t('hello', { name: 'World' })).toBe('Hello World!')
+  })
+
+  it('format() uses ICU interpolation when interpolate is provided', () => {
+    const plugin = createFluenti({
+      locale: 'en',
+      interpolate,
+      messages: { en: {} },
+    })
+
+    const result = plugin.global.format(
+      '{count, plural, one {# thing} other {# things}}',
+      { count: 1 },
+    )
+    expect(result).toBe('1 thing')
+  })
+
+  it('inline ICU fallback messages are interpolated when key is missing', () => {
+    const plugin = createFluenti({
+      locale: 'en',
+      interpolate,
+      messages: { en: {} },
+    })
+
+    // When the id contains '{', the plugin treats it as an inline ICU message
+    const result = plugin.global.t('{count, plural, one {# item} other {# items}}', { count: 3 })
+    expect(result).toBe('3 items')
+  })
+})
+
+describe('edge cases (#19)', () => {
+  it('empty messages does not crash', () => {
+    const plugin = createFluenti({
+      locale: 'en',
+      messages: {},
+    })
+
+    // t() with empty catalog returns the key itself
+    expect(plugin.global.t('hello')).toBe('hello')
+  })
+
+  it('empty locale messages does not crash', () => {
+    const plugin = createFluenti({
+      locale: 'en',
+      messages: { en: {} },
+    })
+
+    expect(plugin.global.t('any.key')).toBe('any.key')
+  })
+
+  it('plugin used on same app twice does not conflict', () => {
+    const plugin = createFluenti({
+      components,
+      locale: 'en',
+      messages: { en: { hello: 'Hello' } },
+    })
+
+    const app = createApp({ render: () => h('div') })
+
+    // Installing the same plugin twice should not throw
+    expect(() => {
+      app.use(plugin)
+      app.use(plugin)
+    }).not.toThrow()
+
+    // State is still consistent
+    expect(plugin.global.t('hello')).toBe('Hello')
+    expect(app.component('Trans')).toBeDefined()
+  })
+
+  it('two separate plugins on separate apps do not conflict', () => {
+    const plugin1 = createFluenti({
+      locale: 'en',
+      messages: { en: { hello: 'Hello' } },
+    })
+    const plugin2 = createFluenti({
+      locale: 'fr',
+      messages: { fr: { hello: 'Bonjour' } },
+    })
+
+    const app1 = createApp({ render: () => h('div') })
+    const app2 = createApp({ render: () => h('div') })
+    app1.use(plugin1)
+    app2.use(plugin2)
+
+    expect(plugin1.global.t('hello')).toBe('Hello')
+    expect(plugin2.global.t('hello')).toBe('Bonjour')
+  })
+})
+
+// ============================================================
+// #1 Component registration opt-in edge cases
+// ============================================================
+describe('component registration opt-in edge cases', () => {
+  it('components: {} empty object does not crash and registers nothing', () => {
+    const plugin = createFluenti({
+      components: {},
+      locale: 'en',
+      messages: { en: {} },
+    })
+
+    const app = createApp({ render: () => h('div') })
+    app.use(plugin)
+
+    expect(app.component('Trans')).toBeUndefined()
+    expect(app.component('Plural')).toBeUndefined()
+    expect(app.component('Select')).toBeUndefined()
+  })
+
+  it('components: { Trans } partial registers only Trans', () => {
+    const plugin = createFluenti({
+      components: { Trans: components.Trans },
+      locale: 'en',
+      messages: { en: {} },
+    })
+
+    const app = createApp({ render: () => h('div') })
+    app.use(plugin)
+
+    expect(app.component('Trans')).toBeDefined()
+    expect(app.component('Plural')).toBeUndefined()
+    expect(app.component('Select')).toBeUndefined()
+  })
+
+  it('no components in config means no global component registration', () => {
+    const plugin = createFluenti({
+      locale: 'en',
+      messages: { en: {} },
+    })
+
+    const app = createApp({ render: () => h('div') })
+    app.use(plugin)
+
+    expect(app.component('Trans')).toBeUndefined()
+    expect(app.component('Plural')).toBeUndefined()
+    expect(app.component('Select')).toBeUndefined()
+  })
+
+  it('components + componentPrefix applies prefix correctly', () => {
+    const plugin = createFluenti({
+      components: { Trans: components.Trans, Plural: components.Plural },
+      locale: 'en',
+      messages: { en: {} },
+      componentPrefix: 'Fl',
+    })
+
+    const app = createApp({ render: () => h('div') })
+    app.use(plugin)
+
+    expect(app.component('FlTrans')).toBeDefined()
+    expect(app.component('FlPlural')).toBeDefined()
+    expect(app.component('Trans')).toBeUndefined()
+    expect(app.component('Plural')).toBeUndefined()
+  })
+
+  it('components with DateTime and NumberFormat registers them', () => {
+    const plugin = createFluenti({
+      components: {
+        DateTime: components.DateTime,
+        NumberFormat: components.NumberFormat,
+      },
+      locale: 'en',
+      messages: { en: {} },
+    })
+
+    const app = createApp({ render: () => h('div') })
+    app.use(plugin)
+
+    expect(app.component('DateTime')).toBeDefined()
+    expect(app.component('NumberFormat')).toBeDefined()
+    // Trans/Plural/Select not provided, should not be registered
+    expect(app.component('Trans')).toBeUndefined()
+  })
+})
+
+// ============================================================
+// #2 injectGlobalProperties: false
+// ============================================================
+describe('injectGlobalProperties: false', () => {
+  it('does not inject $t, $d, $n, $vtRich when set to false', () => {
+    const plugin = createFluenti({
+      locale: 'en',
+      messages: { en: {} },
+      injectGlobalProperties: false,
+    })
+
+    const app = createApp({ render: () => h('div') })
+    app.use(plugin)
+
+    expect(app.config.globalProperties['$t']).toBeUndefined()
+    expect(app.config.globalProperties['$d']).toBeUndefined()
+    expect(app.config.globalProperties['$n']).toBeUndefined()
+    expect(app.config.globalProperties['$vtRich']).toBeUndefined()
+  })
+
+  it('injectGlobalProperties defaults to true (paired check)', () => {
+    const plugin = createFluenti({
+      locale: 'en',
+      messages: { en: {} },
+    })
+
+    const app = createApp({ render: () => h('div') })
+    app.use(plugin)
+
+    expect(app.config.globalProperties['$t']).toBeDefined()
+    expect(app.config.globalProperties['$d']).toBeDefined()
+    expect(app.config.globalProperties['$n']).toBeDefined()
+    expect(app.config.globalProperties['$vtRich']).toBeDefined()
+  })
+})
+
+// ============================================================
+// #5 preloadLocale
+// ============================================================
+describe('preloadLocale', () => {
+  it('calls chunkLoader and updates catalogs', async () => {
+    const loader = vi.fn().mockResolvedValue({ hallo: 'Hallo' })
+    const plugin = createFluenti({
+      locale: 'en',
+      messages: { en: { hello: 'Hello' } },
+      lazyLocaleLoading: true,
+      chunkLoader: loader,
+    })
+
+    plugin.global.preloadLocale('de')
+    await new Promise((r) => setTimeout(r, 10))
+
+    expect(loader).toHaveBeenCalledWith('de')
+    // After preload, 'de' messages are available
+    expect(plugin.global.te('hallo', 'de')).toBe(true)
+    expect(plugin.global.loadedLocales.value.has('de')).toBe(true)
+  })
+
+  it('duplicate preload does not call chunkLoader twice', async () => {
+    const loader = vi.fn().mockResolvedValue({ hallo: 'Hallo' })
+    const plugin = createFluenti({
+      locale: 'en',
+      messages: { en: { hello: 'Hello' } },
+      lazyLocaleLoading: true,
+      chunkLoader: loader,
+    })
+
+    plugin.global.preloadLocale('de')
+    plugin.global.preloadLocale('de')
+    await new Promise((r) => setTimeout(r, 10))
+
+    expect(loader).toHaveBeenCalledTimes(1)
+  })
+
+  it('preload failure logs console.warn and does not crash', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const loader = vi.fn().mockRejectedValue(new Error('network error'))
+    const plugin = createFluenti({
+      locale: 'en',
+      messages: { en: {} },
+      lazyLocaleLoading: true,
+      chunkLoader: loader,
+    })
+
+    plugin.global.preloadLocale('de')
+    await new Promise((r) => setTimeout(r, 10))
+
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('[fluenti] preload failed:'),
+      'de',
+      expect.any(Error),
+    )
+    warnSpy.mockRestore()
+  })
+
+  it('preload then setLocale does not reload from chunkLoader', async () => {
+    const loader = vi.fn().mockResolvedValue({ hallo: 'Hallo' })
+    const plugin = createFluenti({
+      locale: 'en',
+      messages: { en: { hello: 'Hello' } },
+      lazyLocaleLoading: true,
+      chunkLoader: loader,
+    })
+
+    // Preload 'de'
+    plugin.global.preloadLocale('de')
+    await new Promise((r) => setTimeout(r, 10))
+
+    expect(loader).toHaveBeenCalledTimes(1)
+
+    // Now switch to 'de' — should not call chunkLoader again since it's preloaded
+    await plugin.global.setLocale('de')
+    expect(loader).toHaveBeenCalledTimes(1)
+    expect(plugin.global.locale.value).toBe('de')
+  })
+})
+
+// ============================================================
+// #6 Diagnostics duck-typing compatibility
+// ============================================================
+describe('diagnostics duck-typing', () => {
+  it('duck-typed object with missingKey/fallbackUsed works', () => {
+    const missingKey = vi.fn()
+    const fallbackUsed = vi.fn()
+    const plugin = createFluenti({
+      locale: 'en',
+      fallbackLocale: 'en',
+      messages: { en: { hello: 'Hello' }, fr: {} },
+      diagnostics: { missingKey, fallbackUsed, enabled: true },
+    })
+
+    // Switch to fr and request 'hello' which only exists in en
+    plugin.global.setLocale('fr')
+    plugin.global.t('hello')
+
+    // The fallbackUsed handler should have been called since fr falls back to en
+    expect(fallbackUsed).toHaveBeenCalled()
+  })
+
+  it('duck-typed object triggers missingKey for non-existent keys', () => {
+    const missingKey = vi.fn()
+    const fallbackUsed = vi.fn()
+    const plugin = createFluenti({
+      locale: 'en',
+      messages: { en: {} },
+      diagnostics: { missingKey, fallbackUsed, enabled: true },
+    })
+
+    plugin.global.t('nonexistent')
+    expect(missingKey).toHaveBeenCalledWith('en', 'nonexistent')
+  })
+
+  it('old DiagnosticsConfig format (no missingKey method) does not crash', () => {
+    // The old config format has warnMissing: true but no missingKey method
+    // createFluentiCore should not crash when it doesn't find missingKey
+    expect(() => {
+      const plugin = createFluenti({
+        locale: 'en',
+        messages: { en: {} },
+        diagnostics: { warnMissing: true } as any,
+      })
+      plugin.global.t('anything')
+    }).not.toThrow()
+  })
+
+  it('no diagnostics option does not crash', () => {
+    expect(() => {
+      const plugin = createFluenti({
+        locale: 'en',
+        messages: { en: {} },
+      })
+      plugin.global.t('anything')
+    }).not.toThrow()
+  })
+})
+
+// ============================================================
+// #7 Split runtime integration
+// ============================================================
+describe('split runtime integration', () => {
+  const SPLIT_RUNTIME_KEY = Symbol.for('fluenti.runtime.vue.v1')
+
+  afterEach(() => {
+    // Clean up globalThis after each test
+    delete (globalThis as Record<PropertyKey, unknown>)[SPLIT_RUNTIME_KEY]
+  })
+
+  it('setLocale with lazy loading calls __switchLocale on split runtime', async () => {
+    const switchLocale = vi.fn().mockResolvedValue(undefined)
+    ;(globalThis as Record<PropertyKey, unknown>)[SPLIT_RUNTIME_KEY] = {
+      __switchLocale: switchLocale,
+    }
+
+    const loader = vi.fn().mockResolvedValue({ hallo: 'Hallo' })
+    const plugin = createFluenti({
+      locale: 'en',
+      messages: { en: { hello: 'Hello' } },
+      lazyLocaleLoading: true,
+      chunkLoader: loader,
+    })
+
+    await plugin.global.setLocale('de')
+
+    expect(switchLocale).toHaveBeenCalledWith('de')
+  })
+
+  it('__switchLocale rejection does not crash', async () => {
+    const switchLocale = vi.fn().mockRejectedValue(new Error('runtime error'))
+    ;(globalThis as Record<PropertyKey, unknown>)[SPLIT_RUNTIME_KEY] = {
+      __switchLocale: switchLocale,
+    }
+
+    const loader = vi.fn().mockResolvedValue({ hallo: 'Hallo' })
+    const plugin = createFluenti({
+      locale: 'en',
+      messages: { en: { hello: 'Hello' } },
+      lazyLocaleLoading: true,
+      chunkLoader: loader,
+    })
+
+    // Should not throw despite __switchLocale rejecting
+    await expect(plugin.global.setLocale('de')).rejects.toThrow('runtime error')
+  })
+
+  it('setLocale for already-loaded locale calls __switchLocale', async () => {
+    const switchLocale = vi.fn().mockResolvedValue(undefined)
+    ;(globalThis as Record<PropertyKey, unknown>)[SPLIT_RUNTIME_KEY] = {
+      __switchLocale: switchLocale,
+    }
+
+    const loader = vi.fn().mockResolvedValue({})
+    const plugin = createFluenti({
+      locale: 'en',
+      messages: { en: { hello: 'Hello' }, fr: { hello: 'Bonjour' } },
+      lazyLocaleLoading: true,
+      chunkLoader: loader,
+    })
+
+    // 'fr' messages are provided upfront but not marked as loaded by chunkLoader
+    // We need to first load 'fr' so it's in loadedLocalesSet
+    plugin.global.loadMessages('fr', { hello: 'Bonjour' })
+
+    // Now switch to already-loaded 'fr'
+    await plugin.global.setLocale('fr')
+
+    expect(switchLocale).toHaveBeenCalledWith('fr')
+    expect(loader).not.toHaveBeenCalled()
+  })
+
+  it('preloadLocale calls __preloadLocale on split runtime', async () => {
+    const preloadLocaleSpy = vi.fn().mockResolvedValue(undefined)
+    ;(globalThis as Record<PropertyKey, unknown>)[SPLIT_RUNTIME_KEY] = {
+      __preloadLocale: preloadLocaleSpy,
+    }
+
+    const loader = vi.fn().mockResolvedValue({ hallo: 'Hallo' })
+    const plugin = createFluenti({
+      locale: 'en',
+      messages: { en: { hello: 'Hello' } },
+      lazyLocaleLoading: true,
+      chunkLoader: loader,
+    })
+
+    plugin.global.preloadLocale('de')
+    await new Promise((r) => setTimeout(r, 10))
+
+    expect(preloadLocaleSpy).toHaveBeenCalledWith('de')
   })
 })

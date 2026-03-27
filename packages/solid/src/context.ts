@@ -1,7 +1,6 @@
 import { createSignal, type Accessor } from 'solid-js'
-import { createDiagnostics, formatDate, formatNumber } from '@fluenti/core'
-import type { FluentiCoreConfig, Locale, LocalizedString, Messages, CompiledMessage, MessageDescriptor, DateFormatOptions, NumberFormatOptions, DiagnosticsConfig } from '@fluenti/core'
-import { interpolate as coreInterpolate, buildICUMessage, resolveDescriptorId } from '@fluenti/core/internal'
+import { createFluentiCore } from '@fluenti/core'
+import type { FluentiCoreConfig, FluentiCoreConfigFull, Locale, LocalizedString, Messages, CompiledMessage, MessageDescriptor, DateFormatOptions, NumberFormatOptions, DiagnosticsConfig, CustomFormatter } from '@fluenti/core'
 
 /** Chunk loader for lazy locale loading */
 export type ChunkLoader = (
@@ -30,6 +29,37 @@ function resolveChunkMessages(
     : loaded
 }
 
+/** @internal Map locale → default currency code */
+const LOCALE_CURRENCY_MAP: Record<string, string> = {
+  'en': 'USD', 'en-US': 'USD', 'en-GB': 'GBP', 'en-AU': 'AUD', 'en-CA': 'CAD',
+  'zh-CN': 'CNY', 'zh-TW': 'TWD', 'zh-HK': 'HKD',
+  'ja': 'JPY', 'ja-JP': 'JPY',
+  'ko': 'KRW', 'ko-KR': 'KRW',
+  'de': 'EUR', 'de-DE': 'EUR', 'de-AT': 'EUR',
+  'fr': 'EUR', 'fr-FR': 'EUR', 'fr-CA': 'CAD',
+  'es': 'EUR', 'es-ES': 'EUR', 'es-MX': 'MXN',
+  'pt': 'EUR', 'pt-BR': 'BRL', 'pt-PT': 'EUR',
+  'it': 'EUR', 'ru': 'RUB', 'ar': 'SAR', 'hi': 'INR',
+}
+
+/** @internal Built-in date format styles (merged under user-provided dateFormats) */
+const DEFAULT_DATE_FORMATS: Record<string, Intl.DateTimeFormatOptions> = {
+  short: { year: 'numeric', month: 'numeric', day: 'numeric' },
+  long: { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' },
+  time: { hour: 'numeric', minute: 'numeric' },
+  datetime: { year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric' },
+}
+
+/** @internal Built-in number format styles (merged under user-provided numberFormats) */
+const DEFAULT_NUMBER_FORMATS: Record<string, Intl.NumberFormatOptions | ((locale: Locale) => Intl.NumberFormatOptions)> = {
+  currency: (locale: string) => ({
+    style: 'currency',
+    currency: LOCALE_CURRENCY_MAP[locale] ?? LOCALE_CURRENCY_MAP[locale.split('-')[0]!] ?? 'USD',
+  }),
+  percent: { style: 'percent' },
+  decimal: { minimumFractionDigits: 2, maximumFractionDigits: 2 },
+}
+
 /** Extended config with lazy locale loading support */
 export interface FluentiConfig extends FluentiCoreConfig {
   /** Async chunk loader for lazy locale loading */
@@ -44,6 +74,19 @@ export interface FluentiConfig extends FluentiCoreConfig {
   numberFormats?: NumberFormatOptions
   /** Runtime diagnostics configuration */
   diagnostics?: DiagnosticsConfig
+  /**
+   * Custom message interpolation function.
+   *
+   * By default, the runtime uses a lightweight `{key}` replacer.
+   * Pass the full `interpolate` from `@fluenti/core/internal` for
+   * runtime ICU MessageFormat support (plurals, selects, nested arguments).
+   */
+  interpolate?: (
+    message: string,
+    values: Record<string, unknown> | undefined,
+    locale: string,
+    formatters?: Record<string, CustomFormatter>,
+  ) => string
 }
 
 /** Reactive i18n context holding locale signal and translation utilities */
@@ -105,155 +148,35 @@ export function createFluentiContext(config: FluentiCoreConfig | FluentiConfig):
   const [loadedLocales, setLoadedLocales] = createSignal(new Set(loadedLocalesSet))
   const messages: Record<string, Messages> = { ...config.messages }
   const i18nConfig = config as FluentiConfig
-  const diagnostics = i18nConfig.diagnostics ? createDiagnostics(i18nConfig.diagnostics) : undefined
   const lazyLocaleLoading = i18nConfig.lazyLocaleLoading
     ?? (config as FluentiConfig & { splitting?: boolean }).splitting
     ?? false
 
-  function lookupCatalog(
-    id: string,
-    loc: Locale,
-    values?: Record<string, unknown>,
-  ): LocalizedString | undefined {
-    const catalog = messages[loc]
-    if (!catalog) {
-      return undefined
-    }
-
-    const msg = catalog[id]
-    if (msg === undefined) {
-      return undefined
-    }
-
-    if (typeof msg === 'function') {
-      return msg(values) as LocalizedString
-    }
-
-    if (typeof msg === 'string' && values) {
-      return coreInterpolate(msg, values, loc) as LocalizedString
-    }
-
-    return String(msg) as LocalizedString
-  }
-
-  function lookupWithFallbacks(
-    id: string,
-    loc: Locale,
-    values?: Record<string, unknown>,
-  ): LocalizedString | undefined {
-    const localesToTry: Locale[] = [loc]
-    const seen = new Set(localesToTry)
-
-    if (config.fallbackLocale && !seen.has(config.fallbackLocale)) {
-      localesToTry.push(config.fallbackLocale)
-      seen.add(config.fallbackLocale)
-    }
-
-    const chainLocales = i18nConfig.fallbackChain?.[loc] ?? i18nConfig.fallbackChain?.['*']
-    if (chainLocales) {
-      for (const chainLocale of chainLocales) {
-        if (!seen.has(chainLocale)) {
-          localesToTry.push(chainLocale)
-          seen.add(chainLocale)
-        }
-      }
-    }
-
-    for (const targetLocale of localesToTry) {
-      const result = lookupCatalog(id, targetLocale, values)
-      if (result !== undefined) {
-        if (targetLocale !== loc) {
-          diagnostics?.fallbackUsed(loc, targetLocale, id)
-        }
-        return result
-      }
-    }
-
-    return undefined
-  }
-
-  function resolveMissing(
-    id: string,
-    loc: Locale,
-  ): LocalizedString | undefined {
-    if (!config.missing) {
-      return undefined
-    }
-
-    try {
-      const result = config.missing(loc, id)
-      if (result !== undefined) {
-        return result as LocalizedString
-      }
-    } catch {
-      // Missing handler threw — fall through to next resolution path
-    }
-    return undefined
-  }
-
-  function resolveMessage(
-    id: string,
-    loc: Locale,
-    values?: Record<string, unknown>,
-  ): LocalizedString {
-    const catalogResult = lookupWithFallbacks(id, loc, values)
-    if (catalogResult !== undefined) {
-      return catalogResult
-    }
-
-    diagnostics?.missingKey(loc, id)
-
-    const missingResult = resolveMissing(id, loc)
-    if (missingResult !== undefined) {
-      return missingResult
-    }
-
-    if (id.includes('{')) {
-      return coreInterpolate(id, values, loc) as LocalizedString
-    }
-
-    return id as LocalizedString
-  }
+  // Create a core instance that handles all translation, lookup, fallback, and formatting logic.
+  // Merge built-in date/number format styles under user-provided overrides.
+  const i18n = createFluentiCore({
+    locale: config.locale,
+    messages: config.messages ?? {},
+    fallbackLocale: config.fallbackLocale,
+    fallbackChain: i18nConfig.fallbackChain,
+    dateFormats: { ...DEFAULT_DATE_FORMATS, ...i18nConfig.dateFormats },
+    numberFormats: { ...DEFAULT_NUMBER_FORMATS, ...i18nConfig.numberFormats },
+    missing: config.missing,
+    diagnostics: i18nConfig.diagnostics as FluentiCoreConfigFull['diagnostics'],
+    interpolate: i18nConfig.interpolate,
+  })
 
   function t(strings: TemplateStringsArray, ...exprs: unknown[]): LocalizedString
   function t(id: string | MessageDescriptor, values?: Record<string, unknown>): LocalizedString
   function t(idOrStrings: string | MessageDescriptor | TemplateStringsArray, ...rest: unknown[]): LocalizedString {
-    // Tagged template form: t`Hello ${name}`
-    if (Array.isArray(idOrStrings) && 'raw' in idOrStrings) {
-      const strings = idOrStrings as TemplateStringsArray
-      const icu = buildICUMessage(strings, rest)
-      const values = Object.fromEntries(rest.map((v, i) => [`arg${i}`, v]))
-      return resolveMessage(icu, locale(), values)
-    }
-
-    const id = idOrStrings as string | MessageDescriptor
-    const values = rest[0] as Record<string, unknown> | undefined
-    const currentLocale = locale() // reactive dependency
-    if (typeof id === 'object' && id !== null) {
-      const messageId = resolveDescriptorId(id)
-      if (messageId) {
-        const catalogResult = lookupWithFallbacks(messageId, currentLocale, values)
-        if (catalogResult !== undefined) {
-          return catalogResult
-        }
-
-        const missingResult = resolveMissing(messageId, currentLocale)
-        if (missingResult !== undefined) {
-          return missingResult
-        }
-      }
-
-      if (id.message !== undefined) {
-        return coreInterpolate(id.message, values, currentLocale) as LocalizedString
-      }
-
-      return (messageId ?? '') as LocalizedString
-    }
-
-    return resolveMessage(id, currentLocale, values)
+    const current = locale() // READ SIGNAL → reactive dependency for Solid re-renders
+    if (i18n.locale !== current) i18n.locale = current
+    return i18n.t(idOrStrings as string, ...rest) as LocalizedString
   }
 
   const loadMessages = (loc: Locale, msgs: Messages): void => {
+    i18n.loadMessages(loc, msgs)
+    // Keep local messages in sync for te/tm which check the local object
     // Intentional mutation: messages record is locally scoped to this context closure
     messages[loc] = { ...messages[loc], ...msgs }
     loadedLocalesSet.add(loc)
@@ -284,6 +207,7 @@ export function createFluentiContext(config: FluentiCoreConfig | FluentiConfig):
     try {
       const loaded = resolveChunkMessages(await i18nConfig.chunkLoader(newLocale))
       // Always store loaded messages — they may be needed if locale is switched back
+      i18n.loadMessages(newLocale, loaded)
       // Intentional mutation: messages record is locally scoped to this context closure
       messages[newLocale] = { ...messages[newLocale], ...loaded }
       loadedLocalesSet.add(newLocale)
@@ -311,6 +235,7 @@ export function createFluentiContext(config: FluentiCoreConfig | FluentiConfig):
     const splitRuntime = getSplitRuntimeModule()
     i18nConfig.chunkLoader(loc).then(async (loaded) => {
       const resolved = resolveChunkMessages(loaded)
+      i18n.loadMessages(loc, resolved)
       // Intentional mutation: messages record is locally scoped to this context closure
       messages[loc] = { ...messages[loc], ...resolved }
       loadedLocalesSet.add(loc)
@@ -325,16 +250,24 @@ export function createFluentiContext(config: FluentiCoreConfig | FluentiConfig):
     })
   }
 
-  const getLocales = (): Locale[] => Object.keys(messages)
+  const getLocales = (): Locale[] => i18n.getLocales()
 
-  const d = (value: Date | number, style?: string): LocalizedString =>
-    formatDate(value, locale(), style, i18nConfig.dateFormats) as LocalizedString
+  const d = (value: Date | number, style?: string): LocalizedString => {
+    const current = locale() // READ SIGNAL → reactive dependency
+    if (i18n.locale !== current) i18n.locale = current
+    return i18n.d(value, style) as LocalizedString
+  }
 
-  const n = (value: number, style?: string): LocalizedString =>
-    formatNumber(value, locale(), style, i18nConfig.numberFormats) as LocalizedString
+  const n = (value: number, style?: string): LocalizedString => {
+    const current = locale() // READ SIGNAL → reactive dependency
+    if (i18n.locale !== current) i18n.locale = current
+    return i18n.n(value, style) as LocalizedString
+  }
 
   const format = (message: string, values?: Record<string, unknown>): LocalizedString => {
-    return coreInterpolate(message, values, locale()) as LocalizedString
+    const current = locale() // READ SIGNAL → reactive dependency
+    if (i18n.locale !== current) i18n.locale = current
+    return i18n.format(message, values) as LocalizedString
   }
 
   const te = (key: string, loc?: string): boolean => {

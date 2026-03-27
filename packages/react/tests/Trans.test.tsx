@@ -1,6 +1,7 @@
 import { describe, it, expect, afterEach } from 'vitest'
 import { render, screen, cleanup } from '@testing-library/react'
-import { Trans, I18nProvider } from '../src'
+import { I18nProvider } from '../src'
+import { Trans } from '../src/components-entry'
 
 describe('Trans', () => {
   afterEach(cleanup)

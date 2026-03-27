@@ -1,7 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { t, Plural, Select } from '@fluenti/react'
+import { t } from '@fluenti/react'
+import { Plural, Select } from '@fluenti/react/components'
 
 export default function PluralsPage() {
   const [count, setCount] = useState(0)

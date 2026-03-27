@@ -1,12 +1,14 @@
 import { describe, it, expect, afterEach } from 'vitest'
 import { render, screen, cleanup } from '@testing-library/react'
-import { Plural, I18nProvider } from '../src'
+import { interpolate } from '../../core/src/interpolate'
+import { I18nProvider } from '../src'
+import { Plural } from '../src/components-entry'
 
 describe('Plural', () => {
   afterEach(cleanup)
   it('selects correct form based on value — zero', () => {
     render(
-      <I18nProvider locale="en" messages={{ en: {} }}>
+      <I18nProvider locale="en" messages={{ en: {} }} interpolate={interpolate}>
         <Plural value={0} zero="No messages" one="# message" other="# messages" />
       </I18nProvider>,
     )
@@ -15,7 +17,7 @@ describe('Plural', () => {
 
   it('selects correct form based on value — one', () => {
     render(
-      <I18nProvider locale="en" messages={{ en: {} }}>
+      <I18nProvider locale="en" messages={{ en: {} }} interpolate={interpolate}>
         <Plural value={1} zero="No messages" one="# message" other="# messages" />
       </I18nProvider>,
     )
@@ -25,7 +27,7 @@ describe('Plural', () => {
 
   it('selects correct form based on value — other', () => {
     render(
-      <I18nProvider locale="en" messages={{ en: {} }}>
+      <I18nProvider locale="en" messages={{ en: {} }} interpolate={interpolate}>
         <Plural value={5} zero="No messages" one="# message" other="# messages" />
       </I18nProvider>,
     )
@@ -34,7 +36,7 @@ describe('Plural', () => {
 
   it('falls back to other for missing forms', () => {
     render(
-      <I18nProvider locale="en" messages={{ en: {} }}>
+      <I18nProvider locale="en" messages={{ en: {} }} interpolate={interpolate}>
         <Plural value={1} other="# items" />
       </I18nProvider>,
     )
@@ -44,7 +46,7 @@ describe('Plural', () => {
 
   it('handles offset prop', () => {
     render(
-      <I18nProvider locale="en" messages={{ en: {} }}>
+      <I18nProvider locale="en" messages={{ en: {} }} interpolate={interpolate}>
         <Plural value={3} offset={1} one="# other person" other="# other people" />
       </I18nProvider>,
     )
@@ -69,6 +71,7 @@ describe('Plural', () => {
               '{count, plural, =0 {りんごなし} one {りんご # 個} other {りんご # 個}}',
           },
         }}
+        interpolate={interpolate}
       >
         <Plural value={5} zero="No apples" one="# apple" other="# apples" />
       </I18nProvider>,
@@ -80,7 +83,7 @@ describe('Plural', () => {
   it('negative value does not crash and selects a plural form', () => {
     // CLDR treats abs(-1) as "one" for English, so -1 maps to the "one" form
     render(
-      <I18nProvider locale="en" messages={{ en: {} }}>
+      <I18nProvider locale="en" messages={{ en: {} }} interpolate={interpolate}>
         <Plural value={-1} zero="No items" one="# item" other="# items" />
       </I18nProvider>,
     )
@@ -89,7 +92,7 @@ describe('Plural', () => {
 
   it('fractional value uses "other" form', () => {
     render(
-      <I18nProvider locale="en" messages={{ en: {} }}>
+      <I18nProvider locale="en" messages={{ en: {} }} interpolate={interpolate}>
         <Plural value={0.5} zero="No items" one="# item" other="# items" />
       </I18nProvider>,
     )
@@ -98,7 +101,7 @@ describe('Plural', () => {
 
   it('NaN value does not crash', () => {
     const { container } = render(
-      <I18nProvider locale="en" messages={{ en: {} }}>
+      <I18nProvider locale="en" messages={{ en: {} }} interpolate={interpolate}>
         <Plural value={NaN} zero="No items" one="# item" other="# items" />
       </I18nProvider>,
     )
@@ -107,7 +110,7 @@ describe('Plural', () => {
 
   it('Infinity value does not crash', () => {
     const { container } = render(
-      <I18nProvider locale="en" messages={{ en: {} }}>
+      <I18nProvider locale="en" messages={{ en: {} }} interpolate={interpolate}>
         <Plural value={Infinity} zero="No items" one="# item" other="# items" />
       </I18nProvider>,
     )
@@ -116,21 +119,21 @@ describe('Plural', () => {
 
   it('only "other" prop works for all counts', () => {
     const { rerender } = render(
-      <I18nProvider locale="en" messages={{ en: {} }}>
+      <I18nProvider locale="en" messages={{ en: {} }} interpolate={interpolate}>
         <Plural value={0} other="# items" />
       </I18nProvider>,
     )
     expect(screen.getByText('0 items')).toBeDefined()
 
     rerender(
-      <I18nProvider locale="en" messages={{ en: {} }}>
+      <I18nProvider locale="en" messages={{ en: {} }} interpolate={interpolate}>
         <Plural value={1} other="# items" />
       </I18nProvider>,
     )
     expect(screen.getByText('1 items')).toBeDefined()
 
     rerender(
-      <I18nProvider locale="en" messages={{ en: {} }}>
+      <I18nProvider locale="en" messages={{ en: {} }} interpolate={interpolate}>
         <Plural value={42} other="# items" />
       </I18nProvider>,
     )

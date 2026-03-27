@@ -53,50 +53,57 @@ describe('DateTime', () => {
     expect(wrapper.text()).toBe(expected)
   })
 
-  it('formats with the built-in "long" style', () => {
+  it('formats with a "long" style when provided via dateFormats', () => {
+    const dateFormats = {
+      long: { year: 'numeric' as const, month: 'long' as const, day: 'numeric' as const, weekday: 'long' as const },
+    }
     const Comp = defineComponent({
       setup() {
         return () => h(DateTime, { value: fixedDate, format: 'long' })
       },
     })
-    const wrapper = mountWithPlugin(Comp)
-    const expected = new Intl.DateTimeFormat('en', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      weekday: 'long',
-    }).format(fixedDate)
+    const wrapper = mountWithPlugin(Comp, {
+      locale: 'en',
+      messages: { en: {} },
+      dateFormats,
+    })
+    const expected = new Intl.DateTimeFormat('en', dateFormats.long).format(fixedDate)
     expect(wrapper.text()).toBe(expected)
   })
 
-  it('formats with the built-in "time" style', () => {
+  it('formats with a "time" style when provided via dateFormats', () => {
+    const dateFormats = {
+      time: { hour: 'numeric' as const, minute: 'numeric' as const },
+    }
     const Comp = defineComponent({
       setup() {
         return () => h(DateTime, { value: fixedDate, format: 'time' })
       },
     })
-    const wrapper = mountWithPlugin(Comp)
-    const expected = new Intl.DateTimeFormat('en', {
-      hour: 'numeric',
-      minute: 'numeric',
-    }).format(fixedDate)
+    const wrapper = mountWithPlugin(Comp, {
+      locale: 'en',
+      messages: { en: {} },
+      dateFormats,
+    })
+    const expected = new Intl.DateTimeFormat('en', dateFormats.time).format(fixedDate)
     expect(wrapper.text()).toBe(expected)
   })
 
-  it('formats with the built-in "datetime" style', () => {
+  it('formats with a "datetime" style when provided via dateFormats', () => {
+    const dateFormats = {
+      datetime: { year: 'numeric' as const, month: 'short' as const, day: 'numeric' as const, hour: 'numeric' as const, minute: 'numeric' as const },
+    }
     const Comp = defineComponent({
       setup() {
         return () => h(DateTime, { value: fixedDate, format: 'datetime' })
       },
     })
-    const wrapper = mountWithPlugin(Comp)
-    const expected = new Intl.DateTimeFormat('en', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: 'numeric',
-      minute: 'numeric',
-    }).format(fixedDate)
+    const wrapper = mountWithPlugin(Comp, {
+      locale: 'en',
+      messages: { en: {} },
+      dateFormats,
+    })
+    const expected = new Intl.DateTimeFormat('en', dateFormats.datetime).format(fixedDate)
     expect(wrapper.text()).toBe(expected)
   })
 

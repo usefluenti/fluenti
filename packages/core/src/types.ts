@@ -346,8 +346,34 @@ export interface FluentiCoreConfigFull extends FluentiCoreConfig {
    * `FLUENTI_DEBUG` environment variable.
    */
   devWarnings?: boolean
-  /** Runtime diagnostics configuration */
-  diagnostics?: DiagnosticsConfig
+  /**
+   * Runtime diagnostics instance OR configuration.
+   *
+   * Pass a pre-created `Diagnostics` instance (from `createDiagnostics()`)
+   * or a `DiagnosticsConfig` object. When a config is passed, the core
+   * creates the instance internally (pulls in the diagnostics module).
+   * Pass a pre-created instance to keep the diagnostics module out of your bundle.
+   */
+  diagnostics?: DiagnosticsConfig | import('./diagnostics').Diagnostics
+  /**
+   * Custom message interpolation function.
+   *
+   * By default, the runtime uses a lightweight `{key}` replacer.
+   * Pass the full `interpolate` from `@fluenti/core/internal` for
+   * runtime ICU MessageFormat parsing (adds ~2.5 KB gzip).
+   *
+   * @example
+   * ```ts
+   * import { interpolate } from '@fluenti/core/internal'
+   * createFluentiCore({ interpolate, ... })
+   * ```
+   */
+  interpolate?: (
+    message: string,
+    values: Record<string, unknown> | undefined,
+    locale: string,
+    formatters?: Record<string, CustomFormatter>,
+  ) => string
 }
 
 // ---- Extended FluentiCoreInstance ----

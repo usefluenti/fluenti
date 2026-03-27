@@ -1,4 +1,5 @@
-import { t, Trans, Plural, Select, DateTime, NumberFormat } from '@fluenti/react'
+import { t } from '@fluenti/react'
+import { Trans, Plural, Select, DateTime, NumberFormat } from '@fluenti/react/components'
 
 export default async function Page({ name }: { name: string }) {
   return (

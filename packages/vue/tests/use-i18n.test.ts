@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { defineComponent, h, nextTick } from 'vue'
 import { createFluenti } from '../src/plugin'
 import { useI18n } from '../src/use-i18n'
@@ -222,5 +222,126 @@ describe('useI18n', () => {
       // The useI18n() result should be the same object as plugin.global
       expect(ctx).toBe(plugin.global)
     })
+  })
+})
+
+// ============================================================
+// #3 loadMessages dual sync verification
+// ============================================================
+describe('loadMessages dual sync', () => {
+  it('after loadMessages, getLocales includes the new locale (core sync)', () => {
+    const plugin = createFluenti({
+      locale: 'en',
+      messages: { en: { hello: 'Hello' } },
+    })
+
+    plugin.global.loadMessages('de', { hallo: 'Hallo' })
+    expect(plugin.global.getLocales()).toContain('de')
+  })
+
+  it('after loadMessages, te returns true for loaded keys (local sync)', () => {
+    const plugin = createFluenti({
+      locale: 'en',
+      messages: { en: { hello: 'Hello' } },
+    })
+
+    plugin.global.loadMessages('de', { hallo: 'Hallo' })
+    expect(plugin.global.te('hallo', 'de')).toBe(true)
+    expect(plugin.global.te('nonexistent', 'de')).toBe(false)
+  })
+})
+
+// ============================================================
+// #4 setLocale with core sync
+// ============================================================
+describe('setLocale with core sync', () => {
+  it('non-lazy setLocale updates locale correctly in t() output', () => {
+    const plugin = createFluenti({
+      locale: 'en',
+      messages: {
+        en: { hello: 'Hello' },
+        fr: { hello: 'Bonjour' },
+      },
+    })
+
+    expect(plugin.global.t('hello')).toBe('Hello')
+
+    plugin.global.setLocale('fr')
+    expect(plugin.global.t('hello')).toBe('Bonjour')
+    expect(plugin.global.locale.value).toBe('fr')
+  })
+
+  it('setLocale during render produces correct output', async () => {
+    const plugin = createFluenti({
+      locale: 'en',
+      messages: {
+        en: { hello: 'Hello' },
+        ja: { hello: 'こんにちは' },
+      },
+    })
+
+    const Comp = defineComponent({
+      setup() {
+        const { t } = useI18n()
+        return () => h('div', t('hello'))
+      },
+    })
+
+    const wrapper = mount(Comp, {
+      global: { plugins: [plugin] },
+    })
+
+    expect(wrapper.text()).toBe('Hello')
+
+    plugin.global.setLocale('ja')
+    await nextTick()
+
+    expect(wrapper.text()).toBe('こんにちは')
+  })
+
+  it('stale request handling — rapid switches show only final locale translations', async () => {
+    let resolvers: Array<(v: Record<string, string>) => void> = []
+
+    const loader = vi.fn().mockImplementation(() => {
+      return new Promise<Record<string, string>>((resolve) => {
+        resolvers.push(resolve)
+      })
+    })
+
+    const plugin = createFluenti({
+      locale: 'en',
+      messages: { en: { hello: 'Hello' } },
+      lazyLocaleLoading: true,
+      chunkLoader: loader,
+    })
+
+    const Comp = defineComponent({
+      setup() {
+        const { t } = useI18n()
+        return () => h('div', t('hello'))
+      },
+    })
+
+    const wrapper = mount(Comp, {
+      global: { plugins: [plugin] },
+    })
+
+    // Rapid-fire locale switches
+    const p1 = plugin.global.setLocale('ja')
+    const p2 = plugin.global.setLocale('fr')
+
+    // Resolve 'ja' first (stale request)
+    resolvers[0]!({ hello: 'こんにちは' })
+    await Promise.resolve()
+
+    // Resolve 'fr' (current request)
+    resolvers[1]!({ hello: 'Bonjour' })
+    await p1
+    await p2
+    await nextTick()
+
+    // Only the final locale ('fr') should be active
+    expect(plugin.global.locale.value).toBe('fr')
+    expect(wrapper.text()).toBe('Bonjour')
   })
 })

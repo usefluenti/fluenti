@@ -4,6 +4,8 @@ export default createPackageConfig({
   entry: {
     index: 'src/index.ts',
     internal: 'src/internal.ts',
+    'ssr-entry': 'src/ssr-entry.ts',
+    'formatters-entry': 'src/formatters-entry.ts',
     transform: 'src/transform.ts',
     'transform-browser': 'src/transform-browser.ts',
     config: 'src/config.ts',

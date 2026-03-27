@@ -1,8 +1,9 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render } from '@solidjs/testing-library'
-import { I18nProvider, useI18n, Plural } from '../src'
-
-import { Trans } from '../src'
+import { interpolate } from '@fluenti/core/internal'
+import { I18nProvider, useI18n } from '../src'
+import { Trans } from '../src/trans'
+import { Plural } from '../src/plural'
 
 const messages = {
   en: {
@@ -90,7 +91,7 @@ describe('integration', () => {
     }
 
     const { container } = render(() => (
-      <I18nProvider locale="en" messages={messages}>
+      <I18nProvider locale="en" messages={messages} interpolate={interpolate}>
         <App />
       </I18nProvider>
     ))

@@ -25,6 +25,10 @@
       "import": { "types": "./dist/index.d.ts", "default": "./dist/index.js" },
       "require": { "types": "./dist/index.d.ts", "default": "./dist/index.cjs" }
     },
+    "./components": {
+      "import": { "types": "./dist/components-entry.d.ts", "default": "./dist/components-entry.js" },
+      "require": { "types": "./dist/components-entry.d.ts", "default": "./dist/components-entry.cjs" }
+    },
     "./server": {
       "import": { "types": "./dist/server.d.ts", "default": "./dist/server.js" },
       "require": { "types": "./dist/server.d.ts", "default": "./dist/server.cjs" }

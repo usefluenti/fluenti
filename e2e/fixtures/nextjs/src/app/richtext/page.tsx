@@ -1,6 +1,7 @@
 'use client'
 
-import { useI18n, Trans, msg } from '@fluenti/react'
+import { useI18n, msg } from '@fluenti/react'
+import { Trans } from '@fluenti/react/components'
 
 // Lazy message descriptors defined outside the component tree —
 // this is the pattern Lingui users rely on with defineMessage/msg

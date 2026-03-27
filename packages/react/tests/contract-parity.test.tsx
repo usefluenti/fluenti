@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { cleanup, render } from '@testing-library/react'
 import type { ReactNode } from 'react'
+import { interpolate } from '../../core/src/interpolate'
 import {
   contractLocale,
   contractMessageIds,
@@ -9,13 +10,14 @@ import {
   selectContract,
   transContract,
 } from '../../core/tests/fixtures/cross-framework-contract'
-import { I18nProvider, Plural, Select, Trans } from '../src'
+import { I18nProvider } from '../src'
+import { Plural, Select, Trans } from '../src/components-entry'
 
 afterEach(cleanup)
 
 function renderWithI18n(node: ReactNode) {
   return render(
-    <I18nProvider locale={contractLocale} messages={contractMessages}>
+    <I18nProvider locale={contractLocale} messages={contractMessages} interpolate={interpolate}>
       {node}
     </I18nProvider>,
   )
