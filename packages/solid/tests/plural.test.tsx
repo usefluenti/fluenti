@@ -1,13 +1,14 @@
 import { describe, it, expect } from 'vitest'
 import { createSignal } from 'solid-js'
 import { render } from '@solidjs/testing-library'
+import { interpolate } from '@fluenti/core/internal'
 import { I18nProvider } from '../src'
 import { Plural } from '../src/plural'
 
 describe('Plural component', () => {
   it('selects "other" by default', () => {
     const { container } = render(() => (
-      <I18nProvider locale="en" messages={{ en: {} }}>
+      <I18nProvider locale="en" messages={{ en: {} }} interpolate={interpolate}>
         <Plural value={5} other="# items" />
       </I18nProvider>
     ))
@@ -17,7 +18,7 @@ describe('Plural component', () => {
 
   it('selects "one" for singular values', () => {
     const { container } = render(() => (
-      <I18nProvider locale="en" messages={{ en: {} }}>
+      <I18nProvider locale="en" messages={{ en: {} }} interpolate={interpolate}>
         <Plural value={1} one="# item" other="# items" />
       </I18nProvider>
     ))
@@ -27,7 +28,7 @@ describe('Plural component', () => {
 
   it('selects "zero" when provided and value is 0', () => {
     const { container } = render(() => (
-      <I18nProvider locale="en" messages={{ en: {} }}>
+      <I18nProvider locale="en" messages={{ en: {} }} interpolate={interpolate}>
         <Plural value={0} zero="no items" one="# item" other="# items" />
       </I18nProvider>
     ))
@@ -38,7 +39,7 @@ describe('Plural component', () => {
 
   it('replaces # with value in selected message', () => {
     const { container } = render(() => (
-      <I18nProvider locale="en" messages={{ en: {} }}>
+      <I18nProvider locale="en" messages={{ en: {} }} interpolate={interpolate}>
         <Plural value={42} other="There are # things" />
       </I18nProvider>
     ))
@@ -48,7 +49,7 @@ describe('Plural component', () => {
 
   it('replaces multiple # tokens', () => {
     const { container } = render(() => (
-      <I18nProvider locale="en" messages={{ en: {} }}>
+      <I18nProvider locale="en" messages={{ en: {} }} interpolate={interpolate}>
         <Plural value={3} other="# out of # total" />
       </I18nProvider>
     ))
@@ -60,7 +61,7 @@ describe('Plural component', () => {
     const [count, setCount] = createSignal(1)
 
     const { container } = render(() => (
-      <I18nProvider locale="en" messages={{ en: {} }}>
+      <I18nProvider locale="en" messages={{ en: {} }} interpolate={interpolate}>
         <Plural value={count()} one="# item" other="# items" />
       </I18nProvider>
     ))
@@ -75,7 +76,7 @@ describe('Plural component', () => {
 
   it('falls back to other when category prop is missing', () => {
     const { container } = render(() => (
-      <I18nProvider locale="en" messages={{ en: {} }}>
+      <I18nProvider locale="en" messages={{ en: {} }} interpolate={interpolate}>
         <Plural value={1} other="# things" />
       </I18nProvider>
     ))
@@ -88,7 +89,7 @@ describe('Plural component', () => {
 
   it('renders without wrapper by default (Fragment)', () => {
     const { container } = render(() => (
-      <I18nProvider locale="en" messages={{ en: {} }}>
+      <I18nProvider locale="en" messages={{ en: {} }} interpolate={interpolate}>
         <Plural value={5} other="# items" />
       </I18nProvider>
     ))
@@ -100,7 +101,7 @@ describe('Plural component', () => {
 
   it('wraps output in custom tag', () => {
     const { container } = render(() => (
-      <I18nProvider locale="en" messages={{ en: {} }}>
+      <I18nProvider locale="en" messages={{ en: {} }} interpolate={interpolate}>
         <Plural value={5} other="# items" tag="p" />
       </I18nProvider>
     ))
@@ -139,7 +140,7 @@ describe('Plural component', () => {
 
   it('builds correct ICU message with all categories', () => {
     const { container } = render(() => (
-      <I18nProvider locale="en" messages={{ en: {} }}>
+      <I18nProvider locale="en" messages={{ en: {} }} interpolate={interpolate}>
         <Plural
           value={0}
           zero="No items"
@@ -158,7 +159,7 @@ describe('Plural component', () => {
 
   it('builds ICU message with only other category', () => {
     const { container } = render(() => (
-      <I18nProvider locale="en" messages={{ en: {} }}>
+      <I18nProvider locale="en" messages={{ en: {} }} interpolate={interpolate}>
         <Plural value={7} other="# things" />
       </I18nProvider>
     ))
@@ -171,7 +172,7 @@ describe('Plural component', () => {
   describe('JSX element props (rich text)', () => {
     it('renders JSX element prop for matching category (zero)', () => {
       const { container } = render(() => (
-        <I18nProvider locale="en" messages={{ en: {} }}>
+        <I18nProvider locale="en" messages={{ en: {} }} interpolate={interpolate}>
           <Plural
             value={0}
             zero={<>No <strong>items</strong> left</>}
@@ -187,7 +188,7 @@ describe('Plural component', () => {
 
     it('renders JSX element prop for matching category (one)', () => {
       const { container } = render(() => (
-        <I18nProvider locale="en" messages={{ en: {} }}>
+        <I18nProvider locale="en" messages={{ en: {} }} interpolate={interpolate}>
           <Plural
             value={1}
             one={<><em>1</em> item remaining</>}
@@ -202,7 +203,7 @@ describe('Plural component', () => {
 
     it('renders JSX element prop for other category', () => {
       const { container } = render(() => (
-        <I18nProvider locale="en" messages={{ en: {} }}>
+        <I18nProvider locale="en" messages={{ en: {} }} interpolate={interpolate}>
           <Plural
             value={5}
             one={<><em>1</em> item</>}
@@ -216,7 +217,7 @@ describe('Plural component', () => {
 
     it('falls back to other when category prop is missing', () => {
       const { container } = render(() => (
-        <I18nProvider locale="en" messages={{ en: {} }}>
+        <I18nProvider locale="en" messages={{ en: {} }} interpolate={interpolate}>
           <Plural
             value={1}
             other={<><strong>fallback</strong></>}
@@ -231,7 +232,7 @@ describe('Plural component', () => {
       const [count, setCount] = createSignal(0)
 
       const { container } = render(() => (
-        <I18nProvider locale="en" messages={{ en: {} }}>
+        <I18nProvider locale="en" messages={{ en: {} }} interpolate={interpolate}>
           <Plural
             value={count()}
             zero={<>No <strong>items</strong></>}
@@ -254,7 +255,7 @@ describe('Plural component', () => {
 
     it('mixed string + JSX triggers rich mode', () => {
       const { container } = render(() => (
-        <I18nProvider locale="en" messages={{ en: {} }}>
+        <I18nProvider locale="en" messages={{ en: {} }} interpolate={interpolate}>
           <Plural
             value={0}
             zero={<><strong>None</strong></>}
@@ -269,7 +270,7 @@ describe('Plural component', () => {
 
     it('all existing string-prop tests still pass', () => {
       const { container } = render(() => (
-        <I18nProvider locale="en" messages={{ en: {} }}>
+        <I18nProvider locale="en" messages={{ en: {} }} interpolate={interpolate}>
           <Plural value={5} one="# item" other="# items" />
         </I18nProvider>
       ))
@@ -282,7 +283,7 @@ describe('Plural component', () => {
 
   it('handles negative values', () => {
     const { container } = render(() => (
-      <I18nProvider locale="en" messages={{ en: {} }}>
+      <I18nProvider locale="en" messages={{ en: {} }} interpolate={interpolate}>
         <Plural value={-3} one="# item" other="# items" />
       </I18nProvider>
     ))
@@ -292,7 +293,7 @@ describe('Plural component', () => {
 
   it('handles NaN value gracefully', () => {
     const { container } = render(() => (
-      <I18nProvider locale="en" messages={{ en: {} }}>
+      <I18nProvider locale="en" messages={{ en: {} }} interpolate={interpolate}>
         <Plural value={NaN} one="# item" other="# items" />
       </I18nProvider>
     ))
@@ -304,28 +305,28 @@ describe('Plural component', () => {
   it('handles Arabic locale with all 6 plural categories', () => {
     // Arabic has: zero (0), one (1), two (2), few (3-10), many (11-99), other (100+)
     const { container: c0 } = render(() => (
-      <I18nProvider locale="ar" messages={{ ar: {} }}>
+      <I18nProvider locale="ar" messages={{ ar: {} }} interpolate={interpolate}>
         <Plural value={0} zero="٠ عناصر" one="عنصر واحد" two="عنصران" few="# عناصر قليلة" many="# عنصراً" other="# عنصر" />
       </I18nProvider>
     ))
     expect(c0.textContent).toBe('٠ عناصر')
 
     const { container: c2 } = render(() => (
-      <I18nProvider locale="ar" messages={{ ar: {} }}>
+      <I18nProvider locale="ar" messages={{ ar: {} }} interpolate={interpolate}>
         <Plural value={2} zero="٠ عناصر" one="عنصر واحد" two="عنصران" few="# عناصر قليلة" many="# عنصراً" other="# عنصر" />
       </I18nProvider>
     ))
     expect(c2.textContent).toBe('عنصران')
 
     const { container: c5 } = render(() => (
-      <I18nProvider locale="ar" messages={{ ar: {} }}>
+      <I18nProvider locale="ar" messages={{ ar: {} }} interpolate={interpolate}>
         <Plural value={5} zero="٠ عناصر" one="عنصر واحد" two="عنصران" few="# عناصر قليلة" many="# عنصراً" other="# عنصر" />
       </I18nProvider>
     ))
     expect(c5.textContent).toBe('5 عناصر قليلة')
 
     const { container: c50 } = render(() => (
-      <I18nProvider locale="ar" messages={{ ar: {} }}>
+      <I18nProvider locale="ar" messages={{ ar: {} }} interpolate={interpolate}>
         <Plural value={50} zero="٠ عناصر" one="عنصر واحد" two="عنصران" few="# عناصر قليلة" many="# عنصراً" other="# عنصر" />
       </I18nProvider>
     ))
@@ -336,7 +337,7 @@ describe('Plural component', () => {
     // English ordinal: 1st, 2nd, 3rd, 4th...
     // The Plural component uses cardinal by default (Intl.PluralRules)
     const { container } = render(() => (
-      <I18nProvider locale="en" messages={{ en: {} }}>
+      <I18nProvider locale="en" messages={{ en: {} }} interpolate={interpolate}>
         <Plural value={1} one="1st place" other="# place" />
       </I18nProvider>
     ))

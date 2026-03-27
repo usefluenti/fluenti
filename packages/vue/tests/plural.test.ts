@@ -3,10 +3,12 @@ import { nextTick } from 'vue'
 import { mount } from '@vue/test-utils'
 import { createFluenti } from '../src/plugin'
 import { Plural } from '../src/components/Plural'
+import { interpolate } from '../../core/src/interpolate'
 
 function createPlugin() {
   return createFluenti({
     locale: 'en',
+    interpolate,
     messages: { en: {} },
   })
 }
@@ -92,6 +94,7 @@ describe('Plural component', () => {
 
   it('reacts to locale changes', async () => {
     const plugin = createFluenti({
+      interpolate,
       locale: 'en',
       messages: { en: {}, ar: {} },
     })
@@ -124,6 +127,7 @@ describe('Plural component', () => {
   it('renders "two" category when value is 2 and two prop is set', () => {
     // Use Arabic locale where 2 maps to "two" plural category
     const plugin = createFluenti({
+      interpolate,
       locale: 'ar',
       messages: { ar: {} },
     })
@@ -158,6 +162,7 @@ describe('Plural component', () => {
   it('renders "few" category for matching locale', () => {
     // Polish uses "few" for values like 3
     const plugin = createFluenti({
+      interpolate,
       locale: 'pl',
       messages: { pl: {} },
     })
@@ -172,6 +177,7 @@ describe('Plural component', () => {
   it('renders "many" category for matching locale', () => {
     // Polish uses "many" for values like 5
     const plugin = createFluenti({
+      interpolate,
       locale: 'pl',
       messages: { pl: {} },
     })
@@ -188,6 +194,7 @@ describe('Plural component', () => {
   describe('catalog-based auto-translation', () => {
     it('translates plural forms via t() when catalog has the ICU message', () => {
       const plugin = createFluenti({
+        interpolate,
         locale: 'ja',
         messages: {
           ja: {
@@ -207,6 +214,7 @@ describe('Plural component', () => {
 
     it('translates zero form via catalog', () => {
       const plugin = createFluenti({
+        interpolate,
         locale: 'zh-CN',
         messages: {
           'zh-CN': {
@@ -226,6 +234,7 @@ describe('Plural component', () => {
 
     it('translates one form via catalog', () => {
       const plugin = createFluenti({
+        interpolate,
         locale: 'ja',
         messages: {
           ja: {
@@ -245,6 +254,7 @@ describe('Plural component', () => {
 
     it('falls back to local resolution when catalog has no entry', () => {
       const plugin = createFluenti({
+        interpolate,
         locale: 'fr',
         messages: { fr: {} },
       })
@@ -260,6 +270,7 @@ describe('Plural component', () => {
 
     it('reacts to locale changes with catalog translation', async () => {
       const plugin = createFluenti({
+        interpolate,
         locale: 'en',
         messages: {
           en: {
@@ -288,6 +299,7 @@ describe('Plural component', () => {
 
     it('builds correct ICU key with only other prop', () => {
       const plugin = createFluenti({
+        interpolate,
         locale: 'ja',
         messages: {
           ja: {
@@ -307,6 +319,7 @@ describe('Plural component', () => {
 
     it('builds correct ICU key with all category props', () => {
       const plugin = createFluenti({
+        interpolate,
         locale: 'ar',
         messages: {
           ar: {
@@ -453,6 +466,7 @@ describe('Plural component', () => {
 
     it('respects locale for category resolution (Arabic two)', () => {
       const plugin = createFluenti({
+        interpolate,
         locale: 'ar',
         messages: { ar: {} },
       })
@@ -471,6 +485,7 @@ describe('Plural component', () => {
 
     it('respects locale for category resolution (Polish few)', () => {
       const plugin = createFluenti({
+        interpolate,
         locale: 'pl',
         messages: { pl: {} },
       })

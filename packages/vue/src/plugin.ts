@@ -1,13 +1,9 @@
-import { type App, type InjectionKey, type Ref, ref, shallowReactive } from 'vue'
-import type { AllMessages, Locale, LocalizedString, Messages, CompiledMessage, MessageDescriptor, DiagnosticsConfig } from '@fluenti/core'
-import { createDiagnostics } from '@fluenti/core/internal'
-import { formatDate, formatNumber } from '@fluenti/core/formatters'
-import { interpolate, buildICUMessage, resolveDescriptorId } from '@fluenti/core/internal'
-import { Trans } from './components/Trans'
-import { Plural } from './components/Plural'
-import { Select } from './components/Select'
-import { DateTime } from './components/DateTime'
-import { NumberFormat } from './components/NumberFormat'
+import { type App, type Ref, ref, shallowReactive } from 'vue'
+import type { AllMessages, Locale, LocalizedString, Messages, CompiledMessage, MessageDescriptor, DiagnosticsConfig, CustomFormatter } from '@fluenti/core'
+import { createFluentiCore } from '@fluenti/core'
+import { FLUENTI_KEY } from './injection-key'
+// Components are in @fluenti/vue/components subpath.
+// Global component registration is opt-in via `components` config option.
 
 /** Escape HTML special characters to prevent XSS. @internal */
 function escapeHtml(str: string): string {
@@ -74,7 +70,7 @@ export interface FluentiContext {
 }
 
 /** Injection key for providing/injecting fluenti context */
-export const FLUENTI_KEY: InjectionKey<FluentiContext> = Symbol('fluenti')
+export { FLUENTI_KEY } from './injection-key'
 
 /** Options for creating the Fluenti Vue plugin */
 export interface FluentiConfig {
@@ -114,8 +110,40 @@ export interface FluentiConfig {
    * @default true
    */
   injectGlobalProperties?: boolean
-  /** Runtime diagnostics configuration */
-  diagnostics?: DiagnosticsConfig
+  /** Runtime diagnostics configuration or pre-created instance */
+  diagnostics?: DiagnosticsConfig | { missingKey: (locale: string, id: string) => void; fallbackUsed: (locale: string, fallbackLocale: string, id: string) => void; enabled: boolean }
+  /**
+   * Custom message interpolation function.
+   *
+   * By default, the runtime uses a lightweight `{key}` replacer.
+   * Pass the full `interpolate` from `@fluenti/core/internal` for
+   * runtime ICU MessageFormat parsing (adds ~2.5 KB gzip).
+   *
+   * @example
+   * ```ts
+   * import { interpolate } from '@fluenti/core/internal'
+   * createFluenti({ interpolate, ... })
+   * ```
+   */
+  interpolate?: (
+    message: string,
+    values: Record<string, unknown> | undefined,
+    locale: string,
+    formatters?: Record<string, CustomFormatter>,
+  ) => string
+  /**
+   * Components to register globally via `app.component()`.
+   *
+   * Import from `@fluenti/vue/components` and pass here to enable global
+   * component registration without bloating the default bundle.
+   *
+   * @example
+   * ```ts
+   * import * as components from '@fluenti/vue/components'
+   * app.use(createFluenti({ components, ... }))
+   * ```
+   */
+  components?: Record<string, unknown>
 }
 
 /** Return value of `createFluenti()` */
@@ -124,22 +152,6 @@ export interface FluentiPlugin {
   install(app: App): void
   /** The global fluenti context (same as what useI18n returns) */
   global: FluentiContext
-}
-
-/**
- * Resolve a compiled message to a string, applying values if needed.
- * @internal
- */
-function resolveMessage(
-  compiled: CompiledMessage,
-  values?: Record<string, unknown>,
-  locale?: string,
-): LocalizedString {
-  if (typeof compiled === 'function') {
-    return compiled(values) as LocalizedString
-  }
-  // Use core interpolate for ICU message parsing (handles plural, select, etc.)
-  return interpolate(compiled, values, locale) as LocalizedString
 }
 
 /** Extract the attribute name from v-t modifiers (e.g., v-t.alt → 'alt') */
@@ -171,7 +183,20 @@ export function createFluenti(options: FluentiConfig): FluentiPlugin {
   const lazyLocaleLoading = options.lazyLocaleLoading
     ?? (options as FluentiConfig & { splitting?: boolean }).splitting
     ?? false
-  const diagnostics = options.diagnostics ? createDiagnostics(options.diagnostics) : undefined
+
+  // Create the core i18n instance — delegates t/d/n/format/loadMessages/getLocales
+  const i18n = createFluentiCore({
+    locale: options.locale,
+    messages: options.messages ?? {},
+    fallbackLocale: options.fallbackLocale,
+    fallbackChain: options.fallbackChain,
+    dateFormats: options.dateFormats,
+    numberFormats: options.numberFormats,
+    missing: options.missing,
+    diagnostics: options.diagnostics as Parameters<typeof createFluentiCore>[0]['diagnostics'],
+    interpolate: options.interpolate,
+  })
+
   const locale = ref(options.locale)
   // Intentional mutation: Vue's shallowReactive API requires in-place property assignment for reactivity
   const catalogs = shallowReactive<AllMessages>({ ...options.messages })
@@ -179,6 +204,7 @@ export function createFluenti(options: FluentiConfig): FluentiPlugin {
   const loadedLocalesSet = new Set<string>([options.locale])
   const loadedLocales = ref<ReadonlySet<string>>(new Set(loadedLocalesSet))
 
+  /** Local catalog lookup for te/tm (core doesn't expose raw catalog access) */
   function lookup(
     loc: Locale,
     id: string,
@@ -188,96 +214,29 @@ export function createFluenti(options: FluentiConfig): FluentiPlugin {
     return msgs[id]
   }
 
+  /** Sync Vue reactive locale to core before delegation */
+  function syncLocale(): void {
+    if (i18n.locale !== locale.value) {
+      i18n.locale = locale.value
+    }
+  }
+
   function t(strings: TemplateStringsArray, ...exprs: unknown[]): LocalizedString
   function t(id: string | MessageDescriptor, values?: Record<string, unknown>): LocalizedString
   function t(idOrStrings: string | MessageDescriptor | TemplateStringsArray, ...rest: unknown[]): LocalizedString {
-    // Tagged template form: t`Hello ${name}`
-    if (Array.isArray(idOrStrings) && 'raw' in idOrStrings) {
-      const strings = idOrStrings as TemplateStringsArray
-      const icu = buildICUMessage(strings, rest)
-      const values = Object.fromEntries(rest.map((v, i) => [`arg${i}`, v]))
-      // Delegate to the function-call path with the ICU string as the id
-      return t(icu, values)
-    }
-
-    // Function call form
-    const id = idOrStrings as string | MessageDescriptor
-    const values = rest[0] as Record<string, unknown> | undefined
-
-    // Handle MessageDescriptor objects (from msg``)
-    let messageId: string
-    let fallbackMessage: string | undefined
-    if (typeof id === 'object' && id !== null) {
-      messageId = resolveDescriptorId(id) ?? ''
-      fallbackMessage = id.message
-    } else {
-      messageId = id
-    }
-
-    // Read locale.value to register a Vue reactive dependency
+    // Read locale.value and catalogs to register Vue reactive dependencies
+    // so components re-render when locale or messages change
     const currentLocale = locale.value
-
-    // Build the chain of locales to try
-    const chain: Locale[] = [currentLocale]
-
-    if (options.fallbackLocale && !chain.includes(options.fallbackLocale)) {
-      chain.push(options.fallbackLocale)
-    }
-
-    if (options.fallbackChain?.[currentLocale]) {
-      for (const fallback of options.fallbackChain[currentLocale]) {
-        if (!chain.includes(fallback)) {
-          chain.push(fallback)
-        }
-      }
-    } else if (options.fallbackChain?.['*']) {
-      for (const fallback of options.fallbackChain['*']) {
-        if (!chain.includes(fallback)) {
-          chain.push(fallback)
-        }
-      }
-    }
-
-    for (const loc of chain) {
-      const compiled = lookup(loc, messageId)
-      if (compiled !== undefined) {
-        if (loc !== currentLocale) {
-          diagnostics?.fallbackUsed(currentLocale, loc, messageId)
-        }
-        return resolveMessage(compiled, values, loc)
-      }
-    }
-
-    // Report missing key via diagnostics
-    diagnostics?.missingKey(currentLocale, messageId)
-
-    // Try the missing handler
-    if (options.missing) {
-      try {
-        const result = options.missing(currentLocale, messageId)
-        if (result !== undefined) return result as LocalizedString
-      } catch {
-        // Missing handler threw — fall through to next resolution path
-      }
-    }
-
-    // If we have a fallback message from a MessageDescriptor, interpolate it
-    if (fallbackMessage) {
-      return interpolate(fallbackMessage, values, currentLocale) as LocalizedString
-    }
-
-    // Final fallback — if the id looks like an ICU message, interpolate it
-    // (compile-time transforms like <Plural> emit inline ICU as t() arguments)
-    if (messageId.includes('{')) {
-      return interpolate(messageId, values, currentLocale) as LocalizedString
-    }
-    return messageId as LocalizedString
+    void catalogs[currentLocale]
+    syncLocale()
+    return i18n.t(idOrStrings as string, ...rest)
   }
 
   let _localeRequestId = 0
 
   async function setLocale(newLocale: Locale): Promise<void> {
     if (!lazyLocaleLoading || !options.chunkLoader) {
+      i18n.locale = newLocale
       locale.value = newLocale
       return
     }
@@ -289,6 +248,7 @@ export function createFluenti(options: FluentiConfig): FluentiPlugin {
       if (splitRuntime?.__switchLocale) {
         await splitRuntime.__switchLocale(newLocale)
       }
+      i18n.locale = newLocale
       locale.value = newLocale
       return
     }
@@ -302,6 +262,7 @@ export function createFluenti(options: FluentiConfig): FluentiPlugin {
       if (thisRequest !== _localeRequestId) return
       // Intentional mutation: Vue's shallowReactive API requires in-place property assignment for reactivity
       catalogs[newLocale] = { ...catalogs[newLocale], ...messages }
+      i18n.loadMessages(newLocale, messages)
       loadedLocalesSet.add(newLocale)
       loadedLocales.value = new Set(loadedLocalesSet)
       if (splitRuntime?.__switchLocale) {
@@ -309,6 +270,7 @@ export function createFluenti(options: FluentiConfig): FluentiPlugin {
       }
       // Re-check after async __switchLocale — a newer setLocale() may have superseded this one
       if (thisRequest !== _localeRequestId) return
+      i18n.locale = newLocale
       locale.value = newLocale
     } finally {
       if (thisRequest === _localeRequestId) {
@@ -320,6 +282,7 @@ export function createFluenti(options: FluentiConfig): FluentiPlugin {
   function loadMessages(loc: Locale, messages: Messages): void {
     // Intentional mutation: Vue's shallowReactive API requires in-place property assignment for reactivity
     catalogs[loc] = { ...catalogs[loc], ...messages }
+    i18n.loadMessages(loc, messages)
     loadedLocalesSet.add(loc)
     loadedLocales.value = new Set(loadedLocalesSet)
   }
@@ -334,6 +297,7 @@ export function createFluenti(options: FluentiConfig): FluentiPlugin {
       const messages = resolveChunkMessages(loaded)
       // Intentional mutation: Vue's shallowReactive API requires in-place property assignment for reactivity
       catalogs[loc] = { ...catalogs[loc], ...messages }
+      i18n.loadMessages(loc, messages)
       loadedLocalesSet.add(loc)
       loadedLocales.value = new Set(loadedLocalesSet)
       if (splitRuntime?.__preloadLocale) {
@@ -347,21 +311,29 @@ export function createFluenti(options: FluentiConfig): FluentiPlugin {
   }
 
   function getLocales(): Locale[] {
-    return Object.keys(catalogs)
+    syncLocale()
+    return i18n.getLocales()
   }
 
   function d(value: Date | number, style?: string): LocalizedString {
-    const currentLocale = locale.value
-    return formatDate(value, currentLocale, style, options.dateFormats) as LocalizedString
+    // Read locale.value to register a Vue reactive dependency
+    void locale.value
+    syncLocale()
+    return i18n.d(value, style)
   }
 
   function n(value: number, style?: string): LocalizedString {
-    const currentLocale = locale.value
-    return formatNumber(value, currentLocale, style, options.numberFormats) as LocalizedString
+    // Read locale.value to register a Vue reactive dependency
+    void locale.value
+    syncLocale()
+    return i18n.n(value, style)
   }
 
   function format(message: string, values?: Record<string, unknown>): LocalizedString {
-    return resolveMessage(message, values, locale.value)
+    // Read locale.value to register a Vue reactive dependency
+    void locale.value
+    syncLocale()
+    return i18n.format(message, values)
   }
 
   /**
@@ -454,12 +426,16 @@ export function createFluenti(options: FluentiConfig): FluentiPlugin {
   return {
     install(app: App) {
       app.provide(FLUENTI_KEY, context)
-      const prefix = options.componentPrefix ?? ''
-      app.component(`${prefix}Trans`, Trans)
-      app.component(`${prefix}Plural`, Plural)
-      app.component(`${prefix}Select`, Select)
-      app.component(`${prefix}DateTime`, DateTime)
-      app.component(`${prefix}NumberFormat`, NumberFormat)
+      // Register components globally if provided via config
+      if (options.components) {
+        const prefix = options.componentPrefix ?? ''
+        const comps = options.components as Record<string, unknown>
+        if (comps['Trans']) app.component(`${prefix}Trans`, comps['Trans'] as any)
+        if (comps['Plural']) app.component(`${prefix}Plural`, comps['Plural'] as any)
+        if (comps['Select']) app.component(`${prefix}Select`, comps['Select'] as any)
+        if (comps['DateTime']) app.component(`${prefix}DateTime`, comps['DateTime'] as any)
+        if (comps['NumberFormat']) app.component(`${prefix}NumberFormat`, comps['NumberFormat'] as any)
+      }
       if (options.injectGlobalProperties !== false) {
         app.config.globalProperties['$t'] = t
         app.config.globalProperties['$d'] = d

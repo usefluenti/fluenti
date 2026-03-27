@@ -3,10 +3,12 @@ import { mount } from '@vue/test-utils'
 import { h } from 'vue'
 import { createFluenti } from '../src/plugin'
 import { Select } from '../src/components/Select'
+import { interpolate } from '../../core/src/interpolate'
 
 function createPlugin() {
   return createFluenti({
     locale: 'en',
+    interpolate,
     messages: { en: {} },
   })
 }
@@ -159,6 +161,7 @@ describe('Select component', () => {
 
     it('uses catalog translation for string options', () => {
       const plugin = createFluenti({
+        interpolate,
         locale: 'ja',
         messages: {
           ja: {
@@ -334,6 +337,7 @@ describe('Select component', () => {
 
     it('translates rich slot content without the build plugin', () => {
       const plugin = createFluenti({
+        interpolate,
         locale: 'ja',
         messages: {
           ja: {

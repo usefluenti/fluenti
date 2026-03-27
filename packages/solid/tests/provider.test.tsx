@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { render } from '@solidjs/testing-library'
+import { interpolate } from '@fluenti/core/internal'
 import { I18nProvider, useI18n } from '../src'
 
 const messages = {
@@ -192,15 +193,14 @@ describe('useI18n outside provider', () => {
 
 describe('interpolate config (#21)', () => {
   it('Provider with ICU plural messages works via core interpolate', () => {
-    // Solid context imports interpolate from @fluenti/core/internal directly,
-    // so full ICU support (plural, select) is always available
+    // Full ICU support (plural, select) requires passing the interpolate function
     function Child() {
       const { t } = useI18n()
       return <span>{t('{count, plural, one {# item} other {# items}}', { count: 1 })}</span>
     }
 
     const { getByText } = render(() => (
-      <I18nProvider locale="en" messages={{ en: {} }}>
+      <I18nProvider locale="en" messages={{ en: {} }} interpolate={interpolate}>
         <Child />
       </I18nProvider>
     ))
@@ -215,7 +215,7 @@ describe('interpolate config (#21)', () => {
     }
 
     const { getByText } = render(() => (
-      <I18nProvider locale="en" messages={{ en: {} }}>
+      <I18nProvider locale="en" messages={{ en: {} }} interpolate={interpolate}>
         <Child />
       </I18nProvider>
     ))
@@ -245,7 +245,7 @@ describe('interpolate config (#21)', () => {
     }
 
     const { getByText } = render(() => (
-      <I18nProvider locale="en" messages={{ en: {} }}>
+      <I18nProvider locale="en" messages={{ en: {} }} interpolate={interpolate}>
         <Child />
       </I18nProvider>
     ))

@@ -1,5 +1,6 @@
 import { inject } from 'vue'
-import { FLUENTI_KEY, type FluentiContext } from './plugin'
+import { FLUENTI_KEY } from './injection-key'
+import type { FluentiContext } from './plugin'
 
 /**
  * Composable that returns the Fluenti i18n context.
