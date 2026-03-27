@@ -152,6 +152,19 @@ function getModifierAttr(modifiers: Partial<Record<string, boolean>>): string | 
  *
  * Each invocation creates entirely fresh state — no module-level singletons —
  * so it is safe to call once per SSR request.
+ *
+ * @example
+ * ```ts
+ * import { createFluenti } from '@fluenti/vue'
+ * import messages from './locales/compiled/en.js'
+ *
+ * const fluenti = createFluenti({
+ *   locale: 'en',
+ *   messages: { en: messages },
+ * })
+ *
+ * app.use(fluenti)
+ * ```
  */
 export function createFluenti(options: FluentiConfig): FluentiPlugin {
   const lazyLocaleLoading = options.lazyLocaleLoading

@@ -50,6 +50,21 @@ export interface FluentiSelectProps {
  * ```
  *
  * Falls back to the `other` prop when no key matches.
+ *
+ * @example
+ * ```tsx
+ * import { Select } from '@fluenti/solid'
+ *
+ * function Greeting(props: { gender: string }) {
+ *   return (
+ *     <Select value={props.gender}
+ *       male="He liked your post"
+ *       female="She liked your post"
+ *       other="They liked your post"
+ *     />
+ *   )
+ * }
+ * ```
  */
 export const SelectComp: Component<FluentiSelectProps> = (props) => {
   const { t } = useI18n()

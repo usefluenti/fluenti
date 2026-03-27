@@ -28,6 +28,17 @@ import { reconstruct, serializeRichForms } from './rich-text'
  * ```vue
  * <Plural :value="count" zero="No items" one="# item" other="# items" />
  * ```
+ *
+ * @example
+ * ```vue
+ * <template>
+ *   <!-- Preferred: v-t.plural (compile-time) -->
+ *   <p v-t.plural="count">one item | {count} items</p>
+ *
+ *   <!-- Alternative: Plural component (runtime) -->
+ *   <Plural :value="count" one="# item in cart" other="# items in cart" />
+ * </template>
+ * ```
  */
 const pluralProps = {
   /** The numeric value to pluralise on */

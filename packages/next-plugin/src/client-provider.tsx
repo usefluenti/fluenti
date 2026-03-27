@@ -15,8 +15,34 @@ export interface ClientI18nProviderProps {
 }
 
 /**
- * Client-side I18nProvider wrapper.
- * Used internally by I18nProvider to hydrate client components.
+ * Client-side I18nProvider wrapper for Next.js App Router.
+ *
+ * Wraps `@fluenti/react`'s `I18nProvider` with the `'use client'` directive,
+ * enabling hydration of client components in a Server Component tree.
+ * Re-exported as `I18nProvider` from `@fluenti/next/provider`.
+ *
+ * @example
+ * ```tsx
+ * // app/layout.tsx
+ * import { I18nProvider } from '@fluenti/next/provider'
+ * import en from '../locales/compiled/en.js'
+ *
+ * export default function RootLayout({ children }: { children: React.ReactNode }) {
+ *   return (
+ *     <html>
+ *       <body>
+ *         <I18nProvider
+ *           locale="en"
+ *           fallbackLocale="en"
+ *           messages={{ en }}
+ *         >
+ *           {children}
+ *         </I18nProvider>
+ *       </body>
+ *     </html>
+ *   )
+ * }
+ * ```
  */
 export function ClientI18nProvider({
   locale,

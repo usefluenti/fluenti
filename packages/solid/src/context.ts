@@ -83,6 +83,20 @@ export interface FluentiContext {
  *
  * The returned `t()` reads the internal `locale()` signal, so any
  * Solid computation that calls `t()` will re-run when the locale changes.
+ *
+ * @example
+ * ```tsx
+ * import { createFluentiContext } from '@fluenti/solid'
+ * import messages from './locales/compiled/en.js'
+ *
+ * const ctx = createFluentiContext({
+ *   locale: 'en',
+ *   messages: { en: messages },
+ * })
+ *
+ * // Use t`` tagged template (preferred)
+ * const greeting = ctx.t`Hello, {name}!`
+ * ```
  */
 export function createFluentiContext(config: FluentiCoreConfig | FluentiConfig): FluentiContext {
   const [locale, setLocaleSignal] = createSignal<Locale>(config.locale)

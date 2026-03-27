@@ -2,10 +2,18 @@
  * Per-component locale isolation for RSC.
  *
  * Temporarily switches the request-scoped locale, executes a function,
- * then restores the previous locale.
+ * then restores the previous locale. This allows rendering a subtree in
+ * a different locale without affecting the rest of the page.
  *
- * @example
+ * @param locale - The locale to switch to for the duration of `fn`.
+ * @param fn - The function to execute with the switched locale.
+ * @param serverModule - The generated server module reference (auto-injected
+ *   by the webpack loader in production; only needed when calling manually).
+ * @returns The return value of `fn`.
+ *
+ * @example Basic usage in a Server Component
  * ```tsx
+ * // app/page.tsx (Server Component)
  * import { withLocale } from '@fluenti/next/server'
  *
  * export default async function Page() {
@@ -16,6 +24,26 @@
  *         <JapaneseWidget />
  *       ))}
  *       <Footer />
+ *     </div>
+ *   )
+ * }
+ * ```
+ *
+ * @example Rendering a multilingual page section
+ * ```tsx
+ * import { withLocale } from '@fluenti/next/server'
+ *
+ * export default async function MultilingualPage() {
+ *   const englishContent = await withLocale('en', async () => (
+ *     <p>{t`Welcome`}</p>
+ *   ))
+ *   const japaneseContent = await withLocale('ja', async () => (
+ *     <p>{t`Welcome`}</p>
+ *   ))
+ *   return (
+ *     <div>
+ *       {englishContent}
+ *       {japaneseContent}
  *     </div>
  *   )
  * }

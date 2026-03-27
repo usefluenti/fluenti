@@ -56,6 +56,15 @@ export interface FluentiPluralProps {
  * ```tsx
  * <Plural value={count()} zero="No items" one="# item" other="# items" />
  * ```
+ *
+ * @example
+ * ```tsx
+ * import { Plural } from '@fluenti/solid'
+ *
+ * function ItemCount(props: { count: number }) {
+ *   return <Plural value={props.count} one="# item" other="# items" />
+ * }
+ * ```
  */
 export const Plural: Component<FluentiPluralProps> = (props) => {
   const { t } = useI18n()

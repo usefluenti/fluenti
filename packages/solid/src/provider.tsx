@@ -7,8 +7,26 @@ import type { FluentiConfig, FluentiContext } from './context'
 export const I18nCtx = createContext<FluentiContext>()
 
 /**
- * Provide i18n context to the component tree.
+ * Provides the Fluenti i18n context to the Solid component tree.
  *
+ * @example
+ * ```tsx
+ * import { I18nProvider, useI18n } from '@fluenti/solid'
+ * import messages from './locales/compiled/en.js'
+ *
+ * function App() {
+ *   return (
+ *     <I18nProvider locale="en" messages={{ en: messages }}>
+ *       <Content />
+ *     </I18nProvider>
+ *   )
+ * }
+ *
+ * function Content() {
+ *   const { t } = useI18n()
+ *   return <h1>{t`Welcome to our app`}</h1>
+ * }
+ * ```
  */
 export const I18nProvider: ParentComponent<FluentiConfig> = (props) => {
   const ctx = createFluentiContext(props)

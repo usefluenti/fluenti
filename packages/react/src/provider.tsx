@@ -58,6 +58,47 @@ function InstanceProvider({ instance, children }: { instance: FluentiInstance; c
   return <I18nContext.Provider value={ctx}>{children}</I18nContext.Provider>
 }
 
+/**
+ * Provides the Fluenti i18n context to the React component tree.
+ *
+ * Accepts either a `locale` + `messages` pair for inline configuration,
+ * or a pre-created `instance` from `createFluenti()`.
+ *
+ * @example
+ * ```tsx
+ * import { I18nProvider, useI18n } from '@fluenti/react'
+ * import messages from './locales/compiled/en.js'
+ *
+ * function App() {
+ *   return (
+ *     <I18nProvider locale="en" messages={{ en: messages }}>
+ *       <Content />
+ *     </I18nProvider>
+ *   )
+ * }
+ *
+ * function Content() {
+ *   const { t } = useI18n()
+ *   return <h1>{t`Welcome to our app`}</h1>
+ * }
+ * ```
+ *
+ * @example Using a pre-created instance
+ * ```tsx
+ * import { I18nProvider, createFluenti } from '@fluenti/react'
+ * import messages from './locales/compiled/en.js'
+ *
+ * const i18n = createFluenti({ locale: 'en', messages: { en: messages } })
+ *
+ * function App() {
+ *   return (
+ *     <I18nProvider instance={i18n}>
+ *       <Content />
+ *     </I18nProvider>
+ *   )
+ * }
+ * ```
+ */
 export function I18nProvider(props: FluentiProviderProps) {
   if (props.instance) {
     return <InstanceProvider instance={props.instance}>{props.children}</InstanceProvider>

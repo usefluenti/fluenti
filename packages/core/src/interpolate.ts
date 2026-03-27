@@ -45,6 +45,19 @@ export function setMessageCacheSize(maxSize: number): void {
  * @param locale - BCP 47 locale string (defaults to 'en')
  * @param formatters - Optional custom ICU function formatters
  * @returns Interpolated string
+ *
+ * @example
+ * ```ts
+ * import { interpolate } from '@fluenti/core'
+ *
+ * // Simple interpolation
+ * interpolate('Hello, {name}!', { name: 'Alice' }, 'en')
+ * // → 'Hello, Alice!'
+ *
+ * // Plural
+ * interpolate('{count, plural, one {# item} other {# items}}', { count: 3 }, 'en')
+ * // → '3 items'
+ * ```
  */
 export function interpolate(
   message: string,
