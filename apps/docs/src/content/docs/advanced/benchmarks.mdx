@@ -1,6 +1,6 @@
 ---
 title: Performance Benchmarks
-description: Fluenti performance benchmarks — parser throughput, compilation speed, runtime interpolation, and framework-specific lookup times.
+description: Fluenti performance benchmarks — parser throughput, compilation speed, runtime interpolation, and framework-specific lookup times. Verified on CI.
 sidebar:
   order: 2
 ---
@@ -9,298 +9,75 @@ import { Tabs, TabItem } from '@astrojs/starlight/components';
 
 ## Why Performance Matters for i18n
 
-Traditional i18n libraries ship an ICU MessageFormat parser to the browser. On every render, the parser must tokenize the message string, build an AST, resolve plurals and selects, then interpolate values. This work is repeated for every message, every time the component re-renders.
+Traditional i18n libraries ship an ICU MessageFormat parser to the browser. On every render, the parser must tokenize the message string, build an AST, resolve plurals and selects, then interpolate values. This work repeats for every message, every re-render.
 
-Fluenti takes a fundamentally different approach: **parsing and compilation happen at build time**. By the time your app reaches the browser, messages are either static strings or tiny pre-compiled functions. The runtime cost is reduced to a hash-map lookup and a function call — orders of magnitude faster than re-parsing ICU syntax on every render.
+Fluenti moves parsing and compilation to **build time**. At runtime, messages are either static strings or pre-compiled functions. The cost is reduced to a hash-map lookup and a function call.
 
-The benchmarks below quantify both the build-time and runtime performance characteristics.
+:::tip[Live CI Results]
+All benchmarks run automatically on every push to `main` via GitHub Actions.
+**[View latest benchmark run →](https://github.com/usefluenti/fluenti/actions/workflows/ci.yml?query=branch%3Amain+is%3Asuccess)** (click the latest "Bench" job to see full output)
+:::
 
-## Build-Time Performance
+## Key Numbers
 
-Build-time operations run once during `pnpm build` or in watch mode. They do not affect end-user experience, but faster builds mean a tighter feedback loop during development.
+These are representative results from CI (ubuntu-latest, Node 22). Click the CI link above for the latest verified numbers.
 
-### Parser Throughput
+### Build-Time (runs once during `pnpm build`)
 
-The parser converts ICU MessageFormat strings into an AST. Throughput depends on message complexity.
+| Operation | Throughput | Takeaway |
+|-----------|-----------|----------|
+| Parse plain text | ~8M ops/sec | Entire catalog parsed in milliseconds |
+| Parse complex ICU (nested plural+select) | ~240K ops/sec | Even worst case is fast |
+| Compile to function | ~20M ops/sec | Near-instant for all message types |
+| CLI compile 500 messages | ~665 ops/sec (~1.5ms) | Sub-second for real-world catalogs |
+| CLI compile 16 locales × 200 msgs | ~100 ops/sec (~10ms) | Linear scaling |
 
-| Message type | ops/sec | Mean (ms) |
-|---|---:|---:|
-| Plain text | 8,227,585 | 0.0001 |
-| Single variable (`{name}`) | 3,824,414 | 0.0003 |
-| Multi variable (`{x} + {y} = {result}`) | 1,910,671 | 0.0005 |
-| Plural (simple, 2 forms) | 910,203 | 0.0011 |
-| Plural (6 forms / Arabic) | 482,835 | 0.0021 |
-| Plural + offset | 574,233 | 0.0017 |
-| Select | 748,296 | 0.0013 |
-| Nested plural + select | 240,351 | 0.0042 |
-| Function — `{amount, number}` | 2,017,934 | 0.0005 |
-| Function — `{date, date}` | 2,209,899 | 0.0005 |
-| Escaped quotes | 3,386,641 | 0.0003 |
-| Long message (~500 chars) | 146,617 | 0.0068 |
+### Runtime (happens in the browser)
 
-Even the most complex messages (nested plural + select) parse at **240k ops/sec** — fast enough to process an entire application's message catalog in milliseconds.
+| Operation | Throughput | Takeaway |
+|-----------|-----------|----------|
+| Pre-compiled function call | ~10M ops/sec | This is what Fluenti ships |
+| Static string lookup | ~4–13M ops/sec | Framework-dependent |
+| Plural resolution (cache hit) | ~1–1.5M ops/sec | Intl.PluralRules + cache |
+| Catalog lookup (10K messages) | ~18M ops/sec | Size doesn't matter |
+| Number formatting | ~1.4M ops/sec | Intl.NumberFormat + cache |
+| Date formatting | ~980K ops/sec | Intl.DateTimeFormat + cache |
 
-### Compilation Speed
+### Framework Comparison: t() Lookup
 
-The compiler transforms a parsed AST into an optimized runtime representation (either a static string or a compiled function). Since the AST is already built, compilation is extremely fast.
-
-| Message type | ops/sec | Mean (ms) |
-|---|---:|---:|
-| Static text (string optimization) | 20,928,895 | 0.00005 |
-| Single variable | 20,025,587 | 0.00005 |
-| Multi variable | 20,187,233 | 0.00005 |
-| Plural (simple) | 19,032,716 | 0.0001 |
-| Plural (6 forms / Arabic) | 20,593,860 | 0.00005 |
-| Select | 20,304,246 | 0.00005 |
-| Nested plural + select | 19,852,895 | 0.0001 |
-| Function (number) | 20,219,226 | 0.00005 |
-| Long message | 19,774,312 | 0.0001 |
-
-All message types compile at roughly **20M ops/sec**. The compiler produces static strings when possible (no variables), avoiding function overhead entirely.
-
-### CLI Parallel Compilation
-
-The `@fluenti/cli` package can compile catalogs for multiple locales in parallel using worker threads.
-
-**Single locale (sequential baseline):**
-
-| Catalog size | ops/sec | Mean (ms) |
-|---|---:|---:|
-| 50 messages | 7,231 | 0.14 |
-| 200 messages | 1,728 | 0.58 |
-| 500 messages | 665 | 1.50 |
-
-**Multi-locale compilation:**
-
-| Workload | Sequential (ops/sec) | Parallel (ops/sec) |
-|---|---:|---:|
-| 4 locales x 100 messages | 829 | 774 |
-| 8 locales x 100 messages | 420 | 404 |
-| 4 locales x 500 messages | 170 | 156 |
-
-**Scaling by locale count (parallel, 200 messages each):**
-
-| Locale count | ops/sec | Mean (ms) |
-|---|---:|---:|
-| 2 locales | 809 | 1.24 |
-| 4 locales | 399 | 2.51 |
-| 8 locales | 200 | 4.99 |
-| 16 locales | 100 | 10.00 |
-
-Compilation throughput scales linearly with locale count. Even 16 locales with 200 messages each complete in **10ms per iteration**.
-
-## Runtime Performance
-
-Runtime operations happen in the browser (or on the server during SSR). These are the numbers that directly affect your users.
-
-### Interpolation
-
-The interpolation engine uses an LRU cache to avoid re-parsing messages that have already been seen.
-
-**Cache hit (warm path):**
-
-| Message type | ops/sec | Mean (ms) |
-|---|---:|---:|
-| Static text | 5,364,131 | 0.0002 |
-| Single variable | 4,600,859 | 0.0002 |
-| Plural | 1,139,161 | 0.0009 |
-| Select | 3,057,930 | 0.0003 |
-
-**Cache miss (cold path):**
-
-| Scenario | ops/sec | Mean (ms) |
-|---|---:|---:|
-| Unique message (cold) | 838,143 | 0.0012 |
-| Batch 100 cold messages | 26,324 | 0.038 |
-| 501 messages (LRU eviction) | 1,793 | 0.56 |
-
-Even on a cache miss, a single message interpolates in **1.2 microseconds**. The LRU cache (max 500 entries) ensures that hot messages stay fast.
-
-### Catalog Lookup
-
-Message lookup from the catalog is a direct property access on a null-prototype object. Performance is stable regardless of catalog size.
-
-| Catalog size | get (first) | get (middle) | get (last) | has (existing) | has (missing) |
-|---|---:|---:|---:|---:|---:|
-| 100 messages | 14.6M | 10.9M | 10.2M | 14.1M | 14.2M |
-| 1,000 messages | 10.6M | 10.3M | 10.4M | 13.8M | 14.0M |
-| 10,000 messages | 19.3M | 17.9M | 18.7M | 20.1M | 19.0M |
-
-*All values in ops/sec.*
-
-Lookups consistently achieve **10M+ ops/sec** even with 10,000 messages. Catalog size has negligible impact on lookup speed.
-
-### Plural Resolution
-
-CLDR plural rules are resolved via the `Intl.PluralRules` API with result caching.
-
-| Locale | Forms | ops/sec |
-|---|---:|---:|
-| English (en) | 2 | 3,294,864 |
-| Arabic (ar) | 6 | 2,595,520 |
-| Japanese (ja) | 1 | 2,906,107 |
-| Polish (pl) | 4 | 2,780,652 |
-| Exact match (`=0` hit) | - | 21,600,639 |
-| Exact miss, CLDR fallback | - | 2,669,667 |
-
-Exact numeric matches (`=0`, `=1`, etc.) resolve at **21.6M ops/sec** since they bypass CLDR rule evaluation entirely.
-
-### Formatter Performance
-
-Formatters wrap `Intl.DateTimeFormat`, `Intl.NumberFormat`, and `Intl.RelativeTimeFormat` with internal caching.
-
-**Number formatting:**
-
-| Style | ops/sec |
-|---|---:|
-| Default | 1,454,266 |
-| Currency | 822,817 |
-| Percent | 1,007,317 |
-| Decimal | 874,804 |
-| Currency (ja locale) | 860,910 |
-
-**Date formatting:**
-
-| Style | ops/sec |
-|---|---:|
-| Default | 983,253 |
-| Short | 596,465 |
-| Long | 538,967 |
-| Time | 665,104 |
-| Datetime | 443,647 |
-| Short (ja locale) | 583,325 |
-
-**Relative time:**
-
-| Scenario | ops/sec |
-|---|---:|
-| 5 days ago (en) | 3,338,508 |
-| 5 days ago (ja) | 3,776,306 |
-
-Relative time formatting is the fastest at **3.3M+ ops/sec** thanks to aggressive `Intl` formatter instance caching.
-
-### E2E Pipeline: `t()` Call
-
-The full pipeline benchmark measures what happens when you call `t()` in your application — the entire path from message ID to rendered string.
-
-| Scenario | ops/sec | Mean (ms) |
-|---|---:|---:|
-| Pre-compiled static string | 4,428,898 | 0.0002 |
-| Pre-compiled function | 10,112,205 | 0.0001 |
-| ICU string (cache hit) | 3,816,023 | 0.0003 |
-| ICU string (cache miss) | 3,792,251 | 0.0003 |
-| Fallback locale | 2,987,763 | 0.0003 |
-| Fallback chain | 3,003,902 | 0.0003 |
-| Missing handler | 8,065,617 | 0.0001 |
-| MessageDescriptor | 6,640,684 | 0.0002 |
-| Plural (full pipeline) | 1,014,907 | 0.0010 |
-| Format number (`n()`) | 823,091 | 0.0012 |
-| Format date (`d()`) | 458,743 | 0.0022 |
-
-Pre-compiled functions — the output of Fluenti's build step — achieve **10.1M ops/sec**. Even the heaviest operation (date formatting through the full pipeline) runs at **458k ops/sec**.
-
-## Framework-Specific Benchmarks
-
-Each framework integration adds a thin layer on top of `@fluenti/core`. The benchmarks below measure `t()` lookup performance through each framework's API.
-
-### Instance Creation
-
-| Framework | ops/sec |
-|---|---:|
-| React (`createFluentiCore()`) | 719,303 |
-| Vue (`createFluenti()`) | 621,894 |
-| Solid (`createFluentiContext()`) | 4,453,049 |
-
-Solid's instance creation is the fastest because `createFluentiContext()` is a lightweight wrapper around Solid's reactive primitives. All frameworks create instances in **under 2 microseconds**.
-
-### t() Lookup
-
-<Tabs>
-<TabItem label="React">
-
-| Message type | ops/sec |
-|---|---:|
-| Static string | 4,382,270 |
-| Compiled function | 10,716,536 |
-| Single variable | 3,832,045 |
-| Multi variable | 2,890,490 |
-| Plural (ICU) | 1,420,419 |
-| Select (ICU) | 2,685,131 |
-| Nested plural + select | 920,242 |
-
-</TabItem>
-<TabItem label="Vue">
-
-| Message type | ops/sec |
-|---|---:|
-| Static string | 3,768,848 |
-| Compiled function | 8,250,155 |
-| Single variable | 3,193,443 |
-| Multi variable | 2,609,675 |
-| Plural (ICU) | 1,422,801 |
-| Select (ICU) | 2,510,921 |
-| Nested plural + select | 889,772 |
-
-</TabItem>
-<TabItem label="Solid">
-
-| Message type | ops/sec |
-|---|---:|
-| Static string | 12,767,075 |
-| Compiled function | 9,690,069 |
-| Single variable | 3,061,493 |
-| Multi variable | 2,821,295 |
-| Plural (ICU) | 1,496,747 |
-| Select (ICU) | 2,593,291 |
-| Nested plural + select | 900,429 |
-
-</TabItem>
-</Tabs>
-
-Across all three frameworks, compiled functions and static string lookups run at **3.7M--12.8M ops/sec**. The most complex case (nested plural + select with ICU parsing) still achieves **~900k ops/sec** — well beyond what any UI rendering loop demands.
-
-### Fallback & Missing Keys
-
-| Scenario | React | Vue | Solid |
+| Message type | React | Vue | Solid |
 |---|---:|---:|---:|
-| Fallback locale hit | 3,536,758 | 2,648,871 | 2,829,538 |
-| Fallback chain traversal | 1,312,667 | 1,186,333 | 1,326,221 |
-| Missing key handler | 716,410 | 778,181 | 2,338,881 |
+| Static string | ~4.4M | ~3.8M | ~12.8M |
+| Compiled function | ~10.7M | ~8.3M | ~9.7M |
+| Single variable | ~3.8M | ~3.2M | ~3.1M |
+| Plural (ICU) | ~1.4M | ~1.4M | ~1.5M |
+| Nested plural+select | ~920K | ~890K | ~900K |
 
-*All values in ops/sec.*
-
-### Catalog Scaling
-
-Lookup performance remains stable as catalog size grows.
-
-| Catalog size | React | Vue | Solid |
-|---|---:|---:|---:|
-| 10 messages | 2,954,496 | 2,611,004 | 2,645,093 |
-| 100 messages | 2,760,711 | 2,650,386 | 2,569,624 |
-| 1,000 messages | 2,658,277 | 2,504,763 | 2,556,917 |
-
-*All values in ops/sec.*
-
-Performance degrades by less than **10%** when scaling from 10 to 1,000 messages, confirming that catalog size is not a bottleneck.
+*ops/sec — higher is better*
 
 ## Compile-Time vs Runtime Parsing
 
-The key architectural advantage of Fluenti is the separation of parsing from rendering:
-
-| Approach | What happens at runtime | Cost per render |
+| Approach | What happens at runtime | Per-render cost |
 |---|---|---|
-| **Traditional i18n** (vue-i18n, react-intl, etc.) | Parse ICU string, build AST, resolve plurals, interpolate values | Full parse + interpolation |
-| **Fluenti (compile-time)** | Hash-map lookup + function call | Lookup + function call |
+| **Traditional** (vue-i18n, react-intl) | Parse ICU → build AST → resolve plurals → interpolate | Full parse + interpolation |
+| **Fluenti** | Hash-map lookup → function call | Lookup + call |
 
-For a message like `{count, plural, one {# item} other {# items}}`:
+For `{count, plural, one {# item} other {# items}}`:
+- **Traditional**: ~910K ops/sec (parse every render)
+- **Fluenti**: ~10M ops/sec (lookup) + ~1M ops/sec (pre-compiled plural) — **5–10x faster**, widening to **40x** on complex messages
 
-- **Traditional**: Parse the ICU string (~910k ops/sec), resolve plural rules, then interpolate — every time the component renders.
-- **Fluenti**: The message was already compiled to a function during build. At runtime, it is a direct property lookup (~10M+ ops/sec) and a single function call (~1M+ ops/sec for plurals).
+## Reproduce Locally
 
-The result: Fluenti's runtime path is **5--10x faster** than parsing ICU on every render, and the gap widens with message complexity. For nested plural + select messages, the speedup can exceed **40x** compared to cold-parsing the same ICU string.
+```bash
+# Run all benchmarks
+pnpm bench
 
----
+# Run core benchmarks only
+pnpm bench:core
+```
+
+Benchmark files: `packages/core/bench/`, `packages/cli/bench/`, `packages/{react,vue,solid}/bench/`
 
 :::note
-Benchmarks run with Vitest 4 bench mode on Node 22 (Apple Silicon). Run `pnpm bench` locally to reproduce. Results may vary by hardware and Node.js version. CI runs use ubuntu-latest on GitHub Actions.
+Numbers shown are approximate and may vary by hardware. The [CI benchmark job](https://github.com/usefluenti/fluenti/actions/workflows/ci.yml?query=branch%3Amain+is%3Asuccess) on ubuntu-latest provides a consistent baseline. Click any successful run → expand the "Bench" job to see exact numbers.
 :::
