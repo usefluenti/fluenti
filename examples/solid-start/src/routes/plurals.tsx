@@ -1,5 +1,6 @@
 import { createSignal } from 'solid-js'
-import { Plural, Select, t } from '@fluenti/solid'
+import { t } from '@fluenti/solid'
+import { Plural, Select } from '@fluenti/solid/components'
 
 export default function PluralsPage() {
   const [count, setCount] = createSignal(0)

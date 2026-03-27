@@ -1,5 +1,6 @@
 import { createSignal } from 'solid-js'
-import { Plural, Select, useI18n } from '@fluenti/solid'
+import { useI18n } from '@fluenti/solid'
+import { Plural, Select } from '@fluenti/solid/components'
 
 export function App() {
   const { t, locale, setLocale, preloadLocale, isLoading } = useI18n()

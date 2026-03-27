@@ -1,4 +1,5 @@
 import { createFluenti } from '@fluenti/vue'
+import * as components from '@fluenti/vue/components'
 import { getHydratedLocale } from '@fluenti/core'
 import en from '~/locales/compiled/en.js'
 import ja from '~/locales/compiled/ja.js'
@@ -21,6 +22,7 @@ export default defineNuxtPlugin((nuxtApp) => {
   const fluent = createFluenti({
     locale: initialLocale,
     fallbackLocale: 'en',
+    components,
     fallbackChain: {
       ja: ['en'],
       ar: ['en'],

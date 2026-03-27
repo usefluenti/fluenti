@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { Plural, Select, useI18n } from '@fluenti/react'
+import { useI18n } from '@fluenti/react'
+import { Plural, Select } from '@fluenti/react/components'
 
 export function Plurals() {
   const { t } = useI18n()
