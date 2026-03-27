@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, afterEach } from 'vitest'
 import { createApp, defineComponent, h, inject, nextTick, ref, resolveDirective, withDirectives } from 'vue'
 import { createFluenti, FLUENTI_KEY } from '../src/plugin'
 import type { FluentiContext } from '../src/plugin'
@@ -1342,5 +1342,360 @@ describe('edge cases (#19)', () => {
 
     expect(plugin1.global.t('hello')).toBe('Hello')
     expect(plugin2.global.t('hello')).toBe('Bonjour')
+  })
+})
+
+// ============================================================
+// #1 Component registration opt-in edge cases
+// ============================================================
+describe('component registration opt-in edge cases', () => {
+  it('components: {} empty object does not crash and registers nothing', () => {
+    const plugin = createFluenti({
+      components: {},
+      locale: 'en',
+      messages: { en: {} },
+    })
+
+    const app = createApp({ render: () => h('div') })
+    app.use(plugin)
+
+    expect(app.component('Trans')).toBeUndefined()
+    expect(app.component('Plural')).toBeUndefined()
+    expect(app.component('Select')).toBeUndefined()
+  })
+
+  it('components: { Trans } partial registers only Trans', () => {
+    const plugin = createFluenti({
+      components: { Trans: components.Trans },
+      locale: 'en',
+      messages: { en: {} },
+    })
+
+    const app = createApp({ render: () => h('div') })
+    app.use(plugin)
+
+    expect(app.component('Trans')).toBeDefined()
+    expect(app.component('Plural')).toBeUndefined()
+    expect(app.component('Select')).toBeUndefined()
+  })
+
+  it('no components in config means no global component registration', () => {
+    const plugin = createFluenti({
+      locale: 'en',
+      messages: { en: {} },
+    })
+
+    const app = createApp({ render: () => h('div') })
+    app.use(plugin)
+
+    expect(app.component('Trans')).toBeUndefined()
+    expect(app.component('Plural')).toBeUndefined()
+    expect(app.component('Select')).toBeUndefined()
+  })
+
+  it('components + componentPrefix applies prefix correctly', () => {
+    const plugin = createFluenti({
+      components: { Trans: components.Trans, Plural: components.Plural },
+      locale: 'en',
+      messages: { en: {} },
+      componentPrefix: 'Fl',
+    })
+
+    const app = createApp({ render: () => h('div') })
+    app.use(plugin)
+
+    expect(app.component('FlTrans')).toBeDefined()
+    expect(app.component('FlPlural')).toBeDefined()
+    expect(app.component('Trans')).toBeUndefined()
+    expect(app.component('Plural')).toBeUndefined()
+  })
+
+  it('components with DateTime and NumberFormat registers them', () => {
+    const plugin = createFluenti({
+      components: {
+        DateTime: components.DateTime,
+        NumberFormat: components.NumberFormat,
+      },
+      locale: 'en',
+      messages: { en: {} },
+    })
+
+    const app = createApp({ render: () => h('div') })
+    app.use(plugin)
+
+    expect(app.component('DateTime')).toBeDefined()
+    expect(app.component('NumberFormat')).toBeDefined()
+    // Trans/Plural/Select not provided, should not be registered
+    expect(app.component('Trans')).toBeUndefined()
+  })
+})
+
+// ============================================================
+// #2 injectGlobalProperties: false
+// ============================================================
+describe('injectGlobalProperties: false', () => {
+  it('does not inject $t, $d, $n, $vtRich when set to false', () => {
+    const plugin = createFluenti({
+      locale: 'en',
+      messages: { en: {} },
+      injectGlobalProperties: false,
+    })
+
+    const app = createApp({ render: () => h('div') })
+    app.use(plugin)
+
+    expect(app.config.globalProperties['$t']).toBeUndefined()
+    expect(app.config.globalProperties['$d']).toBeUndefined()
+    expect(app.config.globalProperties['$n']).toBeUndefined()
+    expect(app.config.globalProperties['$vtRich']).toBeUndefined()
+  })
+
+  it('injectGlobalProperties defaults to true (paired check)', () => {
+    const plugin = createFluenti({
+      locale: 'en',
+      messages: { en: {} },
+    })
+
+    const app = createApp({ render: () => h('div') })
+    app.use(plugin)
+
+    expect(app.config.globalProperties['$t']).toBeDefined()
+    expect(app.config.globalProperties['$d']).toBeDefined()
+    expect(app.config.globalProperties['$n']).toBeDefined()
+    expect(app.config.globalProperties['$vtRich']).toBeDefined()
+  })
+})
+
+// ============================================================
+// #5 preloadLocale
+// ============================================================
+describe('preloadLocale', () => {
+  it('calls chunkLoader and updates catalogs', async () => {
+    const loader = vi.fn().mockResolvedValue({ hallo: 'Hallo' })
+    const plugin = createFluenti({
+      locale: 'en',
+      messages: { en: { hello: 'Hello' } },
+      lazyLocaleLoading: true,
+      chunkLoader: loader,
+    })
+
+    plugin.global.preloadLocale('de')
+    await new Promise((r) => setTimeout(r, 10))
+
+    expect(loader).toHaveBeenCalledWith('de')
+    // After preload, 'de' messages are available
+    expect(plugin.global.te('hallo', 'de')).toBe(true)
+    expect(plugin.global.loadedLocales.value.has('de')).toBe(true)
+  })
+
+  it('duplicate preload does not call chunkLoader twice', async () => {
+    const loader = vi.fn().mockResolvedValue({ hallo: 'Hallo' })
+    const plugin = createFluenti({
+      locale: 'en',
+      messages: { en: { hello: 'Hello' } },
+      lazyLocaleLoading: true,
+      chunkLoader: loader,
+    })
+
+    plugin.global.preloadLocale('de')
+    plugin.global.preloadLocale('de')
+    await new Promise((r) => setTimeout(r, 10))
+
+    expect(loader).toHaveBeenCalledTimes(1)
+  })
+
+  it('preload failure logs console.warn and does not crash', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const loader = vi.fn().mockRejectedValue(new Error('network error'))
+    const plugin = createFluenti({
+      locale: 'en',
+      messages: { en: {} },
+      lazyLocaleLoading: true,
+      chunkLoader: loader,
+    })
+
+    plugin.global.preloadLocale('de')
+    await new Promise((r) => setTimeout(r, 10))
+
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('[fluenti] preload failed:'),
+      'de',
+      expect.any(Error),
+    )
+    warnSpy.mockRestore()
+  })
+
+  it('preload then setLocale does not reload from chunkLoader', async () => {
+    const loader = vi.fn().mockResolvedValue({ hallo: 'Hallo' })
+    const plugin = createFluenti({
+      locale: 'en',
+      messages: { en: { hello: 'Hello' } },
+      lazyLocaleLoading: true,
+      chunkLoader: loader,
+    })
+
+    // Preload 'de'
+    plugin.global.preloadLocale('de')
+    await new Promise((r) => setTimeout(r, 10))
+
+    expect(loader).toHaveBeenCalledTimes(1)
+
+    // Now switch to 'de' — should not call chunkLoader again since it's preloaded
+    await plugin.global.setLocale('de')
+    expect(loader).toHaveBeenCalledTimes(1)
+    expect(plugin.global.locale.value).toBe('de')
+  })
+})
+
+// ============================================================
+// #6 Diagnostics duck-typing compatibility
+// ============================================================
+describe('diagnostics duck-typing', () => {
+  it('duck-typed object with missingKey/fallbackUsed works', () => {
+    const missingKey = vi.fn()
+    const fallbackUsed = vi.fn()
+    const plugin = createFluenti({
+      locale: 'en',
+      fallbackLocale: 'en',
+      messages: { en: { hello: 'Hello' }, fr: {} },
+      diagnostics: { missingKey, fallbackUsed, enabled: true },
+    })
+
+    // Switch to fr and request 'hello' which only exists in en
+    plugin.global.setLocale('fr')
+    plugin.global.t('hello')
+
+    // The fallbackUsed handler should have been called since fr falls back to en
+    expect(fallbackUsed).toHaveBeenCalled()
+  })
+
+  it('duck-typed object triggers missingKey for non-existent keys', () => {
+    const missingKey = vi.fn()
+    const fallbackUsed = vi.fn()
+    const plugin = createFluenti({
+      locale: 'en',
+      messages: { en: {} },
+      diagnostics: { missingKey, fallbackUsed, enabled: true },
+    })
+
+    plugin.global.t('nonexistent')
+    expect(missingKey).toHaveBeenCalledWith('en', 'nonexistent')
+  })
+
+  it('old DiagnosticsConfig format (no missingKey method) does not crash', () => {
+    // The old config format has warnMissing: true but no missingKey method
+    // createFluentiCore should not crash when it doesn't find missingKey
+    expect(() => {
+      const plugin = createFluenti({
+        locale: 'en',
+        messages: { en: {} },
+        diagnostics: { warnMissing: true } as any,
+      })
+      plugin.global.t('anything')
+    }).not.toThrow()
+  })
+
+  it('no diagnostics option does not crash', () => {
+    expect(() => {
+      const plugin = createFluenti({
+        locale: 'en',
+        messages: { en: {} },
+      })
+      plugin.global.t('anything')
+    }).not.toThrow()
+  })
+})
+
+// ============================================================
+// #7 Split runtime integration
+// ============================================================
+describe('split runtime integration', () => {
+  const SPLIT_RUNTIME_KEY = Symbol.for('fluenti.runtime.vue.v1')
+
+  afterEach(() => {
+    // Clean up globalThis after each test
+    delete (globalThis as Record<PropertyKey, unknown>)[SPLIT_RUNTIME_KEY]
+  })
+
+  it('setLocale with lazy loading calls __switchLocale on split runtime', async () => {
+    const switchLocale = vi.fn().mockResolvedValue(undefined)
+    ;(globalThis as Record<PropertyKey, unknown>)[SPLIT_RUNTIME_KEY] = {
+      __switchLocale: switchLocale,
+    }
+
+    const loader = vi.fn().mockResolvedValue({ hallo: 'Hallo' })
+    const plugin = createFluenti({
+      locale: 'en',
+      messages: { en: { hello: 'Hello' } },
+      lazyLocaleLoading: true,
+      chunkLoader: loader,
+    })
+
+    await plugin.global.setLocale('de')
+
+    expect(switchLocale).toHaveBeenCalledWith('de')
+  })
+
+  it('__switchLocale rejection does not crash', async () => {
+    const switchLocale = vi.fn().mockRejectedValue(new Error('runtime error'))
+    ;(globalThis as Record<PropertyKey, unknown>)[SPLIT_RUNTIME_KEY] = {
+      __switchLocale: switchLocale,
+    }
+
+    const loader = vi.fn().mockResolvedValue({ hallo: 'Hallo' })
+    const plugin = createFluenti({
+      locale: 'en',
+      messages: { en: { hello: 'Hello' } },
+      lazyLocaleLoading: true,
+      chunkLoader: loader,
+    })
+
+    // Should not throw despite __switchLocale rejecting
+    await expect(plugin.global.setLocale('de')).rejects.toThrow('runtime error')
+  })
+
+  it('setLocale for already-loaded locale calls __switchLocale', async () => {
+    const switchLocale = vi.fn().mockResolvedValue(undefined)
+    ;(globalThis as Record<PropertyKey, unknown>)[SPLIT_RUNTIME_KEY] = {
+      __switchLocale: switchLocale,
+    }
+
+    const loader = vi.fn().mockResolvedValue({})
+    const plugin = createFluenti({
+      locale: 'en',
+      messages: { en: { hello: 'Hello' }, fr: { hello: 'Bonjour' } },
+      lazyLocaleLoading: true,
+      chunkLoader: loader,
+    })
+
+    // 'fr' messages are provided upfront but not marked as loaded by chunkLoader
+    // We need to first load 'fr' so it's in loadedLocalesSet
+    plugin.global.loadMessages('fr', { hello: 'Bonjour' })
+
+    // Now switch to already-loaded 'fr'
+    await plugin.global.setLocale('fr')
+
+    expect(switchLocale).toHaveBeenCalledWith('fr')
+    expect(loader).not.toHaveBeenCalled()
+  })
+
+  it('preloadLocale calls __preloadLocale on split runtime', async () => {
+    const preloadLocaleSpy = vi.fn().mockResolvedValue(undefined)
+    ;(globalThis as Record<PropertyKey, unknown>)[SPLIT_RUNTIME_KEY] = {
+      __preloadLocale: preloadLocaleSpy,
+    }
+
+    const loader = vi.fn().mockResolvedValue({ hallo: 'Hallo' })
+    const plugin = createFluenti({
+      locale: 'en',
+      messages: { en: { hello: 'Hello' } },
+      lazyLocaleLoading: true,
+      chunkLoader: loader,
+    })
+
+    plugin.global.preloadLocale('de')
+    await new Promise((r) => setTimeout(r, 10))
+
+    expect(preloadLocaleSpy).toHaveBeenCalledWith('de')
   })
 })

@@ -1,6 +1,6 @@
 import { describe, it, expect, afterEach } from 'vitest'
 import { render, cleanup } from '@solidjs/testing-library'
-import { I18nProvider } from '../src'
+import { I18nProvider, useI18n } from '../src'
 import { NumberFormat } from '../src/components/NumberFormat'
 
 describe('NumberFormat', () => {
@@ -181,5 +181,83 @@ describe('NumberFormat', () => {
 
     const expected = new Intl.NumberFormat('en').format(Infinity)
     expect(container.textContent).toBe(expected)
+  })
+})
+
+// ─── #12 Inline format defaults edge cases ────────────────────────────────────
+
+describe('Inline format defaults edge cases', () => {
+  it('n(100, "currency") with unknown locale falls back to USD', () => {
+    let result = ''
+
+    function Child() {
+      const { n } = useI18n()
+      result = n(100, 'currency')
+      return <span>{result}</span>
+    }
+
+    render(() => (
+      <I18nProvider locale="zz-ZZ" messages={{ 'zz-ZZ': {} }}>
+        <Child />
+      </I18nProvider>
+    ))
+
+    // Should use USD fallback since 'zz-ZZ' is not in LOCALE_CURRENCY_MAP
+    const expected = new Intl.NumberFormat('zz-ZZ', { style: 'currency', currency: 'USD' }).format(100)
+    expect(result).toBe(expected)
+  })
+
+  it('user dateFormats override built-in defaults — user value wins', () => {
+    let result = ''
+
+    function Child() {
+      const { d } = useI18n()
+      result = d(new Date(2025, 0, 15), 'short')
+      return <span>{result}</span>
+    }
+
+    // Override the built-in 'short' format with a custom one
+    const customShort = { year: '2-digit' as const, month: '2-digit' as const, day: '2-digit' as const }
+
+    render(() => (
+      <I18nProvider
+        locale="en"
+        messages={{ en: {} }}
+        dateFormats={{ short: customShort }}
+      >
+        <Child />
+      </I18nProvider>
+    ))
+
+    // The user-provided 'short' format should be used, not the built-in one
+    const expected = new Intl.DateTimeFormat('en', customShort).format(new Date(2025, 0, 15))
+    expect(result).toBe(expected)
+  })
+
+  it('user numberFormats override built-in defaults — user value wins', () => {
+    let result = ''
+
+    function Child() {
+      const { n } = useI18n()
+      result = n(0.75, 'percent')
+      return <span>{result}</span>
+    }
+
+    // Override the built-in 'percent' format with a custom one that includes fraction digits
+    const customPercent = { style: 'percent' as const, minimumFractionDigits: 2 }
+
+    render(() => (
+      <I18nProvider
+        locale="en"
+        messages={{ en: {} }}
+        numberFormats={{ percent: customPercent }}
+      >
+        <Child />
+      </I18nProvider>
+    ))
+
+    // The user-provided 'percent' format should be used
+    const expected = new Intl.NumberFormat('en', customPercent).format(0.75)
+    expect(result).toBe(expected)
   })
 })
