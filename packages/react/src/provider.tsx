@@ -120,6 +120,7 @@ function InlineProvider({
   numberFormats,
   missing,
   diagnostics,
+  interpolate,
   children,
 }: FluentiProviderProps) {
   const locale = localeProp ?? 'en'
@@ -154,8 +155,9 @@ function InlineProvider({
     if (numberFormats !== undefined) config.numberFormats = numberFormats
     if (missing !== undefined) config.missing = missing
     if (diagnostics !== undefined) config.diagnostics = diagnostics
+    if (interpolate !== undefined) config.interpolate = interpolate
     return createFluentiCore(config)
-  }, [currentLocale, loadedMessages, fallbackLocale, fallbackChain, dateFormats, numberFormats, missing, diagnostics])
+  }, [currentLocale, loadedMessages, fallbackLocale, fallbackChain, dateFormats, numberFormats, missing, diagnostics, interpolate])
 
   // Set global i18n instance for webpack loader / vite plugin access
   useEffect(() => {

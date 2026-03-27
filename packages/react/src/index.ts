@@ -14,13 +14,6 @@ export { I18nContext } from './context'
 export { useI18n } from './hooks/useI18n'
 export { t } from './compile-time-t'
 
-// Components
-export { Trans } from './components/Trans'
-export { Plural } from './components/Plural'
-export { Select } from './components/Select'
-export { DateTime } from './components/DateTime'
-export { NumberFormat } from './components/Number'
-
 // Lazy messages
 export { msg } from './msg'
 
@@ -37,6 +30,9 @@ export type {
   DateFormatOptions,
   NumberFormatOptions,
 } from './types'
+
+// Components moved to @fluenti/react/components:
+//   import { Trans, Plural, Select, DateTime, NumberFormat } from '@fluenti/react/components'
 export type { FluentiTransProps } from './components/Trans'
 export type { FluentiPluralProps } from './components/Plural'
 export type { FluentiSelectProps } from './components/Select'

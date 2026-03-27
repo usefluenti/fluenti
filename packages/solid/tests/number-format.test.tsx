@@ -1,6 +1,7 @@
 import { describe, it, expect, afterEach } from 'vitest'
 import { render, cleanup } from '@solidjs/testing-library'
-import { NumberFormat, I18nProvider } from '../src'
+import { I18nProvider } from '../src'
+import { NumberFormat } from '../src/components/NumberFormat'
 
 describe('NumberFormat', () => {
   afterEach(() => {

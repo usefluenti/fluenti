@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import { createSignal } from 'solid-js'
 import { render } from '@solidjs/testing-library'
-import { I18nProvider, Select } from '../src'
+import { I18nProvider } from '../src'
+import { SelectComp as Select } from '../src/select'
 
 describe('Select component', () => {
   describe('options prop API (type-safe)', () => {

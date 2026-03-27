@@ -217,11 +217,12 @@ describe('edge cases — error recovery and boundaries', () => {
 describe('diagnostics integration', () => {
   it('fires missingKey event when translation is not found', () => {
     const reporter = vi.fn()
+    const diag = createDiagnostics({ warnMissing: true, reporter })
     const i18n = createFluentiCore({
       locale: 'en',
       fallbackLocale: 'en',
       messages: { en: {} },
-      diagnostics: { warnMissing: true, reporter },
+      diagnostics: diag,
     })
 
     i18n.t('nonexistent')
@@ -236,6 +237,7 @@ describe('diagnostics integration', () => {
 
   it('fires fallbackUsed event when falling back to another locale', () => {
     const reporter = vi.fn()
+    const diag = createDiagnostics({ warnFallback: true, reporter })
     const i18n = createFluentiCore({
       locale: 'ja',
       fallbackLocale: 'en',
@@ -243,7 +245,7 @@ describe('diagnostics integration', () => {
         en: { hello: 'Hello' },
         ja: {},
       },
-      diagnostics: { warnFallback: true, reporter },
+      diagnostics: diag,
     })
 
     i18n.t('hello')
@@ -269,10 +271,11 @@ describe('diagnostics integration', () => {
 
   it('exposes diagnostics instance on the returned object', () => {
     const reporter = vi.fn()
+    const diag = createDiagnostics({ reporter })
     const i18n = createFluentiCore({
       locale: 'en',
       messages: { en: {} },
-      diagnostics: { reporter },
+      diagnostics: diag,
     })
 
     expect(i18n.diagnostics).toBeDefined()

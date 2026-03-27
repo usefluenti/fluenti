@@ -1,6 +1,7 @@
 import { type App, type InjectionKey, type Ref, ref, shallowReactive } from 'vue'
 import type { AllMessages, Locale, LocalizedString, Messages, CompiledMessage, MessageDescriptor, DiagnosticsConfig } from '@fluenti/core'
-import { createDiagnostics, formatDate, formatNumber } from '@fluenti/core'
+import { createDiagnostics } from '@fluenti/core/internal'
+import { formatDate, formatNumber } from '@fluenti/core/formatters'
 import { interpolate, buildICUMessage, resolveDescriptorId } from '@fluenti/core/internal'
 import { Trans } from './components/Trans'
 import { Plural } from './components/Plural'

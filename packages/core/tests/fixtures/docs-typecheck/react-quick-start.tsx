@@ -1,4 +1,5 @@
-import { t, useI18n, Trans, Plural } from '@fluenti/react'
+import { t, useI18n } from '@fluenti/react'
+import { Trans, Plural } from '@fluenti/react/components'
 
 export function Home() {
   const { setLocale } = useI18n()

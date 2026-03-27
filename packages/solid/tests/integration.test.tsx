@@ -1,8 +1,8 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render } from '@solidjs/testing-library'
-import { I18nProvider, useI18n, Plural } from '../src'
-
-import { Trans } from '../src'
+import { I18nProvider, useI18n } from '../src'
+import { Trans } from '../src/trans'
+import { Plural } from '../src/plural'
 
 const messages = {
   en: {

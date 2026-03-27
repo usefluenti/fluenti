@@ -28,41 +28,22 @@ export type {
   PluginCompileContext,
 } from './types'
 
-// ---- Public functions ----
-export { parse, FluentParseError } from './parser'
-export { compile } from './compile'
-export { interpolate } from './interpolate'
+// ---- Minimal runtime exports ----
+// Heavy modules moved to subpaths:
+//   @fluenti/core/internal  → parse, compile, interpolate, FluentParseError
+//   @fluenti/core/ssr       → detectLocale, getSSRLocaleScript, getHydratedLocale
+//   @fluenti/core/formatters → formatNumber, formatDate, formatRelativeTime
 export { Catalog } from './catalog'
 export { negotiateLocale, parseLocale, isRTL, getDirection, validateLocale } from './locale'
 export type { ParsedLocale } from './locale'
 export { msg } from './msg'
-export { detectLocale, getSSRLocaleScript, getHydratedLocale } from './ssr'
-export { formatNumber, DEFAULT_NUMBER_FORMATS } from './formatters/number'
-export { formatDate, DEFAULT_DATE_FORMATS } from './formatters/date'
-export { formatRelativeTime } from './formatters/relative'
-// Config loading (loadConfig, loadConfigSync) is exported from '@fluenti/core/config'
-// subpath to avoid pulling jiti + node:* modules into client bundles.
-export { createDiagnostics, __DEV__ } from './diagnostics'
-export type { DiagnosticEvent, DiagnosticsConfig, Diagnostics } from './diagnostics'
-export { createLocaleLoader } from './locale-loader'
-export type { LocaleLoaderOptions, LocaleLoaderState } from './locale-loader'
-export { defineConfig } from './define-config'
+export { resolvePlural, resolvePluralCategory, clearPluralCache } from './plural'
 
-import { clearCompileCache } from './compile'
-import { clearInterpolationCache } from './interpolate'
 import { clearPluralCache } from './plural'
-import { clearNumberFormatCache } from './formatters/number'
-import { clearDateFormatCache } from './formatters/date'
-import { clearRelativeTimeFormatCache } from './formatters/relative'
 
 /** Clear all internal caches. Useful for long-running servers. */
 export function clearAllCaches(): void {
-  clearInterpolationCache()
-  clearCompileCache()
   clearPluralCache()
-  clearNumberFormatCache()
-  clearDateFormatCache()
-  clearRelativeTimeFormatCache()
 }
 
 import type {
@@ -72,18 +53,39 @@ import type {
   Locale,
   Messages,
   MessageDescriptor,
+  CustomFormatter,
 } from './types'
 import { Catalog } from './catalog'
-import { interpolate } from './interpolate'
-import { formatNumber } from './formatters/number'
-import { formatDate } from './formatters/date'
 import { buildICUMessage } from './msg'
 import { createMessageId, resolveDescriptorId } from './identity'
 import { validateLocale } from './locale'
-import { createDiagnostics as createDiag } from './diagnostics'
+/**
+ * Lightweight string interpolation for `{key}` placeholders.
+ *
+ * Handles simple variable substitution (e.g. `'Hello {name}'`).
+ * Does NOT parse ICU MessageFormat (plurals, selects, functions).
+ * For full ICU support, compiled catalogs produce JS functions that
+ * handle plurals/selects natively — no runtime parser needed.
+ */
+function simpleInterpolate(
+  message: string,
+  values: Record<string, unknown> | undefined,
+  _locale: string,
+  _formatters?: Record<string, CustomFormatter>,
+): string {
+  if (!values) return message
+  return message.replace(/\{(\w+)\}/g, (match, key: string) => {
+    const val = values[key]
+    return val !== undefined && val !== null ? String(val) : match
+  })
+}
 
 /**
  * Create a Fluenti instance with full i18n support.
+ *
+ * In production builds with the Vite plugin, all messages are pre-compiled
+ * to JS functions in the catalog. The runtime simply looks up and calls them —
+ * no ICU parser is loaded.
  *
  * @param config - Configuration including locale, messages, and optional formatters
  * @returns A fully configured `FluentiCoreInstanceFull`
@@ -105,17 +107,18 @@ export function createFluentiCore(config: FluentiCoreConfigFull): FluentiCoreIns
   let currentLocale: Locale = config.locale
   const catalog = new Catalog()
 
-  const diagnostics = config.diagnostics ? createDiag(config.diagnostics) : undefined
+  // Use custom interpolate if provided (e.g. full ICU parser), else lightweight
+  const interp = config.interpolate ?? simpleInterpolate
 
-  const customFormatters = config.formatters
+  // Diagnostics — accepts a pre-created Diagnostics instance or raw config
+  // Duck-type check: if it has missingKey, it's an instance; otherwise it's config
+  const diag = config.diagnostics && 'missingKey' in config.diagnostics
+    ? config.diagnostics as { missingKey: (l: string, id: string) => void; fallbackUsed: (l: string, fl: string, id: string) => void; enabled: boolean }
+    : undefined
 
   // Load initial messages
   for (const [locale, messages] of Object.entries(config.messages)) {
     catalog.set(locale, messages)
-  }
-
-  function interp(message: string, values: Record<string, unknown> | undefined, locale: Locale): string {
-    return interpolate(message, values, locale, customFormatters)
   }
 
   function applyTransform(result: string, id: string): LocalizedString {
@@ -125,25 +128,35 @@ export function createFluentiCore(config: FluentiCoreConfigFull): FluentiCoreIns
     return result as LocalizedString
   }
 
+  function resolveMsg(
+    msg: string | ((values?: Record<string, unknown>) => string),
+    values: Record<string, unknown> | undefined,
+    locale: Locale,
+    id: string,
+  ): LocalizedString {
+    if (typeof msg === 'function') {
+      return applyTransform(msg(values), id)
+    }
+    // Static string — only interpolate if it contains placeholders
+    if (msg.includes('{')) {
+      return applyTransform(interp(msg, values, locale, config.formatters), id)
+    }
+    return applyTransform(msg, id)
+  }
+
   function lookupCatalog(id: string, values?: Record<string, unknown>): LocalizedString | undefined {
     // Try current locale
     const msg = catalog.get(currentLocale, id)
     if (msg !== undefined) {
-      if (typeof msg === 'string') {
-        return applyTransform(interp(msg, values, currentLocale), id)
-      }
-      return applyTransform(msg(values), id)
+      return resolveMsg(msg, values, currentLocale, id)
     }
 
     // Try fallback locale
     if (config.fallbackLocale) {
       const fallbackMsg = catalog.get(config.fallbackLocale, id)
       if (fallbackMsg !== undefined) {
-        diagnostics?.fallbackUsed(currentLocale, config.fallbackLocale, id)
-        if (typeof fallbackMsg === 'string') {
-          return applyTransform(interp(fallbackMsg, values, config.fallbackLocale), id)
-        }
-        return applyTransform(fallbackMsg(values), id)
+        diag?.fallbackUsed(currentLocale, config.fallbackLocale, id)
+        return resolveMsg(fallbackMsg, values, config.fallbackLocale, id)
       }
     }
 
@@ -153,10 +166,8 @@ export function createFluentiCore(config: FluentiCoreConfigFull): FluentiCoreIns
       for (const chainLocale of chainLocales) {
         const chainMsg = catalog.get(chainLocale, id)
         if (chainMsg !== undefined) {
-          if (typeof chainMsg === 'string') {
-            return applyTransform(interp(chainMsg, values, chainLocale), id)
-          }
-          return applyTransform(chainMsg(values), id)
+          diag?.fallbackUsed(currentLocale, chainLocale, id)
+          return resolveMsg(chainMsg, values, chainLocale, id)
         }
       }
     }
@@ -182,7 +193,6 @@ export function createFluentiCore(config: FluentiCoreConfigFull): FluentiCoreIns
     || (typeof process !== 'undefined' && process.env?.['FLUENTI_DEBUG'] === 'true')
 
   function warnMissing(id: string): void {
-    diagnostics?.missingKey(currentLocale, id)
     if (!devWarningsEnabled) return
     console.warn(`[fluenti] Missing translation for "${id}" in locale "${currentLocale}"`)
   }
@@ -198,12 +208,12 @@ export function createFluentiCore(config: FluentiCoreConfigFull): FluentiCoreIns
       return missingResult
     }
 
-    // If the id looks like an ICU message, interpolate it directly
-    // (compile-time transforms like <Plural> emit inline ICU as t() arguments)
+    // If the id looks like a message with placeholders, interpolate directly
     if (id.includes('{')) {
-      return applyTransform(interp(id, values, currentLocale), id)
+      return applyTransform(interp(id, values, currentLocale, config.formatters), id)
     }
 
+    diag?.missingKey(currentLocale, id)
     warnMissing(id)
     return (devWarningsEnabled ? `[!] ${id}` : id) as LocalizedString
   }
@@ -235,7 +245,7 @@ export function createFluentiCore(config: FluentiCoreConfigFull): FluentiCoreIns
           return catalogResult
         }
 
-        // Fallback: resolve as raw ICU message
+        // Fallback: interpolate directly
         return resolveMessage(icu, values)
       }
 
@@ -259,7 +269,7 @@ export function createFluentiCore(config: FluentiCoreConfigFull): FluentiCoreIns
 
         if (descriptor.message !== undefined) {
           const fallbackId = messageId || descriptor.message
-          return applyTransform(interp(descriptor.message, values, currentLocale), fallbackId)
+          return applyTransform(interp(descriptor.message, values, currentLocale, config.formatters), fallbackId)
         }
 
         return messageId as LocalizedString
@@ -286,18 +296,28 @@ export function createFluentiCore(config: FluentiCoreConfigFull): FluentiCoreIns
     },
 
     d(value: Date | number, style?: string): LocalizedString {
-      return formatDate(value, currentLocale, style, config.dateFormats) as LocalizedString
+      const raw = style && config.dateFormats?.[style] ? config.dateFormats[style] : undefined
+      // Skip 'relative' style (handled by the full formatters module)
+      const opts: Intl.DateTimeFormatOptions | undefined = typeof raw === 'string' ? undefined : raw
+      const date = typeof value === 'number' ? new Date(value) : value
+      try {
+        return new Intl.DateTimeFormat(currentLocale, opts).format(date) as LocalizedString
+      } catch {
+        return 'Invalid Date' as LocalizedString
+      }
     },
 
     n(value: number, style?: string): LocalizedString {
-      return formatNumber(value, currentLocale, style, config.numberFormats) as LocalizedString
+      const raw = style && config.numberFormats?.[style] ? config.numberFormats[style] : undefined
+      const opts: Intl.NumberFormatOptions | undefined = typeof raw === 'function' ? raw(currentLocale) : raw
+      return new Intl.NumberFormat(currentLocale, opts).format(value) as LocalizedString
     },
 
     format(message: string, values?: Record<string, unknown>): LocalizedString {
-      return interp(message, values, currentLocale) as LocalizedString
+      return interp(message, values, currentLocale, config.formatters) as LocalizedString
     },
 
-    ...(diagnostics ? { diagnostics } : {}),
+    ...(diag ? { diagnostics: diag } : {}),
   }
 
   return instance

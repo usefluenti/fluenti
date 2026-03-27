@@ -2,7 +2,8 @@ import { describe, it, expect } from 'vitest'
 import { render } from '@solidjs/testing-library'
 import type { Component, JSX } from 'solid-js'
 import { hashMessage } from '@fluenti/core/internal'
-import { I18nProvider, Trans } from '../src'
+import { I18nProvider } from '../src'
+import { Trans } from '../src/trans'
 
 describe('Trans component', () => {
   // ─── Children rendering (recommended API) ───────────────────────────

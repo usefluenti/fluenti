@@ -9,7 +9,9 @@ import {
   transContract,
 } from '../../core/tests/fixtures/cross-framework-contract'
 import { createFluenti } from '../src/plugin'
-import { Plural, Select, Trans } from '../src'
+import { Trans } from '../src/components/Trans'
+import { Plural } from '../src/components/Plural'
+import { Select } from '../src/components/Select'
 
 function createPlugin() {
   return createFluenti({

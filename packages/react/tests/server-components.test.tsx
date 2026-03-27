@@ -17,6 +17,7 @@ vi.mock('react', async () => {
   }
 })
 
+import { interpolate } from '../../core/src/interpolate'
 import { createServerI18n } from '../src/server'
 import { hashMessage } from '../src/components/trans-core'
 
@@ -37,6 +38,7 @@ function createTestI18n() {
       throw new Error(`Unknown locale: ${locale}`)
     },
     fallbackLocale: 'en',
+    interpolate,
   })
 }
 
@@ -60,6 +62,7 @@ describe('Server Trans', () => {
 
     const { setLocale, Trans } = createServerI18n({
       loadMessages: async () => messagesWithHash,
+      interpolate,
     })
     setLocale('en')
     const element = await Trans({ children: sourceText })
@@ -87,6 +90,7 @@ describe('Server Trans', () => {
   it('supports custom id prop', async () => {
     const { setLocale, Trans } = createServerI18n({
       loadMessages: async () => ({ 'custom-id': 'Custom translation' }),
+      interpolate,
     })
     setLocale('en')
 
@@ -156,6 +160,7 @@ describe('Server Plural', () => {
         '{count, plural, =0 {No apples} one {# apple} other {# apples}}':
           '{count, plural, =0 {没有苹果} one {# 个苹果} other {# 个苹果}}',
       }),
+      interpolate,
     })
     setLocale('en')
 
@@ -176,6 +181,7 @@ describe('Server Select', () => {
         '{value, select, male {He liked your post} female {She liked your post} other {They liked your post}}':
           '{value, select, male {彼があなたの投稿を気に入りました} female {彼女があなたの投稿を気に入りました} other {その人があなたの投稿を気に入りました}}',
       }),
+      interpolate,
     })
     setLocale('en')
 

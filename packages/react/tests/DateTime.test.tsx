@@ -1,6 +1,8 @@
 import { describe, it, expect, afterEach } from 'vitest'
 import { render, screen, cleanup } from '@testing-library/react'
-import { DateTime, I18nProvider } from '../src'
+import { interpolate } from '../../core/src/interpolate'
+import { I18nProvider } from '../src'
+import { DateTime } from '../src/components-entry'
 
 describe('DateTime', () => {
   afterEach(cleanup)
@@ -10,7 +12,7 @@ describe('DateTime', () => {
 
   it('formats a Date object with default style', () => {
     render(
-      <I18nProvider locale="en" messages={{ en: {} }}>
+      <I18nProvider locale="en" messages={{ en: {} }} interpolate={interpolate}>
         <DateTime value={fixedDate} />
       </I18nProvider>,
     )
@@ -20,7 +22,7 @@ describe('DateTime', () => {
 
   it('formats a numeric timestamp with default style', () => {
     render(
-      <I18nProvider locale="en" messages={{ en: {} }}>
+      <I18nProvider locale="en" messages={{ en: {} }} interpolate={interpolate}>
         <DateTime value={fixedTimestamp} />
       </I18nProvider>,
     )
@@ -30,7 +32,14 @@ describe('DateTime', () => {
 
   it('formats with the built-in "short" style', () => {
     render(
-      <I18nProvider locale="en" messages={{ en: {} }}>
+      <I18nProvider
+        locale="en"
+        messages={{ en: {} }}
+        interpolate={interpolate}
+        dateFormats={{
+          short: { year: 'numeric', month: 'numeric', day: 'numeric' },
+        }}
+      >
         <DateTime value={fixedDate} format="short" />
       </I18nProvider>,
     )
@@ -44,7 +53,14 @@ describe('DateTime', () => {
 
   it('formats with the built-in "long" style', () => {
     render(
-      <I18nProvider locale="en" messages={{ en: {} }}>
+      <I18nProvider
+        locale="en"
+        messages={{ en: {} }}
+        interpolate={interpolate}
+        dateFormats={{
+          long: { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' },
+        }}
+      >
         <DateTime value={fixedDate} format="long" />
       </I18nProvider>,
     )
@@ -59,7 +75,14 @@ describe('DateTime', () => {
 
   it('formats with the built-in "time" style', () => {
     render(
-      <I18nProvider locale="en" messages={{ en: {} }}>
+      <I18nProvider
+        locale="en"
+        messages={{ en: {} }}
+        interpolate={interpolate}
+        dateFormats={{
+          time: { hour: 'numeric', minute: 'numeric' },
+        }}
+      >
         <DateTime value={fixedDate} format="time" />
       </I18nProvider>,
     )
@@ -72,7 +95,14 @@ describe('DateTime', () => {
 
   it('formats with the built-in "datetime" style', () => {
     render(
-      <I18nProvider locale="en" messages={{ en: {} }}>
+      <I18nProvider
+        locale="en"
+        messages={{ en: {} }}
+        interpolate={interpolate}
+        dateFormats={{
+          datetime: { year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric' },
+        }}
+      >
         <DateTime value={fixedDate} format="datetime" />
       </I18nProvider>,
     )
@@ -92,6 +122,7 @@ describe('DateTime', () => {
         locale="en"
         messages={{ en: {} }}
         dateFormats={{ custom: { year: '2-digit', month: '2-digit' } }}
+        interpolate={interpolate}
       >
         <DateTime value={fixedDate} format="custom" />
       </I18nProvider>,
@@ -105,7 +136,7 @@ describe('DateTime', () => {
 
   it('respects a different locale (de)', () => {
     render(
-      <I18nProvider locale="de" messages={{ de: {} }}>
+      <I18nProvider locale="de" messages={{ de: {} }} interpolate={interpolate}>
         <DateTime value={fixedDate} />
       </I18nProvider>,
     )
@@ -115,7 +146,7 @@ describe('DateTime', () => {
 
   it('respects a different locale (ja)', () => {
     render(
-      <I18nProvider locale="ja" messages={{ ja: {} }}>
+      <I18nProvider locale="ja" messages={{ ja: {} }} interpolate={interpolate}>
         <DateTime value={fixedDate} />
       </I18nProvider>,
     )
@@ -125,7 +156,7 @@ describe('DateTime', () => {
 
   it('falls back to default when given an unknown style', () => {
     render(
-      <I18nProvider locale="en" messages={{ en: {} }}>
+      <I18nProvider locale="en" messages={{ en: {} }} interpolate={interpolate}>
         <DateTime value={fixedDate} format="nonexistent" />
       </I18nProvider>,
     )

@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import { createFluentiCore } from '../src/index'
 import { msg, hashMessage } from '../src/msg'
+import { interpolate } from '../src/interpolate'
 
 describe('createFluentiCore', () => {
   it('creates an instance with locale', () => {
@@ -445,6 +446,11 @@ describe('createFluentiCore', () => {
       const i18n = createFluentiCore({
         locale: 'en-US',
         messages: { 'en-US': {} },
+        numberFormats: {
+          currency: () => ({ style: 'currency' as const, currency: 'USD' }),
+          percent: { style: 'percent' as const },
+          decimal: { minimumFractionDigits: 2, maximumFractionDigits: 2 },
+        },
       })
       const currency = i18n.n(42.5, 'currency')
       expect(currency).toContain('$')
@@ -461,6 +467,7 @@ describe('createFluentiCore', () => {
       const i18n = createFluentiCore({
         locale: 'en',
         messages: { en: {} },
+        interpolate,
       })
       const result = i18n.format('{count, plural, =0 {none} one {# item} other {# items}}', { count: 5 })
       expect(result).toBe('5 items')
@@ -470,6 +477,7 @@ describe('createFluentiCore', () => {
       const i18n = createFluentiCore({
         locale: 'en',
         messages: { en: {} },
+        interpolate,
       })
       const result = i18n.format('{gender, select, male {He} female {She} other {They}}', { gender: 'female' })
       expect(result).toBe('She')
@@ -605,6 +613,7 @@ describe('createFluentiCore', () => {
       const i18n = createFluentiCore({
         locale: 'en',
         messages: { en: {} },
+        interpolate,
         formatters: {
           list: (value, _style, _locale) => {
             if (Array.isArray(value)) {
@@ -622,6 +631,7 @@ describe('createFluentiCore', () => {
       const i18n = createFluentiCore({
         locale: 'ja',
         messages: { ja: {} },
+        interpolate,
         formatters: {
           custom: (_value, style, locale) => {
             calls.push({ style, locale })
@@ -637,6 +647,7 @@ describe('createFluentiCore', () => {
       const i18n = createFluentiCore({
         locale: 'en',
         messages: { en: {} },
+        interpolate,
         formatters: {
           list: () => 'custom',
         },

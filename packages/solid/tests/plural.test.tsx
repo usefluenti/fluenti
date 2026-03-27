@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import { createSignal } from 'solid-js'
 import { render } from '@solidjs/testing-library'
-import { I18nProvider, Plural } from '../src'
+import { I18nProvider } from '../src'
+import { Plural } from '../src/plural'
 
 describe('Plural component', () => {
   it('selects "other" by default', () => {

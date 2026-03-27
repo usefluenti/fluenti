@@ -1,4 +1,4 @@
-import { Trans, Plural, Select, DateTime, NumberFormat } from '@fluenti/react'
+import { Trans, Plural, Select, DateTime, NumberFormat } from '@fluenti/react/components'
 
 export function Banner({ count, role }: { count: number; role: string }) {
   return (

@@ -1,12 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import {
-  clearAllCaches,
-  formatNumber,
-  formatDate,
-  formatRelativeTime,
-  compile,
-  parse,
-} from '../src'
+import { clearAllCaches } from '../src'
 import {
   interpolate,
   clearInterpolationCache,
@@ -19,6 +12,11 @@ import {
   DEFAULT_MESSAGE_CACHE_SIZE,
   resolvePlural,
 } from '../src/internal'
+import { parse } from '../src/parser'
+import { compile } from '../src/compile'
+import { formatNumber } from '../src/formatters/number'
+import { formatDate } from '../src/formatters/date'
+import { formatRelativeTime } from '../src/formatters/relative'
 
 describe('DEFAULT_MESSAGE_CACHE_SIZE', () => {
   it('is 500', () => {

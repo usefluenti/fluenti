@@ -1,5 +1,6 @@
 import { createSignal, type Accessor } from 'solid-js'
-import { createDiagnostics, formatDate, formatNumber } from '@fluenti/core'
+import { createDiagnostics } from '@fluenti/core/internal'
+import { formatDate, formatNumber } from '@fluenti/core/formatters'
 import type { FluentiCoreConfig, Locale, LocalizedString, Messages, CompiledMessage, MessageDescriptor, DateFormatOptions, NumberFormatOptions, DiagnosticsConfig } from '@fluenti/core'
 import { interpolate as coreInterpolate, buildICUMessage, resolveDescriptorId } from '@fluenti/core/internal'
 

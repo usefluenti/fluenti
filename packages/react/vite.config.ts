@@ -4,6 +4,7 @@ import { useClientPlugin } from '../../scripts/use-client-plugin'
 export default createPackageConfig({
   entry: {
     index: 'src/index.ts',
+    'components-entry': 'src/components-entry.ts',
     server: 'src/server.ts',
     'vite-plugin': 'src/vite-plugin.ts',
   },

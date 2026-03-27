@@ -37,6 +37,14 @@
       "import": { "types": "./dist/transform-browser.d.ts", "default": "./dist/transform-browser.js" },
       "require": { "types": "./dist/transform-browser.d.ts", "default": "./dist/transform-browser.cjs" }
     },
+    "./ssr": {
+      "import": { "types": "./dist/ssr-entry.d.ts", "default": "./dist/ssr-entry.js" },
+      "require": { "types": "./dist/ssr-entry.d.ts", "default": "./dist/ssr-entry.cjs" }
+    },
+    "./formatters": {
+      "import": { "types": "./dist/formatters-entry.d.ts", "default": "./dist/formatters-entry.js" },
+      "require": { "types": "./dist/formatters-entry.d.ts", "default": "./dist/formatters-entry.cjs" }
+    },
     "./config": {
       "import": { "types": "./dist/config.d.ts", "default": "./dist/config.js" },
       "require": { "types": "./dist/config.d.ts", "default": "./dist/config.cjs" }

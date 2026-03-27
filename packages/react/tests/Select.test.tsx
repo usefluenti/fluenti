@@ -1,12 +1,14 @@
 import { describe, it, expect, afterEach } from 'vitest'
 import { render, screen, cleanup } from '@testing-library/react'
-import { Select, I18nProvider } from '../src'
+import { interpolate } from '../../core/src/interpolate'
+import { I18nProvider } from '../src'
+import { Select } from '../src/components-entry'
 
 describe('Select', () => {
   afterEach(cleanup)
   it('selects correct case based on value', () => {
     render(
-      <I18nProvider locale="en" messages={{ en: {} }}>
+      <I18nProvider locale="en" messages={{ en: {} }} interpolate={interpolate}>
         <Select
           value="male"
           male="He liked your post"
@@ -20,7 +22,7 @@ describe('Select', () => {
 
   it('falls back to other for missing cases', () => {
     render(
-      <I18nProvider locale="en" messages={{ en: {} }}>
+      <I18nProvider locale="en" messages={{ en: {} }} interpolate={interpolate}>
         <Select
           value="nonbinary"
           male="He"
@@ -34,7 +36,7 @@ describe('Select', () => {
 
   it('handles rich text in cases', () => {
     render(
-      <I18nProvider locale="en" messages={{ en: {} }}>
+      <I18nProvider locale="en" messages={{ en: {} }} interpolate={interpolate}>
         <Select
           value="admin"
           admin={<b>Admin access</b>}
@@ -56,6 +58,7 @@ describe('Select', () => {
               '{value, select, male {彼があなたの投稿を気に入りました} female {彼女があなたの投稿を気に入りました} other {その人があなたの投稿を気に入りました}}',
           },
         }}
+        interpolate={interpolate}
       >
         <Select
           value="male"
@@ -81,6 +84,7 @@ describe('Select', () => {
               '{value, select, admin {アクセス権: <0>管理者</0>} other {通常アクセス}}',
           },
         }}
+        interpolate={interpolate}
       >
         <Select
           value="admin"
@@ -97,7 +101,7 @@ describe('Select', () => {
 
   it('string value "0" matches option key "0"', () => {
     render(
-      <I18nProvider locale="en" messages={{ en: {} }}>
+      <I18nProvider locale="en" messages={{ en: {} }} interpolate={interpolate}>
         <Select
           value="0"
           options={{ '0': 'Zero selected' }}
@@ -111,7 +115,7 @@ describe('Select', () => {
   it('unmatched value without explicit "other" text falls back gracefully', () => {
     // "other" is required by types but test that empty string doesn't crash
     const { container } = render(
-      <I18nProvider locale="en" messages={{ en: {} }}>
+      <I18nProvider locale="en" messages={{ en: {} }} interpolate={interpolate}>
         <Select
           value="unknown"
           male="He"
