@@ -417,7 +417,7 @@ export default defineConfig({
 })
 ```
 
-The extends chain has a maximum depth of 10 and circular references are detected with a clear error message.
+The extends chain has a maximum depth of 10 and circular references are detected with a clear error message. The `extends` path must be relative — absolute paths are rejected for security.
 
 ## Runtime Config
 

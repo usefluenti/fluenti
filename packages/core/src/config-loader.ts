@@ -4,6 +4,8 @@ import { createRequire } from 'node:module'
 import type { FluentiBuildConfig } from './types'
 import { normalizeConfig } from './types'
 
+const VALID_FORMATS = new Set(['po', 'json'])
+
 // Module-level require that works in both CJS and ESM after bundling.
 // Using createRequire() directly (rather than the `typeof require !== 'undefined'` guard)
 // prevents Rolldown from rewriting bare `require` to its `__require` Proxy shim,
@@ -29,6 +31,54 @@ const defaultConfig: FluentiBuildConfig = {
 const MAX_EXTENDS_DEPTH = 10
 const PATH_FIELDS = ['catalogDir', 'compileOutDir'] as const
 const GLOB_FIELDS = ['include', 'exclude'] as const
+
+/**
+ * Validate that an `extends` path is reasonable and not attempting to access
+ * sensitive system paths. The `extends` value must be a relative path.
+ */
+function validateExtendsPath(extendsValue: string): void {
+  // Must be a relative path — absolute paths could reference system files
+  if (isAbsolute(extendsValue)) {
+    throw new Error(
+      `Config "extends" must be a relative path, got absolute path: "${extendsValue}"`,
+    )
+  }
+}
+
+/**
+ * Validate the basic shape of a user-provided config object.
+ * Throws descriptive errors for invalid values.
+ */
+function validateConfigShape(config: Partial<FluentiBuildConfig>, configFilePath: string): void {
+  if ('sourceLocale' in config) {
+    if (typeof config.sourceLocale !== 'string' || config.sourceLocale.trim() === '') {
+      throw new Error(
+        `Invalid "sourceLocale" in ${configFilePath}: must be a non-empty string, got ${JSON.stringify(config.sourceLocale)}`,
+      )
+    }
+  }
+  if ('locales' in config) {
+    if (!Array.isArray(config.locales) || config.locales.length === 0) {
+      throw new Error(
+        `Invalid "locales" in ${configFilePath}: must be a non-empty array, got ${JSON.stringify(config.locales)}`,
+      )
+    }
+  }
+  if ('format' in config && config.format !== undefined) {
+    if (!VALID_FORMATS.has(config.format as string)) {
+      throw new Error(
+        `Invalid "format" in ${configFilePath}: must be "po" or "json", got ${JSON.stringify(config.format)}`,
+      )
+    }
+  }
+  if ('extends' in config && config.extends !== undefined) {
+    if (typeof config.extends !== 'string' || config.extends.trim() === '') {
+      throw new Error(
+        `Invalid "extends" in ${configFilePath}: must be a non-empty string, got ${JSON.stringify(config.extends)}`,
+      )
+    }
+  }
+}
 
 /**
  * Rebase a relative path from one directory context to another.
@@ -121,12 +171,18 @@ async function resolveConfigChain(
   const mod = await jiti.import(absolutePath) as { default?: Partial<FluentiBuildConfig> }
   const userConfig = mod.default ?? mod as unknown as Partial<FluentiBuildConfig>
 
+  if (typeof userConfig !== 'object' || userConfig === null || Array.isArray(userConfig)) {
+    throw new Error(`Config file ${absolutePath} must export an object, got ${typeof userConfig}`)
+  }
+  validateConfigShape(userConfig, absolutePath)
+
   if (!userConfig.extends) {
     const { extends: _extends, ...rest } = userConfig
     return { ...defaultConfig, ...rest }
   }
 
   const configDir = dirname(absolutePath)
+  validateExtendsPath(userConfig.extends)
   const parentPath = resolve(configDir, userConfig.extends)
 
   if (!existsSync(parentPath)) {
@@ -203,12 +259,18 @@ function resolveConfigChainSync(
     ? (mod.default ?? {}) as Partial<FluentiBuildConfig>
     : mod as Partial<FluentiBuildConfig>
 
+  if (typeof userConfig !== 'object' || userConfig === null || Array.isArray(userConfig)) {
+    throw new Error(`Config file ${absolutePath} must export an object, got ${typeof userConfig}`)
+  }
+  validateConfigShape(userConfig, absolutePath)
+
   if (!userConfig.extends) {
     const { extends: _extends, ...rest } = userConfig
     return { ...defaultConfig, ...rest }
   }
 
   const configDir = dirname(absolutePath)
+  validateExtendsPath(userConfig.extends)
   const parentPath = resolve(configDir, userConfig.extends)
 
   if (!existsSync(parentPath)) {

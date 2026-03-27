@@ -732,3 +732,96 @@ describe('loadConfigSync failure behavior', () => {
     }
   })
 })
+
+// ---------------------------------------------------------------------------
+// Config validation
+// ---------------------------------------------------------------------------
+
+describe('config shape validation', () => {
+  it('rejects empty sourceLocale', async () => {
+    const dir = join(tmpRoot, 'bad-source-locale')
+    mkdirSync(dir)
+    writeMjs(
+      join(dir, 'fluenti.config.mjs'),
+      configSource({ sourceLocale: '', locales: ['en'], format: 'po' }),
+    )
+    await expect(loadConfig(undefined, dir)).rejects.toThrow(/sourceLocale.*non-empty string/i)
+  })
+
+  it('rejects non-string sourceLocale', async () => {
+    const dir = join(tmpRoot, 'bad-source-locale-type')
+    mkdirSync(dir)
+    writeMjs(
+      join(dir, 'fluenti.config.mjs'),
+      'export default { sourceLocale: 123, locales: ["en"], format: "po" }\n',
+    )
+    await expect(loadConfig(undefined, dir)).rejects.toThrow(/sourceLocale.*non-empty string/i)
+  })
+
+  it('rejects empty locales array', async () => {
+    const dir = join(tmpRoot, 'empty-locales')
+    mkdirSync(dir)
+    writeMjs(
+      join(dir, 'fluenti.config.mjs'),
+      configSource({ sourceLocale: 'en', locales: [], format: 'po' }),
+    )
+    await expect(loadConfig(undefined, dir)).rejects.toThrow(/locales.*non-empty array/i)
+  })
+
+  it('rejects invalid format', async () => {
+    const dir = join(tmpRoot, 'bad-format')
+    mkdirSync(dir)
+    writeMjs(
+      join(dir, 'fluenti.config.mjs'),
+      'export default { sourceLocale: "en", locales: ["en"], format: "xml" }\n',
+    )
+    await expect(loadConfig(undefined, dir)).rejects.toThrow(/format.*"po" or "json"/i)
+  })
+
+  it('accepts valid po format', async () => {
+    const dir = join(tmpRoot, 'valid-po')
+    mkdirSync(dir)
+    writeMjs(
+      join(dir, 'fluenti.config.mjs'),
+      configSource({ sourceLocale: 'en', locales: ['en'], format: 'po' }),
+    )
+    const config = await loadConfig(undefined, dir)
+    expect(config.format).toBe('po')
+  })
+
+  it('accepts valid json format', async () => {
+    const dir = join(tmpRoot, 'valid-json')
+    mkdirSync(dir)
+    writeMjs(
+      join(dir, 'fluenti.config.mjs'),
+      configSource({ sourceLocale: 'en', locales: ['en'], format: 'json' }),
+    )
+    const config = await loadConfig(undefined, dir)
+    expect(config.format).toBe('json')
+  })
+})
+
+describe('extends path security', () => {
+  it('rejects absolute extends path', async () => {
+    const dir = join(tmpRoot, 'abs-extends')
+    mkdirSync(dir)
+    writeMjs(
+      join(dir, 'fluenti.config.mjs'),
+      'export default { extends: "/etc/passwd" }\n',
+    )
+    await expect(loadConfig(undefined, dir)).rejects.toThrow(/must be a relative path/i)
+  })
+
+  it('rejects absolute extends path (sync)', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'fluenti-abs-sync-'))
+    try {
+      writeMjs(
+        join(dir, 'fluenti.config.mjs'),
+        'export default { extends: "/etc/passwd" }\n',
+      )
+      expect(() => loadConfigSync(undefined, dir)).toThrow(/must be a relative path/i)
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+})

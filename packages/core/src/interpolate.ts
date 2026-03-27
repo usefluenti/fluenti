@@ -26,7 +26,10 @@ export function clearInterpolationCache(): void {
  * @param maxSize - New maximum number of cached compiled messages
  */
 export function setMessageCacheSize(maxSize: number): void {
-  compiledCache = new LRUCache<string, CompiledFn>(maxSize)
+  if (!Number.isFinite(maxSize) || maxSize < 1) {
+    throw new RangeError(`Message cache size must be a positive integer, got ${maxSize}`)
+  }
+  compiledCache = new LRUCache<string, CompiledFn>(Math.floor(maxSize))
 }
 
 /**

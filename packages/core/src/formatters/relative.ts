@@ -31,6 +31,9 @@ const UNITS: TimeUnit[] = [
 export function formatRelativeTime(value: Date | number, locale: Locale): string {
   const timestamp = value instanceof Date ? value.getTime() : value
   if (!Number.isFinite(timestamp)) {
+    if (typeof process !== 'undefined' && process.env?.['NODE_ENV'] !== 'production') {
+      console.warn(`[fluenti] formatRelativeTime received non-finite timestamp: ${value}`)
+    }
     return ''
   }
 

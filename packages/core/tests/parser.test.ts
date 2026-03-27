@@ -605,4 +605,50 @@ describe('parse', () => {
       expect(() => parse(msg)).toThrow(FluentParseError)
     })
   })
+
+  // ---- Boundary handling ----
+
+  describe('boundary handling', () => {
+    it('throws on unterminated placeholder at EOF', () => {
+      expect(() => parse('Hello {name')).toThrow(FluentParseError)
+      expect(() => parse('Hello {name')).toThrow(/unterminated placeholder/i)
+    })
+
+    it('throws on unterminated placeholder with comma at EOF', () => {
+      expect(() => parse('Hello {name,')).toThrow(FluentParseError)
+    })
+
+    it('throws on empty braces', () => {
+      expect(() => parse('Hello { }')).toThrow(FluentParseError)
+      expect(() => parse('Hello { }')).toThrow(/expected identifier/i)
+    })
+
+    it('throws on identifier exceeding max length', () => {
+      const longIdent = 'a'.repeat(257)
+      expect(() => parse(`Hello {${longIdent}}`)).toThrow(FluentParseError)
+      expect(() => parse(`Hello {${longIdent}}`)).toThrow(/identifier exceeds maximum length/i)
+    })
+
+    it('accepts identifier at max length boundary', () => {
+      const ident = 'a'.repeat(256)
+      const result = parse(`{${ident}}`)
+      expect(result).toEqual([{ type: 'variable', name: ident }])
+    })
+
+    it('handles emoji in text content', () => {
+      const result = parse('Hello 👍 {name}')
+      expect(result).toEqual([
+        { type: 'text', value: 'Hello 👍 ' },
+        { type: 'variable', name: 'name' },
+      ])
+    })
+
+    it('handles zero-width characters in text', () => {
+      const result = parse('Hello\u200B{name}')
+      expect(result).toEqual([
+        { type: 'text', value: 'Hello\u200B' },
+        { type: 'variable', name: 'name' },
+      ])
+    })
+  })
 })

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { interpolate } from '../src/interpolate'
+import { interpolate, setMessageCacheSize } from '../src/interpolate'
 
 describe('interpolate', () => {
   it('returns plain text as-is', () => {
@@ -479,5 +479,33 @@ describe('XSS prevention', () => {
     const msg = '{gender, select, male {Mr. {name}} female {Ms. {name}} other {{name}}}'
     const result = interpolate(msg, { gender: 'other', name: '<script>alert(1)</script>' })
     expect(result).toBe('<script>alert(1)</script>')
+  })
+})
+
+describe('setMessageCacheSize validation', () => {
+
+  it('throws RangeError for zero cache size', () => {
+    expect(() => setMessageCacheSize(0)).toThrow(RangeError)
+  })
+
+  it('throws RangeError for negative cache size', () => {
+    expect(() => setMessageCacheSize(-1)).toThrow(RangeError)
+  })
+
+  it('throws RangeError for NaN cache size', () => {
+    expect(() => setMessageCacheSize(NaN)).toThrow(RangeError)
+  })
+
+  it('throws RangeError for Infinity cache size', () => {
+    expect(() => setMessageCacheSize(Infinity)).toThrow(RangeError)
+  })
+
+  it('accepts positive integer cache size', () => {
+    expect(() => setMessageCacheSize(100)).not.toThrow()
+  })
+
+  it('floors fractional cache size', () => {
+    // Should not throw — floor(1.5) = 1 which is valid
+    expect(() => setMessageCacheSize(1.5)).not.toThrow()
   })
 })

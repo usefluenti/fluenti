@@ -40,6 +40,14 @@ export function formatDate(
   style?: string,
   styles?: Record<string, Intl.DateTimeFormatOptions | 'relative'>,
 ): string {
+  // Validate input in development
+  if (typeof process !== 'undefined' && process.env?.['NODE_ENV'] !== 'production') {
+    const ts = value instanceof Date ? value.getTime() : value
+    if (!Number.isFinite(ts)) {
+      console.warn(`[fluenti] formatDate received invalid date value: ${value}`)
+    }
+  }
+
   // Merge user styles over defaults
   const mergedStyles = { ...DEFAULT_DATE_FORMATS, ...styles }
   try {

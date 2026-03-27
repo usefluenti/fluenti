@@ -4,6 +4,7 @@ const WS_REGEX = /\s/
 const IDENT_REGEX = /[a-zA-Z0-9_]/
 const DIGIT_REGEX = /[0-9]/
 const MAX_NESTING_DEPTH = 10
+const MAX_IDENTIFIER_LENGTH = 256
 
 /**
  * Error thrown when parsing an ICU MessageFormat string fails.
@@ -54,6 +55,13 @@ export function parse(message: string): ASTNode[] {
     }
     if (pos === start) {
       throw new FluentParseError('Expected identifier', pos, message)
+    }
+    if (pos - start > MAX_IDENTIFIER_LENGTH) {
+      throw new FluentParseError(
+        `Identifier exceeds maximum length of ${MAX_IDENTIFIER_LENGTH}`,
+        start,
+        message,
+      )
     }
     return message.slice(start, pos)
   }
@@ -247,6 +255,9 @@ export function parse(message: string): ASTNode[] {
           continue
         }
 
+        if (pos >= len) {
+          throw new FluentParseError('Unterminated placeholder: expected closing }', pos, message)
+        }
         throw new FluentParseError(`Unexpected character '${message[pos]}'`, pos, message)
       }
 

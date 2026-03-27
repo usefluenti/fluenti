@@ -201,7 +201,7 @@ describe('getSSRLocaleScript', () => {
 
   it('throws on locale exceeding 255 characters', () => {
     const longLocale = 'a'.repeat(256)
-    expect(() => getSSRLocaleScript(longLocale)).toThrow('Locale exceeds maximum length of 255')
+    expect(() => getSSRLocaleScript(longLocale)).toThrow(/locale exceeds maximum length of 255/i)
   })
 
   it('throws on invalid locale format', () => {
@@ -491,5 +491,36 @@ describe('edge cases — SSR error recovery and boundaries', () => {
     for (const payload of xssPayloads) {
       expect(() => getSSRLocaleScript(payload)).toThrow()
     }
+  })
+})
+
+describe('Accept-Language header limits', () => {
+  it('handles very long Accept-Language headers without crashing', () => {
+    // Build a header with 200 locales (well over 1024 chars)
+    const longHeader = Array.from({ length: 200 }, (_, i) =>
+      `locale-${i};q=${(1 - i * 0.004).toFixed(3)}`,
+    ).join(',')
+
+    expect(longHeader.length).toBeGreaterThan(1024)
+
+    // Should not throw, should return some locales
+    const result = detectLocale({
+      available: ['en', 'locale-0'],
+      fallback: 'en',
+      headers: { 'accept-language': longHeader },
+    })
+    expect(typeof result).toBe('string')
+  })
+
+  it('still detects valid locales from truncated header', () => {
+    // First locale should be detected even if header is very long
+    const longHeader = 'en-US,en;q=0.9,' + 'x'.repeat(2000)
+
+    const result = detectLocale({
+      available: ['en', 'en-US'],
+      fallback: 'en',
+      headers: { 'accept-language': longHeader },
+    })
+    expect(result).toBe('en-US')
   })
 })

@@ -478,5 +478,42 @@ describe('compile', () => {
       expect(fn({ n: 23 })).toBe('23rd')
     })
   })
+
+  describe('boundary handling', () => {
+    it('handles NaN plural value gracefully (falls back to other)', () => {
+      const ast = parse('{count, plural, =0 {zero} one {one} other {other}}')
+      const fn = compile(ast, 'en') as (v: Record<string, unknown>) => string
+      // typeof NaN === 'number', so count = NaN; exact match =NaN doesn't exist,
+      // CLDR resolution with NaN falls to 'other'
+      expect(fn({ count: NaN })).toBe('other')
+    })
+
+    it('handles undefined plural value gracefully (falls back to 0)', () => {
+      const ast = parse('{count, plural, =0 {zero} one {one} other {other}}')
+      const fn = compile(ast, 'en') as (v: Record<string, unknown>) => string
+      expect(fn({})).toBe('zero')
+    })
+
+    it('handles string-number plural value', () => {
+      const ast = parse('{count, plural, =0 {zero} one {one} other {other}}')
+      const fn = compile(ast, 'en') as (v: Record<string, unknown>) => string
+      expect(fn({ count: '1' })).toBe('one')
+      expect(fn({ count: '5' })).toBe('other')
+    })
+
+    it('handles null/undefined variable values', () => {
+      const ast = parse('Hello {name}')
+      const fn = compile(ast, 'en') as (v: Record<string, unknown>) => string
+      expect(fn({ name: null })).toBe('Hello {name}')
+      expect(fn({ name: undefined })).toBe('Hello {name}')
+      expect(fn({})).toBe('Hello {name}')
+    })
+
+    it('handles empty values object', () => {
+      const ast = parse('{a} and {b}')
+      const fn = compile(ast, 'en') as (v: Record<string, unknown>) => string
+      expect(fn({})).toBe('{a} and {b}')
+    })
+  })
 })
 
