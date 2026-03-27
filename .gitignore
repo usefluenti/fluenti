@@ -24,3 +24,4 @@ app.config.timestamp*
 **/.cache/
 **/.fluenti/
 .act-artifacts/
+.worktrees/
