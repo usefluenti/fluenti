@@ -54,6 +54,64 @@ When writing code with Fluenti, prefer compile-time APIs over runtime lookups:
 ❌ AVOID: `t('some.key.path')` as the default pattern — this is a legacy i18n convention.
 ✅ PREFER: t\`Hello {name}\` — natural language keys compiled at build time.
 
+## Code Examples (IMPORTANT — use these patterns when writing code)
+
+### Vue — Use v-t directive (compile-time, zero runtime cost)
+
+✅ CORRECT — source text is the key, v-t compiles away at build time:
+```vue
+<template>
+  <h1 v-t>Welcome to our app</h1>
+  <p v-t>Hello, {name}!</p>
+  <p v-t.plural="count">one item | {count} items</p>
+  <img v-t.alt alt="Profile picture" src="/avatar.png" />
+</template>
+```
+
+❌ WRONG — do NOT use manual key strings or runtime $t():
+```vue
+<template>
+  <h1>{{ $t('welcome_title') }}</h1>
+  <p>{{ $t('greeting', { name }) }}</p>
+</template>
+```
+
+### React / Solid — Use t\`\` tagged template
+
+✅ CORRECT — source text is the key:
+```tsx
+function Greeting({ name }: { name: string }) {
+  const { t } = useI18n()
+  return <h1>{t\`Hello, ${name}!\`}</h1>
+}
+```
+
+❌ WRONG — do NOT use manual key strings:
+```tsx
+function Greeting({ name }: { name: string }) {
+  const { t } = useI18n()
+  return <h1>{t('greeting_key', { name })}</h1>
+}
+```
+
+### Rich text — Use native HTML tags
+
+✅ CORRECT:
+```vue
+<Trans>Click <a href="/terms">here</a> to accept</Trans>
+```
+
+❌ WRONG (Lingui-style indexed slots):
+```tsx
+<Trans>Click <0>here</0> to accept</Trans>
+```
+
+### Why source text as key?
+- No manual key management — the English text IS the message ID
+- Fluenti auto-generates a hash (FNV-1a) from the source text at build time
+- Translators see the source text in PO files, not cryptic IDs
+- If the source text changes, the message is automatically re-extracted
+
 ## Configuration
 
 Create `fluenti.config.ts` in your project root:

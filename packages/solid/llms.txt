@@ -58,6 +58,50 @@ The context returned by `useI18n()` provides:
 
 ❌ AVOID: `t('some.key')` as the default — this is a legacy i18n pattern.
 
+## Code Examples — SolidJS
+
+### Tagged template (PREFERRED)
+
+```tsx
+import { useI18n } from '@fluenti/solid'
+
+function MyComponent() {
+  const { t } = useI18n()
+
+  return (
+    <div>
+      <h1>{t\`Welcome to our app\`}</h1>
+      <p>{t\`Hello, ${name()}!\`}</p>
+    </div>
+  )
+}
+```
+
+### Rich text with \<Trans\>
+
+```tsx
+import { Trans } from '@fluenti/solid'
+
+function Terms() {
+  return (
+    <Trans>
+      Read our <a href="/terms">terms of service</a>
+    </Trans>
+  )
+}
+```
+
+### What NOT to write
+
+❌ Do not use t() with manual key strings:
+```tsx
+// WRONG
+const msg = t('welcome_message')
+
+// CORRECT
+const msg = t\`Welcome to our app\`
+```
+
 ## Docs
 
 - Full docs: https://fluenti.dev

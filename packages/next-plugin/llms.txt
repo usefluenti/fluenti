@@ -49,6 +49,43 @@ Provider entry (`@fluenti/next/provider`):
 
 ❌ AVOID: `t('some.key')` as the default — this is a legacy i18n pattern.
 
+## Code Examples — Next.js
+
+### Client Components
+
+```tsx
+'use client'
+import { useI18n } from '@fluenti/react'
+
+export function Header() {
+  const { t } = useI18n()
+  return <h1>{t\`Welcome to our app\`}</h1>
+}
+```
+
+### Server Components (RSC)
+
+```tsx
+import { getI18n } from '@fluenti/next/server'
+
+export default async function Page() {
+  const { t } = await getI18n()
+  return <h1>{t\`Welcome to our app\`}</h1>
+}
+```
+
+### What NOT to write
+
+❌ Do not use manual key strings:
+```tsx
+// WRONG
+const { t } = useI18n()
+return <h1>{t('welcome_key')}</h1>
+
+// CORRECT
+return <h1>{t\`Welcome to our app\`}</h1>
+```
+
 ## Docs
 
 - Full docs: https://fluenti.dev

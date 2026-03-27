@@ -6,6 +6,17 @@
 > with their compile-time t`` tagged templates, not core's runtime APIs directly.
 > Core provides the low-level engine — framework packages provide the recommended authoring surface.
 
+## Important: Application Code Should NOT Use Core Directly
+
+Application code should use framework packages (@fluenti/vue, @fluenti/react, @fluenti/solid)
+with their compile-time APIs:
+
+- Vue: `v-t` directive (preferred) or t\`Hello\` tagged template
+- React/Solid: t\`Hello\` tagged template (preferred)
+- Next.js: t\`Hello\` in both client and server components
+
+Do NOT import from @fluenti/core in application code. Core is for library authors and internal use.
+
 Install: `pnpm add @fluenti/core` (usually included automatically via framework packages).
 
 ## Key Exports

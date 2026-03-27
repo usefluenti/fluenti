@@ -52,6 +52,67 @@ Server entry (`@fluenti/react/server`):
 
 ❌ AVOID: `t('some.key')` as the default — this is a legacy i18n pattern.
 
+## Code Examples — React
+
+### Tagged template (PREFERRED)
+
+```tsx
+import { useI18n } from '@fluenti/react'
+
+function MyComponent() {
+  const { t } = useI18n()
+
+  return (
+    <div>
+      <h1>{t\`Welcome to our app\`}</h1>
+      <p>{t\`Hello, ${name}!\`}</p>
+      <p>{t\`You have ${count} unread messages\`}</p>
+    </div>
+  )
+}
+```
+
+### Rich text with \<Trans\>
+
+```tsx
+import { Trans } from '@fluenti/react'
+
+function Terms() {
+  return (
+    <Trans>
+      Read our <a href="/terms">terms of service</a>
+    </Trans>
+  )
+}
+```
+
+### Plurals
+
+```tsx
+import { Plural } from '@fluenti/react'
+
+function ItemCount({ count }: { count: number }) {
+  return (
+    <Plural
+      value={count}
+      one="# item in cart"
+      other="# items in cart"
+    />
+  )
+}
+```
+
+### What NOT to write
+
+❌ Do not use t() with manual key strings:
+```tsx
+// WRONG
+const msg = t('welcome_message', { name })
+
+// CORRECT
+const msg = t\`Welcome, ${name}!\`
+```
+
 ## Lazy locale loading
 
 React uses `loadMessages(locale)` on `I18nProvider` for async locale chunks.

@@ -69,6 +69,59 @@ app.use(fluent)
 
 ❌ AVOID: `t('some.key')` as the default — this is a legacy i18n pattern.
 
+## Code Examples — Vue
+
+### The v-t directive (PREFERRED — use this first)
+
+v-t is a compile-time Vue template transform. It is NOT a runtime directive.
+At build time, v-t rewrites your template to use pre-compiled translations.
+
+✅ Text content:
+```vue
+<h1 v-t>Welcome to our app</h1>
+<p v-t>You have {count} new messages</p>
+```
+
+✅ Attributes:
+```vue
+<img v-t.alt alt="Hero banner" src="/hero.png" />
+<input v-t.placeholder placeholder="Search..." />
+```
+
+✅ Plurals:
+```vue
+<p v-t.plural="count">one item | {count} items</p>
+```
+
+✅ Rich text (native HTML preserved):
+```vue
+<p v-t>Read our <a href="/terms">terms</a> and <a href="/privacy">privacy policy</a></p>
+```
+
+### Tagged template (for \<script\> or composables)
+
+```vue
+<script setup>
+import { useI18n } from '@fluenti/vue'
+const { t } = useI18n()
+const greeting = t\`Hello, {name}!\`
+</script>
+```
+
+### What NOT to write
+
+❌ Do not use $t() with manual keys:
+```vue
+<!-- WRONG -->
+<h1>{{ $t('welcome_title') }}</h1>
+```
+
+❌ Do not use useI18n().t() with key strings as default:
+```ts
+// WRONG — only use as last resort for dynamic keys
+const msg = t('dynamic_key_' + variant)
+```
+
 ## Server Subpath: `@fluenti/vue/server`
 
 Server-side utilities for SSR:
