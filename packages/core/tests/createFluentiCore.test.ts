@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from 'vitest'
 import { createFluentiCore } from '../src/index'
 import { msg, hashMessage } from '../src/msg'
 import { interpolate } from '../src/interpolate'
+import { createMessageId } from '../src/identity'
 
 describe('createFluentiCore', () => {
   it('creates an instance with locale', () => {
@@ -889,6 +890,432 @@ describe('createFluentiCore', () => {
       const desc = { id: 'nav.home', message: 'Home' }
       expect(i18n.t(desc)).toBe('DESCRIPTOR_FALLBACK')
       expect(events[0]).toEqual({ locale: 'en', id: 'nav.home' })
+    })
+  })
+
+  // ─── config.interpolate override (#2) ─────────────────────────────
+
+  describe('config.interpolate', () => {
+    it('custom interpolate is used for string messages with {', () => {
+      const customInterp = vi.fn(
+        (message: string, _values: Record<string, unknown> | undefined) =>
+          message.replace(/\{(\w+)\}/g, 'CUSTOM'),
+      )
+      const i18n = createFluentiCore({
+        locale: 'en',
+        messages: { en: { greeting: 'Hello {name}' } },
+        interpolate: customInterp,
+      })
+      i18n.t('greeting', { name: 'World' })
+      expect(customInterp).toHaveBeenCalled()
+    })
+
+    it('custom interpolate receives (message, values, locale, formatters)', () => {
+      const calls: unknown[] = []
+      const fmts = { list: () => 'x' }
+      const customInterp = vi.fn(
+        (message: string, values: Record<string, unknown> | undefined, locale: string, formatters?: Record<string, unknown>) => {
+          calls.push({ message, values, locale, formatters })
+          return message
+        },
+      )
+      const i18n = createFluentiCore({
+        locale: 'de',
+        messages: { de: { greet: 'Hallo {name}' } },
+        interpolate: customInterp,
+        formatters: fmts,
+      })
+      i18n.t('greet', { name: 'Welt' })
+      expect(calls).toHaveLength(1)
+      const call = calls[0] as Record<string, unknown>
+      expect(call['message']).toBe('Hallo {name}')
+      expect(call['values']).toEqual({ name: 'Welt' })
+      expect(call['locale']).toBe('de')
+      expect(call['formatters']).toBe(fmts)
+    })
+
+    it('compiled function messages do NOT call custom interpolate', () => {
+      const customInterp = vi.fn((_m: string) => 'CUSTOM')
+      const i18n = createFluentiCore({
+        locale: 'en',
+        messages: {
+          en: {
+            greeting: ((vals?: Record<string, unknown>) => `Hi ${vals?.['name']}`) as any,
+          },
+        },
+        interpolate: customInterp,
+      })
+      expect(i18n.t('greeting', { name: 'Alice' })).toBe('Hi Alice')
+      expect(customInterp).not.toHaveBeenCalled()
+    })
+
+    it('static string without { does NOT call custom interpolate', () => {
+      const customInterp = vi.fn((_m: string) => 'CUSTOM')
+      const i18n = createFluentiCore({
+        locale: 'en',
+        messages: { en: { hello: 'Hello World' } },
+        interpolate: customInterp,
+      })
+      expect(i18n.t('hello')).toBe('Hello World')
+      expect(customInterp).not.toHaveBeenCalled()
+    })
+
+    it('format() uses custom interpolate', () => {
+      const customInterp = vi.fn(
+        (message: string) => message.toUpperCase(),
+      )
+      const i18n = createFluentiCore({
+        locale: 'en',
+        messages: { en: {} },
+        interpolate: customInterp,
+      })
+      const result = i18n.format('hello {name}', { name: 'World' })
+      expect(customInterp).toHaveBeenCalled()
+      expect(result).toBe('HELLO {NAME}')
+    })
+
+    it('inline ICU fallback message uses custom interpolate', () => {
+      const customInterp = vi.fn(
+        (message: string, values: Record<string, unknown> | undefined) => {
+          if (!values) return message
+          return message.replace(/\{(\w+)\}/g, (_m, key: string) => String(values[key] ?? ''))
+        },
+      )
+      const i18n = createFluentiCore({
+        locale: 'en',
+        messages: { en: {} },
+        interpolate: customInterp,
+      })
+      // t() with a message-like ID that contains { will use interp
+      expect(i18n.t('Hello {name}', { name: 'Bob' })).toBe('Hello Bob')
+      expect(customInterp).toHaveBeenCalled()
+    })
+
+    it('no config.interpolate defaults to simpleInterpolate', () => {
+      const i18n = createFluentiCore({
+        locale: 'en',
+        messages: { en: { greet: 'Hi {name}!' } },
+      })
+      expect(i18n.t('greet', { name: 'World' })).toBe('Hi World!')
+    })
+
+    it('custom interpolate that throws propagates the error', () => {
+      const customInterp = vi.fn(() => {
+        throw new Error('interp boom')
+      })
+      const i18n = createFluentiCore({
+        locale: 'en',
+        messages: { en: { greet: 'Hi {name}!' } },
+        interpolate: customInterp,
+      })
+      expect(() => i18n.t('greet', { name: 'World' })).toThrow('interp boom')
+    })
+  })
+
+  // ─── d() inline Intl wrapper edge cases (#3) ─────────────────────
+
+  describe('d() inline Intl wrapper', () => {
+    it('d(new Date()) no style uses default Intl format', () => {
+      const i18n = createFluentiCore({
+        locale: 'en-US',
+        messages: { 'en-US': {} },
+      })
+      const result = i18n.d(new Date(2024, 0, 15))
+      expect(result).toContain('2024')
+    })
+
+    it('d(Date.now()) accepts numeric timestamp', () => {
+      const i18n = createFluentiCore({
+        locale: 'en-US',
+        messages: { 'en-US': {} },
+      })
+      const ts = new Date(2024, 5, 15).getTime()
+      const result = i18n.d(ts)
+      expect(typeof result).toBe('string')
+      expect(result.length).toBeGreaterThan(0)
+    })
+
+    it('d(NaN) returns Invalid Date', () => {
+      const i18n = createFluentiCore({
+        locale: 'en',
+        messages: { en: {} },
+      })
+      expect(i18n.d(NaN)).toBe('Invalid Date')
+    })
+
+    it('d(new Date("invalid")) returns Invalid Date', () => {
+      const i18n = createFluentiCore({
+        locale: 'en',
+        messages: { en: {} },
+      })
+      expect(i18n.d(new Date('invalid'))).toBe('Invalid Date')
+    })
+
+    it('d(date, "unknown-style") with no matching dateFormats uses default Intl', () => {
+      const i18n = createFluentiCore({
+        locale: 'en-US',
+        messages: { 'en-US': {} },
+      })
+      const result = i18n.d(new Date(2024, 0, 15), 'unknown-style')
+      // No dateFormats configured, so falls back to default Intl
+      expect(result).toContain('2024')
+    })
+
+    it('d(date, "short") with dateFormats.short configured', () => {
+      const i18n = createFluentiCore({
+        locale: 'en-US',
+        messages: { 'en-US': {} },
+        dateFormats: {
+          short: { month: 'short', day: 'numeric', year: 'numeric' },
+        },
+      })
+      const result = i18n.d(new Date(2024, 0, 15), 'short')
+      expect(result).toContain('Jan')
+      expect(result).toContain('2024')
+    })
+
+    it('d(date, "short") without dateFormats uses default Intl', () => {
+      const i18n = createFluentiCore({
+        locale: 'en-US',
+        messages: { 'en-US': {} },
+      })
+      const result = i18n.d(new Date(2024, 0, 15), 'short')
+      // No dateFormats at all → falls back to default Intl format
+      expect(typeof result).toBe('string')
+      expect(result.length).toBeGreaterThan(0)
+    })
+
+    it('d(date) respects current locale', () => {
+      const i18n = createFluentiCore({
+        locale: 'de-DE',
+        messages: { 'de-DE': {} },
+      })
+      const result = i18n.d(new Date(2024, 0, 15))
+      // German format uses dots: 15.1.2024
+      expect(result).toContain('15')
+      expect(result).toContain('2024')
+    })
+  })
+
+  // ─── n() inline Intl wrapper edge cases (#4) ─────────────────────
+
+  describe('n() inline Intl wrapper', () => {
+    it('n(1234.5) no style uses default Intl format', () => {
+      const i18n = createFluentiCore({
+        locale: 'en-US',
+        messages: { 'en-US': {} },
+      })
+      const result = i18n.n(1234.5)
+      expect(result).toContain('1')
+      expect(result).toContain('234')
+    })
+
+    it('n(0), n(-0), n(NaN), n(Infinity), n(-Infinity) boundary values', () => {
+      const i18n = createFluentiCore({
+        locale: 'en',
+        messages: { en: {} },
+      })
+      expect(i18n.n(0)).toBe('0')
+      expect(typeof i18n.n(-0)).toBe('string')
+      expect(i18n.n(NaN)).toBe('NaN')
+      expect(i18n.n(Infinity)).toBe('∞')
+      expect(i18n.n(-Infinity)).toBe('-∞')
+    })
+
+    it('n(value, "unknown-style") with no matching numberFormats uses default Intl', () => {
+      const i18n = createFluentiCore({
+        locale: 'en',
+        messages: { en: {} },
+      })
+      const result = i18n.n(42, 'unknown-style')
+      expect(result).toBe('42')
+    })
+
+    it('n(value, "percent") with numberFormats.percent configured', () => {
+      const i18n = createFluentiCore({
+        locale: 'en',
+        messages: { en: {} },
+        numberFormats: {
+          percent: { style: 'percent' as const },
+        },
+      })
+      const result = i18n.n(0.85, 'percent')
+      expect(result).toContain('85')
+      expect(result).toContain('%')
+    })
+
+    it('n(value, "currency") with function-based numberFormats', () => {
+      const i18n = createFluentiCore({
+        locale: 'en-US',
+        messages: { 'en-US': {} },
+        numberFormats: {
+          currency: (locale: string) => ({
+            style: 'currency' as const,
+            currency: locale === 'en-US' ? 'USD' : 'EUR',
+          }),
+        },
+      })
+      const result = i18n.n(42.5, 'currency')
+      expect(result).toContain('$')
+      expect(result).toContain('42')
+    })
+
+    it('function-based numberFormat receives locale', () => {
+      const formatFn = vi.fn((_locale: string) => ({
+        style: 'currency' as const,
+        currency: 'JPY',
+      }))
+      const i18n = createFluentiCore({
+        locale: 'ja',
+        messages: { ja: {} },
+        numberFormats: { currency: formatFn },
+      })
+      i18n.n(1000, 'currency')
+      expect(formatFn).toHaveBeenCalledWith('ja')
+    })
+
+    it('n(value, "percent") without numberFormats uses default Intl (no style)', () => {
+      const i18n = createFluentiCore({
+        locale: 'en',
+        messages: { en: {} },
+      })
+      // No numberFormats configured at all → just plain number format
+      const result = i18n.n(0.85, 'percent')
+      expect(result).not.toContain('%') // no percent style applied
+    })
+  })
+
+  // ─── resolveMsg three paths (#6) ──────────────────────────────────
+
+  describe('resolveMsg paths', () => {
+    it('catalog entry is function → calls function with values', () => {
+      const fn = vi.fn((values?: Record<string, unknown>) => `Hi ${values?.['name']}`)
+      const i18n = createFluentiCore({
+        locale: 'en',
+        messages: { en: { greeting: fn as any } },
+      })
+      expect(i18n.t('greeting', { name: 'Alice' })).toBe('Hi Alice')
+      expect(fn).toHaveBeenCalledWith({ name: 'Alice' })
+    })
+
+    it('catalog entry is string with {key} → calls simpleInterpolate', () => {
+      const i18n = createFluentiCore({
+        locale: 'en',
+        messages: { en: { greeting: 'Hello {name}!' } },
+      })
+      expect(i18n.t('greeting', { name: 'Bob' })).toBe('Hello Bob!')
+    })
+
+    it('catalog entry is static string without { → returns directly without interpolation', () => {
+      const i18n = createFluentiCore({
+        locale: 'en',
+        messages: { en: { greeting: 'Hello World' } },
+      })
+      expect(i18n.t('greeting')).toBe('Hello World')
+    })
+
+    it('mixed catalog: same locale has both functions and strings', () => {
+      const fn = (values?: Record<string, unknown>) => `Count: ${values?.['n']}`
+      const i18n = createFluentiCore({
+        locale: 'en',
+        messages: {
+          en: {
+            static: 'No placeholders',
+            dynamic: 'Hello {name}',
+            compiled: fn as any,
+          },
+        },
+      })
+      expect(i18n.t('static')).toBe('No placeholders')
+      expect(i18n.t('dynamic', { name: 'X' })).toBe('Hello X')
+      expect(i18n.t('compiled', { n: 42 })).toBe('Count: 42')
+    })
+
+    it('function message returning empty string', () => {
+      const i18n = createFluentiCore({
+        locale: 'en',
+        messages: { en: { empty: (() => '') as any } },
+      })
+      expect(i18n.t('empty')).toBe('')
+    })
+
+    it('function message that throws → error propagates', () => {
+      const i18n = createFluentiCore({
+        locale: 'en',
+        messages: {
+          en: {
+            broken: (() => { throw new Error('fn boom') }) as any,
+          },
+        },
+      })
+      expect(() => i18n.t('broken')).toThrow('fn boom')
+    })
+  })
+
+  // ─── tagged template edge cases (#10) ─────────────────────────────
+
+  describe('tagged template edge cases', () => {
+    it('t`Hello` no expressions → hash lookup + fallback', () => {
+      const i18n = createFluentiCore({
+        locale: 'en',
+        messages: { en: {} },
+      })
+      // No catalog match → fallback to direct interpolation
+      expect(i18n.t`Hello`).toBe('Hello')
+    })
+
+    it('t`${undefined}` → values map has arg0: undefined', () => {
+      const i18n = createFluentiCore({
+        locale: 'en',
+        messages: { en: {} },
+      })
+      // undefined is kept as {arg0} by simpleInterpolate
+      const result = i18n.t`${undefined}`
+      expect(result).toBe('{arg0}')
+    })
+
+    it('t`${null}` → values map has arg0: null', () => {
+      const i18n = createFluentiCore({
+        locale: 'en',
+        messages: { en: {} },
+      })
+      // null is kept as {arg0} by simpleInterpolate
+      const result = i18n.t`${null}`
+      expect(result).toBe('{arg0}')
+    })
+
+    it('t`${{}}` → values map has arg0: {}', () => {
+      const i18n = createFluentiCore({
+        locale: 'en',
+        messages: { en: {} },
+      })
+      const obj = {}
+      const result = i18n.t`${obj}`
+      // String({}) === '[object Object]'
+      expect(result).toBe('[object Object]')
+    })
+
+    it('t("") empty string ID → resolveMessage behavior', () => {
+      const i18n = createFluentiCore({
+        locale: 'en',
+        messages: { en: {} },
+      })
+      // Empty string ID → no catalog match → returns id (empty string) or devWarnings prefix
+      const result = i18n.t('')
+      expect(typeof result).toBe('string')
+    })
+
+    it('t descriptor { id: "", message: "Hello" } → hash-based lookup', () => {
+      const hash = createMessageId('Hello')
+      const i18n = createFluentiCore({
+        locale: 'ja',
+        messages: {
+          ja: { [hash]: 'こんにちは' },
+        },
+      })
+      const desc = { id: '', message: 'Hello' }
+      // Empty id → descriptor function generates hash from message
+      expect(i18n.t(desc)).toBe('こんにちは')
     })
   })
 })

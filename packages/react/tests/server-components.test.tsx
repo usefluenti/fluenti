@@ -227,3 +227,40 @@ describe('Server NumberFormat', () => {
     expect(html).toContain('234')
   })
 })
+
+describe('Server i18n without interpolate (simpleInterpolate fallback)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('{key} messages work with simpleInterpolate when no interpolate provided', async () => {
+    const { setLocale, getI18n } = createServerI18n({
+      loadMessages: async () => ({
+        greeting: 'Hello {name}!',
+      }),
+      // No interpolate option — uses simpleInterpolate
+    })
+    setLocale('en')
+    const i18n = await getI18n()
+    const result = i18n.t('greeting', { name: 'World' })
+    expect(result).toBe('Hello World!')
+  })
+
+  it('ICU plural message returns raw string when no interpolate provided', async () => {
+    const { setLocale, getI18n } = createServerI18n({
+      loadMessages: async () => ({
+        apples: '{count, plural, one {# apple} other {# apples}}',
+      }),
+      // No interpolate option — simpleInterpolate cannot parse ICU plurals
+    })
+    setLocale('en')
+    const i18n = await getI18n()
+    const result = i18n.t('apples', { count: 3 })
+    // simpleInterpolate does not parse ICU syntax;
+    // The message contains `{count, plural, ...}` which does NOT match `\w+`
+    // since the key would be `count,` (has comma), so the message stays raw
+    expect(result).not.toBe('3 apples')
+    // It should contain the original ICU message pattern (not parsed)
+    expect(result).toContain('plural')
+  })
+})

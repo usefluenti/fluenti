@@ -189,3 +189,155 @@ describe('useI18n outside provider', () => {
     )
   })
 })
+
+describe('interpolate config (#21)', () => {
+  it('Provider with ICU plural messages works via core interpolate', () => {
+    // Solid context imports interpolate from @fluenti/core/internal directly,
+    // so full ICU support (plural, select) is always available
+    function Child() {
+      const { t } = useI18n()
+      return <span>{t('{count, plural, one {# item} other {# items}}', { count: 1 })}</span>
+    }
+
+    const { getByText } = render(() => (
+      <I18nProvider locale="en" messages={{ en: {} }}>
+        <Child />
+      </I18nProvider>
+    ))
+
+    expect(getByText('1 item')).toBeDefined()
+  })
+
+  it('Provider with ICU select messages works via core interpolate', () => {
+    function Child() {
+      const { t } = useI18n()
+      return <span>{t('{gender, select, male {He} female {She} other {They}}', { gender: 'female' })}</span>
+    }
+
+    const { getByText } = render(() => (
+      <I18nProvider locale="en" messages={{ en: {} }}>
+        <Child />
+      </I18nProvider>
+    ))
+
+    expect(getByText('She')).toBeDefined()
+  })
+
+  it('Provider with simple {key} interpolation in catalog messages', () => {
+    function Child() {
+      const { t } = useI18n()
+      return <span>{t('greeting', { name: 'Alice' })}</span>
+    }
+
+    const { getByText } = render(() => (
+      <I18nProvider locale="en" messages={{ en: { greeting: 'Hello {name}!' } }}>
+        <Child />
+      </I18nProvider>
+    ))
+
+    expect(getByText('Hello Alice!')).toBeDefined()
+  })
+
+  it('format() uses ICU interpolation for direct message strings', () => {
+    function Child() {
+      const { format } = useI18n()
+      return <span>{format('{count, plural, one {# thing} other {# things}}', { count: 1 })}</span>
+    }
+
+    const { getByText } = render(() => (
+      <I18nProvider locale="en" messages={{ en: {} }}>
+        <Child />
+      </I18nProvider>
+    ))
+
+    expect(getByText('1 thing')).toBeDefined()
+  })
+})
+
+describe('edge cases (#22)', () => {
+  it('Provider with empty messages does not crash', () => {
+    function Child() {
+      const { t } = useI18n()
+      return <span>{t('hello')}</span>
+    }
+
+    const { getByText } = render(() => (
+      <I18nProvider locale="en" messages={{}}>
+        <Child />
+      </I18nProvider>
+    ))
+
+    // Returns the key itself as fallback
+    expect(getByText('hello')).toBeDefined()
+  })
+
+  it('Provider with empty locale catalog does not crash', () => {
+    function Child() {
+      const { t } = useI18n()
+      return <span>{t('nonexistent.key')}</span>
+    }
+
+    const { getByText } = render(() => (
+      <I18nProvider locale="en" messages={{ en: {} }}>
+        <Child />
+      </I18nProvider>
+    ))
+
+    expect(getByText('nonexistent.key')).toBeDefined()
+  })
+
+  it('async locale load interrupted by unmount does not throw', async () => {
+    let resolveLoader: (v: Record<string, string>) => void
+    const loaderPromise = new Promise<Record<string, string>>((r) => { resolveLoader = r })
+
+    function Child() {
+      const { t, setLocale } = useI18n()
+      // Kick off async locale load
+      setLocale('de')
+      return <span>{t('hello')}</span>
+    }
+
+    const { unmount } = render(() => (
+      <I18nProvider
+        locale="en"
+        messages={{ en: { hello: 'Hello' } }}
+        lazyLocaleLoading={true}
+        chunkLoader={() => loaderPromise}
+      >
+        <Child />
+      </I18nProvider>
+    ))
+
+    // Unmount while loader is still pending
+    unmount()
+
+    // Resolve after unmount — should not throw
+    resolveLoader!({ hello: 'Hallo' })
+    await loaderPromise
+    await Promise.resolve()
+  })
+
+  it('nested Providers work correctly with different messages', () => {
+    function InnerChild() {
+      const { t } = useI18n()
+      return <span data-testid="inner">{t('hello')}</span>
+    }
+
+    function OuterChild() {
+      const { t } = useI18n()
+      return <span data-testid="outer">{t('hello')}</span>
+    }
+
+    const { getByTestId } = render(() => (
+      <I18nProvider locale="en" messages={{ en: { hello: 'Outer Hello' } }}>
+        <OuterChild />
+        <I18nProvider locale="en" messages={{ en: { hello: 'Inner Hello' } }}>
+          <InnerChild />
+        </I18nProvider>
+      </I18nProvider>
+    ))
+
+    expect(getByTestId('outer').textContent).toBe('Outer Hello')
+    expect(getByTestId('inner').textContent).toBe('Inner Hello')
+  })
+})

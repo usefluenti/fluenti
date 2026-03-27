@@ -291,3 +291,71 @@ describe('diagnostics integration', () => {
     expect(i18n.diagnostics).toBeUndefined()
   })
 })
+
+// ─── Duck-typed diagnostics (#5) ──────────────────────────────────────
+
+describe('duck-typed diagnostics', () => {
+  it('plain object with { missingKey, fallbackUsed, enabled } works', () => {
+    const missingKey = vi.fn()
+    const fallbackUsed = vi.fn()
+    const duckDiag = { missingKey, fallbackUsed, enabled: true }
+
+    const i18n = createFluentiCore({
+      locale: 'ja',
+      fallbackLocale: 'en',
+      messages: { ja: {}, en: { hello: 'Hello' } },
+      diagnostics: duckDiag as any,
+    })
+
+    // Trigger fallbackUsed
+    i18n.t('hello')
+    expect(fallbackUsed).toHaveBeenCalledWith('ja', 'en', 'hello')
+
+    // Trigger missingKey
+    i18n.t('nonexistent')
+    expect(missingKey).toHaveBeenCalledWith('ja', 'nonexistent')
+  })
+
+  it('object WITHOUT missingKey → diag is undefined (duck-type fails)', () => {
+    const configLike = { warnMissing: true, reporter: vi.fn() }
+
+    const i18n = createFluentiCore({
+      locale: 'en',
+      messages: { en: {} },
+      diagnostics: configLike as any,
+    })
+
+    // The duck-type check ('missingKey' in config.diagnostics) fails
+    // so diag is undefined and diagnostics is not exposed
+    expect(i18n.diagnostics).toBeUndefined()
+
+    // Should not throw even though diagnostics config doesn't have missingKey
+    expect(() => i18n.t('nonexistent')).not.toThrow()
+  })
+
+  it('diagnostics on returned instance matches passed object', () => {
+    const duckDiag = {
+      missingKey: vi.fn(),
+      fallbackUsed: vi.fn(),
+      enabled: true,
+    }
+
+    const i18n = createFluentiCore({
+      locale: 'en',
+      messages: { en: {} },
+      diagnostics: duckDiag as any,
+    })
+
+    expect(i18n.diagnostics).toBe(duckDiag)
+  })
+
+  it('diagnostics: undefined → instance.diagnostics is undefined', () => {
+    const i18n = createFluentiCore({
+      locale: 'en',
+      messages: { en: {} },
+      diagnostics: undefined,
+    })
+
+    expect(i18n.diagnostics).toBeUndefined()
+  })
+})

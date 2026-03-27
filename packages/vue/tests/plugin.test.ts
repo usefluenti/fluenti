@@ -1214,3 +1214,117 @@ describe('concurrent setLocale', () => {
     expect(plugin.global.t('hello')).toBe('你好')
   })
 })
+
+describe('interpolate config (#18)', () => {
+  it('plugin uses ICU interpolation for messages with placeholders', () => {
+    // Vue plugin imports interpolate from @fluenti/core/internal directly,
+    // so full ICU support (plural, select) is always available
+    const plugin = createFluenti({
+      locale: 'en',
+      messages: {
+        en: {
+          greeting: '{count, plural, one {# item} other {# items}}',
+        },
+      },
+    })
+
+    expect(plugin.global.t('greeting', { count: 1 })).toBe('1 item')
+    expect(plugin.global.t('greeting', { count: 5 })).toBe('5 items')
+  })
+
+  it('plugin handles simple {key} replacement in string messages', () => {
+    const plugin = createFluenti({
+      locale: 'en',
+      messages: {
+        en: {
+          hello: 'Hello {name}!',
+        },
+      },
+    })
+
+    expect(plugin.global.t('hello', { name: 'World' })).toBe('Hello World!')
+  })
+
+  it('format() uses ICU interpolation for direct message strings', () => {
+    const plugin = createFluenti({
+      locale: 'en',
+      messages: { en: {} },
+    })
+
+    const result = plugin.global.format(
+      '{count, plural, one {# thing} other {# things}}',
+      { count: 1 },
+    )
+    expect(result).toBe('1 thing')
+  })
+
+  it('inline ICU fallback messages are interpolated when key is missing', () => {
+    const plugin = createFluenti({
+      locale: 'en',
+      messages: { en: {} },
+    })
+
+    // When the id contains '{', the plugin treats it as an inline ICU message
+    const result = plugin.global.t('{count, plural, one {# item} other {# items}}', { count: 3 })
+    expect(result).toBe('3 items')
+  })
+})
+
+describe('edge cases (#19)', () => {
+  it('empty messages does not crash', () => {
+    const plugin = createFluenti({
+      locale: 'en',
+      messages: {},
+    })
+
+    // t() with empty catalog returns the key itself
+    expect(plugin.global.t('hello')).toBe('hello')
+  })
+
+  it('empty locale messages does not crash', () => {
+    const plugin = createFluenti({
+      locale: 'en',
+      messages: { en: {} },
+    })
+
+    expect(plugin.global.t('any.key')).toBe('any.key')
+  })
+
+  it('plugin used on same app twice does not conflict', () => {
+    const plugin = createFluenti({
+      locale: 'en',
+      messages: { en: { hello: 'Hello' } },
+    })
+
+    const app = createApp({ render: () => h('div') })
+
+    // Installing the same plugin twice should not throw
+    expect(() => {
+      app.use(plugin)
+      app.use(plugin)
+    }).not.toThrow()
+
+    // State is still consistent
+    expect(plugin.global.t('hello')).toBe('Hello')
+    expect(app.component('Trans')).toBeDefined()
+  })
+
+  it('two separate plugins on separate apps do not conflict', () => {
+    const plugin1 = createFluenti({
+      locale: 'en',
+      messages: { en: { hello: 'Hello' } },
+    })
+    const plugin2 = createFluenti({
+      locale: 'fr',
+      messages: { fr: { hello: 'Bonjour' } },
+    })
+
+    const app1 = createApp({ render: () => h('div') })
+    const app2 = createApp({ render: () => h('div') })
+    app1.use(plugin1)
+    app2.use(plugin2)
+
+    expect(plugin1.global.t('hello')).toBe('Hello')
+    expect(plugin2.global.t('hello')).toBe('Bonjour')
+  })
+})

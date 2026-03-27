@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { render, screen, act, waitFor, cleanup } from '@testing-library/react'
 import { I18nProvider, useI18n } from '../src'
 import { getGlobalI18n, clearGlobalI18n } from '../src/global-registry'
+import { interpolate } from '../../core/src/interpolate'
 
 const messages = {
   en: { hello: 'Hello', greeting: 'Hello {name}!' },
@@ -609,5 +610,207 @@ describe('split runtime edge cases', () => {
     })
 
     errorSpy.mockRestore()
+  })
+})
+
+describe('interpolate prop', () => {
+  afterEach(cleanup)
+
+  it('uses custom interpolate for message resolution', () => {
+    const icuMessages = {
+      en: { apples: '{count, plural, one {# apple} other {# apples}}' },
+    }
+
+    function Display() {
+      const { i18n } = useI18n()
+      return <span data-testid="text">{i18n.t('apples', { count: 3 })}</span>
+    }
+
+    render(
+      <I18nProvider locale="en" messages={icuMessages} interpolate={interpolate}>
+        <Display />
+      </I18nProvider>,
+    )
+    expect(screen.getByTestId('text').textContent).toBe('3 apples')
+  })
+
+  it('defaults to simpleInterpolate without interpolate prop', () => {
+    // Without the full ICU interpolate, ICU plural syntax is NOT parsed.
+    // simpleInterpolate only handles {key} placeholders.
+    const icuMessages = {
+      en: { apples: '{count, plural, one {# apple} other {# apples}}' },
+    }
+
+    function Display() {
+      const { i18n } = useI18n()
+      return <span data-testid="text">{i18n.t('apples', { count: 3 })}</span>
+    }
+
+    render(
+      <I18nProvider locale="en" messages={icuMessages}>
+        <Display />
+      </I18nProvider>,
+    )
+    // simpleInterpolate matches \w+ so "count, plural, one {# apple} other {# apples}"
+    // does NOT match (comma after count). The message is returned with unresolved ICU syntax.
+    const text = screen.getByTestId('text').textContent!
+    // The ICU message should remain raw since simpleInterpolate can't parse it
+    expect(text).not.toBe('3 apples')
+  })
+
+  it('interpolate prop change triggers i18n re-creation', () => {
+    const msgs = {
+      en: { greeting: 'Hello {name}' },
+    }
+
+    const customInterpolate = vi.fn(
+      (message: string, values: Record<string, unknown> | undefined, _locale: string) => {
+        if (!values) return message
+        return message.replace(/\{(\w+)\}/g, (_m, key: string) => {
+          const val = values[key]
+          return val !== undefined && val !== null ? `[${String(val)}]` : _m
+        })
+      },
+    )
+
+    function Display() {
+      const { i18n } = useI18n()
+      return <span data-testid="text">{i18n.t('greeting', { name: 'World' })}</span>
+    }
+
+    function App() {
+      const [interp, setInterp] = useState<typeof customInterpolate | undefined>(undefined)
+      return (
+        <>
+          <I18nProvider locale="en" messages={msgs} interpolate={interp}>
+            <Display />
+          </I18nProvider>
+          <button onClick={() => setInterp(() => customInterpolate)}>ChangeInterp</button>
+        </>
+      )
+    }
+
+    render(<App />)
+    // Initially uses simpleInterpolate
+    expect(screen.getByTestId('text').textContent).toBe('Hello World')
+
+    act(() => {
+      screen.getByText('ChangeInterp').click()
+    })
+
+    // After setting custom interpolate, text uses the custom format
+    expect(screen.getByTestId('text').textContent).toBe('Hello [World]')
+    expect(customInterpolate).toHaveBeenCalled()
+  })
+})
+
+describe('diagnostics prop', () => {
+  afterEach(cleanup)
+
+  it('diagnostics instance flows to core', () => {
+    const diag = {
+      missingKey: vi.fn(),
+      fallbackUsed: vi.fn(),
+      parseError: vi.fn(),
+      formatError: vi.fn(),
+      enabled: true,
+    }
+
+    function Display() {
+      const { i18n } = useI18n()
+      // Access a key that does not exist to trigger missingKey
+      return <span data-testid="text">{i18n.t('nonexistent')}</span>
+    }
+
+    render(
+      <I18nProvider locale="en" messages={{ en: {} }} diagnostics={diag}>
+        <Display />
+      </I18nProvider>,
+    )
+    // The diagnostics instance should have been called
+    expect(diag.missingKey).toHaveBeenCalled()
+  })
+
+  it('missing key fires diagnostics.missingKey', () => {
+    const diag = {
+      missingKey: vi.fn(),
+      fallbackUsed: vi.fn(),
+      parseError: vi.fn(),
+      formatError: vi.fn(),
+      enabled: true,
+    }
+
+    function Display() {
+      const { i18n } = useI18n()
+      return <span data-testid="text">{i18n.t('missing_key')}</span>
+    }
+
+    render(
+      <I18nProvider locale="en" messages={{ en: {} }} diagnostics={diag}>
+        <Display />
+      </I18nProvider>,
+    )
+    expect(diag.missingKey).toHaveBeenCalledWith('en', 'missing_key')
+  })
+
+  it('fallback fires diagnostics.fallbackUsed', () => {
+    const diag = {
+      missingKey: vi.fn(),
+      fallbackUsed: vi.fn(),
+      parseError: vi.fn(),
+      formatError: vi.fn(),
+      enabled: true,
+    }
+
+    function Display() {
+      const { i18n } = useI18n()
+      return <span data-testid="text">{i18n.t('onlyEn')}</span>
+    }
+
+    render(
+      <I18nProvider
+        locale="fr"
+        fallbackLocale="en"
+        messages={{ en: { onlyEn: 'English only' }, fr: {} }}
+        diagnostics={diag}
+      >
+        <Display />
+      </I18nProvider>,
+    )
+    expect(screen.getByTestId('text').textContent).toBe('English only')
+    expect(diag.fallbackUsed).toHaveBeenCalledWith('fr', 'en', 'onlyEn')
+  })
+})
+
+describe('minimal provider config', () => {
+  afterEach(cleanup)
+
+  it('works with only locale prop', () => {
+    function Display() {
+      const { locale } = useI18n()
+      return <span data-testid="locale">{locale}</span>
+    }
+
+    render(
+      <I18nProvider locale="en">
+        <Display />
+      </I18nProvider>,
+    )
+    expect(screen.getByTestId('locale').textContent).toBe('en')
+  })
+
+  it('t() returns missing key fallback', () => {
+    function Display() {
+      const { i18n } = useI18n()
+      return <span data-testid="text">{i18n.t('some.key')}</span>
+    }
+
+    render(
+      <I18nProvider locale="en">
+        <Display />
+      </I18nProvider>,
+    )
+    // Without messages, the key itself (or a fallback) should be returned
+    expect(screen.getByTestId('text').textContent).toBe('some.key')
   })
 })
