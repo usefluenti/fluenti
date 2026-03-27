@@ -34,18 +34,6 @@ export default defineConfig({
       head: [
         {
           tag: 'meta',
-          attrs: { property: 'og:image', content: 'https://fluenti.dev/og-image.png' },
-        },
-        {
-          tag: 'meta',
-          attrs: { property: 'og:image:width', content: '1200' },
-        },
-        {
-          tag: 'meta',
-          attrs: { property: 'og:image:height', content: '630' },
-        },
-        {
-          tag: 'meta',
           attrs: { name: 'twitter:card', content: 'summary_large_image' },
         },
         {
@@ -146,6 +134,7 @@ export default defineConfig({
           items: [
             { label: 'Code Splitting', slug: 'advanced/code-splitting' },
             { label: 'Performance', slug: 'advanced/performance' },
+            { label: 'Benchmarks', slug: 'advanced/benchmarks' },
             { label: 'Scaling & Enterprise', slug: 'advanced/scaling' },
             { label: 'SSR & Hydration', slug: 'advanced/ssr-hydration' },
             { label: 'Server Context Isolation', slug: 'advanced/server-context' },
@@ -156,6 +145,7 @@ export default defineConfig({
             { label: 'Custom Bundlers', slug: 'advanced/custom-bundlers' },
             { label: 'Framework Comparison', slug: 'advanced/framework-comparison' },
             { label: 'Troubleshooting', slug: 'advanced/troubleshooting' },
+            { label: 'FAQ', slug: 'advanced/faq' },
           ],
         },
         {
@@ -176,6 +166,12 @@ export default defineConfig({
           ],
         },
         { label: 'Examples', slug: 'examples' },
+        {
+          label: 'Blog',
+          items: [
+            { label: 'Introducing Fluenti', slug: 'blog/introducing-fluenti' },
+          ],
+        },
       ],
       customCss: ['./src/styles/custom.css'],
       components: {

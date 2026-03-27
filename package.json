@@ -3,6 +3,7 @@
   "private": true,
   "type": "module",
   "description": "Compile-time i18n for modern frameworks",
+  "keywords": ["i18n", "internationalization", "vue", "react", "solidjs", "nuxt", "nextjs", "compile-time", "l10n", "localization", "icu", "messageformat"],
   "homepage": "https://fluenti.dev",
   "repository": {
     "type": "git",

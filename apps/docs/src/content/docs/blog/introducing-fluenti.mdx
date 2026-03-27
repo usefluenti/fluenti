@@ -1,0 +1,33 @@
+---
+title: "Introducing Fluenti: Compile-Time i18n for Modern Frameworks"
+description: "Why we built Fluenti, how compile-time i18n works, and what it means for your app's performance."
+---
+
+Most i18n libraries work the same way: they ship a parser and a runtime interpreter to the browser, then parse and evaluate your translations on every render. This means your users pay for message parsing overhead, increased bundle size, and slower startup times -- especially on mobile devices. For apps with hundreds or thousands of translated strings, the cost adds up quickly.
+
+## A different approach
+
+Fluenti eliminates runtime parsing entirely. Your ICU MessageFormat messages are compiled at build time into optimized JavaScript functions. By the time your app reaches the browser, there is no parser, no interpreter, and no message resolution overhead. Each translation is a direct function call that returns the final string.
+
+This compile-time approach delivers measurable benefits: smaller bundles (no runtime parser shipped to the client), faster rendering (no parsing on each render cycle), and full tree-shaking (unused translations are removed by your bundler).
+
+## Framework support
+
+Fluenti provides first-class integrations for the frameworks you already use:
+
+- **Vue 3** -- `v-t` compile-time directive, `<Trans>`, `<Plural>`, `<Select>` components, and `useI18n()` composable
+- **React** -- `t` tagged template literal, `<Trans>` component, `I18nProvider`, plus dedicated support for **Next.js** App Router with React Server Components
+- **SolidJS** -- Reactive `t` tagged template, `<Trans>` component, `I18nProvider` with fine-grained reactivity
+- **Meta-frameworks** -- Nuxt 3, React Router, TanStack Start, and SolidStart all work out of the box with SSR, hydration, and cookie-based locale detection
+
+## Key features
+
+- **ICU MessageFormat** -- Full support for plurals, selects, nested arguments, and number/date formatting
+- **Code splitting** -- Messages can be split per route so each page only loads the translations it needs
+- **SSR-safe** -- Locale detection via cookie, query parameter, URL path, or headers, with a hydration script helper to prevent flashes of untranslated content
+- **PO and JSON catalogs** -- Use gettext-compatible PO files or JSON, with a CLI for extraction and compilation
+- **Type-safe** -- Generated types for your message keys, catching missing translations at build time
+
+## Get started
+
+Check out the [quick start guide](/start/quick-start/) to add Fluenti to your project in under five minutes. Pick your framework, install the package, and start writing translations that compile away.

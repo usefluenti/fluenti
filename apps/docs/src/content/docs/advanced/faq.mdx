@@ -1,0 +1,74 @@
+---
+title: FAQ
+description: Frequently asked questions about Fluenti — compile-time i18n, migration, performance, and framework support.
+---
+
+## General
+
+### What is Fluenti?
+
+Fluenti is a compile-time i18n (internationalization) library for modern JavaScript frameworks. Unlike traditional i18n libraries that parse ICU messages at runtime, Fluenti compiles translations during your build step into optimized string concatenation functions. This means zero runtime parsing overhead, smaller bundles, and faster rendering.
+
+### Why compile-time instead of runtime?
+
+Compile-time translation eliminates the need to ship an ICU parser to the browser, resulting in significantly smaller bundles and faster rendering. The trade-off is that you need a build step, but since most modern frameworks already require one (Vite, webpack, Turbopack), this fits naturally into existing workflows. See [How It Works](/start/how-it-works/) for a detailed explanation of the compilation pipeline.
+
+### Which frameworks does Fluenti support?
+
+Fluenti supports Vue 3, React, SolidJS, Next.js (App Router with RSC), Nuxt 3, React Router v7, TanStack Start, and SolidStart. Each framework has a dedicated integration package with components, hooks, and a build plugin. See the [framework quick starts](/start/quick-start/) for setup guides.
+
+### Is Fluenti free?
+
+Yes. Fluenti is fully open source under the MIT license. You can use it in personal and commercial projects without restrictions.
+
+## Migration
+
+### How do I migrate from vue-i18n?
+
+Install the `@fluenti/vue-i18n-compat` bridge package to run both vue-i18n and Fluenti side by side. This lets you migrate incrementally -- existing `$t()` calls continue to work while you adopt Fluenti's `v-t` directive and `t` tagged template in new code. See the [migration guide](/frameworks/vue/migration-from-vue-i18n/) for step-by-step instructions.
+
+### How do I migrate from react-i18next?
+
+Use the `fluenti migrate --from react-i18next` CLI command, which provides AI-assisted migration of your existing translation files and component code. It converts `useTranslation()` calls to Fluenti's `useI18n()` hook and rewrites JSX to use the `t` tagged template or `<Trans>` component.
+
+### Can I use Fluenti alongside my existing i18n library?
+
+Yes. The [vue-i18n bridge](/frameworks/vue/vue-i18n-bridge/) allows gradual migration for Vue projects by providing a compatibility layer that proxies calls to both libraries. For React projects, you can run both react-i18next and Fluenti in parallel during migration since they use separate context providers.
+
+## Technical
+
+### What message format does Fluenti use?
+
+Fluenti uses [ICU MessageFormat](/essentials/message-format/) with full support for plurals, selects, nested arguments, and custom formatters. Messages are written in a standard syntax understood by most translation tools, then compiled to optimized JavaScript functions at build time.
+
+### Does Fluenti support SSR?
+
+Yes. Fluenti provides SSR support across all supported frameworks with cookie, query parameter, URL path, and header-based locale detection. A hydration-safe script helper ensures the client picks up the server-rendered locale without a flash of untranslated content. See [SSR & Hydration](/advanced/ssr-hydration/) for details.
+
+### How does code splitting work?
+
+The Vite plugin can split translation messages per route using dynamic or static strategies. When configured, each locale chunk is loaded on demand via dynamic imports, so users only download the translations they need for the current page. See [Code Splitting](/advanced/code-splitting/) for configuration options.
+
+### Does Fluenti work with Turbopack?
+
+Yes. The Next.js plugin (`@fluenti/next`) supports both webpack and Turbopack. The `withFluenti()` wrapper in `next.config.ts` automatically configures the appropriate loader for whichever bundler Next.js is using.
+
+## Performance
+
+### What is the runtime overhead?
+
+Near zero. Compiled messages are either pre-resolved strings (for static text) or simple template functions that concatenate interpolated values. No ICU parser runs at runtime, so there is no parsing cost on every render.
+
+### How does bundle size compare to other i18n libraries?
+
+Fluenti's runtime is approximately 2--4 KB gzipped, varying slightly by framework integration. Traditional i18n libraries ship 15--40 KB parsers to the browser because they interpret ICU messages at runtime. See [Performance](/advanced/performance/) for benchmarks and optimization tips.
+
+## Workflow
+
+### How do translators work with Fluenti?
+
+Extract messages from source code with `fluenti extract`, which produces PO files in the standard gettext format that translators already know. Translators edit PO files with any translation tool (Poedit, Weblate, Crowdin, etc.), and you compile the results with `fluenti compile`. See [CLI Usage](/essentials/cli/) for the full workflow.
+
+### Can I use JSON instead of PO files?
+
+Yes. Set `format: 'json'` in your `fluenti.config.ts` to use JSON catalogs instead of PO files. Both formats support all Fluenti features including plurals, context, and metadata. See [Configuration](/essentials/configuration/) for all format options.
