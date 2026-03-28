@@ -45,6 +45,21 @@ describe('fluentiVue', () => {
       const result = callHook(plugin.transform, {}, '<h1 v-t>Hello</h1>', 'App.tsx')
       expect(result).toBeUndefined()
     })
+
+    it('skips .vue files without v-t, Trans, or Plural directives', () => {
+      const plugin = getPlugin('fluenti:vue-template')
+      const input = '<template><h1>Hello World</h1></template><script setup></script>'
+      const result = callHook(plugin.transform, {}, input, 'App.vue')
+      expect(result).toBeUndefined()
+    })
+
+    it('returns undefined when transformVtDirectives returns unchanged code', () => {
+      const plugin = getPlugin('fluenti:vue-template')
+      // This file mentions v-t in a comment but has no actual v-t directive to transform
+      const input = '<template><!-- v-t mentioned --><p>No directive here</p></template><script setup>// v-t in comment</script>'
+      const result = callHook(plugin.transform, {}, input, 'App.vue')
+      expect(result).toBeUndefined()
+    })
   })
 
   describe('virtual modules with vue runtime', () => {

@@ -115,6 +115,50 @@ describe('createDiagnostics', () => {
     warnSpy.mockRestore()
   })
 
+  it('default reporter handles fallback-used event via console.warn', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const diag = createDiagnostics({ warnFallback: true })
+
+    diag.fallbackUsed('ja', 'en', 'greeting')
+
+    expect(warnSpy).toHaveBeenCalledOnce()
+    expect(warnSpy.mock.calls[0]![0]).toContain('Fallback')
+    expect(warnSpy.mock.calls[0]![0]).toContain('ja')
+    expect(warnSpy.mock.calls[0]![0]).toContain('en')
+    expect(warnSpy.mock.calls[0]![0]).toContain('greeting')
+    warnSpy.mockRestore()
+  })
+
+  it('default reporter handles parse-error event via console.warn', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const diag = createDiagnostics()
+
+    const err = new Error('syntax issue')
+    diag.parseError('en', 'broken-key', err)
+
+    expect(warnSpy).toHaveBeenCalledOnce()
+    expect(warnSpy.mock.calls[0]![0]).toContain('Parse error')
+    expect(warnSpy.mock.calls[0]![0]).toContain('broken-key')
+    expect(warnSpy.mock.calls[0]![0]).toContain('en')
+    expect(warnSpy.mock.calls[0]![1]).toBe(err)
+    warnSpy.mockRestore()
+  })
+
+  it('default reporter handles format-error event via console.warn', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const diag = createDiagnostics()
+
+    const err = new Error('format issue')
+    diag.formatError('en', 'num-key', err)
+
+    expect(warnSpy).toHaveBeenCalledOnce()
+    expect(warnSpy.mock.calls[0]![0]).toContain('Format error')
+    expect(warnSpy.mock.calls[0]![0]).toContain('num-key')
+    expect(warnSpy.mock.calls[0]![0]).toContain('en')
+    expect(warnSpy.mock.calls[0]![1]).toBe(err)
+    warnSpy.mockRestore()
+  })
+
   it('produces frozen (immutable) event objects', () => {
     const events: DiagnosticEvent[] = []
     const diag = createDiagnostics({
@@ -158,6 +202,28 @@ describe('edge cases — error recovery and boundaries', () => {
 
     // A throwing reporter must not crash t() — the error is silently swallowed
     expect(() => diag.missingKey('en', 'key')).not.toThrow()
+  })
+
+  it('reporter throws — error is swallowed for fallbackUsed', () => {
+    const diag = createDiagnostics({
+      warnFallback: true,
+      reporter: () => { throw new Error('reporter boom') },
+    })
+    expect(() => diag.fallbackUsed('ja', 'en', 'key')).not.toThrow()
+  })
+
+  it('reporter throws — error is swallowed for parseError', () => {
+    const diag = createDiagnostics({
+      reporter: () => { throw new Error('reporter boom') },
+    })
+    expect(() => diag.parseError('en', 'key', new Error('parse fail'))).not.toThrow()
+  })
+
+  it('reporter throws — error is swallowed for formatError', () => {
+    const diag = createDiagnostics({
+      reporter: () => { throw new Error('reporter boom') },
+    })
+    expect(() => diag.formatError('en', 'key', new Error('format fail'))).not.toThrow()
   })
 
   it('events are frozen — mutation throws TypeError', () => {

@@ -1,6 +1,6 @@
-import { describe, it, expect } from 'vitest'
-import { resolveLibrary, buildMigratePrompt, parseResponse } from '../src/migrate'
-import type { DetectedFiles } from '../src/migrate'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { resolveLibrary, buildMigratePrompt, parseResponse, runMigrate } from '../src/migrate'
+import type { DetectedFiles, MigrateOptions } from '../src/migrate'
 
 describe('resolveLibrary', () => {
   it('resolves exact library names', () => {
@@ -319,5 +319,369 @@ describe('migrate — edge cases', () => {
     expect(result).toContain('MIGRATION GUIDE')
     expect(result).toContain('migration guide text')
     expect(result).toContain('package.json')
+  })
+})
+
+describe('parseResponse — additional edge cases', () => {
+  it('truncates oversized responses (>500KB)', () => {
+    // Build a response that exceeds 500KB by padding with filler text,
+    // but put valid sections at the BEGINNING so they are still parseable.
+    const validPart = [
+      '### FLUENTI_CONFIG',
+      '```ts',
+      'export default { sourceLocale: "en" }',
+      '```',
+    ].join('\n')
+    const padding = 'x'.repeat(600_000)
+    const response = validPart + '\n' + padding
+
+    const result = parseResponse(response)
+
+    // The config at the beginning should still be parsed successfully
+    expect(result.config).toBe('export default { sourceLocale: "en" }')
+  })
+
+  it('handles typescript code fence language specifier', () => {
+    const response = [
+      '### FLUENTI_CONFIG',
+      '```typescript',
+      'export default defineConfig({ sourceLocale: "en" })',
+      '```',
+    ].join('\n')
+
+    const result = parseResponse(response)
+
+    expect(result.config).toBe('export default defineConfig({ sourceLocale: "en" })')
+  })
+
+  it('handles sh code fence for install commands', () => {
+    const response = [
+      '### INSTALL_COMMANDS',
+      '```sh',
+      'pnpm add -D @fluenti/vue',
+      '```',
+    ].join('\n')
+
+    const result = parseResponse(response)
+
+    expect(result.installCommands).toBe('pnpm add -D @fluenti/vue')
+  })
+
+  it('extracts locale files at end of response (no subsequent section)', () => {
+    const response = [
+      '### LOCALE_FILES',
+      '#### LOCALE: ja',
+      '```po',
+      'msgid "Hello"',
+      'msgstr "こんにちは"',
+      '```',
+    ].join('\n')
+
+    const result = parseResponse(response)
+
+    expect(result.localeFiles).toHaveLength(1)
+    expect(result.localeFiles[0]!.locale).toBe('ja')
+    expect(result.localeFiles[0]!.content).toContain('こんにちは')
+  })
+})
+
+// ─── runMigrate integration tests (with mocked fs/consola/child_process) ─────
+
+vi.mock('node:child_process', () => ({
+  execFile: vi.fn(),
+}))
+
+vi.mock('node:util', async () => {
+  const actual = await vi.importActual<typeof import('node:util')>('node:util')
+  return {
+    ...actual,
+    promisify: vi.fn((fn: unknown) => fn),
+  }
+})
+
+vi.mock('fast-glob', () => ({
+  default: vi.fn().mockResolvedValue([]),
+}))
+
+vi.mock('node:fs', async () => {
+  const actual = await vi.importActual<typeof import('node:fs')>('node:fs')
+  return {
+    ...actual,
+    existsSync: vi.fn(() => false),
+    readFileSync: vi.fn(() => ''),
+    writeFileSync: vi.fn(),
+    mkdirSync: vi.fn(),
+  }
+})
+
+vi.mock('consola', async () => {
+  const actual = await vi.importActual<typeof import('consola')>('consola')
+  return {
+    ...actual,
+    default: {
+      ...actual.default,
+      info: vi.fn(),
+      warn: vi.fn(),
+      error: vi.fn(),
+      success: vi.fn(),
+      log: vi.fn(),
+      box: vi.fn(),
+    },
+  }
+})
+
+import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs'
+import { execFile } from 'node:child_process'
+import consola from 'consola'
+
+describe('runMigrate', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('logs error for unsupported library and returns', async () => {
+    await runMigrate({ from: 'unknown-lib', provider: 'claude', write: false })
+
+    expect(consola.error).toHaveBeenCalledWith(expect.stringContaining('Unsupported library'))
+  })
+
+  it('warns when no config or locale files found', async () => {
+    // existsSync returns false for all (no config files found)
+    vi.mocked(existsSync).mockReturnValue(false)
+
+    await runMigrate({ from: 'vue-i18n', provider: 'claude', write: false })
+
+    expect(consola.warn).toHaveBeenCalledWith(expect.stringContaining('No vue-i18n configuration'))
+  })
+
+  it('runs full migrate flow in dry-run mode (write=false)', async () => {
+    // Simulate finding a config file
+    vi.mocked(existsSync).mockImplementation((path) => {
+      if (String(path).endsWith('i18n.ts')) return true
+      return false
+    })
+    vi.mocked(readFileSync).mockReturnValue('export default { locale: "en" }')
+
+    // Mock the AI invocation (execFile is already promisified by our mock)
+    const aiResponse = [
+      '### FLUENTI_CONFIG',
+      '```ts',
+      'export default defineConfig({ sourceLocale: "en" })',
+      '```',
+      '### LOCALE_FILES',
+      '#### LOCALE: fr',
+      '```po',
+      'msgid "Hello"',
+      'msgstr "Bonjour"',
+      '```',
+      '### MIGRATION_STEPS',
+      '1. Replace imports',
+      '### INSTALL_COMMANDS',
+      '```bash',
+      'pnpm add @fluenti/vue',
+      '```',
+    ].join('\n')
+
+    vi.mocked(execFile as unknown as (...args: unknown[]) => Promise<{ stdout: string }>)
+      .mockResolvedValueOnce({ stdout: aiResponse })
+
+    await runMigrate({ from: 'vue-i18n', provider: 'claude', write: false })
+
+    // Should NOT write files in dry-run
+    expect(writeFileSync).not.toHaveBeenCalled()
+    // Should display boxes
+    expect(consola.box).toHaveBeenCalled()
+    // Should suggest --write
+    expect(consola.info).toHaveBeenCalledWith(expect.stringContaining('--write'))
+  })
+
+  it('writes config and locale files when write=true', async () => {
+    vi.mocked(existsSync).mockImplementation((path) => {
+      if (String(path).endsWith('i18n.ts')) return true
+      return false
+    })
+    vi.mocked(readFileSync).mockReturnValue('export default {}')
+
+    const aiResponse = [
+      '### FLUENTI_CONFIG',
+      '```ts',
+      'export default defineConfig({})',
+      '```',
+      '### LOCALE_FILES',
+      '#### LOCALE: ja',
+      '```po',
+      'msgid "Hi"',
+      'msgstr "やあ"',
+      '```',
+    ].join('\n')
+
+    vi.mocked(execFile as unknown as (...args: unknown[]) => Promise<{ stdout: string }>)
+      .mockResolvedValueOnce({ stdout: aiResponse })
+
+    await runMigrate({ from: 'vue-i18n', provider: 'claude', write: true })
+
+    // Should write config and locale files
+    expect(writeFileSync).toHaveBeenCalled()
+    expect(mkdirSync).toHaveBeenCalled()
+    expect(consola.success).toHaveBeenCalled()
+  })
+
+  it('handles codex provider', async () => {
+    vi.mocked(existsSync).mockImplementation((path) => {
+      if (String(path).endsWith('i18n.ts')) return true
+      return false
+    })
+    vi.mocked(readFileSync).mockReturnValue('{}')
+
+    vi.mocked(execFile as unknown as (...args: unknown[]) => Promise<{ stdout: string }>)
+      .mockResolvedValueOnce({ stdout: '### MIGRATION_STEPS\nDone.' })
+
+    await runMigrate({ from: 'vue-i18n', provider: 'codex', write: false })
+
+    // The codex provider should have been invoked (no error)
+    expect(consola.info).toHaveBeenCalledWith(expect.stringContaining('codex'))
+  })
+
+  it('displays locale file content truncated to 500 chars in dry-run', async () => {
+    vi.mocked(existsSync).mockImplementation((path) => {
+      if (String(path).endsWith('i18n.ts')) return true
+      return false
+    })
+    vi.mocked(readFileSync).mockReturnValue('{}')
+
+    const longContent = 'x'.repeat(600)
+    const aiResponse = [
+      '### LOCALE_FILES',
+      '#### LOCALE: fr',
+      '```po',
+      longContent,
+      '```',
+    ].join('\n')
+
+    vi.mocked(execFile as unknown as (...args: unknown[]) => Promise<{ stdout: string }>)
+      .mockResolvedValueOnce({ stdout: aiResponse })
+
+    await runMigrate({ from: 'vue-i18n', provider: 'claude', write: false })
+
+    // consola.box should be called with truncated content
+    expect(consola.box).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: expect.stringContaining('use --write to save full file'),
+      }),
+    )
+  })
+
+  it('displays install commands when present', async () => {
+    vi.mocked(existsSync).mockImplementation((path) => {
+      if (String(path).endsWith('i18n.ts')) return true
+      return false
+    })
+    vi.mocked(readFileSync).mockReturnValue('{}')
+
+    const aiResponse = [
+      '### INSTALL_COMMANDS',
+      '```bash',
+      'npm install @fluenti/vue',
+      '```',
+    ].join('\n')
+
+    vi.mocked(execFile as unknown as (...args: unknown[]) => Promise<{ stdout: string }>)
+      .mockResolvedValueOnce({ stdout: aiResponse })
+
+    await runMigrate({ from: 'vue-i18n', provider: 'claude', write: false })
+
+    expect(consola.box).toHaveBeenCalledWith(
+      expect.objectContaining({ title: 'Install Commands' }),
+    )
+  })
+
+  it('displays migration steps when present', async () => {
+    vi.mocked(existsSync).mockImplementation((path) => {
+      if (String(path).endsWith('i18n.ts')) return true
+      return false
+    })
+    vi.mocked(readFileSync).mockReturnValue('{}')
+
+    const aiResponse = [
+      '### MIGRATION_STEPS',
+      '1. Do something',
+      '2. Do another thing',
+    ].join('\n')
+
+    vi.mocked(execFile as unknown as (...args: unknown[]) => Promise<{ stdout: string }>)
+      .mockResolvedValueOnce({ stdout: aiResponse })
+
+    await runMigrate({ from: 'vue-i18n', provider: 'claude', write: false })
+
+    expect(consola.box).toHaveBeenCalledWith(
+      expect.objectContaining({ title: 'Migration Steps' }),
+    )
+  })
+
+  it('handles AI provider ENOENT error (CLI not installed)', async () => {
+    vi.mocked(existsSync).mockImplementation((path) => {
+      if (String(path).endsWith('i18n.ts')) return true
+      return false
+    })
+    vi.mocked(readFileSync).mockReturnValue('{}')
+
+    const enoentError = new Error('spawn claude ENOENT') as Error & { code: string }
+    enoentError.code = 'ENOENT'
+    vi.mocked(execFile as unknown as (...args: unknown[]) => Promise<{ stdout: string }>)
+      .mockRejectedValueOnce(enoentError)
+
+    await expect(
+      runMigrate({ from: 'vue-i18n', provider: 'claude', write: false }),
+    ).rejects.toThrow('CLI not found')
+  })
+
+  it('handles AI provider EACCES error', async () => {
+    vi.mocked(existsSync).mockImplementation((path) => {
+      if (String(path).endsWith('i18n.ts')) return true
+      return false
+    })
+    vi.mocked(readFileSync).mockReturnValue('{}')
+
+    const eaccesError = new Error('spawn claude EACCES') as Error & { code: string }
+    eaccesError.code = 'EACCES'
+    vi.mocked(execFile as unknown as (...args: unknown[]) => Promise<{ stdout: string }>)
+      .mockRejectedValueOnce(eaccesError)
+
+    await expect(
+      runMigrate({ from: 'vue-i18n', provider: 'claude', write: false }),
+    ).rejects.toThrow('CLI not found')
+  })
+
+  it('handles response with no results (no config, no locales, no steps)', async () => {
+    vi.mocked(existsSync).mockImplementation((path) => {
+      if (String(path).endsWith('i18n.ts')) return true
+      return false
+    })
+    vi.mocked(readFileSync).mockReturnValue('{}')
+
+    vi.mocked(execFile as unknown as (...args: unknown[]) => Promise<{ stdout: string }>)
+      .mockResolvedValueOnce({ stdout: 'Some unhelpful AI text without proper sections.' })
+
+    await runMigrate({ from: 'vue-i18n', provider: 'claude', write: false })
+
+    // Should not write anything and should not crash
+    expect(writeFileSync).not.toHaveBeenCalled()
+  })
+
+  it('does not suggest --write when no config or locales generated', async () => {
+    vi.mocked(existsSync).mockImplementation((path) => {
+      if (String(path).endsWith('i18n.ts')) return true
+      return false
+    })
+    vi.mocked(readFileSync).mockReturnValue('{}')
+
+    vi.mocked(execFile as unknown as (...args: unknown[]) => Promise<{ stdout: string }>)
+      .mockResolvedValueOnce({ stdout: '### MIGRATION_STEPS\nNothing special' })
+
+    await runMigrate({ from: 'vue-i18n', provider: 'claude', write: false })
+
+    // Should NOT suggest --write since there's nothing to write
+    const infoCalls = vi.mocked(consola.info).mock.calls.map((c) => String(c[0]))
+    expect(infoCalls.some((c) => c.includes('--write'))).toBe(false)
   })
 })

@@ -207,6 +207,30 @@ describe('getSSRLocaleScript', () => {
   it('throws on invalid locale format', () => {
     expect(() => getSSRLocaleScript('en<script>')).toThrow('locale must be a valid BCP 47 tag')
   })
+
+  it('accepts custom key option', () => {
+    expect(getSSRLocaleScript('ja', { key: '__MY_APP_LOCALE__' })).toBe(
+      '<script>window.__MY_APP_LOCALE__="ja"</script>'
+    )
+  })
+
+  it('rejects invalid custom key (not a valid JS identifier)', () => {
+    expect(() => getSSRLocaleScript('en', { key: '123-invalid' })).toThrow(
+      /Invalid SSR key/
+    )
+  })
+
+  it('rejects custom key with spaces', () => {
+    expect(() => getSSRLocaleScript('en', { key: 'has space' })).toThrow(
+      /Invalid SSR key/
+    )
+  })
+
+  it('rejects custom key with special characters', () => {
+    expect(() => getSSRLocaleScript('en', { key: 'my-key!' })).toThrow(
+      /Invalid SSR key/
+    )
+  })
 })
 
 describe('getHydratedLocale', () => {
@@ -246,6 +270,12 @@ describe('getHydratedLocale', () => {
     if (origWindow !== undefined) {
       (globalThis as any).window = origWindow
     }
+  })
+
+  it('reads custom key from window', () => {
+    (globalThis as any).window = { __MY_APP_LOCALE__: 'ja' }
+    expect(getHydratedLocale('en', { key: '__MY_APP_LOCALE__' })).toBe('ja')
+    delete (globalThis as any).window
   })
 })
 
@@ -445,6 +475,16 @@ describe('edge cases — SSR error recovery and boundaries', () => {
     } as unknown as Headers
     const result = detectLocale({
       headers,
+      available,
+      fallback: 'en',
+    })
+    expect(result).toBe('en')
+  })
+
+  it('plain object headers without accept-language key returns fallback', () => {
+    // This tests the getHeader path where no key matches in the plain object
+    const result = detectLocale({
+      headers: { 'x-custom-header': 'value' } as any,
       available,
       fallback: 'en',
     })

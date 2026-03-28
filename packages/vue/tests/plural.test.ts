@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { nextTick } from 'vue'
+import { h, nextTick } from 'vue'
 import { mount } from '@vue/test-utils'
 import { createFluenti } from '../src/plugin'
 import { Plural } from '../src/components/Plural'
@@ -516,6 +516,21 @@ describe('Plural component', () => {
 
       expect(wrapper.element.tagName).toBe('DIV')
     })
+
+    it('uses tag prop with rich slot content (reconstruct path)', () => {
+      const plugin = createPlugin()
+      const wrapper = mount(Plural, {
+        props: { value: 5, tag: 'p' },
+        slots: {
+          other: () => [h('strong', 'many'), ' items'],
+        },
+        global: { plugins: [plugin] },
+      })
+
+      expect(wrapper.element.tagName).toBe('P')
+      expect(wrapper.find('strong').exists()).toBe(true)
+      expect(wrapper.text()).toContain('items')
+    })
   })
 
   describe('edge cases', () => {
@@ -594,6 +609,75 @@ describe('Plural component', () => {
       })
 
       expect(wrapper.text()).toBe('')
+    })
+
+    it('renders with tag prop wrapping result', () => {
+      const plugin = createPlugin()
+      const wrapper = mount(Plural, {
+        props: { value: 5, other: '# items', tag: 'span' },
+        global: { plugins: [plugin] },
+      })
+
+      expect(wrapper.element.tagName).toBe('SPAN')
+      expect(wrapper.text()).toBe('5 items')
+    })
+
+    it('returns null when result is empty string with no tag', () => {
+      const plugin = createPlugin()
+      const wrapper = mount(Plural, {
+        props: { value: 5, other: '' },
+        global: { plugins: [plugin] },
+      })
+
+      // empty result without tag returns result ?? null
+      expect(wrapper.text()).toBe('')
+    })
+
+    it('uses id prop when provided', () => {
+      const plugin = createFluenti({
+        interpolate,
+        locale: 'en',
+        messages: { en: { 'my-plural-id': '{count, plural, one {# thing} other {# things}}' } },
+      })
+
+      const wrapper = mount(Plural, {
+        props: { value: 5, other: '# things', id: 'my-plural-id' },
+        global: { plugins: [plugin] },
+      })
+
+      expect(wrapper.text()).toBe('5 things')
+    })
+
+    it('uses context prop to generate hashed id', () => {
+      const plugin = createPlugin()
+      const wrapper = mount(Plural, {
+        props: { value: 1, one: '# item', other: '# items', context: 'cart' },
+        global: { plugins: [plugin] },
+      })
+
+      expect(wrapper.text()).toBe('1 item')
+    })
+
+    it('uses comment prop for extraction metadata', () => {
+      const plugin = createPlugin()
+      const wrapper = mount(Plural, {
+        props: { value: 1, one: '# item', other: '# items', comment: 'Item counter' },
+        global: { plugins: [plugin] },
+      })
+
+      expect(wrapper.text()).toBe('1 item')
+    })
+
+    it('uses offset prop for plural offset', () => {
+      const plugin = createPlugin()
+      const wrapper = mount(Plural, {
+        props: { value: 3, other: '# items', offset: 1 },
+        global: { plugins: [plugin] },
+      })
+
+      // With offset 1, the displayed value should be 3 (the original value)
+      // but the category selection uses 3-1=2
+      expect(wrapper.text()).toContain('items')
     })
 
     it('slot and string prop mixed - slots take precedence', () => {

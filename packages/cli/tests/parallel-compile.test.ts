@@ -300,4 +300,96 @@ describe('parallelCompile — worker error handling (regression)', () => {
 
     vi.useRealTimers()
   })
+
+  it('rejects when a worker emits an error event', async () => {
+    const ErrorWorkerClass = class MockWorker {
+      private handlers: Record<string, ((...args: unknown[]) => void)[]> = {}
+
+      on(event: string, handler: (...args: unknown[]) => void) {
+        ;(this.handlers[event] ??= []).push(handler)
+      }
+
+      postMessage(_request: { locale: string }) {
+        // Emit an error event asynchronously
+        setTimeout(() => {
+          const handlers = this.handlers['error'] ?? []
+          for (const handler of handlers) {
+            handler(new Error('worker crashed'))
+          }
+        }, 0)
+      }
+
+      terminate() {
+        // no-op
+      }
+    }
+
+    const parallelCompileWorker = await importWithMockedWorker(ErrorWorkerClass)
+
+    // Need 2+ tasks to enter the worker code path (single task goes in-process)
+    const tasks: ParallelCompileTask[] = [
+      { locale: 'ja', catalog: {}, allIds: ['Hello'], sourceLocale: 'en' },
+      { locale: 'zh-CN', catalog: {}, allIds: ['Hello'], sourceLocale: 'en' },
+    ]
+
+    await expect(parallelCompileWorker(tasks, 2)).rejects.toThrow(
+      /Worker error compiling locale "(?:ja|zh-CN)": worker crashed/,
+    )
+  })
+
+  it('rejects when a worker exits with non-zero code', async () => {
+    const CrashWorkerClass = class MockWorker {
+      private handlers: Record<string, ((...args: unknown[]) => void)[]> = {}
+
+      on(event: string, handler: (...args: unknown[]) => void) {
+        ;(this.handlers[event] ??= []).push(handler)
+      }
+
+      postMessage(_request: { locale: string }) {
+        // Emit an exit event with non-zero code
+        setTimeout(() => {
+          const handlers = this.handlers['exit'] ?? []
+          for (const handler of handlers) {
+            handler(1)
+          }
+        }, 0)
+      }
+
+      terminate() {
+        // no-op
+      }
+    }
+
+    const parallelCompileWorker = await importWithMockedWorker(CrashWorkerClass)
+
+    // Need 2+ tasks to enter the worker code path
+    const tasks: ParallelCompileTask[] = [
+      { locale: 'ja', catalog: {}, allIds: ['Hello'], sourceLocale: 'en' },
+      { locale: 'zh-CN', catalog: {}, allIds: ['Hello'], sourceLocale: 'en' },
+    ]
+
+    await expect(parallelCompileWorker(tasks, 2)).rejects.toThrow(
+      /Worker exited with code 1 while compiling locale/,
+    )
+  })
+
+  it('handles successful multi-worker flow via mock workers', async () => {
+    const MockWorker = createMockWorkerClass({
+      ja: { code: 'export default {"Hello":"こんにちは"}', stats: { compiled: 1, missing: [] } },
+      'zh-CN': { code: 'export default {"Hello":"你好"}', stats: { compiled: 1, missing: [] } },
+    })
+
+    const parallelCompileWorker = await importWithMockedWorker(MockWorker)
+
+    const tasks: ParallelCompileTask[] = [
+      { locale: 'ja', catalog: {}, allIds: ['Hello'], sourceLocale: 'en' },
+      { locale: 'zh-CN', catalog: {}, allIds: ['Hello'], sourceLocale: 'en' },
+    ]
+
+    const results = await parallelCompileWorker(tasks, 2)
+
+    expect(results).toHaveLength(2)
+    const locales = results.map((r) => r.locale).sort()
+    expect(locales).toEqual(['ja', 'zh-CN'])
+  })
 })

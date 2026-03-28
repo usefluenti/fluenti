@@ -231,4 +231,218 @@ describe('updateCatalog', () => {
     expect(catalog['abc']!.obsolete).toBe(true)
     expect(catalog['abc']!.fuzzy).toBeUndefined()
   })
+
+  // ─── Carry-forward entry matching ────────────────────────────────────────────
+
+  it('carries forward translation when message gets a context (same message, same origin)', () => {
+    // Old entry: no context, has translation
+    const existing: CatalogData = {
+      'old-id': { message: 'Save', translation: 'Enregistrer', origin: 'Button.vue:10' },
+    }
+    // New extraction: same message, same origin, but now with a context → new ID
+    const extracted = [
+      {
+        id: 'new-id',
+        message: 'Save',
+        context: 'toolbar',
+        origin: { file: 'Button.vue', line: 10 },
+      },
+    ]
+
+    const { catalog, result } = updateCatalog(existing, extracted)
+
+    // The new entry should carry forward the old translation
+    expect(catalog['new-id']!.translation).toBe('Enregistrer')
+    expect(catalog['new-id']!.context).toBe('toolbar')
+    // The old entry should be marked obsolete
+    expect(catalog['old-id']!.obsolete).toBe(true)
+    expect(result.unchanged).toBe(1)
+    expect(result.obsolete).toBe(1)
+  })
+
+  it('does not carry forward when message text differs', () => {
+    const existing: CatalogData = {
+      'old-id': { message: 'Save', translation: 'Enregistrer', origin: 'Button.vue:10' },
+    }
+    const extracted = [
+      {
+        id: 'new-id',
+        message: 'Cancel',
+        context: 'toolbar',
+        origin: { file: 'Button.vue', line: 10 },
+      },
+    ]
+
+    const { catalog, result } = updateCatalog(existing, extracted)
+
+    // No carry-forward: different message text
+    expect(catalog['new-id']!.translation).toBeUndefined()
+    expect(result.added).toBe(1)
+  })
+
+  it('does not carry forward when extracted message has no context', () => {
+    const existing: CatalogData = {
+      'old-id': { message: 'Save', translation: 'Enregistrer', origin: 'Button.vue:10' },
+    }
+    const extracted = [
+      {
+        id: 'new-id',
+        message: 'Save',
+        origin: { file: 'Button.vue', line: 10 },
+      },
+    ]
+
+    const { catalog, result } = updateCatalog(existing, extracted)
+
+    // No carry-forward without context on extracted message
+    expect(catalog['new-id']!.translation).toBeUndefined()
+    expect(result.added).toBe(1)
+  })
+
+  it('does not carry forward when origin file differs', () => {
+    const existing: CatalogData = {
+      'old-id': { message: 'Save', translation: 'Enregistrer', origin: 'Button.vue:10' },
+    }
+    const extracted = [
+      {
+        id: 'new-id',
+        message: 'Save',
+        context: 'toolbar',
+        origin: { file: 'OtherFile.vue', line: 10 },
+      },
+    ]
+
+    const { catalog } = updateCatalog(existing, extracted)
+
+    expect(catalog['new-id']!.translation).toBeUndefined()
+  })
+
+  it('carries forward when origin matches by file name only (different line)', () => {
+    const existing: CatalogData = {
+      'old-id': { message: 'Save', translation: 'Enregistrer', origin: 'Button.vue:5' },
+    }
+    const extracted = [
+      {
+        id: 'new-id',
+        message: 'Save',
+        context: 'toolbar',
+        origin: { file: 'Button.vue', line: 10 },
+      },
+    ]
+
+    const { catalog } = updateCatalog(existing, extracted)
+
+    // Should carry forward because the file name matches (originFile comparison)
+    expect(catalog['new-id']!.translation).toBe('Enregistrer')
+  })
+
+  it('does not carry forward the same entry twice (consumed carry-forward)', () => {
+    const existing: CatalogData = {
+      'old-id': { message: 'Save', translation: 'Enregistrer', origin: 'Button.vue:10' },
+    }
+    const extracted = [
+      {
+        id: 'new-id-1',
+        message: 'Save',
+        context: 'toolbar',
+        origin: { file: 'Button.vue', line: 10 },
+      },
+      {
+        id: 'new-id-2',
+        message: 'Save',
+        context: 'sidebar',
+        origin: { file: 'Button.vue', line: 10 },
+      },
+    ]
+
+    const { catalog } = updateCatalog(existing, extracted)
+
+    // First one gets the carry-forward
+    expect(catalog['new-id-1']!.translation).toBe('Enregistrer')
+    // Second one does NOT get carry-forward (already consumed)
+    expect(catalog['new-id-2']!.translation).toBeUndefined()
+  })
+
+  it('does not carry forward from entries that have a context defined', () => {
+    const existing: CatalogData = {
+      'old-id': { message: 'Save', translation: 'Enregistrer', context: 'existing', origin: 'Button.vue:10' },
+    }
+    const extracted = [
+      {
+        id: 'new-id',
+        message: 'Save',
+        context: 'toolbar',
+        origin: { file: 'Button.vue', line: 10 },
+      },
+    ]
+
+    const { catalog } = updateCatalog(existing, extracted)
+
+    // Should NOT carry forward because the existing entry already has a context
+    expect(catalog['new-id']!.translation).toBeUndefined()
+  })
+
+  it('handles sameOrigin with array of origins', () => {
+    const existing: CatalogData = {
+      'old-id': { message: 'Save', translation: 'Enregistrer', origin: ['Button.vue:10', 'Form.vue:5'] },
+    }
+    const extracted = [
+      {
+        id: 'new-id',
+        message: 'Save',
+        context: 'toolbar',
+        origin: { file: 'Form.vue', line: 5 },
+      },
+    ]
+
+    const { catalog } = updateCatalog(existing, extracted)
+
+    // Should carry forward because Form.vue:5 is in the origin array
+    expect(catalog['new-id']!.translation).toBe('Enregistrer')
+  })
+
+  it('does not carry forward when existing entry has no origin', () => {
+    const existing: CatalogData = {
+      'old-id': { message: 'Save', translation: 'Enregistrer' },
+    }
+    const extracted = [
+      {
+        id: 'new-id',
+        message: 'Save',
+        context: 'toolbar',
+        origin: { file: 'Button.vue', line: 10 },
+      },
+    ]
+
+    const { catalog } = updateCatalog(existing, extracted)
+
+    // Should NOT carry forward because existing entry has no origin to match
+    expect(catalog['new-id']!.translation).toBeUndefined()
+  })
+
+  it('updates message text on re-extraction', () => {
+    const existing: CatalogData = {
+      abc: { message: 'Old text', translation: 'Ancienne traduction', origin: 'Page.vue:5' },
+    }
+    const extracted = [
+      { id: 'abc', message: 'New text', origin: { file: 'Page.vue', line: 5 } },
+    ]
+
+    const { catalog } = updateCatalog(existing, extracted)
+
+    // message should be updated but translation preserved
+    expect(catalog['abc']!.message).toBe('New text')
+    expect(catalog['abc']!.translation).toBe('Ancienne traduction')
+  })
+
+  it('preserves comment from extraction', () => {
+    const existing: CatalogData = {}
+    const extracted = [
+      { id: 'abc', message: 'Hello', comment: 'Greeting header', origin: { file: 'App.vue', line: 1 } },
+    ]
+
+    const { catalog } = updateCatalog(existing, extracted)
+
+    expect(catalog['abc']!.comment).toBe('Greeting header')
+  })
 })

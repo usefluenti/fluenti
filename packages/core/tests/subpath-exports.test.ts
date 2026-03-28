@@ -41,6 +41,25 @@ describe('subpath exports', () => {
     })
   })
 
+  describe('@fluenti/core/internal entry', () => {
+    it('exports parser, compiler, interpolation, and utility modules', async () => {
+      const internalEntry = await import('../src/internal')
+      expect(internalEntry.parse).toBeTypeOf('function')
+      expect(internalEntry.compile).toBeTypeOf('function')
+      expect(internalEntry.interpolate).toBeTypeOf('function')
+      expect(internalEntry.Catalog).toBeTypeOf('function')
+      expect(internalEntry.resolvePlural).toBeTypeOf('function')
+      expect(internalEntry.createDiagnostics).toBeTypeOf('function')
+      expect(internalEntry.LRUCache).toBeTypeOf('function')
+      expect(internalEntry.buildICUMessage).toBeTypeOf('function')
+      expect(internalEntry.resolveDescriptorId).toBeTypeOf('function')
+      expect(internalEntry.hashMessage).toBeTypeOf('function')
+      expect(internalEntry.createPluginRunner).toBeTypeOf('function')
+      expect(internalEntry.resolveLocaleCodes).toBeTypeOf('function')
+      expect(internalEntry.normalizeConfig).toBeTypeOf('function')
+    })
+  })
+
   describe('main entry does NOT export heavy modules', () => {
     it('does not export parse, compile, interpolate, formatNumber, formatDate, formatRelativeTime', async () => {
       const mainEntry = await import('../src/index') as Record<string, unknown>

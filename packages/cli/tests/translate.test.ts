@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { getUntranslatedEntries, chunkEntries, translateCatalog } from '../src/translate'
 import type { CatalogData } from '../src/catalog'
 
@@ -8,6 +8,10 @@ vi.mock('../src/ai-provider', () => ({
 }))
 
 import { invokeAI } from '../src/ai-provider'
+
+beforeEach(() => {
+  vi.clearAllMocks()
+})
 
 describe('getUntranslatedEntries', () => {
   it('returns entries without translation', () => {
@@ -234,5 +238,126 @@ describe('translateCatalog', () => {
     expect(result.translated).toBe(0)
     expect(result.warnings.length).toBeGreaterThan(0)
     expect(result.warnings).toContainEqual(expect.stringContaining('failed'))
+  })
+
+  it('translates a complete batch successfully', async () => {
+    vi.mocked(invokeAI).mockResolvedValueOnce({
+      stdout: '{"abc": "こんにちは", "def": "世界"}',
+      attempts: 1,
+    })
+
+    const catalog: CatalogData = {
+      abc: { message: 'Hello' },
+      def: { message: 'World' },
+    }
+
+    const result = await translateCatalog({
+      provider: 'claude',
+      sourceLocale: 'en',
+      targetLocale: 'ja',
+      catalog,
+      batchSize: 10,
+    })
+
+    expect(result.translated).toBe(2)
+    expect(result.catalog['abc']?.translation).toBe('こんにちは')
+    expect(result.catalog['def']?.translation).toBe('世界')
+    expect(result.warnings).toEqual([])
+  })
+
+  it('handles multiple batches and logs batch progress', async () => {
+    vi.mocked(invokeAI)
+      .mockResolvedValueOnce({ stdout: '{"key1": "翻訳1"}', attempts: 1 })
+      .mockResolvedValueOnce({ stdout: '{"key2": "翻訳2"}', attempts: 1 })
+      .mockResolvedValueOnce({ stdout: '{"key3": "翻訳3"}', attempts: 1 })
+
+    const catalog: CatalogData = {
+      key1: { message: 'One' },
+      key2: { message: 'Two' },
+      key3: { message: 'Three' },
+    }
+
+    const result = await translateCatalog({
+      provider: 'codex',
+      sourceLocale: 'en',
+      targetLocale: 'ja',
+      catalog,
+      batchSize: 1,
+    })
+
+    expect(result.translated).toBe(3)
+    // invokeAI called 3 times (one per batch of 1 message)
+    expect(vi.mocked(invokeAI).mock.calls).toHaveLength(3)
+  })
+
+  it('passes context and glossary to prompt builder', async () => {
+    vi.mocked(invokeAI).mockResolvedValueOnce({
+      stdout: '{"abc": "Bonjour"}',
+      attempts: 1,
+    })
+
+    const catalog: CatalogData = {
+      abc: { message: 'Hello' },
+    }
+
+    const result = await translateCatalog({
+      provider: 'claude',
+      sourceLocale: 'en',
+      targetLocale: 'fr',
+      catalog,
+      batchSize: 10,
+      context: 'Medical application',
+      glossary: { Hello: 'Bonjour' },
+    })
+
+    expect(result.translated).toBe(1)
+    // Verify invokeAI was called; prompt is built by buildTranslatePrompt
+    expect(invokeAI).toHaveBeenCalledTimes(1)
+    const call = vi.mocked(invokeAI).mock.calls[0]![0]
+    // The prompt should contain the glossary term and context
+    expect(call.prompt).toContain('Bonjour')
+    expect(call.prompt).toContain('Medical application')
+  })
+
+  it('passes timeoutMs to invokeAI options', async () => {
+    vi.mocked(invokeAI).mockResolvedValueOnce({
+      stdout: '{"abc": "こんにちは"}',
+      attempts: 1,
+    })
+
+    const catalog: CatalogData = {
+      abc: { message: 'Hello' },
+    }
+
+    await translateCatalog({
+      provider: 'claude',
+      sourceLocale: 'en',
+      targetLocale: 'ja',
+      catalog,
+      batchSize: 10,
+      timeoutMs: 60_000,
+    })
+
+    const call = vi.mocked(invokeAI).mock.calls[0]![0]
+    expect(call.timeoutMs).toBe(60_000)
+  })
+
+  it('handles non-Error exceptions from invokeAI', async () => {
+    vi.mocked(invokeAI).mockRejectedValueOnce('string error')
+
+    const catalog: CatalogData = {
+      abc: { message: 'Hello' },
+    }
+
+    const result = await translateCatalog({
+      provider: 'claude',
+      sourceLocale: 'en',
+      targetLocale: 'ja',
+      catalog,
+      batchSize: 10,
+    })
+
+    expect(result.translated).toBe(0)
+    expect(result.warnings).toContainEqual(expect.stringContaining('string error'))
   })
 })

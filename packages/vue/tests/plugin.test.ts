@@ -868,6 +868,120 @@ describe('$vtRich XSS prevention', () => {
     expect(result).toContain('<a :href="url" class="link">here</a>')
   })
 
+  it('handles boolean attrs (no value)', () => {
+    const plugin = createFluenti({
+      locale: 'en',
+      messages: {
+        en: {
+          'Click <0>here</0>': 'Click <0>here</0>',
+        },
+      },
+    })
+
+    const app = createApp({ render: () => h('div') })
+    app.use(plugin)
+    const vtRich = app.config.globalProperties['$vtRich']
+
+    // Boolean attribute (value is empty string -> falsy)
+    const result = vtRich(
+      'Click <0>here</0>',
+      [{ tag: 'button', attrs: { disabled: '' } }],
+    )
+
+    // Boolean attribute renders as just the key name without ="value"
+    expect(result).toContain('<button disabled>here</button>')
+  })
+
+  it('handles element with no attrs and no rawAttrs', () => {
+    const plugin = createFluenti({
+      locale: 'en',
+      messages: {
+        en: {
+          'Click <0>here</0>': 'Click <0>here</0>',
+        },
+      },
+    })
+
+    const app = createApp({ render: () => h('div') })
+    app.use(plugin)
+    const vtRich = app.config.globalProperties['$vtRich']
+
+    const result = vtRich(
+      'Click <0>here</0>',
+      [{ tag: 'span' }],
+    )
+
+    expect(result).toBe('Click <span>here</span>')
+  })
+
+  it('handles self-closing tag with attrs', () => {
+    const plugin = createFluenti({
+      locale: 'en',
+      messages: {
+        en: {
+          'Hello <0/> world': 'Hello <0/> world',
+        },
+      },
+    })
+
+    const app = createApp({ render: () => h('div') })
+    app.use(plugin)
+    const vtRich = app.config.globalProperties['$vtRich']
+
+    const result = vtRich(
+      'Hello <0/> world',
+      [{ tag: 'img', attrs: { src: 'test.png', alt: 'photo' } }],
+    )
+
+    expect(result).toContain('<img src="test.png" alt="photo" />')
+  })
+
+  it('handles self-closing tag with missing element index', () => {
+    const plugin = createFluenti({
+      locale: 'en',
+      messages: {
+        en: {
+          'Hello <5/> world': 'Hello <5/> world',
+        },
+      },
+    })
+
+    const app = createApp({ render: () => h('div') })
+    app.use(plugin)
+    const vtRich = app.config.globalProperties['$vtRich']
+
+    const result = vtRich(
+      'Hello <5/> world',
+      [{ tag: 'br' }],
+    )
+
+    // Missing element index 5 returns empty string
+    expect(result).toBe('Hello  world')
+  })
+
+  it('handles paired tag with missing element index', () => {
+    const plugin = createFluenti({
+      locale: 'en',
+      messages: {
+        en: {
+          'Hello <5>content</5> world': 'Hello <5>content</5> world',
+        },
+      },
+    })
+
+    const app = createApp({ render: () => h('div') })
+    app.use(plugin)
+    const vtRich = app.config.globalProperties['$vtRich']
+
+    const result = vtRich(
+      'Hello <5>content</5> world',
+      [{ tag: 'a' }],
+    )
+
+    // Missing element index 5 returns just the content
+    expect(result).toBe('Hello content world')
+  })
+
   it('escapes HTML injection in rawAttrs values', () => {
     const plugin = createFluenti({
       locale: 'en',
@@ -1225,6 +1339,55 @@ describe('concurrent setLocale', () => {
 
     expect(plugin.global.locale.value).toBe('zh-CN')
     expect(plugin.global.t('hello')).toBe('你好')
+  })
+})
+
+describe('syncLocale edge case', () => {
+  it('syncLocale updates core locale when reactive locale is changed externally', async () => {
+    const plugin = createFluenti({
+      locale: 'en',
+      messages: {
+        en: { hello: 'Hello' },
+        fr: { hello: 'Bonjour' },
+      },
+    })
+
+    // First, use setLocale to change locale
+    await plugin.global.setLocale('fr')
+    expect(plugin.global.t('hello')).toBe('Bonjour')
+
+    // Now switch back — this exercises syncLocale where i18n.locale !== locale.value
+    await plugin.global.setLocale('en')
+    expect(plugin.global.t('hello')).toBe('Hello')
+  })
+})
+
+describe('t() tagged template literal', () => {
+  it('translates using tagged template syntax', () => {
+    const plugin = createFluenti({
+      locale: 'en',
+      messages: { en: { 'Hello World': 'Hello World' } },
+    })
+
+    // Exercise the tagged template literal branch (Array.isArray + 'raw' check)
+    const strings = Object.assign(['Hello World'], { raw: ['Hello World'] }) as unknown as TemplateStringsArray
+    const result = plugin.global.t(strings)
+    expect(typeof result).toBe('string')
+  })
+
+  it('translates tagged template with interpolation', () => {
+    const plugin = createFluenti({
+      locale: 'en',
+      messages: { en: {} },
+    })
+
+    const name = 'Alice'
+    // Construct a tagged template array manually:
+    // t`Hello ${name}!` becomes t(['Hello ', '!'], name)
+    const strings = Object.assign(['Hello ', '!'], { raw: ['Hello ', '!'] }) as unknown as TemplateStringsArray
+    const result = plugin.global.t(strings, name)
+    expect(typeof result).toBe('string')
+    expect(result).toContain('Hello')
   })
 })
 

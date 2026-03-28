@@ -492,5 +492,197 @@ const real = t('real message')`
       const messages = extractFromTsx(code, 'App.tsx')
       expect(messages).toHaveLength(0)
     })
+
+    it('extracts <Select> with context and comment props', () => {
+      const code = `const el = <Select value={status} context="order" comment="Order status selector" active="Active" inactive="Inactive" other="Unknown" />`
+      const messages = extractFromTsx(code, 'App.tsx')
+      expect(messages).toHaveLength(1)
+      expect(messages[0]!.context).toBe('order')
+      expect(messages[0]!.comment).toBe('Order status selector')
+    })
+
+    it('does not extract <Select> without other prop', () => {
+      const code = `const el = <Select value={status} active="Active" inactive="Inactive" />`
+      const messages = extractFromTsx(code, 'App.tsx')
+      expect(messages).toHaveLength(0)
+    })
+
+    it('does not extract <Select> without value prop', () => {
+      const code = `const el = <Select male="He" female="She" other="They" />`
+      const messages = extractFromTsx(code, 'App.tsx')
+      expect(messages).toHaveLength(0)
+    })
+  })
+
+  // ─── Additional edge case coverage ──────────────────────────────────────────
+
+  describe('JSX Fragment extraction', () => {
+    it('extracts <Trans> wrapping a JSX fragment', () => {
+      const code = `const el = <Trans><>Hello <strong>World</strong></></Trans>`
+      const messages = extractFromTsx(code, 'App.tsx')
+      expect(messages).toHaveLength(1)
+      expect(messages[0]!.message).toContain('Hello')
+      expect(messages[0]!.message).toContain('<0>World</0>')
+    })
+  })
+
+  describe('JSXExpressionContainer in children', () => {
+    it('extracts <Trans> with string expression container in children', () => {
+      const code = `const el = <Trans>Hello {"world"}</Trans>`
+      const messages = extractFromTsx(code, 'App.tsx')
+      expect(messages).toHaveLength(1)
+      expect(messages[0]!.message).toContain('world')
+    })
+
+    it('extracts <Trans> with numeric expression container in children', () => {
+      const code = `const el = <Trans>Version {42}</Trans>`
+      const messages = extractFromTsx(code, 'App.tsx')
+      expect(messages).toHaveLength(1)
+      expect(messages[0]!.message).toContain('42')
+    })
+
+    it('skips <Trans> children with dynamic expression container', () => {
+      const code = `const el = <Trans>{someVar}</Trans>`
+      const messages = extractFromTsx(code, 'App.tsx')
+      // Dynamic expressions in children cannot be statically extracted
+      expect(messages).toHaveLength(0)
+    })
+  })
+
+  describe('template literal in attribute', () => {
+    it('extracts <Trans> with template literal message prop (no expressions)', () => {
+      const code = 'const el = <Trans message={`Hello World`}/>'
+      const messages = extractFromTsx(code, 'App.tsx')
+      expect(messages).toHaveLength(1)
+      expect(messages[0]!.message).toBe('Hello World')
+    })
+  })
+
+  describe('t() with template literal argument', () => {
+    it('extracts t() with template literal (no expressions)', () => {
+      const code = 'const msg = t(`Hello World`)'
+      const messages = extractFromTsx(code, 'App.tsx')
+      expect(messages).toHaveLength(1)
+      expect(messages[0]!.message).toBe('Hello World')
+    })
+
+    it('skips t() with template literal containing expressions', () => {
+      const code = 'const msg = t(`Hello ${name}`)'
+      const messages = extractFromTsx(code, 'App.tsx')
+      // Template literals with expressions in t() calls are not extractable
+      expect(messages).toHaveLength(0)
+    })
+  })
+
+  describe('t() with object descriptor', () => {
+    it('extracts t() with descriptor object', () => {
+      const code = `const msg = t({ message: 'Hello', context: 'greeting', comment: 'Main greeting' })`
+      const messages = extractFromTsx(code, 'App.tsx')
+      expect(messages).toHaveLength(1)
+      expect(messages[0]!.message).toBe('Hello')
+      expect(messages[0]!.context).toBe('greeting')
+      expect(messages[0]!.comment).toBe('Main greeting')
+    })
+
+    it('extracts t() with descriptor containing explicit id', () => {
+      const code = `const msg = t({ id: 'custom', message: 'Hello' })`
+      const messages = extractFromTsx(code, 'App.tsx')
+      expect(messages).toHaveLength(1)
+      expect(messages[0]!.id).toBe('custom')
+    })
+
+    it('ignores t() with descriptor missing message', () => {
+      const code = `const msg = t({ context: 'greeting' })`
+      const messages = extractFromTsx(code, 'App.tsx')
+      expect(messages).toHaveLength(0)
+    })
+
+    it('ignores computed properties in descriptor', () => {
+      const code = `const msg = t({ message: 'Hello', [dynamicKey]: 'value' })`
+      const messages = extractFromTsx(code, 'App.tsx')
+      expect(messages).toHaveLength(1)
+      expect(messages[0]!.message).toBe('Hello')
+    })
+  })
+
+  describe('Plural offset', () => {
+    it('extracts <Plural> with offset prop', () => {
+      const code = `const el = <Plural value={n} offset="1" zero="Nobody" one="# person" other="# people" />`
+      const messages = extractFromTsx(code, 'App.tsx')
+      expect(messages).toHaveLength(1)
+      expect(messages[0]!.message).toContain('offset:1')
+    })
+  })
+
+  describe('Plural with explicit id', () => {
+    it('extracts <Plural> with explicit id prop', () => {
+      const code = `const el = <Plural id="item-count" value={n} one="# item" other="# items" />`
+      const messages = extractFromTsx(code, 'App.tsx')
+      expect(messages).toHaveLength(1)
+      expect(messages[0]!.id).toBe('item-count')
+    })
+  })
+
+  describe('NumericLiteral in attribute', () => {
+    it('reads numeric literal attribute as string', () => {
+      const code = `const el = <Plural value={n} offset={2} one="# item" other="# items" />`
+      const messages = extractFromTsx(code, 'App.tsx')
+      expect(messages).toHaveLength(1)
+      expect(messages[0]!.message).toContain('offset:2')
+    })
+  })
+
+  describe('whitespace-only Trans children', () => {
+    it('skips Trans with only whitespace children', () => {
+      const code = `const el = <Trans>   </Trans>`
+      const messages = extractFromTsx(code, 'App.tsx')
+      expect(messages).toHaveLength(0)
+    })
+  })
+
+  describe('unresolvable tagged template expressions', () => {
+    it('uses positional arg for complex expression in t``', () => {
+      const code = 'const msg = t`Total: ${a + b}`'
+      const messages = extractFromTsx(code, 'App.tsx')
+      expect(messages).toHaveLength(1)
+      expect(messages[0]!.message).toBe('Total: {arg0}')
+    })
+  })
+
+  describe('import string specifier', () => {
+    it('handles string literal import specifier (exotic but valid)', () => {
+      // This tests readImportedName with StringLiteral type
+      const code = `import { "t" as myT } from '@fluenti/core'\nconst msg = myT\`Hello\``
+      const messages = extractFromTsx(code, 'App.tsx')
+      expect(messages).toHaveLength(1)
+      expect(messages[0]!.message).toBe('Hello')
+    })
+  })
+
+  describe('non-JSXIdentifier element name', () => {
+    it('ignores namespaced JSX elements', () => {
+      // JSXMemberExpression or JSXNamespacedName won't match Trans/Plural/Select
+      const code = `const el = <ns:Trans message="Hello" />`
+      const messages = extractFromTsx(code, 'App.tsx')
+      expect(messages).toHaveLength(0)
+    })
+  })
+
+  describe('custom id generator', () => {
+    it('uses custom id generator for t() calls', () => {
+      const code = `const msg = t('Hello World')`
+      const customGen = (msg: string) => `custom_${msg}`
+      const messages = extractFromTsx(code, 'App.tsx', customGen)
+      expect(messages).toHaveLength(1)
+      expect(messages[0]!.id).toBe('custom_Hello World')
+    })
+
+    it('uses custom id generator for <Trans> component', () => {
+      const code = `const el = <Trans message="Hello"/>`
+      const customGen = (msg: string) => `custom_${msg}`
+      const messages = extractFromTsx(code, 'App.tsx', customGen)
+      expect(messages).toHaveLength(1)
+      expect(messages[0]!.id).toBe('custom_Hello')
+    })
   })
 })

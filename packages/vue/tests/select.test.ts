@@ -312,6 +312,25 @@ describe('Select component', () => {
       expect(wrapper.text()).toBe('He liked it')
     })
 
+    it('uses tag prop with rich slot content (reconstruct path)', () => {
+      const plugin = createPlugin()
+      const wrapper = mount(Select, {
+        props: {
+          value: 'male',
+          tag: 'p',
+        },
+        slots: {
+          male: () => [h('strong', 'He'), ' liked this'],
+          other: 'They liked this',
+        },
+        global: { plugins: [plugin] },
+      })
+
+      expect(wrapper.element.tagName).toBe('P')
+      expect(wrapper.find('strong').text()).toBe('He')
+      expect(wrapper.text()).toContain('liked this')
+    })
+
     it('reacts to value changes with slots', async () => {
       const plugin = createPlugin()
       const wrapper = mount(Select, {
@@ -435,6 +454,116 @@ describe('Select component', () => {
       // hasSlots check: !!slots['nonexistent'] || !!slots['other'] = false
       // Falls to string path with no other prop -> empty string
       expect(wrapper.text()).toBe('')
+    })
+
+    it('ignores non-string attrs values when using attrs-based API', () => {
+      const plugin = createPlugin()
+      const wrapper = mount(Select, {
+        props: {
+          value: 'male',
+          other: 'Default text',
+        },
+        attrs: { male: 'He', onClick: () => {} },
+        global: { plugins: [plugin] },
+      })
+
+      // 'male' is a string attr, so it matches. The function attr is ignored.
+      expect(wrapper.text()).toBe('He')
+    })
+
+    it('attrs-based API falls back to other when all attrs are non-string', () => {
+      const plugin = createPlugin()
+      const wrapper = mount(Select, {
+        props: {
+          value: 'anything',
+          other: 'Fallback only',
+        },
+        attrs: { onClick: () => {}, onHover: () => {} },
+        global: { plugins: [plugin] },
+      })
+
+      // All attrs are non-string, so only `other` is added to forms
+      expect(wrapper.text()).toBe('Fallback only')
+    })
+
+    it('renders with tag prop wrapping a string result', () => {
+      const plugin = createPlugin()
+      const wrapper = mount(Select, {
+        props: {
+          value: 'male',
+          other: 'They',
+          options: { male: 'He' },
+          tag: 'span',
+        },
+        global: { plugins: [plugin] },
+      })
+
+      expect(wrapper.element.tagName).toBe('SPAN')
+      expect(wrapper.text()).toBe('He')
+    })
+
+    it('renders null when result is empty with no tag', () => {
+      const plugin = createPlugin()
+      const wrapper = mount(Select, {
+        props: {
+          value: 'nonexistent',
+          other: '',
+        },
+        global: { plugins: [plugin] },
+      })
+
+      expect(wrapper.text()).toBe('')
+    })
+
+    it('uses id prop when provided', () => {
+      const plugin = createFluenti({
+        interpolate,
+        locale: 'en',
+        messages: { en: { 'my-id': '{value, select, male {He} other {They}}' } },
+      })
+
+      const wrapper = mount(Select, {
+        props: {
+          value: 'male',
+          other: 'They',
+          options: { male: 'He' },
+          id: 'my-id',
+        },
+        global: { plugins: [plugin] },
+      })
+
+      expect(wrapper.text()).toBe('He')
+    })
+
+    it('uses context prop to generate hashed id', () => {
+      const plugin = createPlugin()
+      const wrapper = mount(Select, {
+        props: {
+          value: 'male',
+          other: 'They',
+          options: { male: 'He' },
+          context: 'profile',
+        },
+        global: { plugins: [plugin] },
+      })
+
+      // Should still render — the context changes the hash but falls back to message
+      expect(wrapper.text()).toBe('He')
+    })
+
+    it('uses comment prop for extraction metadata', () => {
+      const plugin = createPlugin()
+      const wrapper = mount(Select, {
+        props: {
+          value: 'male',
+          other: 'They',
+          options: { male: 'He' },
+          comment: 'Gender selector',
+        },
+        global: { plugins: [plugin] },
+      })
+
+      expect(wrapper.text()).toBe('He')
     })
 
     it('handles numeric string "123"', () => {

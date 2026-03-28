@@ -928,3 +928,50 @@ describe('config shape validation (sync)', () => {
     }
   })
 })
+
+// ---------------------------------------------------------------------------
+// defineConfig — trivial passthrough
+// ---------------------------------------------------------------------------
+
+describe('defineConfig', () => {
+  it('returns config object unchanged', async () => {
+    const { defineConfig } = await import('../src/define-config')
+    const config = { sourceLocale: 'en', locales: ['en', 'ja'] }
+    expect(defineConfig(config)).toBe(config)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// resolveLocaleCodes — extract codes from mixed LocaleDefinition[]
+// ---------------------------------------------------------------------------
+
+describe('resolveLocaleCodes', () => {
+  it('extracts codes from string and object locale definitions', async () => {
+    const { resolveLocaleCodes } = await import('../src/types')
+    const result = resolveLocaleCodes([
+      'en',
+      { code: 'ja', name: 'Japanese' },
+      'fr',
+      { code: 'zh-CN', name: 'Chinese', dir: 'ltr' },
+    ])
+    expect(result).toEqual(['en', 'ja', 'fr', 'zh-CN'])
+  })
+
+  it('handles all-string array', async () => {
+    const { resolveLocaleCodes } = await import('../src/types')
+    expect(resolveLocaleCodes(['en', 'fr', 'de'])).toEqual(['en', 'fr', 'de'])
+  })
+
+  it('handles all-object array', async () => {
+    const { resolveLocaleCodes } = await import('../src/types')
+    expect(resolveLocaleCodes([
+      { code: 'en', name: 'English' },
+      { code: 'ja', name: 'Japanese' },
+    ])).toEqual(['en', 'ja'])
+  })
+
+  it('handles empty array', async () => {
+    const { resolveLocaleCodes } = await import('../src/types')
+    expect(resolveLocaleCodes([])).toEqual([])
+  })
+})
