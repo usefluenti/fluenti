@@ -1174,14 +1174,24 @@ describe('createFluentiCore', () => {
       expect(formatFn).toHaveBeenCalledWith('ja')
     })
 
-    it('n(value, "percent") without numberFormats uses default Intl (no style)', () => {
+    it('n(value, "percent") without numberFormats uses built-in percent style', () => {
       const i18n = createFluentiCore({
         locale: 'en',
         messages: { en: {} },
       })
-      // No numberFormats configured at all → just plain number format
+      // Built-in percent style applied even without explicit numberFormats
       const result = i18n.n(0.85, 'percent')
-      expect(result).not.toContain('%') // no percent style applied
+      expect(result).toContain('%')
+    })
+
+    it('n(value, "unknown") without numberFormats uses plain default', () => {
+      const i18n = createFluentiCore({
+        locale: 'en',
+        messages: { en: {} },
+      })
+      // Unknown style name → no built-in match, plain format
+      const result = i18n.n(1234.5, 'nonexistent')
+      expect(result).toContain('1,234.5')
     })
   })
 

@@ -63,6 +63,34 @@ import { Catalog } from './catalog'
 import { buildICUMessage } from './msg'
 import { createMessageId, resolveDescriptorId } from './identity'
 import { validateLocale } from './locale'
+
+/** Built-in date format presets (no dependency on formatters module). */
+const BUILTIN_DATE_FORMATS: Record<string, Intl.DateTimeFormatOptions> = {
+  short: { year: 'numeric', month: 'numeric', day: 'numeric' },
+  long: { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' },
+  time: { hour: 'numeric', minute: 'numeric' },
+  datetime: { year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric' },
+}
+
+/** Minimal locale→currency map for the built-in 'currency' style. */
+const CURRENCY_MAP: Record<string, string> = {
+  en: 'USD', 'en-US': 'USD', 'en-GB': 'GBP', 'en-AU': 'AUD', 'en-CA': 'CAD',
+  ja: 'JPY', 'ja-JP': 'JPY', 'zh-CN': 'CNY', 'zh-TW': 'TWD',
+  de: 'EUR', 'de-DE': 'EUR', fr: 'EUR', 'fr-FR': 'EUR',
+  es: 'EUR', 'es-ES': 'EUR', ko: 'KRW', 'ko-KR': 'KRW',
+  ar: 'SAR', 'ar-SA': 'SAR',
+}
+
+/** Built-in number format presets (no dependency on formatters module). */
+const BUILTIN_NUMBER_FORMATS: Record<string, Intl.NumberFormatOptions | ((locale: string) => Intl.NumberFormatOptions)> = {
+  currency: (locale: string) => ({
+    style: 'currency',
+    currency: CURRENCY_MAP[locale] ?? CURRENCY_MAP[locale.split('-')[0]!] ?? 'USD',
+  }),
+  percent: { style: 'percent' },
+  decimal: { minimumFractionDigits: 2, maximumFractionDigits: 2 },
+}
+
 /**
  * Lightweight string interpolation for `{key}` placeholders.
  *
@@ -300,7 +328,9 @@ export function createFluentiCore(config: FluentiCoreConfigFull): FluentiCoreIns
     },
 
     d(value: Date | number, style?: string): LocalizedString {
-      const raw = style && config.dateFormats?.[style] ? config.dateFormats[style] : undefined
+      const raw = style
+        ? (config.dateFormats?.[style] ?? BUILTIN_DATE_FORMATS[style])
+        : undefined
       // Skip 'relative' style (handled by the full formatters module)
       const opts: Intl.DateTimeFormatOptions | undefined = typeof raw === 'string' ? undefined : raw
       const date = typeof value === 'number' ? new Date(value) : value
@@ -312,7 +342,9 @@ export function createFluentiCore(config: FluentiCoreConfigFull): FluentiCoreIns
     },
 
     n(value: number, style?: string): LocalizedString {
-      const raw = style && config.numberFormats?.[style] ? config.numberFormats[style] : undefined
+      const raw = style
+        ? (config.numberFormats?.[style] ?? BUILTIN_NUMBER_FORMATS[style])
+        : undefined
       const opts: Intl.NumberFormatOptions | undefined = typeof raw === 'function' ? raw(currentLocale) : raw
       return new Intl.NumberFormat(currentLocale, opts).format(value) as LocalizedString
     },
