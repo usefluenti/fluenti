@@ -116,6 +116,7 @@ lsof -ti:8321 | xargs kill   # docs
 - **PO format**: gettext-compatible catalog format (also supports JSON)
 - **Code splitting**: Messages can be split per-route via `'dynamic' | 'static' | false` strategies
 - **Virtual modules**: `@fluenti/vite-plugin` serves compiled catalogs via Vite virtual modules
+- **Subpath exports**: Components from `@fluenti/{react,vue,solid}/components`, SSR utilities from `@fluenti/core/ssr`, formatters from `@fluenti/core/formatters`
 
 ## Type Contract
 

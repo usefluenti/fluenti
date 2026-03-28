@@ -51,7 +51,7 @@ import { Steps } from '@astrojs/starlight/components'
    ```tsx
    // src/Home.tsx
    import { t, useI18n } from '@fluenti/react'
-   import { Trans, Plural } from '@fluenti/react'
+   import { Trans, Plural } from '@fluenti/react/components'
 
    export function Home() {
      const { setLocale } = useI18n()
@@ -136,7 +136,7 @@ import { Steps } from '@astrojs/starlight/components'
 ## Rich text with `<Trans>`
 
 ```tsx
-import { Trans } from '@fluenti/react'
+import { Trans } from '@fluenti/react/components'
 
 <Trans>Click <a href="/next">here</a> to continue.</Trans>
 <Trans>This is <strong>important</strong> information.</Trans>
@@ -145,7 +145,7 @@ import { Trans } from '@fluenti/react'
 ## Plurals with `<Plural>`
 
 ```tsx
-import { Plural } from '@fluenti/react'
+import { Plural } from '@fluenti/react/components'
 
 <Plural value={count} zero="No items" one="# item" other="# items" />
 ```

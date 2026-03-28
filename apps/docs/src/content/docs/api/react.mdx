@@ -148,7 +148,7 @@ format('Hello {name}!', { name: 'World' })
 Rich text with component interpolation. Write native HTML — no indexed placeholders.
 
 ```tsx
-import { Trans } from '@fluenti/react'
+import { Trans } from '@fluenti/react/components'
 
 <Trans>Click <a href="/next">here</a> to continue.</Trans>
 <Trans>This is <strong>important</strong> and <em>urgent</em>.</Trans>
@@ -177,7 +177,7 @@ When using `@fluenti/vite-plugin` or `@fluenti/next`, the build plugin automatic
 Locale-aware pluralization using `Intl.PluralRules`.
 
 ```tsx
-import { Plural } from '@fluenti/react'
+import { Plural } from '@fluenti/react/components'
 
 <Plural value={count} zero="No items" one="# item" other="# items" />
 ```
@@ -207,7 +207,7 @@ Use `#` as a placeholder for the numeric value.
 Categorical value selection (gender, role, etc.).
 
 ```tsx
-import { Select } from '@fluenti/react'
+import { Select } from '@fluenti/react/components'
 
 <Select value={gender} male="He liked this" female="She liked this" other="They liked this" />
 ```
@@ -231,7 +231,7 @@ import { Select } from '@fluenti/react'
 Date formatting component.
 
 ```tsx
-import { DateTime } from '@fluenti/react'
+import { DateTime } from '@fluenti/react/components'
 
 <DateTime value={new Date()} format="long" />
 ```
@@ -241,7 +241,7 @@ import { DateTime } from '@fluenti/react'
 Number formatting component.
 
 ```tsx
-import { NumberFormat } from '@fluenti/react'
+import { NumberFormat } from '@fluenti/react/components'
 
 <NumberFormat value={1234.5} format="decimal" />
 ```

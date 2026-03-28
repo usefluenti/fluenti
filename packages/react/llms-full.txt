@@ -118,7 +118,8 @@ Cross-framework contract highlights:
 ## Example
 
 ```tsx
-import { I18nProvider, t, useI18n, Trans, Plural, Select } from '@fluenti/react'
+import { I18nProvider, t, useI18n } from '@fluenti/react'
+import { Trans, Plural, Select } from '@fluenti/react/components'
 
 function Home() {
   const name = 'Fluenti'

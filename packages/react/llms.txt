@@ -75,7 +75,7 @@ function MyComponent() {
 ### Rich text with \<Trans\>
 
 ```tsx
-import { Trans } from '@fluenti/react'
+import { Trans } from '@fluenti/react/components'
 
 function Terms() {
   return (
@@ -89,7 +89,7 @@ function Terms() {
 ### Plurals
 
 ```tsx
-import { Plural } from '@fluenti/react'
+import { Plural } from '@fluenti/react/components'
 
 function ItemCount({ count }: { count: number }) {
   return (

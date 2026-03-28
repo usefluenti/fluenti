@@ -78,7 +78,7 @@ import { Trans } from 'react-i18next'
 
 After (Fluenti):
 ```tsx
-import { Trans } from '@fluenti/react'
+import { Trans } from '@fluenti/react/components'
 <Trans message="Welcome to {0}our app{1}">
   {(text) => <strong>{text}</strong>}
 </Trans>
@@ -182,7 +182,7 @@ import { FormattedMessage, FormattedDate, FormattedNumber } from 'react-intl'
 
 After (Fluenti):
 ```tsx
-import { Trans, DateTime, NumberFormat } from '@fluenti/react'
+import { Trans, DateTime, NumberFormat } from '@fluenti/react/components'
 <Trans message="Hello, {name}!" values={{ name: 'World' }} />
 <DateTime value={date} style="long" />
 <NumberFormat value={1234} style="decimal" />

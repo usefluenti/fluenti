@@ -80,7 +80,7 @@ function MyComponent() {
 ### Rich text with \<Trans\>
 
 ```tsx
-import { Trans } from '@fluenti/solid'
+import { Trans } from '@fluenti/solid/components'
 
 function Terms() {
   return (

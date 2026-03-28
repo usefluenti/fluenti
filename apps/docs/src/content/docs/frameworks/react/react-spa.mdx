@@ -65,7 +65,7 @@ function Greeting() {
 ## Rich Text and Plurals
 
 ```tsx
-import { Trans, Plural } from '@fluenti/react'
+import { Trans, Plural } from '@fluenti/react/components'
 
 <Trans>Click <a href="/next">here</a> to continue.</Trans>
 <Trans tag="p">Click <a href="/next">here</a> to continue.</Trans>
@@ -88,7 +88,7 @@ import { Trans, Plural } from '@fluenti/react'
 Use `<Select>` for categorical values like gender, role, or status:
 
 ```tsx
-import { Select } from '@fluenti/react'
+import { Select } from '@fluenti/react/components'
 
 function Notification({ gender }: { gender: string }) {
   return (
@@ -109,7 +109,7 @@ Any additional props beyond `value` and `other` are treated as case options — 
 Format dates and numbers with locale-aware components:
 
 ```tsx
-import { DateTime, NumberFormat } from '@fluenti/react'
+import { DateTime, NumberFormat } from '@fluenti/react/components'
 
 function OrderSummary({ date, total }: { date: Date; total: number }) {
   return (

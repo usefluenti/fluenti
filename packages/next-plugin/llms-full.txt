@@ -50,7 +50,8 @@ In a `withFluenti()` project, the recommended authoring surface is:
 
 ```tsx
 // ✅ Preferred: compile-time authoring surface
-import { t, Trans, Plural, Select, DateTime, NumberFormat } from '@fluenti/react'
+import { t } from '@fluenti/react'
+import { Trans, Plural, Select, DateTime, NumberFormat } from '@fluenti/react/components'
 ```
 
 This applies to both client and server authoring.

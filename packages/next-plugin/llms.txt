@@ -4,7 +4,7 @@
 
 `@fluenti/next` wires Fluenti into Next.js. In a `withFluenti()` project, the recommended authoring path is:
 
-- client and server authoring: `import { t, Trans, Plural, Select, DateTime, NumberFormat } from '@fluenti/react'`
+- client and server authoring: `import { t } from '@fluenti/react'` + `import { Trans, Plural, Select, DateTime, NumberFormat } from '@fluenti/react/components'`
 - Next runtime/integration: `I18nProvider`, `getI18n()`, and `setLocale()` from `@fluenti/next`
 
 ## Install

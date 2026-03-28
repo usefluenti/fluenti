@@ -141,7 +141,7 @@ function PageHeader(props: { page: keyof typeof PAGE_TITLES }) {
 The `<Trans>` component renders translations that contain embedded components:
 
 ```tsx
-import { Trans } from '@fluenti/solid'
+import { Trans } from '@fluenti/solid/components'
 import { t } from '@fluenti/solid'
 
 const Bold = (props) => <strong>{props.children}</strong>
@@ -162,7 +162,7 @@ The `message` prop contains the translated string with XML-style tags. The `comp
 ## Plurals and Select
 
 ```tsx
-import { Plural, Select } from '@fluenti/solid'
+import { Plural, Select } from '@fluenti/solid/components'
 
 function CartStatus() {
   const [count, setCount] = createSignal(0)
