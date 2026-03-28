@@ -138,6 +138,13 @@ export function createFluenti(config: FluentiConfig): FluentiInstance {
 
   const localeRequestRef = useRef(0)
 
+  // Split runtime integration (for Vite plugin code splitting)
+  const SPLIT_RUNTIME_KEY = Symbol.for('fluenti.runtime.react.v1')
+  function getSplitRuntime(): { __switchLocale?: (l: string) => Promise<void>; __preloadLocale?: (l: string) => Promise<void> } | null {
+    const rt = (globalThis as Record<PropertyKey, unknown>)[SPLIT_RUNTIME_KEY]
+    return typeof rt === 'object' && rt !== null ? rt as any : null
+  }
+
   const i18n = useMemo(() => {
     const cfg: Parameters<typeof createFluentiCore>[0] = {
       locale: currentLocale,
@@ -165,12 +172,17 @@ export function createFluenti(config: FluentiConfig): FluentiInstance {
     async (newLocale: string) => {
       const requestId = ++localeRequestRef.current
 
+      const splitRuntime = loadMessagesFn ? getSplitRuntime() : null
+
       if (loadedMessagesRef.current[newLocale] && !loadMessagesFn) {
         setCurrentLocale(newLocale)
         return
       }
 
       if (loadedMessagesRef.current[newLocale]) {
+        if (splitRuntime?.__switchLocale) {
+          await splitRuntime.__switchLocale(newLocale)
+        }
         setCurrentLocale(newLocale)
         return
       }
@@ -191,6 +203,10 @@ export function createFluenti(config: FluentiConfig): FluentiInstance {
           typeof msgs === 'object' && msgs !== null && 'default' in msgs
             ? (msgs as { default: Messages }).default
             : (msgs as Messages)
+        if (splitRuntime?.__switchLocale) {
+          await splitRuntime.__switchLocale(newLocale)
+        }
+        if (requestId !== localeRequestRef.current) return
         setLoadedMessages((prev) => ({ ...prev, [newLocale]: resolved }))
         setLoadedLocales((prev) => [...new Set([...prev, newLocale])])
         setCurrentLocale(newLocale)
@@ -218,6 +234,10 @@ export function createFluenti(config: FluentiConfig): FluentiInstance {
             : (msgs as Messages)
         setLoadedMessages((prev) => ({ ...prev, [loc]: resolved }))
         setLoadedLocales((prev) => [...new Set([...prev, loc])])
+        const splitRuntime = getSplitRuntime()
+        if (splitRuntime?.__preloadLocale) {
+          await splitRuntime.__preloadLocale(loc)
+        }
       } catch {
         // Silent fail for preload
       }
