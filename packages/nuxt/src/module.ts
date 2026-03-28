@@ -170,11 +170,11 @@ export default defineNuxtModule<FluentNuxtOptions>({
     }
 
     // Auto-import DateTime and NumberFormat from @fluenti/vue
-    addComponent({ name: `${prefix}Trans`, filePath: '@fluenti/vue', export: 'Trans' })
-    addComponent({ name: `${prefix}Plural`, filePath: '@fluenti/vue', export: 'Plural' })
-    addComponent({ name: `${prefix}Select`, filePath: '@fluenti/vue', export: 'Select' })
-    addComponent({ name: `${prefix}DateTime`, filePath: '@fluenti/vue', export: 'DateTime' })
-    addComponent({ name: `${prefix}NumberFormat`, filePath: '@fluenti/vue', export: 'NumberFormat' })
+    addComponent({ name: `${prefix}Trans`, filePath: '@fluenti/vue/components', export: 'Trans' })
+    addComponent({ name: `${prefix}Plural`, filePath: '@fluenti/vue/components', export: 'Plural' })
+    addComponent({ name: `${prefix}Select`, filePath: '@fluenti/vue/components', export: 'Select' })
+    addComponent({ name: `${prefix}DateTime`, filePath: '@fluenti/vue/components', export: 'DateTime' })
+    addComponent({ name: `${prefix}NumberFormat`, filePath: '@fluenti/vue/components', export: 'NumberFormat' })
 
     // --- SSG / ISR: configure nitro prerender and route rules ---
     if (strategy !== 'no_prefix' && strategy !== 'domains') {

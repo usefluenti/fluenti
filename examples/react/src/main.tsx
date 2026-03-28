@@ -1,6 +1,6 @@
 import { createRoot } from 'react-dom/client'
 import { I18nProvider } from '@fluenti/react'
-import { interpolate } from '@fluenti/core/internal'
+import { interpolate } from '@fluenti/react'
 import { useState } from 'react'
 import en from './locales/compiled/en.js'
 import zhCN from './locales/compiled/zh-CN.js'

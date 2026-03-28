@@ -1,7 +1,7 @@
 import { render } from 'solid-js/web'
 import { createSignal, type Component, type JSX } from 'solid-js'
 import { I18nProvider, useI18n } from '@fluenti/solid'
-import { interpolate } from '@fluenti/core/internal'
+import { interpolate } from '@fluenti/solid'
 import { Trans, Plural, Select, DateTime, NumberFormat } from '@fluenti/solid/components'
 import en from './locales/compiled/en.js'
 import zhCN from './locales/compiled/zh-CN.js'

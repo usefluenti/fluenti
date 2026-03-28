@@ -38,3 +38,6 @@ export type { FluentiPluralProps } from './components/Plural'
 export type { FluentiSelectProps } from './components/Select'
 export type { FluentiDateTimeProps } from './components/DateTime'
 export type { NumberFormatProps, FluentiNumberFormatProps } from './components/Number'
+
+// Re-export interpolate for apps that use <Plural>/<Select> at runtime
+export { interpolate } from '@fluenti/core/internal'
