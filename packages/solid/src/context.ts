@@ -154,24 +154,31 @@ export function createFluentiContext(config: FluentiCoreConfig | FluentiConfig):
 
   // Create a core instance that handles all translation, lookup, fallback, and formatting logic.
   // Merge built-in date/number format styles under user-provided overrides.
-  const i18n = createFluentiCore({
+  // Build config incrementally to satisfy exactOptionalPropertyTypes —
+  // optional properties must not receive `undefined` as a value.
+  const coreConfig: FluentiCoreConfigFull = {
     locale: config.locale,
     messages: config.messages ?? {},
-    fallbackLocale: config.fallbackLocale,
-    fallbackChain: i18nConfig.fallbackChain,
     dateFormats: { ...DEFAULT_DATE_FORMATS, ...i18nConfig.dateFormats },
     numberFormats: { ...DEFAULT_NUMBER_FORMATS, ...i18nConfig.numberFormats },
-    missing: config.missing,
-    diagnostics: i18nConfig.diagnostics as FluentiCoreConfigFull['diagnostics'],
-    interpolate: i18nConfig.interpolate,
-  })
+  }
+  if (config.fallbackLocale !== undefined) coreConfig.fallbackLocale = config.fallbackLocale
+  if (i18nConfig.fallbackChain !== undefined) coreConfig.fallbackChain = i18nConfig.fallbackChain
+  if (config.missing !== undefined) coreConfig.missing = config.missing
+  if (i18nConfig.diagnostics !== undefined) coreConfig.diagnostics = i18nConfig.diagnostics as FluentiCoreConfigFull['diagnostics']
+  if (i18nConfig.interpolate !== undefined) coreConfig.interpolate = i18nConfig.interpolate
+  const i18n = createFluentiCore(coreConfig)
 
   function t(strings: TemplateStringsArray, ...exprs: unknown[]): LocalizedString
   function t(id: string | MessageDescriptor, values?: Record<string, unknown>): LocalizedString
   function t(idOrStrings: string | MessageDescriptor | TemplateStringsArray, ...rest: unknown[]): LocalizedString {
     const current = locale() // READ SIGNAL → reactive dependency for Solid re-renders
     if (i18n.locale !== current) i18n.locale = current
-    return i18n.t(idOrStrings as string, ...rest) as LocalizedString
+    // Dispatch to the correct overload based on input type
+    if (Array.isArray(idOrStrings) && 'raw' in idOrStrings) {
+      return i18n.t(idOrStrings as TemplateStringsArray, ...rest) as LocalizedString
+    }
+    return i18n.t(idOrStrings as string | MessageDescriptor, rest[0] as Record<string, unknown> | undefined) as LocalizedString
   }
 
   const loadMessages = (loc: Locale, msgs: Messages): void => {

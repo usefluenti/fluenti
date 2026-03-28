@@ -185,17 +185,20 @@ export function createFluenti(options: FluentiConfig): FluentiPlugin {
     ?? false
 
   // Create the core i18n instance — delegates t/d/n/format/loadMessages/getLocales
-  const i18n = createFluentiCore({
+  // Build config incrementally to satisfy exactOptionalPropertyTypes —
+  // optional properties must not receive `undefined` as a value.
+  const coreConfig: Parameters<typeof createFluentiCore>[0] = {
     locale: options.locale,
     messages: options.messages ?? {},
-    fallbackLocale: options.fallbackLocale,
-    fallbackChain: options.fallbackChain,
-    dateFormats: options.dateFormats,
-    numberFormats: options.numberFormats,
-    missing: options.missing,
-    diagnostics: options.diagnostics as Parameters<typeof createFluentiCore>[0]['diagnostics'],
-    interpolate: options.interpolate,
-  })
+  }
+  if (options.fallbackLocale !== undefined) coreConfig.fallbackLocale = options.fallbackLocale
+  if (options.fallbackChain !== undefined) coreConfig.fallbackChain = options.fallbackChain
+  if (options.dateFormats !== undefined) coreConfig.dateFormats = options.dateFormats
+  if (options.numberFormats !== undefined) coreConfig.numberFormats = options.numberFormats
+  if (options.missing !== undefined) coreConfig.missing = options.missing
+  if (options.diagnostics !== undefined) coreConfig.diagnostics = options.diagnostics as Parameters<typeof createFluentiCore>[0]['diagnostics']
+  if (options.interpolate !== undefined) coreConfig.interpolate = options.interpolate
+  const i18n = createFluentiCore(coreConfig)
 
   const locale = ref(options.locale)
   // Intentional mutation: Vue's shallowReactive API requires in-place property assignment for reactivity
@@ -229,7 +232,11 @@ export function createFluenti(options: FluentiConfig): FluentiPlugin {
     const currentLocale = locale.value
     void catalogs[currentLocale]
     syncLocale()
-    return i18n.t(idOrStrings as string, ...rest)
+    // Dispatch to the correct overload based on input type
+    if (Array.isArray(idOrStrings) && 'raw' in idOrStrings) {
+      return i18n.t(idOrStrings as TemplateStringsArray, ...rest)
+    }
+    return i18n.t(idOrStrings as string | MessageDescriptor, rest[0] as Record<string, unknown> | undefined)
   }
 
   let _localeRequestId = 0

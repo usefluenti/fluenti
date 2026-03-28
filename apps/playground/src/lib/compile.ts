@@ -3,7 +3,7 @@
  * Mirrors @fluenti/cli compile logic — generates JS module code from catalog.
  */
 
-import { parse } from '@fluenti/core'
+import { parse } from '@fluenti/core/internal'
 import type { ASTNode, PluralNode, SelectNode } from '@fluenti/core/internal'
 import { hashMessage } from '@fluenti/core/internal'
 import type { CatalogData } from './catalog'

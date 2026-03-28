@@ -4,8 +4,8 @@ export interface PromptOptions {
   readonly sourceLocale: string
   readonly targetLocale: string
   readonly messages: Record<string, string>
-  readonly glossary?: Record<string, string>
-  readonly context?: string
+  readonly glossary?: Record<string, string> | undefined
+  readonly context?: string | undefined
 }
 
 export function buildTranslatePrompt(options: PromptOptions): string {

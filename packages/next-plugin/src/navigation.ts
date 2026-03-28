@@ -116,7 +116,7 @@ export function useLocaleSwitcher(options?: {
   const switchLocale = (newLocale: string) => {
     // Validate locale against known locales to prevent cookie injection
     if (!locales.includes(newLocale)) {
-      if (typeof process !== 'undefined' && process.env?.NODE_ENV !== 'production') {
+      if (typeof process !== 'undefined' && process.env?.['NODE_ENV'] !== 'production') {
         console.warn(`[fluenti] switchLocale: invalid locale "${newLocale}"`)
       }
       return

@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { createFluenti } from '@fluenti/vue'
+import { interpolate } from '../../core/src/interpolate'
 import { createFluentBridge } from '../src/bridge'
 import { createMockVueI18n } from './_helpers'
 
@@ -38,6 +39,7 @@ describe('pluralization — complex plural scenarios', () => {
   it('tc() ICU with =0, one, other forms via fluenti', () => {
     const vueI18n = createMockVueI18n({ messages: { en: {} } })
     const fluenti = createFluenti({
+      interpolate,
       locale: 'en',
       messages: {
         en: {
@@ -55,6 +57,7 @@ describe('pluralization — complex plural scenarios', () => {
   it('tc() with extra interpolation values alongside count', () => {
     const vueI18n = createMockVueI18n({ messages: { en: {} } })
     const fluenti = createFluenti({
+      interpolate,
       locale: 'en',
       messages: {
         en: {
@@ -93,6 +96,7 @@ describe('pluralization — complex plural scenarios', () => {
       messages: { en: { items: '{count} thing | {count} things' } },
     })
     const fluenti = createFluenti({
+      interpolate,
       locale: 'en',
       messages: { en: { items: '{count, plural, one {# item} other {# items}}' } },
     })

@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { createFluenti } from '@fluenti/vue'
+import { interpolate } from '../../core/src/interpolate'
 import { createFluentBridge } from '../src/bridge'
 import { createMockVueI18n } from './_helpers'
 
@@ -75,6 +76,7 @@ describe('priority strategy — comprehensive tests', () => {
       messages: { en: { items: '{count} thing | {count} things' } },
     })
     const fluenti = createFluenti({
+      interpolate,
       locale: 'en',
       messages: { en: { items: '{count, plural, one {# item} other {# items}}' } },
     })
@@ -93,6 +95,7 @@ describe('priority strategy — comprehensive tests', () => {
   it('vue-i18n-first: tc() falls back to fluenti when only fluenti has the key', () => {
     const vueI18n = createMockVueI18n({ messages: { en: {} } })
     const fluenti = createFluenti({
+      interpolate,
       locale: 'en',
       messages: { en: { count: '{count, plural, one {# item} other {# items}}' } },
     })

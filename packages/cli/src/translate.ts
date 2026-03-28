@@ -42,9 +42,9 @@ export interface TranslateOptions {
   readonly targetLocale: string
   readonly catalog: CatalogData
   readonly batchSize: number
-  readonly context?: string
-  readonly glossary?: Record<string, string>
-  readonly timeoutMs?: number
+  readonly context?: string | undefined
+  readonly glossary?: Record<string, string> | undefined
+  readonly timeoutMs?: number | undefined
 }
 
 export async function translateCatalog(options: TranslateOptions): Promise<{

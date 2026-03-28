@@ -214,7 +214,7 @@ export default defineNuxtModule<FluentNuxtOptions>({
 
     // --- Nuxt DevTools integration ---
     if (nuxt.options.dev) {
-      setupDevTools(nuxt, localeCodes, defaultLocale, strategy)
+      setupDevTools(nuxt as any, localeCodes, defaultLocale, strategy)
     }
 
     // --- Nitro server handler for locale redirect (T2-10) ---

@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import { createApp, defineComponent, h, inject, nextTick, ref } from 'vue'
 import { createFluenti } from '@fluenti/vue'
+import { interpolate } from '../../core/src/interpolate'
 import { createFluentBridge, BRIDGE_KEY } from '../src/bridge'
 import type { VueI18nInstance, VueI18nGlobal, BridgeContext } from '../src/types'
 
@@ -158,6 +159,7 @@ describe('bridged tc()', () => {
   it('uses fluenti ICU plurals when key exists in fluenti', () => {
     const vueI18n = createMockVueI18n({ messages: { en: {} } })
     const fluenti = createFluenti({
+      interpolate,
       locale: 'en',
       messages: { en: { items: '{count, plural, one {# item} other {# items}}' } },
     })
@@ -361,6 +363,7 @@ describe('edge cases — createFluentBridge', () => {
   it('bridgedTc fluenti-first uses fluenti ICU with extra values', () => {
     const vueI18n = createMockVueI18n({ messages: { en: {} } })
     const fluenti = createFluenti({
+      interpolate,
       locale: 'en',
       messages: { en: { files: '{count, plural, one {# file in {folder}} other {# files in {folder}}}' } },
     })
@@ -511,6 +514,7 @@ describe('edge cases — createFluentBridge', () => {
   it('vue-i18n-first bridgedTc falls back to fluenti when key not in vue-i18n', () => {
     const vueI18n = createMockVueI18n({ messages: { en: {} } })
     const fluenti = createFluenti({
+      interpolate,
       locale: 'en',
       messages: { en: { items: '{count, plural, one {# item} other {# items}}' } },
     })

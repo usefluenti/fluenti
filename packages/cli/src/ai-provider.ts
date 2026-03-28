@@ -9,10 +9,10 @@ export type AIProvider = 'claude' | 'codex'
 export interface AIInvokeOptions {
   readonly provider: AIProvider
   readonly prompt: string
-  readonly maxRetries?: number
-  readonly initialDelayMs?: number
-  readonly maxBuffer?: number
-  readonly timeoutMs?: number  // default: 120_000 (2 minutes)
+  readonly maxRetries?: number | undefined
+  readonly initialDelayMs?: number | undefined
+  readonly maxBuffer?: number | undefined
+  readonly timeoutMs?: number | undefined  // default: 120_000 (2 minutes)
 }
 
 export interface AIInvokeResult {
