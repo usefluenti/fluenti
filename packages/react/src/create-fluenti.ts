@@ -180,8 +180,12 @@ export function createFluenti(config: FluentiConfig): FluentiInstance {
       }
 
       if (loadedMessagesRef.current[newLocale]) {
-        if (splitRuntime?.__switchLocale) {
-          await splitRuntime.__switchLocale(newLocale)
+        try {
+          if (splitRuntime?.__switchLocale) {
+            await splitRuntime.__switchLocale(newLocale)
+          }
+        } catch (e) {
+          console.warn(`[fluenti] split runtime switch failed for locale "${newLocale}"`, e)
         }
         setCurrentLocale(newLocale)
         return
@@ -203,8 +207,12 @@ export function createFluenti(config: FluentiConfig): FluentiInstance {
           typeof msgs === 'object' && msgs !== null && 'default' in msgs
             ? (msgs as { default: Messages }).default
             : (msgs as Messages)
-        if (splitRuntime?.__switchLocale) {
-          await splitRuntime.__switchLocale(newLocale)
+        try {
+          if (splitRuntime?.__switchLocale) {
+            await splitRuntime.__switchLocale(newLocale)
+          }
+        } catch (e) {
+          console.warn(`[fluenti] split runtime switch failed for locale "${newLocale}"`, e)
         }
         if (requestId !== localeRequestRef.current) return
         setLoadedMessages((prev) => ({ ...prev, [newLocale]: resolved }))

@@ -80,13 +80,13 @@ Automatic extraction (`fluenti extract`, `lingui extract`) scans source files an
 
 | Library | Code Splitting | Configuration |
 |---------|---------------|---------------|
-| Fluenti | Built-in (static + dynamic per-route) | `splitting: 'dynamic'` in config |
+| Fluenti | Built-in (static + dynamic per-locale) | `splitting: 'dynamic'` in config |
 | LinguiJS | Manual | File-based splitting |
 | vue-i18n | Manual | Namespace-based |
 | react-i18next | Manual | Namespace-based |
 | next-intl | Manual | Namespace-based |
 
-Fluenti's Vite plugin can split translation messages per route automatically. Each locale chunk loads on demand via dynamic imports, so users download only the translations for the current page.
+Fluenti's Vite plugin can split translation messages per locale automatically. Each locale chunk loads on demand via dynamic imports, so users only download translations for the active language.
 
 For large applications with many routes and locales, built-in code splitting reduces initial payload without manual file organization.
 

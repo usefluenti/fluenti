@@ -593,13 +593,9 @@ function readImportedName(specifier: ImportSpecifierNode): string | undefined {
 /**
  * Inject the catalog import statement at the top of the module.
  */
-export function injectCatalogImport(code: string, strategy: 'dynamic' | 'static' | 'per-route', hashes: Set<string>, hashFn?: HashFunction): string {
+export function injectCatalogImport(code: string, strategy: 'dynamic' | 'static', hashes: Set<string>, hashFn?: HashFunction): string {
   if (strategy === 'dynamic') {
     return `import { __catalog } from 'virtual:fluenti/runtime';\n${code}`
-  }
-
-  if (strategy === 'per-route') {
-    return `import { __catalog } from 'virtual:fluenti/route-runtime';\n${code}`
   }
 
   // Static: import named exports directly

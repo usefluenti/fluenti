@@ -37,14 +37,5 @@ describe('fluentiSolid', () => {
       expect(code).not.toContain('shallowReactive')
     })
 
-    it('generates Solid route runtime', () => {
-      const plugins = fluentiSolid({ config: { splitting: 'dynamic', sourceLocale: 'en', locales: ['en', 'fr'], compileOutDir: 'compiled', catalogDir: './locales', format: 'po', include: ['./src/**/*.{tsx,jsx,ts,js}'] } })
-      const virtual = plugins.find((p) => p.name === 'fluenti:virtual') as Plugin
-
-      const code = callHook(virtual.load, {}, '\0virtual:fluenti/route-runtime') as string
-      expect(code).toContain('createStore')
-      expect(code).toContain('__loadRoute')
-      expect(code).toContain('__registerRouteLoader')
-    })
   })
 })

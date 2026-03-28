@@ -252,8 +252,12 @@ export function createFluenti(options: FluentiConfig): FluentiPlugin {
 
     if (loadedLocalesSet.has(newLocale)) {
       // Already loaded, instant switch
-      if (splitRuntime?.__switchLocale) {
-        await splitRuntime.__switchLocale(newLocale)
+      try {
+        if (splitRuntime?.__switchLocale) {
+          await splitRuntime.__switchLocale(newLocale)
+        }
+      } catch (e) {
+        console.warn(`[fluenti] split runtime switch failed for locale "${newLocale}"`, e)
       }
       i18n.locale = newLocale
       locale.value = newLocale
@@ -272,8 +276,12 @@ export function createFluenti(options: FluentiConfig): FluentiPlugin {
       i18n.loadMessages(newLocale, messages)
       loadedLocalesSet.add(newLocale)
       loadedLocales.value = new Set(loadedLocalesSet)
-      if (splitRuntime?.__switchLocale) {
-        await splitRuntime.__switchLocale(newLocale)
+      try {
+        if (splitRuntime?.__switchLocale) {
+          await splitRuntime.__switchLocale(newLocale)
+        }
+      } catch (e) {
+        console.warn(`[fluenti] split runtime switch failed for locale "${newLocale}"`, e)
       }
       // Re-check after async __switchLocale — a newer setLocale() may have superseded this one
       if (thisRequest !== _localeRequestId) return

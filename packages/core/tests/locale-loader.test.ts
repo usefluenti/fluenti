@@ -671,3 +671,106 @@ describe('createLocaleLoader — race condition after __switchLocale', () => {
     expect(loader.getLocale()).toBe('fr')
   })
 })
+
+describe('preloadLocale dedup', () => {
+  it('concurrent preload for same locale only calls loadMessages once', async () => {
+    let callCount = 0
+    let resolveLoad!: (value: { hello: string }) => void
+    const loadMessages = () => {
+      callCount++
+      return new Promise<{ hello: string }>((resolve) => { resolveLoad = resolve })
+    }
+
+    const loader = createLocaleLoader({
+      locale: 'en',
+      messages: { en: { hello: 'Hello' } },
+      loadMessages,
+    })
+
+    const p1 = loader.preloadLocale('fr')
+    const p2 = loader.preloadLocale('fr')
+
+    resolveLoad({ hello: 'Bonjour' })
+    await Promise.all([p1, p2])
+
+    expect(callCount).toBe(1)
+    expect(loader.getLoadedLocales().has('fr')).toBe(true)
+  })
+
+  it('preload after failed preload retries', async () => {
+    let callCount = 0
+    const loadMessages = () => {
+      callCount++
+      if (callCount === 1) return Promise.reject(new Error('network'))
+      return Promise.resolve({ hello: 'Bonjour' })
+    }
+
+    const loader = createLocaleLoader({
+      locale: 'en',
+      messages: { en: { hello: 'Hello' } },
+      loadMessages,
+    })
+
+    await loader.preloadLocale('fr')
+    expect(loader.getLoadedLocales().has('fr')).toBe(false)
+
+    await loader.preloadLocale('fr')
+    expect(loader.getLoadedLocales().has('fr')).toBe(true)
+    expect(callCount).toBe(2)
+  })
+
+  it('concurrent preload of different locales triggers separate loads', async () => {
+    let frCalled = false
+    let deCalled = false
+    const loadMessages = (locale: string) => {
+      if (locale === 'fr') frCalled = true
+      if (locale === 'de') deCalled = true
+      return Promise.resolve({ hello: locale === 'fr' ? 'Bonjour' : 'Hallo' })
+    }
+
+    const loader = createLocaleLoader({
+      locale: 'en',
+      messages: { en: { hello: 'Hello' } },
+      loadMessages,
+    })
+
+    await Promise.all([
+      loader.preloadLocale('fr'),
+      loader.preloadLocale('de'),
+    ])
+
+    expect(frCalled).toBe(true)
+    expect(deCalled).toBe(true)
+    expect(loader.getLoadedLocales().has('fr')).toBe(true)
+    expect(loader.getLoadedLocales().has('de')).toBe(true)
+  })
+
+  it('preload then immediate setLocale same locale uses preloaded messages', async () => {
+    let callCount = 0
+    let resolveLoad!: (v: Record<string, string>) => void
+
+    const loadMessages = () => {
+      callCount++
+      return new Promise<Record<string, string>>((resolve) => { resolveLoad = resolve })
+    }
+
+    const loader = createLocaleLoader({
+      locale: 'en',
+      messages: { en: { hello: 'Hello' } },
+      loadMessages,
+    })
+
+    // Start preload
+    const preloadPromise = loader.preloadLocale('fr')
+    // Resolve it
+    resolveLoad({ hello: 'Bonjour' })
+    await preloadPromise
+
+    // Now setLocale should find it already loaded
+    await loader.setLocale('fr')
+
+    expect(loader.getLocale()).toBe('fr')
+    // loadMessages called only once (during preload, not again during setLocale)
+    expect(callCount).toBe(1)
+  })
+})

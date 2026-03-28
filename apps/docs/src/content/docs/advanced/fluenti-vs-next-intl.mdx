@@ -13,7 +13,7 @@ Fluenti and next-intl both support Next.js App Router with React Server Componen
 | **Runtime parsing** | None — compiled at build time | Yes — parses on every render |
 | **Framework scope** | Vue, React, Solid, Next.js, Nuxt, +3 more | Next.js only |
 | **RSC support** | Yes — dedicated server API | Yes — built-in |
-| **Code splitting** | Built-in per-route (static + dynamic) | Manual |
+| **Code splitting** | Built-in per-locale (static + dynamic) | Manual |
 | **Format support** | ICU MessageFormat (PO + JSON) | ICU MessageFormat (JSON) |
 
 ## Bundle Size
@@ -63,7 +63,7 @@ See [Next.js Guide](/frameworks/react/nextjs/) and [Server Components](/framewor
 
 ## Code Splitting
 
-Fluenti provides **built-in per-route code splitting** for translation messages. Configure `splitting: 'dynamic'` or `splitting: 'static'` in your Fluenti config, and each route loads only the translations it needs via dynamic imports.
+Fluenti provides **built-in per-locale code splitting** for translation messages. Configure `splitting: 'dynamic'` or `splitting: 'static'` in your Fluenti config, and each locale is loaded on demand via dynamic imports.
 
 next-intl relies on manual message splitting — you structure your JSON files per namespace and load them explicitly.
 

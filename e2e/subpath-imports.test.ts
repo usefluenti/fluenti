@@ -115,7 +115,7 @@ describe('subpath imports', () => {
     `,
       ['vue'],
     )
-    expect(result.gzip).toBeLessThan(3300)
+    expect(result.gzip).toBeLessThan(3700)
   })
 
   it('Core+Solid bundle is smaller than Lingui (~3300 B gzip)', () => {

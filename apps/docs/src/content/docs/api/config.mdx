@@ -165,8 +165,8 @@ File extension for compiled catalog output files. Use `'.ts'` if your build pipe
 Code-splitting strategy for compiled message modules.
 
 - **`false`** — All messages are bundled into a single module per locale. Simplest setup.
-- **`'static'`** — Messages are split per route at build time. Requires `defaultBuildLocale`.
-- **`'dynamic'`** — Messages are loaded on demand per route. Best for large apps with many locales.
+- **`'static'`** — A single locale is inlined at build time. Requires `defaultBuildLocale`.
+- **`'dynamic'`** — Default locale in the bundle, other locales loaded on demand. Best for large apps with many locales.
 
 See [Code Splitting](/advanced/code-splitting) for details.
 

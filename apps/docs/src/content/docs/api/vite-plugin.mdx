@@ -137,7 +137,7 @@ The plugin factory produces six ordered sub-plugins. The order is significant �
 | 2 | `fluenti:vue-template` | `pre` | (Vue only) Pre-transforms `v-t`, `<Trans>`, `<Plural>` in SFC templates |
 | 3 | `fluenti:script-transform` | `pre` | AST scope-aware rewrite of `` t` ` `` tagged templates and `<Trans>` JSX optimization |
 | 4 | `fluenti:build-compile` | — | Triggers extract + compile before production builds (`buildStart` hook) |
-| 5 | `fluenti:build-split` | — | Rewrites `t()` calls to catalog references and emits per-route chunks |
+| 5 | `fluenti:build-split` | — | Rewrites `t()` calls to catalog references (dynamic/static) |
 | 6 | `fluenti:dev` | — | File watcher + HMR for catalog changes during dev |
 
 ## Code splitting strategies
@@ -199,25 +199,6 @@ At build time, the plugin:
 
 This produces the smallest bundle for a single locale but requires a separate build per locale.
 
-### `'per-route'` — route-level chunks
-
-<Aside type="caution">
-Per-route splitting is an internal/advanced strategy. It builds on `'dynamic'` but further splits messages by which route uses them. Messages used in multiple routes go into a shared chunk.
-</Aside>
-
-```typescript
-fluentiVue({
-  config: { splitting: 'per-route' },
-})
-```
-
-At build time, the plugin:
-
-1. Tracks which message hashes appear in which modules during `transform`
-2. In `generateBundle`, groups hashes by output chunk — messages used in multiple chunks become "shared", the rest are route-specific
-3. Emits asset files like `_fluenti/shared-en.js`, `_fluenti/home-en.js`, `_fluenti/about-ja.js`
-4. Generates `virtual:fluenti/route-runtime` for the route-level loader
-
 ## Virtual module system
 
 When `splitting` is enabled, the plugin serves generated code through Vite's virtual module convention. These modules are implementation details — app code should use the framework runtime APIs (`setLocale()`, `preloadLocale()`, etc.) rather than importing virtual modules directly.
@@ -227,7 +208,6 @@ When `splitting` is enabled, the plugin serves generated code through Vite's vir
 | `virtual:fluenti/runtime` | `'dynamic'` | Reactive catalog object, `switchLocale()`, `preloadLocale()`, lazy `import()` loaders per locale |
 | `virtual:fluenti/messages` | `'static'` | Re-export of all named exports from the `defaultBuildLocale` compiled catalog |
 | `virtual:fluenti/messages/<locale>` | any | Re-export of a specific locale's compiled catalog |
-| `virtual:fluenti/route-runtime` | `'per-route'` | Route-aware catalog loader with shared/route chunk resolution |
 
 Virtual modules are resolved with the `\0` prefix (Vite convention) so they are excluded from the file system and from other plugins' transforms.
 
@@ -317,7 +297,7 @@ The plugin adapts its behavior based on whether Vite is running `serve` (dev) or
 | Auto compile | Before `buildStart`, runs `compile` (extract is skipped — source files have not changed). Disable with `buildAutoCompile: false`. |
 | Compile hooks | `onBeforeCompile` runs before compilation. Return `false` to skip. `onAfterCompile` runs after successful compilation. |
 | Script transforms | Same as dev. |
-| Code splitting | `fluenti:build-split` rewrites `t()` calls to catalog references and (for `'per-route'`) emits chunked assets in `generateBundle`. |
+| Code splitting | `fluenti:build-split` rewrites `t()` calls to catalog references for dynamic/static splitting. |
 | Parallel compile | When `parallelCompile: true`, compilation uses worker threads (effective with 5+ locales). |
 
 ## Compile lifecycle hooks
@@ -363,7 +343,7 @@ The `idGenerator` is used everywhere IDs are computed: extraction, compilation, 
 
 ### "Cannot find module 'virtual:fluenti/runtime'"
 
-This error appears when `splitting` is `false` (default) but your code imports from the virtual module. Virtual modules are only generated when `splitting` is set to `'dynamic'`, `'static'`, or `'per-route'`. Either enable splitting or import compiled catalogs directly.
+This error appears when `splitting` is `false` (default) but your code imports from the virtual module. Virtual modules are only generated when `splitting` is set to `'dynamic'` or `'static'`. Either enable splitting or import compiled catalogs directly.
 
 ### HMR not picking up translation changes
 
@@ -416,16 +396,3 @@ fluentiVue({
 })
 ```
 
-### Per-route chunks are empty or missing
-
-Per-route splitting relies on static analysis of `t()` calls during the `transform` phase. Dynamic message IDs (e.g., `t(variable)`) cannot be statically analyzed and will not appear in route chunks. Use the descriptor form with a literal `message` or `id` field to ensure static extraction:
-
-```typescript
-// Statically extractable
-t({ id: 'home.title' })
-t({ message: 'Welcome to {name}', context: 'home' }, { name })
-
-// NOT statically extractable — will be missing from route chunks
-const key = getMessageKey()
-t(key)
-```

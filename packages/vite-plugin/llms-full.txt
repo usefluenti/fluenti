@@ -50,7 +50,7 @@ interface FluentiPluginOptions {
 1. `fluenti:virtual` — resolves virtual modules (`virtual:fluenti/messages/*`, `virtual:fluenti/runtime`)
 2. Framework-specific plugins (injected by the calling framework package)
 3. `fluenti:script-transform` — AST-based `t`` ` tagged template and `<Trans>` compile-time transforms
-4. `fluenti:build-split` — build-time code splitting (dynamic/static/per-route)
+4. `fluenti:build-split` — build-time code splitting (dynamic/static)
 5. `fluenti:dev` — dev-mode auto-compile + HMR for catalog changes
 
 Framework packages provide:

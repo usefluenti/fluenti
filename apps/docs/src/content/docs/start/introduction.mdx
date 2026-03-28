@@ -116,7 +116,7 @@ Fluenti's compile-time architecture provides fundamental performance advantages 
 | **Bundle size** | Ship ICU parser + runtime (15-40 KB) | No parser shipped — compiled messages are plain functions |
 | **Parse cost** | Parse every message on render | Zero parse cost — messages are pre-compiled strings/functions |
 | **Rich text** | Runtime DOM manipulation or `v-html` | Compiled at build time into static render instructions |
-| **Code splitting** | Manual per-route setup | Built-in `splitting: 'dynamic'` with automatic chunk loading |
+| **Code splitting** | Manual per-locale setup | Built-in `splitting: 'dynamic'` with automatic chunk loading |
 
 The `v-t` directive in Vue is a `nodeTransform` — it rewrites your template during compilation, so the translated string appears directly in the render function. There is literally nothing left to execute at runtime for static translations.
 

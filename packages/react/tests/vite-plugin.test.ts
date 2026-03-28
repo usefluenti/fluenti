@@ -40,16 +40,5 @@ describe('fluentiReact', () => {
       expect(code).toContain("globalThis[Symbol.for('fluenti.runtime.react.v1')]")
     })
 
-    it('generates React route runtime', () => {
-      const plugins = fluentiReact({ config: { splitting: 'dynamic', sourceLocale: 'en', locales: ['en', 'fr'], compileOutDir: 'compiled', catalogDir: './locales', format: 'po', include: ['./src/**/*.{tsx,jsx,ts,js}'] } })
-      const virtual = plugins.find((p) => p.name === 'fluenti:virtual') as Plugin
-
-      const code = callHook(virtual.load, {}, '\0virtual:fluenti/route-runtime') as string
-      expect(code).toContain('__catalog')
-      expect(code).toContain('__loadRoute')
-      expect(code).toContain('__registerRouteLoader')
-      expect(code).not.toContain('shallowReactive')
-      expect(code).not.toContain('createStore')
-    })
   })
 })

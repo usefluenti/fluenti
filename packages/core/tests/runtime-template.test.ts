@@ -24,12 +24,10 @@ const baseOptions: RuntimeGeneratorOptions = {
 }
 
 describe('createRuntimeGenerator', () => {
-  it('returns an object with generateRuntime and generateRouteRuntime', () => {
+  it('returns an object with generateRuntime', () => {
     const generator = createRuntimeGenerator(mockPrimitives)
     expect(generator).toHaveProperty('generateRuntime')
-    expect(generator).toHaveProperty('generateRouteRuntime')
     expect(typeof generator.generateRuntime).toBe('function')
-    expect(typeof generator.generateRouteRuntime).toBe('function')
   })
 
   describe('generateRuntime', () => {
@@ -112,71 +110,63 @@ describe('createRuntimeGenerator', () => {
     })
   })
 
-  describe('generateRouteRuntime', () => {
-    it('generates valid route runtime code', () => {
+  describe('__switchLocale guards', () => {
+    it('includes locale validation guard before loading', () => {
       const generator = createRuntimeGenerator(mockPrimitives)
-      const code = generator.generateRouteRuntime(baseOptions)
+      const code = generator.generateRuntime(baseOptions)
 
-      expect(code).toContain("import { ref, shallowReactive } from 'vue'")
-      expect(code).toContain("import __defaultMsgs from '/app/locales/compiled/en.js'")
+      expect(code).toContain("if (!__loaders[locale])")
+      expect(code).toContain("console.warn('[fluenti] No loader for locale:', locale)")
     })
 
-    it('generates route-specific functions', () => {
+    it('includes race condition protection with switchId', () => {
       const generator = createRuntimeGenerator(mockPrimitives)
-      const code = generator.generateRouteRuntime(baseOptions)
+      const code = generator.generateRuntime(baseOptions)
 
-      expect(code).toContain('function __registerRouteLoader(routeId, locale, loader)')
-      expect(code).toContain('async function __loadRoute(routeId, locale)')
+      expect(code).toContain('let __switchId = 0')
+      expect(code).toContain('const thisId = ++__switchId')
+      expect(code).toContain('if (thisId !== __switchId) return')
     })
 
-    it('exports route-specific symbols', () => {
+    it('only resets loading for current request', () => {
       const generator = createRuntimeGenerator(mockPrimitives)
-      const code = generator.generateRouteRuntime(baseOptions)
+      const code = generator.generateRuntime(baseOptions)
 
-      expect(code).toContain('export { __catalog, __switchLocale, __preloadLocale, __loadRoute, __registerRouteLoader, __currentLocale, __loading, __loadedLocales }')
+      expect(code).toContain('if (thisId === __switchId)')
+      expect(code).toContain('__loading.value = false')
     })
 
-    it('uses catalogMerge when provided', () => {
-      const primitivesWithMerge: RuntimePrimitives = {
-        ...mockPrimitives,
-        catalogMerge: (msgs: string) => `Object.assign(__catalog, ${msgs})`,
-      }
-      const generator = createRuntimeGenerator(primitivesWithMerge)
-      const code = generator.generateRouteRuntime(baseOptions)
-
-      // The __loadRoute function should use catalogMerge
-      expect(code).toContain('Object.assign(__catalog,')
-    })
-
-    it('falls back to catalogUpdate when catalogMerge is not provided', () => {
-      const primitivesNoMerge: RuntimePrimitives = {
-        ...mockPrimitives,
-        catalogMerge: undefined,
-      }
-      const generator = createRuntimeGenerator(primitivesNoMerge)
-      const code = generator.generateRouteRuntime(baseOptions)
-
-      expect(code).toContain('Object.assign(__catalog,')
-    })
-
-    it('uses sourceLocale as fallback when defaultBuildLocale is empty', () => {
+    it('includes error logging on import failure', () => {
       const generator = createRuntimeGenerator(mockPrimitives)
-      const code = generator.generateRouteRuntime({
-        ...baseOptions,
-        defaultBuildLocale: '',
-      })
+      const code = generator.generateRuntime(baseOptions)
 
-      expect(code).toContain("import __defaultMsgs from '/app/locales/compiled/en.js'")
+      expect(code).toContain("console.warn('[fluenti] locale switch failed:', locale, e)")
+    })
+  })
+
+  describe('__preloadLocale dedup', () => {
+    it('includes __preloadPromises Map for concurrent dedup', () => {
+      const generator = createRuntimeGenerator(mockPrimitives)
+      const code = generator.generateRuntime(baseOptions)
+
+      expect(code).toContain('const __preloadPromises = new Map()')
+      expect(code).toContain('if (__preloadPromises.has(locale)) return __preloadPromises.get(locale)')
+      expect(code).toContain('__preloadPromises.set(locale, p)')
     })
 
-    it('uses default .js extension when catalogExtension is empty', () => {
+    it('cleans up __preloadPromises in finally block', () => {
       const generator = createRuntimeGenerator(mockPrimitives)
-      const code = generator.generateRouteRuntime({
-        ...baseOptions,
-        catalogExtension: '',
-      })
+      const code = generator.generateRuntime(baseOptions)
 
-      expect(code).toContain('/app/locales/compiled/en.js')
+      expect(code).toContain('__preloadPromises.delete(locale)')
+      expect(code).toContain('finally')
+    })
+
+    it('still checks __loadedLocales and __loaders before preloading', () => {
+      const generator = createRuntimeGenerator(mockPrimitives)
+      const code = generator.generateRuntime(baseOptions)
+
+      expect(code).toContain('if (__loadedLocales.has(locale) || !__loaders[locale]) return')
     })
   })
 })

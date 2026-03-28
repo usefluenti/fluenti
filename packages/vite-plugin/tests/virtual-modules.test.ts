@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { resolveVirtualSplitId, loadVirtualSplitModule } from '../src/virtual-modules'
 import { createRuntimeGenerator } from '../src/runtime-template'
 import type { VirtualModuleOptions } from '../src/virtual-modules'
@@ -57,10 +57,6 @@ describe('resolveVirtualSplitId', () => {
 
   it('resolves virtual:fluenti/messages', () => {
     expect(resolveVirtualSplitId('virtual:fluenti/messages')).toBe('\0virtual:fluenti/messages')
-  })
-
-  it('resolves virtual:fluenti/route-runtime', () => {
-    expect(resolveVirtualSplitId('virtual:fluenti/route-runtime')).toBe('\0virtual:fluenti/route-runtime')
   })
 
   it('returns undefined for unrelated IDs', () => {
@@ -141,47 +137,20 @@ describe('loadVirtualSplitModule', () => {
 
       expect(code).toContain('/fr.js')
     })
-  })
 
-  describe('route runtime module (vue)', () => {
-    it('generates reactive catalog with shallowReactive', () => {
-      const code = loadVirtualSplitModule('\0virtual:fluenti/route-runtime', defaultOptions)
+    it('warns when default locale compiled file does not exist', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
-      expect(code).toContain('shallowReactive')
-      expect(code).toContain('__defaultMsgs')
-      expect(code).toContain('export { __catalog')
-    })
-
-    it('exports route-specific functions', () => {
-      const code = loadVirtualSplitModule('\0virtual:fluenti/route-runtime', defaultOptions)!
-
-      expect(code).toContain('__loadRoute')
-      expect(code).toContain('__registerRouteLoader')
-      expect(code).toContain('__switchLocale')
-      expect(code).toContain('__preloadLocale')
-    })
-
-    it('includes only non-default locale loaders', () => {
-      const code = loadVirtualSplitModule('\0virtual:fluenti/route-runtime', defaultOptions)!
-
-      expect(code).not.toContain("'en': () => import(")
-      expect(code).toContain("'fr': () => import(")
-      expect(code).toContain("'ja': () => import(")
-    })
-  })
-
-  describe('route runtime module (solid)', () => {
-    it('generates Solid store-based catalog', () => {
-      const code = loadVirtualSplitModule('\0virtual:fluenti/route-runtime', {
+      // Uses a non-existent rootDir so the file won't exist
+      loadVirtualSplitModule('\0virtual:fluenti/messages', {
         ...defaultOptions,
-        framework: 'solid',
-        runtimeGenerator: mockSolidGenerator,
+        rootDir: '/nonexistent/path',
       })
 
-      expect(code).toContain('createStore')
-      expect(code).toContain('createSignal')
-      expect(code).toContain('__loadRoute')
-      expect(code).not.toContain('shallowReactive')
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('not found'),
+      )
+      warnSpy.mockRestore()
     })
   })
 
@@ -223,30 +192,6 @@ describe('loadVirtualSplitModule', () => {
 
       expect(code).toContain('export *')
       expect(code).toContain('/en.js')
-    })
-  })
-
-  describe('route runtime module — edge cases', () => {
-    it('Vue route runtime includes route-specific exports', () => {
-      const code = loadVirtualSplitModule('\0virtual:fluenti/route-runtime', defaultOptions)!
-
-      expect(code).toContain('__loadRoute')
-      expect(code).toContain('__registerRouteLoader')
-      expect(code).toContain('__switchLocale')
-      expect(code).toContain('__preloadLocale')
-      expect(code).toContain('shallowReactive')
-    })
-
-    it('Solid route runtime uses createStore', () => {
-      const code = loadVirtualSplitModule('\0virtual:fluenti/route-runtime', {
-        ...defaultOptions,
-        framework: 'solid',
-        runtimeGenerator: mockSolidGenerator,
-      })!
-
-      expect(code).toContain('createStore')
-      expect(code).toContain('__loadRoute')
-      expect(code).toContain('__registerRouteLoader')
     })
   })
 
@@ -297,15 +242,6 @@ describe('loadVirtualSplitModule', () => {
       expect(code).toContain('/workspace/my-app/src/locales/compiled/en.js')
     })
 
-    it('route runtime module uses rootDir for catalog paths', () => {
-      const code = loadVirtualSplitModule('\0virtual:fluenti/route-runtime', {
-        ...defaultOptions,
-        rootDir: '/monorepo/packages/web',
-      })!
-
-      expect(code).toContain('/monorepo/packages/web/src/locales/compiled')
-      expect(code).not.toContain(process.cwd())
-    })
   })
 
   it('returns undefined for unresolved IDs', () => {
@@ -334,7 +270,6 @@ describe('loadVirtualSplitModule', () => {
     it('uses runtimeGenerator when provided instead of legacy fallback', () => {
       const mockGenerator = {
         generateRuntime: (_opts: unknown) => '/* custom runtime */',
-        generateRouteRuntime: (_opts: unknown) => '/* custom route runtime */',
       }
       const code = loadVirtualSplitModule('\0virtual:fluenti/runtime', {
         ...defaultOptions,
@@ -399,15 +334,6 @@ describe('loadVirtualSplitModule', () => {
         loadVirtualSplitModule('\0virtual:fluenti/messages', {
           ...defaultOptions,
           catalogDir: 'locales/`evil`',
-        }),
-      ).toThrow(/catalogDir/)
-    })
-
-    it('catalogDir validation applies to route runtime module', () => {
-      expect(() =>
-        loadVirtualSplitModule('\0virtual:fluenti/route-runtime', {
-          ...defaultOptions,
-          catalogDir: 'locales/$HOME',
         }),
       ).toThrow(/catalogDir/)
     })

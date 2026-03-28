@@ -4,10 +4,10 @@
  * Provides:
  * - virtual:fluenti/runtime    → reactive catalog + switchLocale + preloadLocale
  * - virtual:fluenti/messages   → re-export from static locale (for static strategy)
- * - virtual:fluenti/route-runtime → per-route splitting runtime
  */
 
 import { resolve } from 'node:path'
+import { existsSync } from 'node:fs'
 import { validateLocale } from '@fluenti/core'
 import type { RuntimeGenerator, RuntimeGeneratorOptions } from './types'
 
@@ -34,10 +34,8 @@ function validateCatalogDir(catalogDir: string): void {
 
 const VIRTUAL_RUNTIME = 'virtual:fluenti/runtime'
 const VIRTUAL_MESSAGES = 'virtual:fluenti/messages'
-const VIRTUAL_ROUTE_RUNTIME = 'virtual:fluenti/route-runtime'
 const RESOLVED_RUNTIME = '\0virtual:fluenti/runtime'
 const RESOLVED_MESSAGES = '\0virtual:fluenti/messages'
-const RESOLVED_ROUTE_RUNTIME = '\0virtual:fluenti/route-runtime'
 
 export interface VirtualModuleOptions {
   rootDir: string
@@ -53,7 +51,6 @@ export interface VirtualModuleOptions {
 export function resolveVirtualSplitId(id: string): string | undefined {
   if (id === VIRTUAL_RUNTIME) return RESOLVED_RUNTIME
   if (id === VIRTUAL_MESSAGES) return RESOLVED_MESSAGES
-  if (id === VIRTUAL_ROUTE_RUNTIME) return RESOLVED_ROUTE_RUNTIME
   return undefined
 }
 
@@ -66,9 +63,6 @@ export function loadVirtualSplitModule(
   }
   if (id === RESOLVED_MESSAGES) {
     return generateStaticMessagesModule(options)
-  }
-  if (id === RESOLVED_ROUTE_RUNTIME) {
-    return generateRouteRuntimeModule(options)
   }
   return undefined
 }
@@ -93,29 +87,18 @@ function generateStaticMessagesModule(options: VirtualModuleOptions): string {
   validateLocale(defaultLocale, 'vite-plugin')
   validateCatalogDir(catalogDir)
   const absoluteCatalogDir = resolve(rootDir, catalogDir)
+  const catalogFile = resolve(absoluteCatalogDir, defaultLocale + catalogExtension)
 
-  return `export * from ${safeStringLiteral(absoluteCatalogDir + '/' + defaultLocale + catalogExtension)}\n`
-}
-
-/**
- * Generate the route runtime module for per-route splitting.
- */
-export function generateRouteRuntimeModule(options: VirtualModuleOptions): string {
-  const { locales, runtimeGenerator, catalogDir } = options
-  validateCatalogDir(catalogDir)
-  for (const locale of locales) {
-    validateLocale(locale, 'vite-plugin')
+  if (!existsSync(catalogFile)) {
+    console.warn(
+      `[fluenti] Compiled catalog for locale "${defaultLocale}" not found at ${catalogFile}. Run "fluenti compile" first.`,
+    )
   }
 
-  if (!runtimeGenerator) {
-    throw new Error('[fluenti] vite-plugin: runtimeGenerator is required. Use a framework-specific plugin (e.g. @fluenti/vue/vite-plugin).')
-  }
-
-  return runtimeGenerator.generateRouteRuntime(toRuntimeGeneratorOptions(options))
+  return `export * from ${safeStringLiteral(catalogFile)}\n`
 }
 
 function toRuntimeGeneratorOptions(options: VirtualModuleOptions): RuntimeGeneratorOptions {
   const { rootDir, catalogDir, catalogExtension, locales, sourceLocale, defaultBuildLocale } = options
   return { rootDir, catalogDir, catalogExtension, locales, sourceLocale, defaultBuildLocale }
 }
-

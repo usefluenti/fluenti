@@ -1,0 +1,224 @@
+---
+title: "On the Infeasibility of Automatic Per-Route Translation Splitting"
+description: "An analysis of five approaches to per-route i18n code splitting, the constraints that make each one fail, and why per-locale granularity is the correct default."
+---
+
+## Abstract
+
+Per-route translation splitting — loading only the i18n messages needed by the current route — is a desirable optimization in theory. In practice, it requires solving a problem that reduces to one of three hard subproblems: accurate route boundary detection, cross-bundler module graph analysis, or runtime message orchestration. We implemented per-route splitting in Fluenti v0.3, evaluated five alternative designs, and ultimately removed the feature in v0.4. This post presents each approach, its failure mode, and our conclusion that per-locale splitting provides a better complexity-to-benefit ratio.
+
+## 1. Problem Statement
+
+Given an application with _R_ routes, _L_ locales, and _M_ total messages, a per-locale splitting strategy loads _M_ messages when switching locale. A per-route strategy would load only _M/R_ messages per navigation, deferring the rest.
+
+The theoretical savings are proportional to _1/R_. For an application with 10 routes, this is a 90% reduction in messages loaded per navigation. However, the absolute savings depend on the size of _M_ after gzip compression, which is typically small (see Section 7).
+
+The engineering challenge is: **how does the build system determine which messages belong to which route?**
+
+## 2. Prior Implementation
+
+Fluenti v0.3 implemented per-route splitting in the Vite plugin's `generateBundle` hook:
+
+1. During `transform`, record which message hashes appear in which source modules.
+2. In `generateBundle`, map source modules to Rollup output chunks via `chunk.modules`.
+3. Classify each hash: appears in one chunk → route-specific; multiple chunks → shared.
+4. Emit per-route asset files (`_fluenti/home-ja.js`, `_fluenti/shared-ja.js`).
+
+Route names were derived from chunk filenames by stripping directory prefixes, extensions, and content hashes.
+
+### 2.1 Failure: Shared code chunks misidentified as routes
+
+Rollup's code splitting extracts shared modules into common chunks. A `Header` component imported by multiple routes produces a chunk named `Header-abc123.js`. The name-derivation heuristic maps this to a route named `"Header"` — a phantom route that no router will ever request, causing its messages to be silently lost.
+
+This affects any application with shared components, which is effectively all non-trivial applications.
+
+## 3. Approach A: Rollup `isDynamicEntry` Heuristic
+
+### 3.1 Mechanism
+
+All major routers use dynamic `import()` for lazy-loaded routes. Rollup marks these chunks with `isDynamicEntry: true`. The fix: classify only `isDynamicEntry` chunks as routes; all others go to shared.
+
+```typescript
+if (chunk.isDynamicEntry) {
+  emitRouteChunk(routeName, hashes)
+} else {
+  addToShared(hashes)
+}
+```
+
+This correctly resolves the misidentification bug from Section 2.1.
+
+### 3.2 Failure: Runtime message orchestration
+
+Route detection is necessary but not sufficient. The emitted per-route files must be loaded at the correct time. Two strategies exist, both with significant drawbacks:
+
+**Manual router integration.** Expose a `loadRoute(routeId, locale)` API and require the developer to call it from router guards. This transfers the orchestration burden to the user, requiring per-router boilerplate and introducing a new class of bugs (forgotten guards, mismatched route IDs).
+
+**Automatic chunk injection.** Prepend message registration code to the chunk source (`chunk.code = registration + chunk.code`). This approach:
+- Invalidates source maps, since character offsets in the original chunk shift.
+- Conflicts with other Vite plugins that also modify chunk output (error tracking, analytics injection).
+- Introduces implicit side effects: a prefetched chunk registers messages before the route renders, making the system's state dependent on browser prefetch behavior.
+
+### 3.3 Failure: Bundler coupling
+
+The approach depends on Rollup-specific APIs (`chunk.modules`, `isDynamicEntry`, `generateBundle`). Webpack exposes different chunk metadata. Other bundlers (esbuild, Turbopack) expose none. Supporting multiple bundlers requires parallel implementations, each coupled to internal APIs that may change between major versions.
+
+### 3.4 Assessment
+
+Route detection is accurate. Runtime integration is either invasive or manual. The feature is inherently bundler-specific with no path to generalization.
+
+## 4. Approach B: Gettext Source Annotations
+
+### 4.1 Mechanism
+
+PO catalog files include `#:` reference comments recording the source location of each message:
+
+```po
+#: src/pages/Home.tsx:12
+msgid "Welcome"
+```
+
+Given a configured `routeDir` (e.g., `src/pages`), messages with `#:` references inside that directory are assigned to the corresponding route; all others are assigned to shared.
+
+### 4.2 Failure: Definition site ≠ consumption site
+
+The `#:` annotation records where a message is _defined_, not where it is _used at runtime_. When a message defined in `src/pages/Home.tsx` is imported and rendered by `src/pages/About.tsx`, the annotation still points to `Home.tsx`. The About route will be missing the message.
+
+This is not an edge case. The `msg` descriptor pattern — defining reusable message constants — is a documented Fluenti feature that specifically encourages cross-file message sharing.
+
+### 4.3 Failure: Ambiguous multi-reference messages
+
+A message appearing in multiple source files produces multiple `#:` entries. If some references are inside `routeDir` and others are not, the assignment is ambiguous. The conservative heuristic (any external reference → shared) is safe but progressively moves all shared-component messages to the shared pool, reducing the effectiveness of the splitting.
+
+### 4.4 Failure: Annotation reliability
+
+The `#:` field is metadata, not a contract. Translation management systems may strip or rewrite references. Manual PO edits may not update them. The annotation can become stale without producing any error.
+
+### 4.5 Assessment
+
+Source annotations are an unreliable proxy for the module dependency graph. The approach is cross-platform and simple, but its accuracy is insufficient for correctness guarantees.
+
+## 5. Approach C: Compile-Time Import Graph Analysis
+
+### 5.1 Mechanism
+
+Construct a module dependency graph at compile time using a lightweight parser (`es-module-lexer`). For each route entry point, compute the transitive closure of imported modules. A message is route-specific if it is reachable from exactly one entry point; otherwise it is shared.
+
+### 5.2 Failure: Barrel re-exports
+
+Barrel files (`index.ts` re-exporting multiple modules) are ubiquitous in JavaScript projects. The parser cannot determine which named exports are actually consumed by the importing module — it only sees that `index.ts` is imported. All re-exported modules become reachable, collapsing the graph.
+
+```typescript
+// src/components/index.ts — re-exports 20 components
+export { Header } from './Header'
+export { Footer } from './Footer'
+// ...
+
+// src/pages/Home.tsx — uses one component
+import { Header } from '../components'
+// Parser sees: Home → ../components/index.ts → all 20 components
+```
+
+### 5.3 Failure: Path resolution
+
+Modern JavaScript projects use path aliases (`@/`, `~/`, `tsconfig.json` paths, bundler aliases). `es-module-lexer` returns raw specifier strings without resolution. Building a correct resolver requires reading TypeScript configuration, bundler configuration, and package.json `exports` maps — a task of comparable complexity to bundler module resolution.
+
+### 5.4 Failure: Dynamic and non-standard imports
+
+Template literal imports (dynamic path interpolation), CommonJS `require` calls, and virtual modules (generated at build time) are opaque to static analysis. Each unresolvable import is a gap in the graph.
+
+### 5.5 Assessment
+
+A correct import graph analyzer is equivalent in complexity to a bundler's module resolver. Building one from scratch duplicates existing infrastructure; relying on a bundler's graph returns us to Approach A.
+
+## 6. Approach D: Plugin System with Bundler Bridge
+
+### 6.1 Mechanism
+
+Extend Fluenti's `FluentiPlugin` interface with an optional `vite` method that returns Vite plugins:
+
+```typescript
+interface FluentiPlugin {
+  name: string
+  onAfterExtract?(ctx): void
+  vite?: () => Plugin | Plugin[]
+}
+```
+
+### 6.2 Failure: Abstraction violation
+
+The `FluentiPlugin` interface serves the CLI pipeline (`fluenti extract`, `fluenti compile`), which is bundler-agnostic. Introducing a bundler-specific field conflates two independent concerns: catalog compilation and bundle optimization. The interface becomes a leaky abstraction.
+
+### 6.3 Failure: No reduction in problem complexity
+
+The `vite` bridge relocates the per-route logic into a plugin but does not change the logic itself. All problems from Approach A (runtime orchestration, bundler coupling) remain. The architecture change is cosmetic.
+
+### 6.4 Assessment
+
+Cleaner packaging does not compensate for unchanged fundamental constraints. The approach adds indirection without adding capability.
+
+## 7. Approach E: Compile-Level File Splitting
+
+### 7.1 Mechanism
+
+During `fluenti compile`, partition messages into per-route catalog files based on source annotations and directory conventions:
+
+```
+locales/compiled/shared.en.js
+locales/compiled/home.en.js
+locales/compiled/about.en.js
+```
+
+Output files are standard ES modules importable by any bundler.
+
+### 7.2 Failure: Inherits Approach B limitations
+
+Without module graph analysis, the source-annotation limitations from Section 4 apply. The conservative strategy (ambiguous → shared) is correct but reduces the effective splitting ratio.
+
+### 7.3 Failure: Convention rigidity
+
+The `routeDir` configuration assumes a project structure where route components are co-located in a single directory. Monorepos, feature-based directory structures, and frameworks with implicit file-based routing (Next.js `app/`, Nuxt `pages/`) each impose different conventions. A single directory path is an insufficient configuration surface.
+
+### 7.4 Failure: Shared pool inflation
+
+In a typical application, 40–60% of translated messages originate in shared components (navigation, forms, error messages, layout). Under the conservative strategy, these constitute the majority of the shared catalog. Per-route catalogs contain only route-exclusive messages — often a minority of the total. The optimization targets the smaller portion of the budget.
+
+### 7.5 Assessment
+
+The least invasive approach with the broadest platform compatibility. However, the accuracy limitations of source annotations combined with shared pool inflation produce marginal benefit relative to added system complexity.
+
+## 8. The Impossibility Triangle
+
+The five approaches can be characterized along three axes:
+
+| Approach | Accuracy | Bundler-agnostic | Simplicity |
+|----------|----------|-----------------|------------|
+| A. `isDynamicEntry` | High | No | No (runtime) |
+| B. Source annotations | Low | Yes | Yes |
+| C. Import graph | High | Yes | No (resolver) |
+| D. Plugin bridge | High | No | Moderate |
+| E. Compile-level | Moderate | Yes | Yes |
+
+No approach achieves high accuracy, bundler independence, and implementation simplicity simultaneously. This is a fundamental constraint of the problem: accurate route-message assignment requires the module dependency graph, which is only available inside the bundler, which makes the solution bundler-specific.
+
+## 9. Quantitative Argument for Per-Locale Granularity
+
+Consider an application with 500 messages, 10 routes, and 5 locales:
+
+| Strategy | Initial load | Per-navigation | Locale switch |
+|----------|-------------|----------------|---------------|
+| None | 500 × 5 locales | 0 | 0 |
+| Per-locale | 500 × 1 locale | 0 | ~15 KB |
+| Per-route | ~50 × 1 locale | ~2 KB | ~2 KB |
+
+Per-locale splitting eliminates **15 KB × 4 unused locales** from the initial bundle — a 60 KB reduction. Per-route splitting saves an additional ~2 KB per navigation, which is further reduced by HTTP caching (route chunks are cached after first visit) and gzip compression.
+
+The per-locale strategy captures the dominant term in the optimization. Per-route splitting targets a residual that, for most applications, is below the threshold of user-perceptible latency.
+
+For applications with thousands of messages where the residual becomes significant, manual namespace-based catalog organization provides deterministic splitting without the complexity of automatic route detection.
+
+## 10. Conclusion
+
+We removed per-route splitting from Fluenti because no implementation strategy satisfies the constraints of accuracy, platform generality, and acceptable complexity simultaneously. The `splitting: 'dynamic'` (per-locale) strategy provides the majority of the theoretical benefit with none of the architectural cost.
+
+Should a future approach emerge that resolves the impossibility triangle — perhaps through standardized bundler APIs for chunk-to-module mapping, or through build-system-level i18n awareness — we will revisit this decision. Until then, per-locale splitting is the correct default.

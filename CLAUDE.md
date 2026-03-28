@@ -114,7 +114,7 @@ lsof -ti:8321 | xargs kill   # docs
 - **ICU MessageFormat**: Full support for plurals, selects, nested arguments, custom formatters
 - **Hash-based message IDs**: Deterministic IDs generated from message content + context
 - **PO format**: gettext-compatible catalog format (also supports JSON)
-- **Code splitting**: Messages can be split per-route via `'dynamic' | 'static' | false` strategies
+- **Code splitting**: Locale catalogs can be split via `'dynamic' | 'static' | false` strategies
 - **Virtual modules**: `@fluenti/vite-plugin` serves compiled catalogs via Vite virtual modules
 - **Subpath exports**: Components from `@fluenti/{react,vue,solid}/components`, SSR utilities from `@fluenti/core/ssr`, formatters from `@fluenti/core/formatters`
 

@@ -128,7 +128,6 @@ const generator = createRuntimeGenerator({
 | `localeInit` | `(defaultLocale: string) => string` | Expression to create reactive locale variable |
 | `loadingInit` | `string` | Expression to create reactive loading flag |
 | `catalogUpdate` | `(msgs: string) => string` | Statement to replace catalog with new messages |
-| `catalogMerge` | `(msgs: string) => string` | Optional: merge messages into catalog (for route loading) |
 | `localeUpdate` | `(locale: string) => string` | Statement to update current locale |
 | `loadingUpdate` | `(value: string) => string` | Statement to set loading state |
 | `localeRead` | `string` | Expression to read current locale value |
@@ -139,7 +138,6 @@ const generator = createRuntimeGenerator({
 | Method | Signature | Description |
 |--------|-----------|-------------|
 | `generateRuntime` | `(options: RuntimeGeneratorOptions) => string` | Generate the main reactive runtime module |
-| `generateRouteRuntime` | `(options: RuntimeGeneratorOptions) => string` | Generate per-route runtime module (code splitting) |
 
 ## Utility Exports
 

@@ -7,7 +7,6 @@ export const solidRuntimeGenerator: RuntimeGenerator = createRuntimeGenerator({
   localeInit: (defaultLocale) => `const [__currentLocale, __setCurrentLocale] = createSignal('${defaultLocale}')`,
   loadingInit: 'const [__loading, __setLoading] = createSignal(false)',
   catalogUpdate: (msgs) => `__setCatalog(reconcile(${msgs}))`,
-  catalogMerge: (msgs) => `__setCatalog(reconcile({ ...__catalog, ...${msgs} }))`,
   localeUpdate: (locale) => `__setCurrentLocale(${locale})`,
   loadingUpdate: (value) => `__setLoading(${value})`,
   localeRead: '__currentLocale()',

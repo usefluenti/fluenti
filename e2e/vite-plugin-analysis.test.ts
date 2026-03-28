@@ -530,6 +530,5 @@ describe('HMR dev mode — plugin structure verification', () => {
     const buildSplitPlugin = plugins.find((p: { name: string }) => p.name === 'fluenti:build-split')
     expect(buildSplitPlugin).toBeDefined()
     expect(typeof buildSplitPlugin.transform).toBe('function')
-    expect(typeof buildSplitPlugin.generateBundle).toBe('function')
   })
 })

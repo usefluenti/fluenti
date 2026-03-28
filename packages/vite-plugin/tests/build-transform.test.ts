@@ -327,14 +327,6 @@ describe('injectCatalogImport — edge cases', () => {
     expect(result).toContain("from 'virtual:fluenti/messages'")
   })
 
-  it('injects per-route import targeting route-runtime', () => {
-    const code = "const x = __catalog['xyz']"
-    const result = injectCatalogImport(code, 'per-route', new Set(['xyz']))
-
-    expect(result).toContain("import { __catalog } from 'virtual:fluenti/route-runtime'")
-    expect(result).not.toContain('virtual:fluenti/runtime')
-    expect(result).not.toContain('virtual:fluenti/messages')
-  })
 })
 
 describe('injectCatalogImport', () => {
@@ -352,13 +344,6 @@ describe('injectCatalogImport', () => {
     expect(result).toContain(`import { ${staticExportAccess('abc123')}, ${staticExportAccess('def456')} } from 'virtual:fluenti/messages'`)
   })
 
-  it('injects virtual:fluenti/route-runtime import for per-route strategy', () => {
-    const code = "const x = __catalog['abc']"
-    const result = injectCatalogImport(code, 'per-route', new Set(['abc']))
-
-    expect(result).toContain("import { __catalog } from 'virtual:fluenti/route-runtime'")
-    expect(result).not.toContain('virtual:fluenti/runtime')
-  })
 })
 
 describe('CLI ↔ vite-plugin hash consistency', () => {

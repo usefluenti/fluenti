@@ -65,6 +65,8 @@ export function createLocaleLoader(options: LocaleLoaderOptions): LocaleLoaderSt
   const messages: Record<string, Messages> = { ...options.messages }
   const loadedLocalesSet = new Set<string>(Object.keys(messages))
 
+  const preloadInFlight = new Set<string>()
+
   function notifyLocale(): void { options.onLocaleChange?.(currentLocale) }
   function notifyLoading(): void { options.onLoadingChange?.(loading) }
   function notifyMessages(): void { options.onMessagesChange?.(messages) }
@@ -133,8 +135,9 @@ export function createLocaleLoader(options: LocaleLoaderOptions): LocaleLoaderSt
   }
 
   async function preloadLocale(locale: string): Promise<void> {
-    if (loadedLocalesSet.has(locale) || !options.loadMessages) return
+    if (loadedLocalesSet.has(locale) || preloadInFlight.has(locale) || !options.loadMessages) return
 
+    preloadInFlight.add(locale)
     const splitRuntime = options.getSplitRuntime?.()
     try {
       const loaded = await options.loadMessages(locale)
@@ -148,6 +151,8 @@ export function createLocaleLoader(options: LocaleLoaderOptions): LocaleLoaderSt
       }
     } catch (e: unknown) {
       console.warn(`[fluenti] preload failed for locale "${locale}"`, e)
+    } finally {
+      preloadInFlight.delete(locale)
     }
   }
 

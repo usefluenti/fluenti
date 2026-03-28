@@ -4,7 +4,6 @@ import type { FluentiCoreOptions, RuntimeGenerator } from './types'
 import type { FluentiBuildConfig } from '@fluenti/core/internal'
 import { resolveLocaleCodes } from '@fluenti/core/internal'
 import { setResolvedMode, isBuildMode, getPluginEnvironment } from './mode-detect'
-import { resolve } from 'node:path'
 import { createRequire } from 'node:module'
 
 const _require = createRequire(
@@ -13,7 +12,6 @@ const _require = createRequire(
 import { createDebouncedRunner, runExtractCompile } from './dev-runner'
 import { transformForDynamicSplit, transformForStaticSplit, injectCatalogImport } from './build-transform'
 import { resolveVirtualSplitId, loadVirtualSplitModule } from './virtual-modules'
-import { deriveRouteName, parseCompiledCatalog, buildChunkModule, readCatalogSource } from './route-resolve'
 import { createTransformPipeline, hasScopeTransformCandidate } from '@fluenti/core/transform'
 export type { FluentiPluginOptions, FluentiCoreOptions, RuntimeGenerator, RuntimeGeneratorOptions, IdGenerator } from './types'
 export { createRuntimeGenerator } from './runtime-template'
@@ -73,7 +71,11 @@ export function createFluentiPlugins(
     const config = getConfig(cwd)
     const catalogDir = config.compileOutDir.replace(/^\.\//, '')
     const catalogExtension = config.catalogExtension ?? '.js'
-    const splitting = config.splitting ?? false
+    const rawSplitting = config.splitting ?? false
+    if (rawSplitting && rawSplitting !== 'dynamic' && rawSplitting !== 'static') {
+      console.warn(`[fluenti] Invalid splitting value "${rawSplitting}". Expected 'dynamic', 'static', or false. Falling back to 'dynamic'.`)
+    }
+    const splitting = rawSplitting === 'static' ? 'static' as const : rawSplitting ? 'dynamic' as const : false as const
     const sourceLocale = config.sourceLocale
     const localeCodes = resolveLocaleCodes(config.locales)
     const defaultBuildLocale = config.defaultBuildLocale ?? sourceLocale
@@ -179,9 +181,6 @@ export function createFluentiPlugins(
     },
   }
 
-  // Track module → used hashes for per-route splitting
-  const moduleMessages = new Map<string, Set<string>>()
-
   const buildSplitPlugin: Plugin = {
     name: 'fluenti:build-split',
     transform(code, id) {
@@ -197,94 +196,15 @@ export function createFluentiPlugins(
         ? transformForStaticSplit(code, transformOptions)
         : transformForDynamicSplit(code, transformOptions)
 
-      if (splitting === 'per-route' && transformed.usedHashes.size > 0) {
-        moduleMessages.set(id, transformed.usedHashes)
-      }
-
       if (!transformed.needsCatalogImport) return undefined
 
-      const importStrategy = splitting === 'per-route' ? 'per-route' : strategy
       const finalCode = injectCatalogImport(
         transformed.code,
-        importStrategy,
+        strategy,
         transformed.usedHashes,
         config.idGenerator,
       )
       return { code: finalCode, map: null }
-    },
-
-    generateBundle(_outputOptions, bundle) {
-      const { splitting, localeCodes, catalogDir } = getResolvedSettings()
-      if (splitting !== 'per-route') return
-      if (moduleMessages.size === 0) return
-
-      const chunkHashes = new Map<string, Set<string>>()
-      for (const [fileName, chunk] of Object.entries(bundle)) {
-        if (chunk.type !== 'chunk') continue
-        const hashes = new Set<string>()
-        for (const moduleId of Object.keys(chunk.modules)) {
-          const modHashes = moduleMessages.get(moduleId)
-          if (modHashes) {
-            for (const h of modHashes) hashes.add(h)
-          }
-        }
-        if (hashes.size > 0) {
-          chunkHashes.set(fileName, hashes)
-        }
-      }
-
-      if (chunkHashes.size === 0) return
-
-      const hashToChunks = new Map<string, string[]>()
-      for (const [chunkName, hashes] of chunkHashes) {
-        for (const h of hashes) {
-          const chunks = hashToChunks.get(h) ?? []
-          chunks.push(chunkName)
-          hashToChunks.set(h, chunks)
-        }
-      }
-
-      const sharedHashes = new Set<string>()
-      const routeHashes = new Map<string, Set<string>>()
-
-      for (const [hash, chunks] of hashToChunks) {
-        if (chunks.length > 1) {
-          sharedHashes.add(hash)
-        } else {
-          const routeName = deriveRouteName(chunks[0]!)
-          const existing = routeHashes.get(routeName) ?? new Set()
-          existing.add(hash)
-          routeHashes.set(routeName, existing)
-        }
-      }
-
-      const absoluteCatalogDir = resolve(rootDir, catalogDir)
-      for (const locale of localeCodes) {
-        const catalogSource = readCatalogSource(absoluteCatalogDir, locale)
-        if (!catalogSource) {
-          this.warn(`[fluenti] per-route splitting: compiled catalog for locale "${locale}" not found in ${absoluteCatalogDir} — skipping chunk generation`)
-          continue
-        }
-        const catalogExports = parseCompiledCatalog(catalogSource)
-
-        if (sharedHashes.size > 0) {
-          const sharedCode = buildChunkModule(sharedHashes, catalogExports)
-          this.emitFile({
-            type: 'asset',
-            fileName: `_fluenti/shared-${locale}.js`,
-            source: sharedCode,
-          })
-        }
-
-        for (const [routeName, hashes] of routeHashes) {
-          const routeCode = buildChunkModule(hashes, catalogExports)
-          this.emitFile({
-            type: 'asset',
-            fileName: `_fluenti/${routeName}-${locale}.js`,
-            source: routeCode,
-          })
-        }
-      }
     },
   }
 
@@ -362,7 +282,7 @@ export function createFluentiPlugins(
   //                           must run after virtual resolution but before script transforms
   // 3. scriptTransformPlugin — t()/t`` scope transforms + <Trans> optimization (enforce: 'pre')
   // 4. buildCompilePlugin   — triggers extract+compile before the build starts
-  // 5. buildSplitPlugin     — rewrites t() calls to catalog refs + emits per-route chunks
+  // 5. buildSplitPlugin     — rewrites t() calls to catalog refs (dynamic/static)
   // 6. devPlugin            — file watcher + HMR for dev mode (must be last)
   return [virtualPlugin, ...frameworkPlugins, scriptTransformPlugin, buildCompilePlugin, buildSplitPlugin, devPlugin]
 }

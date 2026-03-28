@@ -15,7 +15,7 @@ Fluenti is the only i18n library with first-class support for Vue, React, SolidJ
 | Performance vs runtime | 5-10x faster (up to 40x) | baseline | baseline | baseline | similar |
 | Framework support | Vue, React, Solid, Next.js, Nuxt, +3 more | Vue only | React only | Next.js only | React (Vue experimental) |
 | Message format | ICU (PO + JSON) | JSON | JSON | ICU (JSON) | ICU (PO) |
-| Code splitting | Built-in per-route | Manual | Manual | Manual | Manual |
+| Code splitting | Built-in per-locale | Manual | Manual | Manual | Manual |
 
 - Docs: https://fluenti.dev
 - Repository: https://github.com/usefluenti/fluenti

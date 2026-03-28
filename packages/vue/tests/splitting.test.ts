@@ -280,5 +280,80 @@ describe('splitting mode', () => {
       expect(ctx.locale.value).toBe('en')
       expect(ctx.isLoading.value).toBe(false)
     })
+
+    it('splitRuntime.__switchLocale rejection does not crash setLocale', async () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const SPLIT_KEY = Symbol.for('fluenti.runtime.vue.v1')
+
+      const loader = vi.fn().mockResolvedValue({ hello: 'Bonjour' })
+      const plugin = createSplitPlugin(loader)
+      const { global: ctx } = plugin
+
+      // Register a split runtime that rejects
+      ;(globalThis as Record<PropertyKey, unknown>)[SPLIT_KEY] = {
+        __switchLocale: vi.fn().mockRejectedValue(new Error('chunk load failed')),
+        __preloadLocale: vi.fn(),
+      }
+
+      await ctx.setLocale('fr')
+
+      // Locale should still switch despite split runtime failure
+      expect(ctx.locale.value).toBe('fr')
+      expect(ctx.isLoading.value).toBe(false)
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('split runtime switch failed'),
+        expect.any(Error),
+      )
+
+      // Clean up
+      delete (globalThis as Record<PropertyKey, unknown>)[SPLIT_KEY]
+      warnSpy.mockRestore()
+    })
+
+    it('splitRuntime.__switchLocale rejection on cached locale does not crash', async () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const SPLIT_KEY = Symbol.for('fluenti.runtime.vue.v1')
+
+      const loader = vi.fn().mockResolvedValue({ hello: 'Bonjour' })
+      const plugin = createSplitPlugin(loader)
+      const { global: ctx } = plugin
+
+      // First load succeeds
+      await ctx.setLocale('fr')
+
+      // Now register a failing split runtime
+      ;(globalThis as Record<PropertyKey, unknown>)[SPLIT_KEY] = {
+        __switchLocale: vi.fn().mockRejectedValue(new Error('chunk failed')),
+        __preloadLocale: vi.fn(),
+      }
+
+      // Switch back to en (already loaded) then to fr (already loaded)
+      await ctx.setLocale('en')
+      await ctx.setLocale('fr')
+
+      // Should still switch despite split runtime error
+      expect(ctx.locale.value).toBe('fr')
+      expect(warnSpy).toHaveBeenCalled()
+
+      delete (globalThis as Record<PropertyKey, unknown>)[SPLIT_KEY]
+      warnSpy.mockRestore()
+    })
+
+    it('concurrent preload of different locales loads both', async () => {
+      const loader = vi.fn().mockImplementation((locale: string) =>
+        Promise.resolve({ hello: locale === 'fr' ? 'Bonjour' : 'Hallo' }),
+      )
+      const plugin = createSplitPlugin(loader)
+      const { global: ctx } = plugin
+
+      ctx.preloadLocale('fr')
+      ctx.preloadLocale('de')
+
+      await new Promise((r) => setTimeout(r, 0))
+
+      expect(ctx.loadedLocales.value.has('fr')).toBe(true)
+      expect(ctx.loadedLocales.value.has('de')).toBe(true)
+      expect(loader).toHaveBeenCalledTimes(2)
+    })
   })
 })

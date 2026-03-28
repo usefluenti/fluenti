@@ -31,7 +31,7 @@ Traditional i18n libraries parse messages at runtime — adding bundle weight an
 | **Runtime size** | ~2 KB gzipped | 12–14 KB gzipped |
 | **Message parsing** | Build time (zero at runtime) | Every render |
 | **Speed** | 5-10x faster; 40x on complex ICU | Baseline |
-| **Code splitting** | Per-route, automatic | Manual or none |
+| **Code splitting** | Per-locale, automatic | Manual or none |
 | **Multi-framework** | One codebase, consistent API | One framework each |
 | **Natural keys** | Source text = key | Separate ID maps |
 
@@ -42,7 +42,7 @@ Traditional i18n libraries parse messages at runtime — adding bundle weight an
 - **ICU MessageFormat** — plurals, selects, nested arguments, custom formatters
 - **Vue `v-t` directive** — compile-time template transform, not a runtime directive
 - **`<Trans>`, `<Plural>`, `<Select>` components** — consistent API across Vue, React, and Solid
-- **Code splitting** — lazy-load translations per route (`dynamic`, `static`, `per-route`, or off)
+- **Code splitting** — lazy-load translations per locale (`dynamic`, `static`, or off)
 - **SSR-safe** — locale detection via cookie, query, path, or headers; hydration script helper
 - **PO + JSON catalogs** — gettext-compatible workflow with JSON alternative
 - **Date / number formatting** — thin wrappers around `Intl` APIs with built-in presets

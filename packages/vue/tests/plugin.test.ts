@@ -1800,6 +1800,7 @@ describe('split runtime integration', () => {
   })
 
   it('__switchLocale rejection does not crash', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const switchLocale = vi.fn().mockRejectedValue(new Error('runtime error'))
     ;(globalThis as Record<PropertyKey, unknown>)[SPLIT_RUNTIME_KEY] = {
       __switchLocale: switchLocale,
@@ -1813,8 +1814,14 @@ describe('split runtime integration', () => {
       chunkLoader: loader,
     })
 
-    // Should not throw despite __switchLocale rejecting
-    await expect(plugin.global.setLocale('de')).rejects.toThrow('runtime error')
+    // Should not throw despite __switchLocale rejecting — error is caught and warned
+    await plugin.global.setLocale('de')
+    expect(plugin.global.locale.value).toBe('de')
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('split runtime switch failed'),
+      expect.any(Error),
+    )
+    warnSpy.mockRestore()
   })
 
   it('setLocale for already-loaded locale calls __switchLocale', async () => {

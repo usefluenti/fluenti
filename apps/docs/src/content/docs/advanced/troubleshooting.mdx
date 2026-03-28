@@ -264,10 +264,6 @@ If you see network errors loading locale chunks in production:
 
 After deploying a new version, users with cached HTML may request old chunk filenames that no longer exist. Configure your server to return the current HTML for chunk 404s, or use a service worker to handle cache invalidation.
 
-### Per-route splitting shows wrong translations
-
-With `splitting: 'dynamic'` or per-route splitting, each route loads its own message chunk. If translations from one route appear on another, ensure your route configuration correctly maps routes to message scopes. Check that `defineI18nRoute()` or the route-level scope configuration matches your catalog structure.
-
 ---
 
 ## Next.js

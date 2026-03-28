@@ -162,6 +162,31 @@ describe('splitting mode', () => {
     expect(ctx.loadedLocales().has('fr')).toBe(true)
   })
 
+  it('splitRuntime.__switchLocale rejection does not crash setLocale', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const SPLIT_KEY = Symbol.for('fluenti.runtime.solid.v1')
+
+    const loader = vi.fn().mockResolvedValue({ hello: 'Bonjour' })
+    const ctx = createSplitContext(loader)
+
+    ;(globalThis as Record<PropertyKey, unknown>)[SPLIT_KEY] = {
+      __switchLocale: vi.fn().mockRejectedValue(new Error('chunk load failed')),
+      __preloadLocale: vi.fn(),
+    }
+
+    await ctx.setLocale('fr')
+
+    expect(ctx.locale()).toBe('fr')
+    expect(ctx.isLoading()).toBe(false)
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('split runtime switch failed'),
+      expect.any(Error),
+    )
+
+    delete (globalThis as Record<PropertyKey, unknown>)[SPLIT_KEY]
+    warnSpy.mockRestore()
+  })
+
   it('race condition: rapid setLocale calls settle to last locale', async () => {
     let resolveFirst: (v: any) => void
     let resolveSecond: (v: any) => void
