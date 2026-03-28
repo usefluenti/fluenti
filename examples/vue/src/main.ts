@@ -1,6 +1,7 @@
 import { createApp } from 'vue'
 import { createRouter, createWebHistory } from 'vue-router'
 import { createFluenti } from '@fluenti/vue'
+import { interpolate } from '@fluenti/core/internal'
 import * as components from '@fluenti/vue/components'
 import App from './App.vue'
 import './global.css'
@@ -14,6 +15,7 @@ const cookieLocale = document.cookie.match(/(?:^|;\s*)locale=([^;]+)/)?.[1]
 const fluent = createFluenti({
   locale: cookieLocale || 'en',
   fallbackLocale: 'en',
+  interpolate,
   components,
   messages: {
     en,

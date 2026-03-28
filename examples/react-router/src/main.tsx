@@ -1,6 +1,7 @@
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { I18nProvider } from '@fluenti/react'
+import { interpolate } from '@fluenti/core/internal'
 import { getDirection } from '@fluenti/core'
 import { useState, useEffect, lazy, Suspense } from 'react'
 import en from './locales/compiled/en.js'
@@ -44,7 +45,7 @@ function Root() {
   }
 
   return (
-    <I18nProvider locale={locale} fallbackLocale="en" messages={messages}>
+    <I18nProvider locale={locale} fallbackLocale="en" messages={messages} interpolate={interpolate}>
       <BrowserRouter>
         <Routes>
           <Route element={<Layout onLocaleChange={handleLocaleChange} />}>

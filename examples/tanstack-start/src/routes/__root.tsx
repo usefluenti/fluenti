@@ -7,6 +7,7 @@ import {
 } from '@tanstack/react-router'
 import { useState } from 'react'
 import { I18nProvider, useI18n } from '@fluenti/react'
+import { interpolate } from '@fluenti/core/internal'
 import { getDirection } from '@fluenti/core'
 import type { ReactNode } from 'react'
 import en from '../locales/compiled/en.js'
@@ -48,7 +49,7 @@ function RootComponent() {
 
   return (
     <RootDocument locale={locale}>
-      <I18nProvider locale={locale} fallbackLocale="en" messages={messages}>
+      <I18nProvider locale={locale} fallbackLocale="en" messages={messages} interpolate={interpolate}>
         <AppShell onLocaleChange={handleLocaleChange} />
       </I18nProvider>
     </RootDocument>

@@ -1,5 +1,6 @@
 import { createApp } from 'vue'
 import { createFluenti } from '@fluenti/vue'
+import { interpolate } from '@fluenti/core/internal'
 import * as components from '@fluenti/vue/components'
 import App from './App.vue'
 import en from './locales/compiled/en.js'
@@ -10,6 +11,7 @@ const app = createApp(App)
 app.use(createFluenti({
   locale: 'en',
   fallbackLocale: 'en',
+  interpolate,
   components,
   messages: {
     en,

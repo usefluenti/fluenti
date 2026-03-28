@@ -1,5 +1,6 @@
 import { createApp } from 'vue'
 import { createFluenti } from '@fluenti/vue'
+import { interpolate } from '@fluenti/core/internal'
 import App from './App.vue'
 import router from './router'
 import en from './locales/compiled/en.js'
@@ -18,6 +19,7 @@ const app = createApp(App)
 app.use(createFluenti({
   locale: 'en',
   fallbackLocale: 'en',
+  interpolate,
   messages: { en },
   lazyLocaleLoading: true,
   chunkLoader: loadLocaleMessages,

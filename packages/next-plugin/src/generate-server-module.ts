@@ -89,6 +89,7 @@ export function generateServerModule(
 // @ts-nocheck
 import { createElement } from 'react'
 import { I18nProvider } from '@fluenti/react'
+import { interpolate as __interpolate } from '@fluenti/core/internal'
 ${clientStaticImports}
 
 const __allMessages = { ${clientAllMessagesEntries} }
@@ -96,7 +97,7 @@ const __dateFormats = ${dateFormatsStr}
 const __numberFormats = ${numberFormatsStr}
 
 export function ClientI18nProvider({ locale, fallbackLocale, fallbackChain, children }) {
-  return createElement(I18nProvider, { locale, fallbackLocale, messages: __allMessages, fallbackChain, dateFormats: __dateFormats, numberFormats: __numberFormats }, children)
+  return createElement(I18nProvider, { locale, fallbackLocale, messages: __allMessages, fallbackChain, dateFormats: __dateFormats, numberFormats: __numberFormats, interpolate: __interpolate }, children)
 }
 `
   writeSafe(clientProviderPath, clientProviderSource)
@@ -161,10 +162,12 @@ export declare function ClientI18nProvider(props: {
 // @ts-nocheck
 import { createServerI18n } from '@fluenti/react/server'
 import { createElement } from 'react'
+import { interpolate as __interpolate } from '@fluenti/core/internal'
 ${resolveLocaleImport ? `${resolveLocaleImport}\n` : ''}
 const __locales = ${localesArrayStr}
 
 const serverI18n = createServerI18n({
+  interpolate: __interpolate,
   loadMessages: async (locale) => {
     switch (locale) {
 ${localeImports}

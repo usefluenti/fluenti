@@ -1,5 +1,6 @@
 import { Routes, Route } from 'react-router-dom'
 import { I18nProvider } from '@fluenti/react'
+import { interpolate } from '@fluenti/core/internal'
 import { getDirection } from '@fluenti/core'
 import { useState, useEffect } from 'react'
 import en from './locales/compiled/en.js'
@@ -27,7 +28,7 @@ export function App({ initialLocale = 'en' }: { initialLocale?: string }) {
   }
 
   return (
-    <I18nProvider locale={locale} fallbackLocale="en" messages={messages}>
+    <I18nProvider locale={locale} fallbackLocale="en" messages={messages} interpolate={interpolate}>
       <Routes>
         <Route element={<Layout onLocaleChange={handleLocaleChange} />}>
           <Route path="/" element={<Home />} />

@@ -1,5 +1,6 @@
 import { createRoot } from 'react-dom/client'
 import { I18nProvider } from '@fluenti/react'
+import { interpolate } from '@fluenti/core/internal'
 import { useState } from 'react'
 import { en, ja, ar } from './messages'
 import { App } from './App'
@@ -13,6 +14,7 @@ function Root() {
       locale={locale}
       fallbackLocale="en"
       messages={messages}
+      interpolate={interpolate}
     >
       <App onLocaleChange={setLocale} />
     </I18nProvider>

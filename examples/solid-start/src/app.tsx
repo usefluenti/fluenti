@@ -3,6 +3,7 @@ import { FileRoutes } from '@solidjs/start/router'
 import { Suspense, type Component, type JSX } from 'solid-js'
 import { getRequestEvent, isServer } from 'solid-js/web'
 import { I18nProvider, useI18n, t } from '@fluenti/solid'
+import { interpolate } from '@fluenti/core/internal'
 import { getDirection } from '@fluenti/core'
 import { allMessages, DEFAULT_LOCALE, detectLocaleFromCookie, getInitialLocale } from './lib/i18n'
 
@@ -101,6 +102,7 @@ export default function App() {
           locale={initialLocale}
           fallbackLocale={DEFAULT_LOCALE}
           messages={allMessages}
+          interpolate={interpolate}
         >
           <Layout>{props.children}</Layout>
         </I18nProvider>

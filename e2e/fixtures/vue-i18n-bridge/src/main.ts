@@ -1,6 +1,7 @@
 import { createApp } from 'vue'
 import { createI18n } from 'vue-i18n'
 import { createFluenti } from '@fluenti/vue'
+import { interpolate } from '@fluenti/core/internal'
 import { createFluentBridge } from '@fluenti/vue-i18n-compat'
 import App from './App.vue'
 import { legacyMessages } from './locales/legacy'
@@ -17,6 +18,7 @@ const vueI18n = createI18n({
 const fluenti = createFluenti({
   locale: 'en',
   fallbackLocale: 'en',
+  interpolate,
   messages: fluentMessages,
 })
 

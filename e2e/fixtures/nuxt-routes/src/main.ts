@@ -1,5 +1,6 @@
 import { createApp, type InjectionKey } from 'vue'
 import { createFluenti } from '@fluenti/vue'
+import { interpolate } from '@fluenti/core/internal'
 import {
   extractLocaleFromPath,
 } from '@fluenti/nuxt/client'
@@ -21,6 +22,7 @@ export const RUNTIME_CONFIG_KEY: InjectionKey<FluentNuxtRuntimeConfig> = Symbol(
 const fluenti = createFluenti({
   locale: 'en',
   fallbackLocale: 'en',
+  interpolate,
   messages,
 })
 

@@ -1,5 +1,6 @@
 import { Links, Meta, Outlet, Scripts, ScrollRestoration, Link } from '@remix-run/react'
 import { I18nProvider, t, useI18n } from '@fluenti/react'
+import { interpolate } from '@fluenti/core/internal'
 import { getDirection } from '@fluenti/core'
 import { useState } from 'react'
 import en from './locales/compiled/en.js'
@@ -83,7 +84,7 @@ export default function App() {
         `}</style>
       </head>
       <body>
-        <I18nProvider locale={currentLocale} fallbackLocale="en" messages={allMessages}>
+        <I18nProvider locale={currentLocale} fallbackLocale="en" messages={allMessages} interpolate={interpolate}>
           <NavBar onLocaleChange={setCurrentLocale} />
         </I18nProvider>
         <ScrollRestoration />

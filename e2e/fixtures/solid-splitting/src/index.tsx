@@ -1,5 +1,6 @@
 import { render } from 'solid-js/web'
 import { I18nProvider } from '@fluenti/solid'
+import { interpolate } from '@fluenti/core/internal'
 import en from './locales/compiled/en.js'
 import { App } from './App'
 
@@ -21,6 +22,7 @@ render(
       messages={{ en }}
       lazyLocaleLoading
       chunkLoader={loadLocaleMessages}
+      interpolate={interpolate}
     >
       <App />
     </I18nProvider>

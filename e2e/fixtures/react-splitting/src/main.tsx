@@ -1,5 +1,6 @@
 import { createRoot } from 'react-dom/client'
 import { I18nProvider } from '@fluenti/react'
+import { interpolate } from '@fluenti/core/internal'
 import en from './locales/compiled/en.js'
 import App from './App'
 
@@ -19,6 +20,7 @@ createRoot(document.getElementById('root')!).render(
     fallbackLocale="en"
     messages={{ en }}
     loadMessages={loadLocaleMessages}
+    interpolate={interpolate}
   >
     <App />
   </I18nProvider>,

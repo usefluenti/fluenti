@@ -1,5 +1,6 @@
 import { render } from 'solid-js/web'
 import { I18nProvider } from '@fluenti/solid'
+import { interpolate } from '@fluenti/core/internal'
 import { App } from './App'
 import en from './locales/compiled/en.js'
 import zhCN from './locales/compiled/zh-CN.js'
@@ -20,6 +21,7 @@ render(
       locale={cookieLocale || 'en'}
       fallbackLocale="en"
       messages={{ en, 'zh-CN': zhCN, ja, ar }}
+      interpolate={interpolate}
     >
       <App />
     </I18nProvider>

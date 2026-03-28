@@ -1,4 +1,5 @@
 import { createFluenti } from '@fluenti/vue'
+import { interpolate } from '@fluenti/core/internal'
 
 const messages = {
   en: {
@@ -21,6 +22,7 @@ const messages = {
 export default defineNuxtPlugin((nuxtApp) => {
   const fluenti = createFluenti({
     locale: nuxtApp.$fluentiLocale?.value ?? 'en',
+    interpolate,
     messages,
   })
   nuxtApp.vueApp.use(fluenti)
