@@ -25,3 +25,4 @@ app.config.timestamp*
 **/.fluenti/
 .act-artifacts/
 .worktrees/
+*.dev-pid
