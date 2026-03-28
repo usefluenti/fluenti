@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "@fluenti/cli": "workspace:*",
+    "@fluenti/core": "workspace:*",
     "@fluenti/vue": "workspace:*",
     "vue": "^3.5",
     "vue-router": "^5"

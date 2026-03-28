@@ -328,12 +328,27 @@ export function createFluentiCore(config: FluentiCoreConfigFull): FluentiCoreIns
     },
 
     d(value: Date | number, style?: string): LocalizedString {
+      const date = typeof value === 'number' ? new Date(value) : value
+      // Handle 'relative' style inline using Intl.RelativeTimeFormat
+      if (style === 'relative' && !config.dateFormats?.['relative']) {
+        const diff = date.getTime() - Date.now()
+        const absDiff = Math.abs(diff)
+        const sign = diff < 0 ? -1 : 1
+        let unit: Intl.RelativeTimeFormatUnit = 'second'
+        let amount = Math.round(absDiff / 1000)
+        if (absDiff >= 86_400_000) { unit = 'day'; amount = Math.round(absDiff / 86_400_000) }
+        else if (absDiff >= 3_600_000) { unit = 'hour'; amount = Math.round(absDiff / 3_600_000) }
+        else if (absDiff >= 60_000) { unit = 'minute'; amount = Math.round(absDiff / 60_000) }
+        try {
+          return new Intl.RelativeTimeFormat(currentLocale, { numeric: 'auto' }).format(sign * amount, unit) as LocalizedString
+        } catch {
+          return 'Invalid Date' as LocalizedString
+        }
+      }
       const raw = style
         ? (config.dateFormats?.[style] ?? BUILTIN_DATE_FORMATS[style])
         : undefined
-      // Skip 'relative' style (handled by the full formatters module)
       const opts: Intl.DateTimeFormatOptions | undefined = typeof raw === 'string' ? undefined : raw
-      const date = typeof value === 'number' ? new Date(value) : value
       try {
         return new Intl.DateTimeFormat(currentLocale, opts).format(date) as LocalizedString
       } catch {

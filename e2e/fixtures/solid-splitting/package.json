@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "@fluenti/cli": "workspace:*",
+    "@fluenti/core": "workspace:*",
     "@fluenti/solid": "workspace:*",
     "solid-js": "^1.8"
   },

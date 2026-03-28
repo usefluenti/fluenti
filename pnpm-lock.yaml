@@ -667,6 +667,9 @@ importers:
       '@fluenti/cli':
         specifier: workspace:*
         version: link:../../../packages/cli
+      '@fluenti/core':
+        specifier: workspace:*
+        version: link:../../../packages/core
       '@fluenti/react':
         specifier: workspace:*
         version: link:../../../packages/react
@@ -738,6 +741,9 @@ importers:
       '@fluenti/cli':
         specifier: workspace:*
         version: link:../../../packages/cli
+      '@fluenti/core':
+        specifier: workspace:*
+        version: link:../../../packages/core
       '@fluenti/react':
         specifier: workspace:*
         version: link:../../../packages/react
@@ -840,6 +846,9 @@ importers:
       '@fluenti/cli':
         specifier: workspace:*
         version: link:../../../packages/cli
+      '@fluenti/core':
+        specifier: workspace:*
+        version: link:../../../packages/core
       '@fluenti/solid':
         specifier: workspace:*
         version: link:../../../packages/solid
@@ -890,6 +899,9 @@ importers:
       '@fluenti/cli':
         specifier: workspace:*
         version: link:../../../packages/cli
+      '@fluenti/core':
+        specifier: workspace:*
+        version: link:../../../packages/core
       '@fluenti/vue':
         specifier: workspace:*
         version: link:../../../packages/vue
@@ -940,6 +952,9 @@ importers:
       '@fluenti/cli':
         specifier: workspace:*
         version: link:../../../packages/cli
+      '@fluenti/core':
+        specifier: workspace:*
+        version: link:../../../packages/core
       '@fluenti/vue':
         specifier: workspace:*
         version: link:../../../packages/vue
