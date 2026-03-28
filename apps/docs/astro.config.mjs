@@ -144,6 +144,15 @@ export default defineConfig({
             { label: 'Recipes', slug: 'advanced/recipes' },
             { label: 'Custom Bundlers', slug: 'advanced/custom-bundlers' },
             { label: 'Framework Comparison', slug: 'advanced/framework-comparison' },
+            {
+              label: 'Comparisons',
+              items: [
+                { label: 'Choosing an i18n Library', slug: 'advanced/choosing-i18n-library' },
+                { label: 'Fluenti vs vue-i18n', slug: 'advanced/fluenti-vs-vue-i18n' },
+                { label: 'Fluenti vs react-i18next', slug: 'advanced/fluenti-vs-react-i18next' },
+                { label: 'Fluenti vs next-intl', slug: 'advanced/fluenti-vs-next-intl' },
+              ],
+            },
             { label: 'Troubleshooting', slug: 'advanced/troubleshooting' },
             { label: 'FAQ', slug: 'advanced/faq' },
           ],

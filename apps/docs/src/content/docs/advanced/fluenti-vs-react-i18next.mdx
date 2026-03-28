@@ -1,0 +1,137 @@
+---
+title: "Fluenti vs react-i18next"
+description: "Side-by-side comparison of Fluenti and react-i18next — bundle size (~3 KB vs ~13 KB), compile-time vs runtime, Next.js RSC support, and multi-framework flexibility."
+---
+
+Fluenti and react-i18next both provide i18n for React applications. The core difference: Fluenti compiles ICU messages at build time into optimized JavaScript functions, while react-i18next interprets them at runtime using the i18next engine.
+
+## At a Glance
+
+| Dimension | Fluenti | react-i18next |
+|-----------|---------|---------------|
+| **Runtime bundle** | ~3 KB gzipped | ~13 KB gzipped (i18next + react-i18next) |
+| **Runtime parsing** | None — compiled at build time | Yes — parses on every render |
+| **DX approach** | `` t`Welcome, ${name}` `` tagged template | `t('welcome', { name })` string keys |
+| **Next.js RSC** | Dedicated `@fluenti/next` with full RSC support | Requires manual setup |
+| **Format support** | ICU MessageFormat (PO + JSON) | Custom format (JSON) |
+| **Multi-framework** | Vue, React, Solid, Next.js, Nuxt, +3 more | React only |
+
+## Bundle Size
+
+Fluenti's runtime is approximately **3 KB gzipped**. react-i18next (i18next core + react-i18next) ships at approximately **13 KB gzipped**.
+
+react-i18next bundles an ICU message interpreter that parses and evaluates messages in the browser. Fluenti eliminates the parser entirely — messages are pre-compiled at build time into plain functions.
+
+## Runtime Performance
+
+Fluenti is **5-10x faster** than react-i18next on typical messages. On complex ICU messages with nested plurals and selects, the difference widens to **40x**.
+
+| Scenario | Fluenti | react-i18next |
+|----------|---------|---------------|
+| Static string lookup | ~4.4M ops/sec | — |
+| Pre-compiled function call | ~10M ops/sec | — |
+| Plural resolution | ~1-1.5M ops/sec | ~910K ops/sec |
+| Complex nested ICU | ~10M ops/sec | ~240K ops/sec |
+
+For applications with hundreds or thousands of translated strings, the cumulative rendering cost is measurable — especially on mobile devices.
+
+All benchmarks run automatically on CI. See [Benchmarks](/advanced/benchmarks/) for methodology.
+
+## Developer Experience
+
+**react-i18next** — manual key management:
+
+```tsx
+import { useTranslation } from 'react-i18next'
+
+function Hero({ name }: { name: string }) {
+  const { t } = useTranslation()
+  return (
+    <h1>{t('home.hero.title')}</h1>
+    <p>{t('home.hero.subtitle', { name })}</p>
+  )
+}
+```
+
+```json
+// en.json — maintained manually
+{
+  "home.hero.title": "Welcome to our app",
+  "home.hero.subtitle": "Hello, {{name}}!"
+}
+```
+
+**Fluenti** — source text as the key:
+
+```tsx
+import { useI18n } from '@fluenti/react'
+
+function Hero({ name }: { name: string }) {
+  const { t } = useI18n()
+  return (
+    <h1>{t`Welcome to our app`}</h1>
+    <p>{t`Hello, ${name}!`}</p>
+  )
+}
+```
+
+```bash
+# Automatic — no JSON key file to maintain
+fluenti extract   # scans source → generates PO catalogs
+fluenti compile   # PO → optimized JS modules
+```
+
+The `t` tagged template uses the source text as the message key. `fluenti extract` scans your source files to generate translation catalogs automatically — no manual JSON key file to maintain.
+
+## Next.js Support
+
+Fluenti has a dedicated `@fluenti/next` package purpose-built for Next.js:
+
+- **App Router** — full support with `withFluenti()` in `next.config.ts`
+- **React Server Components** — async server-side translation API
+- **Streaming SSR** — locale detection middleware with hydration-safe handoff
+- **Turbopack** — automatic loader configuration for both webpack and Turbopack
+
+react-i18next requires manual configuration for Next.js App Router and does not provide built-in RSC support. Server-side translation typically requires custom wiring.
+
+See [Next.js Quick Start](/start/quick-start-nextjs/) and [Next.js Guide](/frameworks/react/nextjs/).
+
+## Multi-Framework
+
+If your team works across multiple frameworks — for example, a Vue admin panel alongside a React customer app — Fluenti provides one i18n solution for all of them. Translation catalogs, CLI workflow, and message format are shared across Vue, React, SolidJS, Next.js, Nuxt, React Router, TanStack Start, and SolidStart.
+
+react-i18next is React-only. i18next has adapters for other frameworks, but they are separate libraries with different APIs and varying levels of maintenance.
+
+## Migrating from react-i18next
+
+Run `fluenti migrate --from react-i18next` for AI-assisted migration that converts:
+- `useTranslation()` → `useI18n()`
+- `t('key')` → `` t`source text` ``
+- JSON catalogs → PO or JSON format
+
+See the [React migration guide](/react/llms-migration.txt) for details.
+
+## When to Choose react-i18next
+
+react-i18next is the most popular React i18n library. Consider it when:
+
+- **Ecosystem size matters most** — react-i18next has the largest community, the most StackOverflow answers, blog posts, and tutorials in the React i18n space.
+- **i18next plugin system** — If you rely on i18next plugins (backend loaders, language detectors, post-processors), the plugin ecosystem is extensive.
+- **No build step** — react-i18next works at runtime without a compilation step.
+- **Existing investment** — If your project is deeply integrated with i18next and migration cost outweighs performance gains.
+
+Choose Fluenti when you prioritize bundle size, runtime performance, Next.js RSC support, multi-framework flexibility, or want to eliminate manual key management.
+
+## Frequently Asked Questions
+
+### Is Fluenti better than react-i18next?
+
+Fluenti offers a smaller bundle (~3 KB vs ~13 KB), 5-10x faster performance (no runtime parsing), and dedicated Next.js RSC support. react-i18next has a larger ecosystem and more community resources. The best choice depends on your priorities.
+
+### Does Fluenti work with Next.js?
+
+Yes. Fluenti has a dedicated `@fluenti/next` package with App Router support, React Server Components, streaming SSR, and Turbopack compatibility. It provides `withFluenti()` for `next.config.ts` and server-side locale detection middleware.
+
+### Can I migrate from react-i18next to Fluenti?
+
+Yes. Use the `fluenti migrate --from react-i18next` CLI command for AI-assisted migration. It converts `useTranslation()` calls to `useI18n()` and rewrites JSX to use the `t` tagged template or `Trans` component.

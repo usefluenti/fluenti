@@ -1,0 +1,150 @@
+---
+title: "Fluenti vs next-intl"
+description: "Side-by-side comparison of Fluenti and next-intl — compile-time vs runtime parsing, bundle size (~3 KB vs ~12 KB), multi-framework portability, and RSC compatibility."
+---
+
+Fluenti and next-intl both support Next.js App Router with React Server Components. The core difference: Fluenti compiles ICU messages at build time and works across 8 frameworks, while next-intl interprets them at runtime and is Next.js-specific.
+
+## At a Glance
+
+| Dimension | Fluenti | next-intl |
+|-----------|---------|-----------|
+| **Runtime bundle** | ~3 KB gzipped | ~12 KB gzipped |
+| **Runtime parsing** | None — compiled at build time | Yes — parses on every render |
+| **Framework scope** | Vue, React, Solid, Next.js, Nuxt, +3 more | Next.js only |
+| **RSC support** | Yes — dedicated server API | Yes — built-in |
+| **Code splitting** | Built-in per-route (static + dynamic) | Manual |
+| **Format support** | ICU MessageFormat (PO + JSON) | ICU MessageFormat (JSON) |
+
+## Bundle Size
+
+Fluenti's runtime is approximately **3 KB gzipped**. next-intl ships at approximately **12 KB gzipped**.
+
+next-intl includes an ICU message interpreter that parses format strings in the browser. Fluenti moves all parsing to the build step — compiled messages are plain JavaScript functions with no parsing overhead.
+
+## Runtime Performance
+
+Fluenti is **5-10x faster** than next-intl on typical messages. On complex ICU messages with nested plurals and selects, the difference widens to **40x**.
+
+| Scenario | Fluenti | next-intl |
+|----------|---------|-----------|
+| Static string lookup | ~4.4M ops/sec | — |
+| Pre-compiled function call | ~10M ops/sec | — |
+| Plural resolution | ~1-1.5M ops/sec | ~910K ops/sec |
+| Complex nested ICU | ~10M ops/sec | ~240K ops/sec |
+
+For Next.js applications with server-rendered pages and client-side transitions, the runtime cost affects both server response time and client interactivity.
+
+All benchmarks run automatically on CI. See [Benchmarks](/advanced/benchmarks/) for methodology.
+
+## Framework Portability
+
+This is the most significant architectural difference. next-intl is purpose-built for Next.js — if you ever need i18n in a non-Next.js project, you need a different library.
+
+Fluenti works across **8 frameworks** from a single codebase:
+- Vue 3, Nuxt 3
+- React, Next.js, React Router v7, TanStack Start
+- SolidJS, SolidStart
+
+Translation catalogs, CLI workflow, message format, and developer experience are identical across all frameworks. This means:
+
+- **Monorepos** — One i18n solution for your entire stack, even if it spans Vue and React.
+- **Migration flexibility** — If you move from Next.js to React Router or TanStack Start, your translations and workflow carry over unchanged.
+- **Team consistency** — Developers moving between projects use the same APIs.
+
+## RSC and Turbopack
+
+Both libraries support React Server Components and Turbopack. This is an area of parity:
+
+- **Fluenti**: `@fluenti/next` provides `withFluenti()`, server-side translation functions, middleware for locale detection, and automatic Turbopack/webpack loader configuration.
+- **next-intl**: Built-in RSC support with `getTranslations()`, middleware, and Turbopack compatibility.
+
+See [Next.js Guide](/frameworks/react/nextjs/) and [Server Components](/frameworks/react/server-components/).
+
+## Code Splitting
+
+Fluenti provides **built-in per-route code splitting** for translation messages. Configure `splitting: 'dynamic'` or `splitting: 'static'` in your Fluenti config, and each route loads only the translations it needs via dynamic imports.
+
+next-intl relies on manual message splitting — you structure your JSON files per namespace and load them explicitly.
+
+See [Code Splitting](/advanced/code-splitting/) for configuration details.
+
+## Developer Experience
+
+**next-intl** — manual key management:
+
+```tsx
+import { useTranslations } from 'next-intl'
+
+function Hero({ name }: { name: string }) {
+  const t = useTranslations('home.hero')
+  return (
+    <h1>{t('title')}</h1>
+    <p>{t('subtitle', { name })}</p>
+  )
+}
+```
+
+```json
+// en.json — maintained manually
+{
+  "home": {
+    "hero": {
+      "title": "Welcome to our app",
+      "subtitle": "Hello, {name}!"
+    }
+  }
+}
+```
+
+**Fluenti** — source text as the key:
+
+```tsx
+import { useI18n } from '@fluenti/react'
+
+function Hero({ name }: { name: string }) {
+  const { t } = useI18n()
+  return (
+    <h1>{t`Welcome to our app`}</h1>
+    <p>{t`Hello, ${name}!`}</p>
+  )
+}
+```
+
+```bash
+fluenti extract   # scans source → generates PO catalogs
+fluenti compile   # PO → optimized JS modules
+```
+
+## Migrating from next-intl
+
+Run `fluenti migrate --from next-intl` to convert:
+- `useTranslations()` → `useI18n()`
+- Namespaced `t('key')` → `` t`source text` ``
+- JSON catalogs → PO or JSON format
+- next-intl middleware → Fluenti middleware
+
+## When to Choose next-intl
+
+next-intl is a well-maintained, focused library. Consider it when:
+
+- **Next.js-only and staying that way** — If your entire stack is Next.js and you have no plans to use other frameworks, next-intl's focused API is clean and simple.
+- **No build plugin** — next-intl works without a build plugin, which simplifies the toolchain.
+- **Simpler setup** — Fewer moving parts for projects that don't need code splitting or multi-framework support.
+- **Active maintenance** — next-intl has a responsive maintainer and good documentation.
+
+Choose Fluenti when you prioritize bundle size, runtime performance, built-in code splitting, multi-framework portability, or want to eliminate manual key management.
+
+## Frequently Asked Questions
+
+### Is Fluenti faster than next-intl?
+
+Yes. Fluenti compiles messages at build time, eliminating runtime parsing entirely. next-intl interprets ICU messages at runtime. This makes Fluenti 5-10x faster, with the gap widening to 40x on complex messages.
+
+### Can Fluenti replace next-intl?
+
+Yes. Fluenti's `@fluenti/next` package provides the same Next.js capabilities (App Router, RSC, Turbopack, middleware) plus works across Vue, SolidJS, React Router, TanStack Start, and more — making your i18n investment portable.
+
+### Does Fluenti support React Server Components?
+
+Yes. Fluenti provides a dedicated server API for React Server Components with async locale loading, server-side translation functions, and hydration-safe client handoff.

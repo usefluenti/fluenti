@@ -310,9 +310,9 @@ export type CustomFormatter = (value: unknown, style: string, locale: Locale) =>
 // ---- Extended FluentiCoreConfig ----
 
 export interface FluentiCoreConfigFull extends FluentiCoreConfig {
-  dateFormats?: DateFormatOptions
-  numberFormats?: NumberFormatOptions
-  fallbackChain?: Record<string, Locale[]>
+  dateFormats?: DateFormatOptions | undefined
+  numberFormats?: NumberFormatOptions | undefined
+  fallbackChain?: Record<string, Locale[]> | undefined
   /**
    * Post-translation transform applied to every resolved message.
    * Runs after interpolation. No-op when not set.
@@ -322,19 +322,19 @@ export interface FluentiCoreConfigFull extends FluentiCoreConfig {
    * transform: (result, id, locale) => result.toUpperCase()
    * ```
    */
-  transform?: (result: string, id: string, locale: Locale) => string
+  transform?: ((result: string, id: string, locale: Locale) => string) | undefined
   /**
    * Callback fired whenever the locale changes via `setLocale()` or the
    * `locale` property setter.
    */
-  onLocaleChange?: (newLocale: Locale, prevLocale: Locale) => void
+  onLocaleChange?: ((newLocale: Locale, prevLocale: Locale) => void) | undefined
   /**
    * Custom ICU function formatters.
    * Keys are function names used in ICU messages (e.g. `{items, list}`).
    * When a `FunctionNode` is encountered during runtime interpolation,
    * the custom formatter is checked first, then the built-in Intl formatters.
    */
-  formatters?: Record<string, CustomFormatter>
+  formatters?: Record<string, CustomFormatter> | undefined
   /**
    * Enable development warnings for missing translations.
    *
@@ -345,7 +345,7 @@ export interface FluentiCoreConfigFull extends FluentiCoreConfig {
    * Activated by `devWarnings: true` in `fluenti.config.ts` or
    * `FLUENTI_DEBUG` environment variable.
    */
-  devWarnings?: boolean
+  devWarnings?: boolean | undefined
   /**
    * Runtime diagnostics instance OR configuration.
    *
@@ -354,7 +354,7 @@ export interface FluentiCoreConfigFull extends FluentiCoreConfig {
    * creates the instance internally (pulls in the diagnostics module).
    * Pass a pre-created instance to keep the diagnostics module out of your bundle.
    */
-  diagnostics?: DiagnosticsConfig | import('./diagnostics').Diagnostics
+  diagnostics?: DiagnosticsConfig | import('./diagnostics').Diagnostics | undefined
   /**
    * Custom message interpolation function.
    *
@@ -368,12 +368,12 @@ export interface FluentiCoreConfigFull extends FluentiCoreConfig {
    * createFluentiCore({ interpolate, ... })
    * ```
    */
-  interpolate?: (
+  interpolate?: ((
     message: string,
     values: Record<string, unknown> | undefined,
     locale: string,
     formatters?: Record<string, CustomFormatter>,
-  ) => string
+  ) => string) | undefined
 }
 
 // ---- Extended FluentiCoreInstance ----

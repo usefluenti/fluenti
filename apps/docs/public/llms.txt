@@ -1,6 +1,21 @@
 # Fluenti
 
-> Compile-time i18n for modern frameworks. Write natural templates — Fluenti compiles your markup into optimized, zero-cost translations at build time. Full ICU MessageFormat support with plurals, selects, date/number formatting, and code splitting.
+> Compile-time i18n for modern frameworks.
+
+Fluenti is the only i18n library with first-class support for Vue, React, SolidJS, Next.js, Nuxt, React Router, TanStack Start, and SolidStart from a single codebase. It compiles ICU MessageFormat messages at build time into optimized JavaScript functions — no runtime parser is shipped to the browser.
+
+~3 KB gzipped runtime (vs 13-14 KB for vue-i18n and react-i18next). 5-10x faster than runtime-interpreted alternatives, widening to 40x on complex ICU messages.
+
+## How Fluenti compares
+
+| Metric | Fluenti | vue-i18n | react-i18next | next-intl | LinguiJS |
+|---|---|---|---|---|---|
+| Runtime bundle (gzipped) | ~3 KB | ~14 KB | ~13 KB | ~12 KB | ~5 KB |
+| Runtime parsing | None (compiled) | Yes | Yes | Yes | None |
+| Performance vs runtime | 5-10x faster (up to 40x) | baseline | baseline | baseline | similar |
+| Framework support | Vue, React, Solid, Next.js, Nuxt, +3 more | Vue only | React only | Next.js only | React (Vue experimental) |
+| Message format | ICU (PO + JSON) | JSON | JSON | ICU (JSON) | ICU (PO) |
+| Code splitting | Built-in per-route | Manual | Manual | Manual | Manual |
 
 - Docs: https://fluenti.dev
 - Repository: https://github.com/usefluenti/fluenti

@@ -19,23 +19,23 @@ export interface FluentiConfig {
   /** Active locale code */
   locale: string
   /** Static message catalogs keyed by locale */
-  messages?: AllMessages
+  messages?: AllMessages | undefined
   /** Async loader for lazy-loading locale messages */
-  loadMessages?: (locale: string) => Promise<Messages | { default: Messages }>
+  loadMessages?: ((locale: string) => Promise<Messages | { default: Messages }>) | undefined
   /** Fallback locale when a translation is missing */
-  fallbackLocale?: string
+  fallbackLocale?: string | undefined
   /** Custom fallback chains per locale */
-  fallbackChain?: Record<string, string[]>
+  fallbackChain?: Record<string, string[]> | undefined
   /** Date format styles */
-  dateFormats?: DateFormatOptions
+  dateFormats?: DateFormatOptions | undefined
   /** Number format styles */
-  numberFormats?: NumberFormatOptions
+  numberFormats?: NumberFormatOptions | undefined
   /** Missing message handler */
-  missing?: (locale: Locale, id: string) => string | undefined
+  missing?: ((locale: Locale, id: string) => string | undefined) | undefined
   /** Runtime diagnostics (pre-created instance or config) */
-  diagnostics?: unknown
+  diagnostics?: unknown | undefined
   /** Custom interpolation function for full ICU support at runtime */
-  interpolate?: (message: string, values: Record<string, unknown> | undefined, locale: string, formatters?: Record<string, unknown>) => string
+  interpolate?: ((message: string, values: Record<string, unknown> | undefined, locale: string, formatters?: Record<string, unknown>) => string) | undefined
 }
 
 /**

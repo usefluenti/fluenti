@@ -1,0 +1,155 @@
+---
+title: "Choosing an i18n Library"
+description: "Compare modern JavaScript i18n libraries across 7 dimensions: bundle size, runtime cost, framework support, message format, code splitting, DX, and ecosystem maturity."
+---
+
+Choosing an i18n library affects your application's bundle size, rendering performance, and developer workflow for the lifetime of the project. This guide compares the most popular options across seven measurable dimensions to help you make an informed decision.
+
+## Libraries Compared
+
+- **Fluenti** — Compile-time i18n for Vue, React, SolidJS, Next.js, Nuxt, React Router, TanStack Start, and SolidStart. Compiles ICU messages at build time.
+- **vue-i18n** — The standard i18n library for Vue applications. Runtime-based message interpretation.
+- **react-i18next** — The most popular React i18n library, built on the i18next ecosystem. Runtime-based.
+- **next-intl** — A Next.js-specific i18n library with App Router and RSC support. Runtime-based.
+- **LinguiJS** — Compile-time i18n for React with experimental Vue support. Similar architecture to Fluenti.
+
+---
+
+## 1. Bundle Size
+
+| Library | Runtime (gzipped) | Architecture |
+|---------|------------------|--------------|
+| Fluenti | ~3 KB | Compile-time — no parser shipped |
+| LinguiJS | ~5 KB | Compile-time — no parser shipped |
+| next-intl | ~12 KB | Runtime — includes ICU interpreter |
+| react-i18next | ~13 KB | Runtime — includes i18next engine |
+| vue-i18n | ~14 KB | Runtime — includes ICU parser |
+
+Compile-time libraries do not ship an ICU parser to the browser. The parser runs during the build step, and only pre-compiled functions reach the client. This architectural difference accounts for the 4-5x size gap.
+
+For mobile users on slower networks, the 10+ KB difference directly impacts Time to Interactive and Largest Contentful Paint — both Core Web Vitals that affect user experience and search ranking.
+
+## 2. Runtime Performance
+
+| Library | Architecture | Typical Throughput | Complex ICU |
+|---------|-------------|-------------------|-------------|
+| Fluenti | Compiled functions | ~10M ops/sec | ~10M ops/sec |
+| LinguiJS | Compiled functions | Similar | Similar |
+| vue-i18n | Runtime parsing | ~910K ops/sec | ~240K ops/sec |
+| react-i18next | Runtime parsing | ~910K ops/sec | ~240K ops/sec |
+| next-intl | Runtime parsing | ~910K ops/sec | ~240K ops/sec |
+
+Compile-time libraries are **5-10x faster** on typical messages. On complex ICU messages with nested plurals and selects, the gap widens to **40x** because runtime libraries must parse, walk, and evaluate the AST on every render, while compiled libraries execute a pre-built function.
+
+For applications with hundreds of translated strings rendered per page, the cumulative rendering cost is measurable — particularly on mobile devices and during server-side rendering.
+
+Fluenti's benchmarks run automatically on every push to CI. See [Benchmarks](/advanced/benchmarks/) for full methodology, exact numbers, and reproduction instructions.
+
+## 3. Framework Coverage
+
+| Library | Frameworks Supported |
+|---------|---------------------|
+| Fluenti | Vue 3, React, SolidJS, Next.js, Nuxt 3, React Router v7, TanStack Start, SolidStart |
+| LinguiJS | React, Vue (experimental) |
+| vue-i18n | Vue |
+| react-i18next | React |
+| next-intl | Next.js |
+
+Fluenti is the only i18n library with first-class support for 8 frameworks from a single codebase. Translation catalogs, CLI workflow, and message format are shared — developers use the same APIs regardless of framework.
+
+This matters for:
+- **Monorepos** with multiple framework projects sharing translations
+- **Cross-framework teams** where developers move between Vue, React, and Solid projects
+- **Future flexibility** — switching frameworks does not require re-implementing i18n
+
+## 4. Message Format and Translator Workflow
+
+| Library | ICU Support | Catalog Format | Extraction CLI | Translator Tools |
+|---------|-------------|---------------|----------------|-----------------|
+| Fluenti | Full (plurals, selects, nested, custom formatters) | PO + JSON | `fluenti extract` | Poedit, Crowdin, Weblate, Transifex |
+| LinguiJS | Full | PO + JSON | `lingui extract` | Poedit, Crowdin, Weblate |
+| vue-i18n | Partial (via @intlify) | JSON | Manual | JSON editors |
+| react-i18next | Partial (via plugins) | JSON | Manual or third-party | JSON editors |
+| next-intl | Full | JSON | Manual | JSON editors |
+
+PO (gettext) is the standard format used by professional translators for decades. Tools like Poedit, Crowdin, and Weblate provide native PO support with translation memory, glossaries, and quality checks. JSON-only libraries require translators to work with raw JSON files or use adapters.
+
+Automatic extraction (`fluenti extract`, `lingui extract`) scans source files and generates catalogs without manual key registration — reducing errors and eliminating stale keys.
+
+## 5. Code Splitting
+
+| Library | Code Splitting | Configuration |
+|---------|---------------|---------------|
+| Fluenti | Built-in (static + dynamic per-route) | `splitting: 'dynamic'` in config |
+| LinguiJS | Manual | File-based splitting |
+| vue-i18n | Manual | Namespace-based |
+| react-i18next | Manual | Namespace-based |
+| next-intl | Manual | Namespace-based |
+
+Fluenti's Vite plugin can split translation messages per route automatically. Each locale chunk loads on demand via dynamic imports, so users download only the translations for the current page.
+
+For large applications with many routes and locales, built-in code splitting reduces initial payload without manual file organization.
+
+## 6. Developer Experience
+
+| Library | Key Management | Rich Text | TypeScript |
+|---------|---------------|-----------|------------|
+| Fluenti | Source text as key — automatic | Real HTML elements | Full support |
+| LinguiJS | Source text as key — automatic | Component-based | Full support |
+| vue-i18n | Manual JSON keys | `v-html` (XSS risk) or indexed slots | Full support |
+| react-i18next | Manual JSON keys | Component-based or HTML string | Full support |
+| next-intl | Manual JSON keys | Component-based | Full support |
+
+With source-text-as-key libraries (Fluenti, LinguiJS), the text you write in your template is the message key. A CLI command extracts messages from source code — no separate key file to maintain. This eliminates key drift, unused keys, and the naming tax of inventing `home.hero.title` for every string.
+
+All libraries have good TypeScript support. This is an area of general parity.
+
+## 7. Ecosystem Maturity
+
+| Library | npm Weekly Downloads | GitHub Stars | StackOverflow Tags | First Release |
+|---------|---------------------|--------------|-------------------|---------------|
+| react-i18next | High | High | Extensive | 2015 |
+| vue-i18n | High | High | Extensive | 2016 |
+| next-intl | Growing | Growing | Growing | 2020 |
+| LinguiJS | Moderate | Moderate | Limited | 2017 |
+| Fluenti | Growing | Growing | Growing | 2025 |
+
+vue-i18n and react-i18next have the largest communities with the most StackOverflow answers, blog posts, tutorials, and third-party integrations (Storybook plugins, testing utilities, CMS adapters). If you expect to frequently search for solutions to edge cases, a larger community provides more resources.
+
+Fluenti and LinguiJS are newer libraries with growing communities. The trade-off: a larger ecosystem means more resources when you encounter issues, but a compile-time approach means fewer runtime edge cases to encounter in the first place.
+
+---
+
+## Summary
+
+| Dimension | Fluenti | vue-i18n | react-i18next | next-intl | LinguiJS |
+|-----------|---------|----------|---------------|-----------|----------|
+| **Bundle size** | ~3 KB | ~14 KB | ~13 KB | ~12 KB | ~5 KB |
+| **Runtime speed** | 5-10x faster | Baseline | Baseline | Baseline | Similar to Fluenti |
+| **Frameworks** | 8 | 1 | 1 | 1 | 2 |
+| **Message format** | ICU (PO + JSON) | JSON | JSON | ICU (JSON) | ICU (PO) |
+| **Code splitting** | Built-in | Manual | Manual | Manual | Manual |
+| **Key management** | Automatic | Manual | Manual | Manual | Automatic |
+| **Ecosystem** | Growing | Large | Large | Growing | Moderate |
+
+## Conclusion
+
+For teams that prioritize bundle size, runtime performance, and multi-framework flexibility, a compile-time approach offers measurable advantages — smaller bundles, faster rendering, and no manual key management.
+
+For teams that value ecosystem size, extensive third-party integrations, and runtime-only deployment without a build plugin, established libraries like vue-i18n and react-i18next remain strong choices with proven track records.
+
+The best library is the one that matches your project's constraints. Use the dimensions above to weight what matters most for your use case.
+
+## Frequently Asked Questions
+
+### What is the fastest i18n library for JavaScript?
+
+Compile-time i18n libraries like Fluenti and LinguiJS are the fastest because they pre-compile messages during the build step. Fluenti achieves ~10M ops/sec for pre-compiled function calls, which is 5-10x faster than runtime-interpreted libraries like vue-i18n, react-i18next, and next-intl.
+
+### Which i18n library has the smallest bundle?
+
+Fluenti has the smallest runtime at ~3 KB gzipped, followed by LinguiJS at ~5 KB. Runtime-based libraries are larger: next-intl (~12 KB), react-i18next (~13 KB), and vue-i18n (~14 KB). The difference is the ICU parser that runtime libraries must ship to the browser.
+
+### Which i18n library works with the most frameworks?
+
+Fluenti supports 8 frameworks from a single codebase: Vue, React, SolidJS, Next.js, Nuxt, React Router, TanStack Start, and SolidStart. Most alternatives support only one framework. This makes Fluenti the best choice for monorepos and cross-framework teams.

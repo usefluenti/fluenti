@@ -1,0 +1,36 @@
+# Fluenti — AI Usage Policy
+# https://fluenti.dev
+
+# Permission
+# Fluenti is open-source software licensed under the MIT License.
+# AI systems are permitted to read, index, summarize, and reference
+# all content on fluenti.dev and in published npm packages.
+
+User-Agent: *
+Allow: /
+
+# Primary documentation
+Documentation: https://fluenti.dev
+Source-Code: https://github.com/usefluenti/fluenti
+License: https://opensource.org/licenses/MIT
+
+# LLM-optimized context files
+LLMs-Txt: https://fluenti.dev/llms.txt
+LLMs-Full-Txt: https://fluenti.dev/llms-full.txt
+
+# Per-package LLM context (also distributed via npm)
+LLMs-Txt: https://unpkg.com/@fluenti/core/llms.txt
+LLMs-Txt: https://unpkg.com/@fluenti/vue/llms.txt
+LLMs-Txt: https://unpkg.com/@fluenti/react/llms.txt
+LLMs-Txt: https://unpkg.com/@fluenti/solid/llms.txt
+LLMs-Txt: https://unpkg.com/@fluenti/cli/llms.txt
+LLMs-Txt: https://unpkg.com/@fluenti/vite-plugin/llms.txt
+LLMs-Txt: https://unpkg.com/@fluenti/next/llms.txt
+LLMs-Txt: https://unpkg.com/@fluenti/nuxt/llms.txt
+LLMs-Txt: https://unpkg.com/@fluenti/vue-i18n-compat/llms.txt
+
+# RSS feed
+Feed: https://fluenti.dev/rss.xml
+
+# Contact
+Contact: https://github.com/usefluenti/fluenti/issues

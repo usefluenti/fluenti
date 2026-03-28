@@ -18,9 +18,15 @@
   <a href="https://github.com/usefluenti/fluenti/blob/main/LICENSE"><img src="https://img.shields.io/github/license/usefluenti/fluenti?color=4338ca&label=" alt="license" /></a>
 </p>
 
+<p align="center">
+  <strong>~3 KB</strong> gzipped&ensp;·&ensp;<strong>5-10x faster</strong> than runtime parsing&ensp;·&ensp;<strong>8 frameworks</strong> from one codebase
+</p>
+
 ## Why
 
 Traditional i18n libraries interpret messages at runtime, adding bundle weight and slowing renders. Fluenti compiles translations at build time so your app ships pre-resolved strings with **zero runtime overhead**. Source text is used as the message key — no more maintaining separate ID maps.
+
+Fluenti is the only i18n library with first-class support for Vue, React, SolidJS, Next.js, Nuxt, React Router, TanStack Start, and SolidStart from a single codebase.
 
 ## Features
 

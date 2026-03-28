@@ -2,7 +2,30 @@ User-agent: *
 Allow: /
 Disallow: /404
 
+# AI crawlers — explicitly allowed
+User-agent: GPTBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /
+
+User-agent: Bytespider
+Allow: /
+
+User-agent: CCBot
+Allow: /
+
 Sitemap: https://fluenti.dev/sitemap-index.xml
+Sitemap: https://fluenti.dev/rss.xml
 
 # AI assistant context
 Sitemap: https://fluenti.dev/llms.txt

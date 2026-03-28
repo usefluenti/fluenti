@@ -74,7 +74,99 @@ const softwareAppLd = {
   license: 'https://opensource.org/licenses/MIT',
 }
 
+// Route classification
 const isFaq = url.pathname.includes('/faq')
+const isBlog = url.pathname.includes('/blog/')
+const isApi = segments[0] === 'api'
+const isQuickStart = url.pathname.includes('/quick-start')
+const isGuide = !isHome && !isFaq && !isBlog && !isApi && !isQuickStart
+
+const pageTitle = starlightRoute?.entry?.data?.title ?? ''
+const pageDescription = starlightRoute?.entry?.data?.description ?? ''
+const pageUrl = `${site}${url.pathname}`
+
+const fluentiAuthor = { '@type': 'Organization', name: 'Fluenti', url: site }
+
+// TechArticle — guides, tutorials, essentials, advanced
+const techArticleLd = {
+  '@context': 'https://schema.org',
+  '@type': 'TechArticle',
+  headline: pageTitle,
+  description: pageDescription,
+  url: pageUrl,
+  image: ogImageUrl,
+  author: fluentiAuthor,
+  publisher: fluentiAuthor,
+  inLanguage: 'en',
+  isAccessibleForFree: true,
+  proficiencyLevel: segments[0] === 'advanced' ? 'Expert' : 'Beginner',
+}
+
+// BlogPosting — blog pages
+const blogPostingLd = {
+  '@context': 'https://schema.org',
+  '@type': 'BlogPosting',
+  headline: pageTitle,
+  description: pageDescription,
+  url: pageUrl,
+  image: ogImageUrl,
+  author: fluentiAuthor,
+  publisher: fluentiAuthor,
+  inLanguage: 'en',
+  isAccessibleForFree: true,
+  mainEntityOfPage: { '@type': 'WebPage', '@id': pageUrl },
+}
+
+// Detect framework from quick-start slug
+const qsFramework = (() => {
+  const match = url.pathname.match(/quick-start-(\w+)/)
+  if (match) {
+    const map: Record<string, string> = {
+      vue: 'Vue 3', react: 'React', solid: 'SolidJS', nuxt: 'Nuxt 3',
+      nextjs: 'Next.js', solidstart: 'SolidStart',
+      'react-router': 'React Router', 'tanstack-start': 'TanStack Start',
+    }
+    return map[match[1]] ?? match[1]
+  }
+  return null
+})()
+
+// HowTo — quick-start pages
+const howToLd = {
+  '@context': 'https://schema.org',
+  '@type': 'HowTo',
+  name: qsFramework
+    ? `Set up Fluenti with ${qsFramework}`
+    : 'Set up Fluenti in your project',
+  description: pageDescription,
+  url: pageUrl,
+  image: ogImageUrl,
+  totalTime: 'PT5M',
+  step: [
+    { '@type': 'HowToStep', position: 1, name: 'Install packages', text: `Install @fluenti/core and the framework integration package via your package manager.` },
+    { '@type': 'HowToStep', position: 2, name: 'Configure the build plugin', text: 'Add the Fluenti Vite/webpack plugin to your build configuration.' },
+    { '@type': 'HowToStep', position: 3, name: 'Create fluenti.config.ts', text: 'Define source locale, target locales, catalog directory, and format.' },
+    { '@type': 'HowToStep', position: 4, name: 'Use translations in components', text: 'Write translatable text using the t tagged template or framework-specific directives and components.' },
+    { '@type': 'HowToStep', position: 5, name: 'Extract and compile', text: 'Run fluenti extract to generate translation catalogs, then fluenti compile to produce optimized runtime bundles.' },
+  ],
+}
+
+// SoftwareSourceCode — API reference pages
+const apiPackageName = isApi && segments[1]
+  ? `@fluenti/${segments[1].replace('vue-i18n-compat', 'vue-i18n-compat')}`
+  : '@fluenti/core'
+
+const softwareSourceCodeLd = {
+  '@context': 'https://schema.org',
+  '@type': 'SoftwareSourceCode',
+  name: apiPackageName,
+  description: pageDescription,
+  url: pageUrl,
+  codeRepository: 'https://github.com/usefluenti/fluenti',
+  programmingLanguage: ['TypeScript', 'JavaScript'],
+  runtimePlatform: 'Node.js',
+  license: 'https://opensource.org/licenses/MIT',
+}
 
 const faqLd = {
   '@context': 'https://schema.org',
@@ -200,17 +292,194 @@ const faqLd = {
         text: 'Yes. Set format: \'json\' in your fluenti.config.ts to use JSON catalogs instead of PO files. Both formats support all Fluenti features including plurals, context, and metadata.',
       },
     },
+    {
+      '@type': 'Question',
+      name: 'What is the fastest JavaScript i18n library?',
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: 'Fluenti is 5-10x faster than runtime-interpreted i18n libraries like vue-i18n and react-i18next, widening to 40x on complex ICU messages. This is because Fluenti compiles translations at build time — no ICU parser runs in the browser. Pre-compiled function calls reach ~10M ops/sec.',
+      },
+    },
+    {
+      '@type': 'Question',
+      name: 'Which i18n library has the smallest bundle size?',
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: 'Fluenti\'s runtime is approximately 3 KB gzipped. Traditional i18n libraries range from 12-14 KB (next-intl, react-i18next, vue-i18n) because they include a runtime ICU parser. Compile-time libraries like Fluenti and LinguiJS avoid shipping a parser to the browser.',
+      },
+    },
+    {
+      '@type': 'Question',
+      name: 'Which i18n library supports the most frameworks?',
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: 'Fluenti is the only i18n library with first-class support for Vue, React, SolidJS, Next.js, Nuxt, React Router, TanStack Start, and SolidStart from a single codebase. Most alternatives support only one framework: vue-i18n (Vue), react-i18next (React), next-intl (Next.js).',
+      },
+    },
   ],
 }
 
-const schemas = isHome
-  ? [organizationLd, softwareAppLd, breadcrumbLd]
-  : isFaq
-    ? [breadcrumbLd, faqLd]
-    : [breadcrumbLd]
+// vs page FAQ schemas
+const isVsVueI18n = url.pathname.includes('/fluenti-vs-vue-i18n')
+const isVsReactI18next = url.pathname.includes('/fluenti-vs-react-i18next')
+const isVsNextIntl = url.pathname.includes('/fluenti-vs-next-intl')
+const isChoosingGuide = url.pathname.includes('/choosing-i18n-library')
+const isVsPage = isVsVueI18n || isVsReactI18next || isVsNextIntl
+const isComparisonPage = isVsPage || isChoosingGuide
+
+const vsVueI18nFaqLd = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: [
+    {
+      '@type': 'Question',
+      name: 'Is Fluenti faster than vue-i18n?',
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: 'Yes. Fluenti is 5-10x faster than vue-i18n because it compiles ICU messages at build time. vue-i18n parses messages at runtime on every render. On complex messages with nested plurals and selects, the difference widens to 40x.',
+      },
+    },
+    {
+      '@type': 'Question',
+      name: 'Is Fluenti smaller than vue-i18n?',
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: 'Yes. Fluenti\'s runtime is ~3 KB gzipped, while vue-i18n is ~14 KB gzipped. Fluenti is smaller because it does not ship an ICU parser to the browser — messages are pre-compiled at build time.',
+      },
+    },
+    {
+      '@type': 'Question',
+      name: 'Can I migrate from vue-i18n to Fluenti?',
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: 'Yes. Install the @fluenti/vue-i18n-compat bridge package to run both libraries side by side. Existing $t() calls continue to work while you incrementally adopt Fluenti\'s v-t directive and t tagged template in new code.',
+      },
+    },
+  ],
+}
+
+const vsReactI18nextFaqLd = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: [
+    {
+      '@type': 'Question',
+      name: 'Is Fluenti better than react-i18next?',
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: 'Fluenti offers a smaller bundle (~3 KB vs ~13 KB), 5-10x faster performance (no runtime parsing), and dedicated Next.js RSC support. react-i18next has a larger ecosystem and more community resources. The best choice depends on your priorities.',
+      },
+    },
+    {
+      '@type': 'Question',
+      name: 'Does Fluenti work with Next.js?',
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: 'Yes. Fluenti has a dedicated @fluenti/next package with App Router support, React Server Components, streaming SSR, and Turbopack compatibility. It provides withFluenti() for next.config.ts and server-side locale detection middleware.',
+      },
+    },
+    {
+      '@type': 'Question',
+      name: 'Can I migrate from react-i18next to Fluenti?',
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: 'Yes. Use the fluenti migrate --from react-i18next CLI command for AI-assisted migration. It converts useTranslation() calls to useI18n() and rewrites JSX to use the t tagged template or Trans component.',
+      },
+    },
+  ],
+}
+
+const vsNextIntlFaqLd = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: [
+    {
+      '@type': 'Question',
+      name: 'Is Fluenti faster than next-intl?',
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: 'Yes. Fluenti compiles messages at build time, eliminating runtime parsing entirely. next-intl interprets ICU messages at runtime. This makes Fluenti 5-10x faster, with the gap widening to 40x on complex messages.',
+      },
+    },
+    {
+      '@type': 'Question',
+      name: 'Can Fluenti replace next-intl?',
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: 'Yes. Fluenti\'s @fluenti/next package provides the same Next.js capabilities (App Router, RSC, Turbopack, middleware) plus works across Vue, SolidJS, React Router, TanStack Start, and more — making your i18n investment portable.',
+      },
+    },
+    {
+      '@type': 'Question',
+      name: 'Does Fluenti support React Server Components?',
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: 'Yes. Fluenti provides a dedicated server API for React Server Components with async locale loading, server-side translation functions, and hydration-safe client handoff.',
+      },
+    },
+  ],
+}
+
+const choosingGuideFaqLd = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: [
+    {
+      '@type': 'Question',
+      name: 'What is the fastest i18n library for JavaScript?',
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: 'Compile-time i18n libraries like Fluenti and LinguiJS are the fastest because they pre-compile messages during the build step. Fluenti achieves ~10M ops/sec for pre-compiled function calls, which is 5-10x faster than runtime-interpreted libraries like vue-i18n, react-i18next, and next-intl.',
+      },
+    },
+    {
+      '@type': 'Question',
+      name: 'Which i18n library has the smallest bundle?',
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: 'Fluenti has the smallest runtime at ~3 KB gzipped, followed by LinguiJS at ~5 KB. Runtime-based libraries are larger: next-intl (~12 KB), react-i18next (~13 KB), and vue-i18n (~14 KB). The difference is the ICU parser that runtime libraries must ship to the browser.',
+      },
+    },
+    {
+      '@type': 'Question',
+      name: 'Which i18n library works with the most frameworks?',
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: 'Fluenti supports 8 frameworks from a single codebase: Vue, React, SolidJS, Next.js, Nuxt, React Router, TanStack Start, and SolidStart. Most alternatives support only one framework. LinguiJS supports React and experimental Vue. This makes Fluenti the best choice for monorepos and cross-framework teams.',
+      },
+    },
+  ],
+}
+
+const schemas: Record<string, unknown>[] = [breadcrumbLd]
+
+if (isHome) {
+  schemas.push(organizationLd, softwareAppLd)
+} else if (isFaq) {
+  schemas.push(faqLd)
+} else if (isVsVueI18n) {
+  schemas.push(techArticleLd, vsVueI18nFaqLd)
+} else if (isVsReactI18next) {
+  schemas.push(techArticleLd, vsReactI18nextFaqLd)
+} else if (isVsNextIntl) {
+  schemas.push(techArticleLd, vsNextIntlFaqLd)
+} else if (isChoosingGuide) {
+  schemas.push(techArticleLd, choosingGuideFaqLd)
+} else if (isBlog) {
+  schemas.push(blogPostingLd)
+} else if (isQuickStart) {
+  schemas.push(howToLd)
+} else if (isApi) {
+  schemas.push(softwareSourceCodeLd)
+} else if (isGuide) {
+  schemas.push(techArticleLd)
+}
 ---
 
 <Default><slot /></Default>
+
+<!-- RSS feed discovery -->
+<link rel="alternate" type="application/rss+xml" title="Fluenti Blog" href={`${site}/rss.xml`} />
 
 <!-- Per-page OG image (overrides the global static og:image) -->
 <meta property="og:image" content={ogImageUrl} />

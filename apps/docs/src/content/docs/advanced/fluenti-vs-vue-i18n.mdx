@@ -1,0 +1,126 @@
+---
+title: "Fluenti vs vue-i18n"
+description: "Side-by-side comparison of Fluenti and vue-i18n — bundle size (~3 KB vs ~14 KB), runtime performance (5-10x faster), compile-time transforms, and migration path."
+---
+
+Fluenti and vue-i18n both provide i18n for Vue 3 applications. The core difference is architecture: Fluenti compiles ICU messages at build time into optimized JavaScript functions, while vue-i18n interprets them at runtime.
+
+## At a Glance
+
+| Dimension | Fluenti | vue-i18n |
+|-----------|---------|----------|
+| **Runtime bundle** | ~3 KB gzipped | ~14 KB gzipped |
+| **Runtime parsing** | None — compiled at build time | Yes — parses on every render |
+| **DX approach** | Source text as key (`v-t` directive) | Manual JSON keys (`$t('key')`) |
+| **SSR** | Cookie / query / path / header detection | Plugin-based SSR |
+| **Format support** | ICU MessageFormat (PO + JSON) | Custom format (JSON) |
+| **Multi-framework** | Vue, React, Solid, Next.js, Nuxt, +3 more | Vue only |
+
+## Bundle Size
+
+Fluenti's runtime is approximately **3 KB gzipped**. vue-i18n ships at approximately **14 KB gzipped**.
+
+The difference comes from architecture. vue-i18n includes an ICU message parser and interpreter that runs in the browser. Fluenti moves all parsing to the build step — the browser receives pre-compiled functions that return strings directly. No parser is shipped.
+
+For applications with many translations, this gap compounds: compiled messages are typically 30-50% smaller than raw ICU strings because static messages compile to plain string literals.
+
+## Runtime Performance
+
+Fluenti is **5-10x faster** than vue-i18n on typical messages. On complex ICU messages with nested plurals and selects, the difference widens to **40x**.
+
+| Scenario | Fluenti | vue-i18n |
+|----------|---------|----------|
+| Static string lookup | ~3.8M ops/sec | — |
+| Pre-compiled function call | ~10M ops/sec | — |
+| Plural resolution | ~1-1.5M ops/sec | ~910K ops/sec |
+| Complex nested ICU | ~10M ops/sec | ~240K ops/sec |
+
+The reason is structural: vue-i18n parses the ICU message string, walks the AST, and evaluates it on every render. Fluenti's compiled functions are plain JavaScript — no parsing step exists at runtime.
+
+All benchmarks run automatically on CI. See [Benchmarks](/advanced/benchmarks/) for methodology and reproducibility.
+
+## Developer Experience
+
+**vue-i18n** — manual key management:
+
+```vue
+<template>
+  <h1>{{ $t('home.hero.title') }}</h1>
+  <p>{{ $t('home.hero.subtitle', { name: user.name }) }}</p>
+</template>
+```
+
+```json
+// en.json — maintained manually
+{
+  "home.hero.title": "Welcome to our app",
+  "home.hero.subtitle": "Hello, {name}!"
+}
+```
+
+**Fluenti** — source text as the key:
+
+```vue
+<template>
+  <h1 v-t>Welcome to our app</h1>
+  <p v-t>Hello, {{ name }}!</p>
+</template>
+```
+
+```bash
+# Automatic — no JSON key file to maintain
+fluenti extract   # scans source → generates PO catalogs
+fluenti compile   # PO → optimized JS modules
+```
+
+With Fluenti, the `v-t` directive is a Vue `nodeTransform` — it rewrites the template at compile time. There is no runtime directive overhead. The source text in your template serves as both the display text and the message key, eliminating the key management burden.
+
+## Rich Text
+
+vue-i18n uses indexed slots or `v-html` (which carries XSS risk) for rich text. Fluenti uses real HTML elements:
+
+```vue
+<!-- Fluenti -->
+<Trans>Read the <a href="/terms">terms</a> and <strong>conditions</strong></Trans>
+
+<!-- vue-i18n (v-html — XSS risk) -->
+<p v-html="$t('terms_message')"></p>
+```
+
+Translators see familiar HTML markup rather than indexed placeholders.
+
+## SSR Support
+
+Both libraries support server-side rendering. vue-i18n uses its plugin system for SSR configuration. Fluenti provides built-in locale detection via cookie, query parameter, URL path, and HTTP headers, with a hydration-safe script helper to prevent flash of untranslated content.
+
+## Migrating from vue-i18n
+
+Fluenti provides two migration paths:
+
+1. **Bridge package** — Install `@fluenti/vue-i18n-compat` to run both libraries side by side. Existing `$t()` calls continue to work while you adopt `v-t` and `t` tagged templates in new code. See [vue-i18n Bridge](/frameworks/vue/vue-i18n-bridge/).
+
+2. **CLI migration** — Run `fluenti migrate --from vue-i18n` for AI-assisted migration of translation files and component code. See [Migration from vue-i18n](/frameworks/vue/migration-from-vue-i18n/).
+
+## When to Choose vue-i18n
+
+vue-i18n is a solid, battle-tested library. Consider it when:
+
+- **Community size matters most** — vue-i18n has a larger ecosystem with more StackOverflow answers, blog posts, and third-party integrations.
+- **No build step** — vue-i18n works at runtime without a compilation step, which suits projects that cannot use Vite or webpack plugins.
+- **Existing investment** — If your project already uses vue-i18n extensively and migration cost outweighs performance gains.
+
+Choose Fluenti when you prioritize bundle size, runtime performance, multi-framework support, or want to eliminate manual key management.
+
+## Frequently Asked Questions
+
+### Is Fluenti faster than vue-i18n?
+
+Yes. Fluenti is 5-10x faster than vue-i18n because it compiles ICU messages at build time. vue-i18n parses messages at runtime on every render. On complex messages with nested plurals and selects, the difference widens to 40x.
+
+### Is Fluenti smaller than vue-i18n?
+
+Yes. Fluenti's runtime is ~3 KB gzipped, while vue-i18n is ~14 KB gzipped. Fluenti is smaller because it does not ship an ICU parser to the browser — messages are pre-compiled at build time.
+
+### Can I migrate from vue-i18n to Fluenti?
+
+Yes. Install the `@fluenti/vue-i18n-compat` bridge package to run both libraries side by side. Existing `$t()` calls continue to work while you incrementally adopt Fluenti's `v-t` directive and `t` tagged template in new code. See [vue-i18n Bridge](/frameworks/vue/vue-i18n-bridge/) for details.

@@ -28,10 +28,14 @@ export type {
   PluginCompileContext,
 } from './types'
 
+export type { DiagnosticsConfig, Diagnostics } from './diagnostics'
+
+// SSR utilities — also available from '@fluenti/core/ssr'
+export { detectLocale, getSSRLocaleScript, getHydratedLocale } from './ssr'
+
 // ---- Minimal runtime exports ----
 // Heavy modules moved to subpaths:
 //   @fluenti/core/internal  → parse, compile, interpolate, FluentParseError
-//   @fluenti/core/ssr       → detectLocale, getSSRLocaleScript, getHydratedLocale
 //   @fluenti/core/formatters → formatNumber, formatDate, formatRelativeTime
 export { Catalog } from './catalog'
 export { negotiateLocale, parseLocale, isRTL, getDirection, validateLocale } from './locale'
@@ -112,8 +116,8 @@ export function createFluentiCore(config: FluentiCoreConfigFull): FluentiCoreIns
 
   // Diagnostics — accepts a pre-created Diagnostics instance or raw config
   // Duck-type check: if it has missingKey, it's an instance; otherwise it's config
-  const diag = config.diagnostics && 'missingKey' in config.diagnostics
-    ? config.diagnostics as { missingKey: (l: string, id: string) => void; fallbackUsed: (l: string, fl: string, id: string) => void; enabled: boolean }
+  const diag: import('./diagnostics').Diagnostics | undefined = config.diagnostics && 'missingKey' in config.diagnostics
+    ? config.diagnostics as import('./diagnostics').Diagnostics
     : undefined
 
   // Load initial messages

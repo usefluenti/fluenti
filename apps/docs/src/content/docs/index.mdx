@@ -1,13 +1,13 @@
 ---
-title: Fluenti — Compile-time i18n for Vue, React, SolidJS, Next.js & Nuxt
-description: "Fluenti is a compile-time i18n library for Vue, React, SolidJS, Next.js and Nuxt. Zero runtime parsing — ICU messages compile to optimized string concatenation at build time."
+title: Fluenti — Compile-time i18n for Vue, React, SolidJS, Next.js, Nuxt & more
+description: "Fluenti is the only i18n library for Vue, React, SolidJS, Next.js, Nuxt, React Router, TanStack Start, and SolidStart. ~3 KB runtime, zero parsing overhead, 5-10x faster than alternatives."
 template: splash
 head:
   - tag: title
-    content: Fluenti — Compile-time i18n for Vue, React, SolidJS, Next.js & Nuxt
+    content: Fluenti — Compile-time i18n for Vue, React, SolidJS, Next.js, Nuxt & more
 hero:
   title: The i18n compiler for modern web
-  tagline: "Write natural HTML templates. Fluenti compiles your markup into optimized, zero-cost translations at build time."
+  tagline: "The only i18n library for Vue, React, Solid, Next.js, Nuxt, and more — compiles translations at build time with zero runtime cost."
   actions:
     - text: Get Started
       link: /start/quick-start/
@@ -23,8 +23,8 @@ import { Card, CardGrid } from '@astrojs/starlight/components'
 ## Why Fluenti?
 
 <CardGrid>
-  <Card title="Compile-Time" icon="rocket">
-    ICU messages are compiled at build time. Zero parsing overhead at runtime — just string concatenation.
+  <Card title="~3 KB Runtime" icon="rocket">
+    ICU messages compile at build time to optimized functions. No parser shipped to the browser — 5-10x faster than runtime-interpreted alternatives.
   </Card>
   <Card title="Natural Keys" icon="pencil">
     Write `<h1 v-t>Welcome</h1>` — the source text is the key. No more maintaining JSON ID maps.
@@ -32,8 +32,8 @@ import { Card, CardGrid } from '@astrojs/starlight/components'
   <Card title="Rich Text" icon="document">
     Use real HTML in translations: `<Trans>Click <a href="/docs">here</a></Trans>`. No XSS, no indexed placeholders.
   </Card>
-  <Card title="Multi-Framework" icon="puzzle">
-    Vue, React, SolidJS, Next.js, Nuxt, and more. One core, consistent APIs across frameworks.
+  <Card title="8 Frameworks" icon="puzzle">
+    The only i18n library for Vue, React, SolidJS, Next.js, Nuxt, React Router, TanStack Start, and SolidStart. One core, consistent APIs.
   </Card>
   <Card title="Code Splitting" icon="seti:folder">
     Built-in locale chunking — lazy-load translations per route with `splitting: 'dynamic'`.

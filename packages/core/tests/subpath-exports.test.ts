@@ -42,12 +42,13 @@ describe('subpath exports', () => {
   })
 
   describe('main entry does NOT export heavy modules', () => {
-    it('does not export parse, compile, interpolate, detectLocale, formatNumber, formatDate, formatRelativeTime', async () => {
+    it('does not export parse, compile, interpolate, formatNumber, formatDate, formatRelativeTime', async () => {
       const mainEntry = await import('../src/index') as Record<string, unknown>
       expect(mainEntry['parse']).toBeUndefined()
       expect(mainEntry['compile']).toBeUndefined()
       expect(mainEntry['interpolate']).toBeUndefined()
-      expect(mainEntry['detectLocale']).toBeUndefined()
+      // detectLocale IS still exported from main for backward compat
+      expect(mainEntry['detectLocale']).toBeTypeOf('function')
       expect(mainEntry['formatNumber']).toBeUndefined()
       expect(mainEntry['formatDate']).toBeUndefined()
       expect(mainEntry['formatRelativeTime']).toBeUndefined()
