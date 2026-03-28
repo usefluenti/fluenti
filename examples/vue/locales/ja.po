@@ -1,317 +1,280 @@
 msgid ""
 msgstr "Content-Type: text/plain; charset=utf-8\n"
 
-#: ./src/App.vue:34
+#: /Users/ins/Code/fluenti/examples/vue/src/App.vue:34
 msgid "Fluenti Vue Playground"
 msgstr "Fluenti Vue プレイグラウンド"
 
-#: ./src/App.vue:47
+#: /Users/ins/Code/fluenti/examples/vue/src/App.vue:47
 msgid "Write text. Fluenti translates it. Zero config."
 msgstr "テキストを書くだけ。Fluenti が翻訳。設定不要。"
 
-#: ./src/App.vue:48
+#: /Users/ins/Code/fluenti/examples/vue/src/App.vue:48
 msgid "Loading translations..."
 msgstr "翻訳を読み込み中..."
 
-#: ./src/pages/Directives.vue:28
-#. fluenti-id: nav.home
+#: /Users/ins/Code/fluenti/examples/vue/src/App.vue:50
 msgid "Home"
 msgstr ""
 
-#: ./src/App.vue:51
+#: /Users/ins/Code/fluenti/examples/vue/src/App.vue:51
 msgid "Plurals"
 msgstr ""
 
-#: ./src/App.vue:52
+#: /Users/ins/Code/fluenti/examples/vue/src/App.vue:52
 msgid "Rich Text"
 msgstr ""
 
-#: ./src/App.vue:53
+#: /Users/ins/Code/fluenti/examples/vue/src/App.vue:53
 msgid "Formatting"
 msgstr ""
 
-#: ./src/App.vue:54
+#: /Users/ins/Code/fluenti/examples/vue/src/App.vue:54
 msgid "Directives"
 msgstr ""
 
-#: ./src/App.vue:55
+#: /Users/ins/Code/fluenti/examples/vue/src/App.vue:55
 msgid "Script"
 msgstr ""
 
-#: ./src/App.vue:64
+#: /Users/ins/Code/fluenti/examples/vue/src/App.vue:64
 msgid "Built with Fluenti and Vue 3"
 msgstr "Fluenti と Vue 3 で構築"
 
-#: ./src/pages/Directives.vue:8
+#: /Users/ins/Code/fluenti/examples/vue/src/pages/Directives.vue:8
 msgid "v-t Directive — Zero Config i18n"
 msgstr ""
 
-#: ./src/pages/Directives.vue:9
+#: /Users/ins/Code/fluenti/examples/vue/src/pages/Directives.vue:9
 msgid ""
 "Just write text. Fluenti extracts and translates it at build time. No keys, "
 "no imports, no boilerplate."
 msgstr ""
 
-#: ./src/pages/Home.vue:17
+#: /Users/ins/Code/fluenti/examples/vue/src/pages/Home.vue:17
 msgid "Welcome to Fluenti"
 msgstr "Fluenti へようこそ"
 
-#: ./src/pages/Directives.vue:23
+#: /Users/ins/Code/fluenti/examples/vue/src/pages/Directives.vue:23
 msgid "Hello, welcome back!"
 msgstr "こんにちは、おかえりなさい！"
 
-#: ./src/pages/Directives.vue:64
+#: /Users/ins/Code/fluenti/examples/vue/src/pages/Directives.vue:28
+#. fluenti-id: nav.home
+#. msg`Home`
+msgid "nav.home"
+msgstr ""
+
+#: /Users/ins/Code/fluenti/examples/vue/src/pages/Directives.vue:64
 msgid "HTML"
 msgstr "HTML"
 
-#: ./src/pages/Formatting.vue:7
+#: /Users/ins/Code/fluenti/examples/vue/src/pages/Formatting.vue:7
 msgid "Formatting Demos"
 msgstr ""
 
-#: ./src/pages/Home.vue:18
+#: /Users/ins/Code/fluenti/examples/vue/src/pages/Home.vue:18
 msgid "A modern i18n library for Vue 3"
 msgstr "Vue 3 のためのモダンな i18n ライブラリ"
 
-#: ./src/pages/Home.vue:19
+#: /Users/ins/Code/fluenti/examples/vue/src/pages/Home.vue:19
 msgid ""
 "Fluenti provides reactive translations, rich text support, and plural "
 "handling out of the box."
 msgstr "Fluenti はリアクティブな翻訳、リッチテキストサポート、複数形処理をすぐに使えます。"
 
-#: ./src/pages/Home.vue:47
+#: /Users/ins/Code/fluenti/examples/vue/src/pages/Home.vue:47
 msgid "Features"
 msgstr "機能"
 
-#: ./src/pages/Home.vue:49
+#: /Users/ins/Code/fluenti/examples/vue/src/pages/Home.vue:49
 msgid "Reactive locale switching"
 msgstr "リアクティブなロケール切り替え"
 
-#: ./src/pages/Home.vue:50
+#: /Users/ins/Code/fluenti/examples/vue/src/pages/Home.vue:50
 msgid "Rich text with Vue components"
 msgstr "Vue コンポーネント付きリッチテキスト"
 
-#: ./src/pages/Home.vue:51
+#: /Users/ins/Code/fluenti/examples/vue/src/pages/Home.vue:51
 msgid "Built-in plural support"
 msgstr "組み込みの複数形サポート"
 
-#: ./src/pages/Home.vue:52
+#: /Users/ins/Code/fluenti/examples/vue/src/pages/Home.vue:52
 msgid "Type-safe message catalogs"
 msgstr "型安全なメッセージカタログ"
 
-#: ./src/pages/Home.vue:25
+#: /Users/ins/Code/fluenti/examples/vue/src/pages/Home.vue:25
 msgid "Hello, {arg0}!"
 msgstr ""
 
-#: ./src/pages/Script.vue:33
+#: /Users/ins/Code/fluenti/examples/vue/src/pages/Script.vue:33
 msgid "Current locale: {locale}"
 msgstr "現在のロケール：{locale}"
 
-#: ./src/pages/Home.vue:33
+#: /Users/ins/Code/fluenti/examples/vue/src/pages/Home.vue:33
 msgid "You have {arg0} items in your cart."
 msgstr ""
 
-#: ./src/pages/Home.vue:64
+#: /Users/ins/Code/fluenti/examples/vue/src/pages/Home.vue:64
 msgid "This key only exists in English"
 msgstr ""
 
-#: ./src/pages/Home.vue:11
+#: /Users/ins/Code/fluenti/examples/vue/src/pages/Home.vue:11
 #. msg tagged template
 msgid "Administrator"
 msgstr "管理者"
 
-#: ./src/pages/Home.vue:12
+#: /Users/ins/Code/fluenti/examples/vue/src/pages/Home.vue:12
 #. msg tagged template
 msgid "Regular User"
 msgstr "一般ユーザー"
 
-#: ./src/pages/Plurals.vue:45
+#: /Users/ins/Code/fluenti/examples/vue/src/pages/Plurals.vue:45
 msgid "Plural Demos"
 msgstr "複数形デモ"
 
-#: ./src/pages/Plurals.vue:88
+#: /Users/ins/Code/fluenti/examples/vue/src/pages/Plurals.vue:88
 msgid "Remove"
 msgstr "削除"
 
-#: ./src/pages/Plurals.vue:90
+#: /Users/ins/Code/fluenti/examples/vue/src/pages/Plurals.vue:90
 msgid "Add"
 msgstr "追加"
 
-#: ./src/pages/Plurals.vue:91
+#: /Users/ins/Code/fluenti/examples/vue/src/pages/Plurals.vue:91
 msgid "Reset"
 msgstr "リセット"
 
-#: ./src/pages/Plurals.vue:57
+#: /Users/ins/Code/fluenti/examples/vue/src/pages/Plurals.vue:57
 msgid "{appleCount, plural, =0 {No apples} one {1 apple} other {# apples}}"
 msgstr ""
 
-#: ./src/pages/Plurals.vue:76
+#: /Users/ins/Code/fluenti/examples/vue/src/pages/Plurals.vue:76
 msgid ""
 "{messageCount, plural, =0 {No new messages} one {1 new message} other {# "
 "new messages}}"
 msgstr ""
 
-#: ./src/pages/Plurals.vue:95
+#: /Users/ins/Code/fluenti/examples/vue/src/pages/Plurals.vue:95
 msgid ""
 "{fileCount, plural, =0 {No files selected} one {1 file selected} other {# "
 "files selected}}"
 msgstr ""
 
-#: ./src/pages/RichText.vue:5
+#: /Users/ins/Code/fluenti/examples/vue/src/pages/RichText.vue:5
 msgid "Rich Text Demos"
 msgstr "リッチテキストデモ"
 
-#: ./src/pages/RichText.vue:12
+#: /Users/ins/Code/fluenti/examples/vue/src/pages/RichText.vue:12
 msgid "Visit our <0>documentation</0> to learn more."
 msgstr ""
 
-#: ./src/pages/RichText.vue:17
+#: /Users/ins/Code/fluenti/examples/vue/src/pages/RichText.vue:17
 msgid "This is <0>important</0> information."
 msgstr ""
 
-#: ./src/pages/RichText.vue:22
+#: /Users/ins/Code/fluenti/examples/vue/src/pages/RichText.vue:22
 msgid "Please <0>sign in</0> or <1>register</1> to continue."
 msgstr ""
 
-#: ./src/pages/RichText.vue:27
+#: /Users/ins/Code/fluenti/examples/vue/src/pages/RichText.vue:27
 msgid "Go to the <0>home page</0> or check out <1>plurals</1>."
 msgstr ""
 
-#: ./src/pages/RichText.vue:32
+#: /Users/ins/Code/fluenti/examples/vue/src/pages/RichText.vue:32
 msgid "Read the <0>getting started guide</0> for setup instructions."
 msgstr ""
 
-#: ./src/pages/RichText.vue:43
+#: /Users/ins/Code/fluenti/examples/vue/src/pages/RichText.vue:43
 msgid "Read thebefore continuing"
 msgstr "続行する前に<0>利用規約</0>をお読みください"
 
-#: ./src/pages/RichText.vue:48
+#: /Users/ins/Code/fluenti/examples/vue/src/pages/RichText.vue:48
 msgid "This isinformation"
 msgstr "これは<0>非常に重要な</0>情報です"
 
-#: ./src/pages/Script.vue:23
-#: ./src/pages/Script.vue:62
+#: /Users/ins/Code/fluenti/examples/vue/src/pages/Script.vue:62
 msgid "Hello, {userName}!"
 msgstr ""
 
-#: ./src/pages/Script.vue:28
+#: /Users/ins/Code/fluenti/examples/vue/src/pages/Script.vue:28
 msgid "You have {itemCount} items."
 msgstr ""
 
-#: ./src/pages/Script.vue:11
+#: /Users/ins/Code/fluenti/examples/vue/src/pages/Script.vue:11
 msgid "You have {value} items in your cart."
 msgstr ""
 
-#: /Users/ins/Code/fluenti/examples/vue/src/App.vue:298
-msgid "Hello, {name}!"
-msgstr "こんにちは、{name}さん！"
+#~ msgid "Hello, {name}!"
+#~ msgstr "こんにちは、{name}さん！"
 
-#: /Users/ins/Code/fluenti/examples/vue/src/App.vue:37
-msgid "You have {count} items in your cart."
-msgstr "カートに {count} 個のアイテムがあります。"
+#~ msgid "You have {count} items in your cart."
+#~ msgstr "カートに {count} 個のアイテムがあります。"
 
-#: /Users/ins/Code/fluenti/examples/vue/src/App.vue:271
-msgid "You have {count} items."
-msgstr "{count} 個のアイテムがあります。"
+#~ msgid "You have {count} items."
+#~ msgstr "{count} 個のアイテムがあります。"
 
-#: /Users/ins/Code/fluenti/apps/playground-vue/src/pages/CompileTime.vue:14
-#, fuzzy
-msgid "Compile-Time Transforms"
-msgstr "コンパイル時変換"
+#~ msgid "Compile-Time Transforms"
+#~ msgstr "コンパイル時変換"
 
-#: /Users/ins/Code/fluenti/apps/playground-vue/src/pages/CompileTime.vue:15
-#, fuzzy
-msgid ""
-"These demos showcase compile-time features: v-t directive, function calls, "
-"and tagged templates — all transformed at build time by the Vite plugin."
-msgstr ""
-"これらのデモはコンパイル時機能を紹介します：v-t ディレクティブ、関数呼び出し、タグ付きテンプレート — すべて Vite "
-"プラグインによるビルド時変換。"
+#~ msgid ""
+#~ "These demos showcase compile-time features: v-t directive, function calls, "
+#~ "and tagged templates — all transformed at build time by the Vite plugin."
+#~ msgstr ""
+#~ "これらのデモはコンパイル時機能を紹介します：v-t ディレクティブ、関数呼び出し、タグ付きテンプレート — すべて Vite "
+#~ "プラグインによるビルド時変換。"
 
-#: /Users/ins/Code/fluenti/apps/playground-vue/src/pages/CompileTime.vue:28
-#, fuzzy
-msgid "Hello World"
-msgstr "こんにちは世界"
+#~ msgid "Hello World"
+#~ msgstr "こんにちは世界"
 
-#: /Users/ins/Code/fluenti/apps/playground-vue/src/pages/CompileTime.vue:38
-#, fuzzy
-msgid "Ready"
-msgstr "準備完了"
+#~ msgid "Ready"
+#~ msgstr "準備完了"
 
-#: /Users/ins/Code/fluenti/apps/playground-vue/src/pages/CompileTime.vue:43
-#, fuzzy
-msgid "Getting Started"
-msgstr "はじめに"
+#~ msgid "Getting Started"
+#~ msgstr "はじめに"
 
-#: /Users/ins/Code/fluenti/apps/playground-vue/src/pages/CompileTime.vue:48
-#, fuzzy
-msgid "Fluenti compiles translations at build time for zero runtime cost."
-msgstr "Fluenti はビルド時に翻訳をコンパイルし、ランタイムコストをゼロにします。"
+#~ msgid "Fluenti compiles translations at build time for zero runtime cost."
+#~ msgstr "Fluenti はビルド時に翻訳をコンパイルし、ランタイムコストをゼロにします。"
 
-#: /Users/ins/Code/fluenti/apps/playground-vue/src/pages/CompileTime.vue:22
-#, fuzzy
-msgid "hash"
-msgstr ""
+#~ msgid "hash"
+#~ msgstr ""
 
-#: /Users/ins/Code/fluenti/apps/playground-vue/src/pages/CompileTime.vue:56
-#, fuzzy
-msgid "source text"
-msgstr ""
+#~ msgid "source text"
+#~ msgstr ""
 
-#: /Users/ins/Code/fluenti/apps/playground-vue/src/pages/CompileTime.vue:97
-#, fuzzy
-msgid "{count, plural, =0 {No items} one {# item} other {# items}} in your cart."
-msgstr "カートに {count} 件の商品があります。"
+#~ msgid "{count, plural, =0 {No items} one {# item} other {# items}} in your cart."
+#~ msgstr "カートに {count} 件の商品があります。"
 
-#: /Users/ins/Code/fluenti/apps/playground-vue/src/pages/CompileTime.vue:105
-#, fuzzy
-msgid "Total: {price}"
-msgstr "合計：{price}"
+#~ msgid "Total: {price}"
+#~ msgstr "合計：{price}"
 
-#: /Users/ins/Code/fluenti/apps/playground-vue/src/pages/CompileTime.vue:124
-#, fuzzy
-msgid "_a1b2c3"
-msgstr ""
+#~ msgid "_a1b2c3"
+#~ msgstr ""
 
-#: /Users/ins/Code/fluenti/apps/playground-vue/src/pages/VtDirectiveShowcase.vue:43
-#, fuzzy
-msgid "{count, plural, zero {No apples} one {1 apple} other {# apples}}"
-msgstr "{count, plural, zero {りんごなし} one {りんご 1 個} other {りんご # 個}}"
+#~ msgid "{count, plural, zero {No apples} one {1 apple} other {# apples}}"
+#~ msgstr "{count, plural, zero {りんごなし} one {りんご 1 個} other {りんご # 個}}"
 
-#: /Users/ins/Code/fluenti/apps/playground-vue/src/pages/Plurals.vue:45
-#, fuzzy
-msgid ""
-"{count, plural, zero {No new messages} one {1 new message} other {# new "
-"messages}}"
-msgstr "{count, plural, zero {新しいメッセージなし} one {新しいメッセージ 1 件} other {新しいメッセージ # 件}}"
+#~ msgid ""
+#~ "{count, plural, zero {No new messages} one {1 new message} other {# new "
+#~ "messages}}"
+#~ msgstr "{count, plural, zero {新しいメッセージなし} one {新しいメッセージ 1 件} other {新しいメッセージ # 件}}"
 
-#: /Users/ins/Code/fluenti/apps/playground-vue/src/pages/Plurals.vue:64
-#, fuzzy
-msgid ""
-"{count, plural, zero {No files selected} one {1 file selected} other {# "
-"files selected}}"
-msgstr "{count, plural, zero {ファイル未選択} one {1 ファイル選択済み} other {# ファイル選択済み}}"
+#~ msgid ""
+#~ "{count, plural, zero {No files selected} one {1 file selected} other {# "
+#~ "files selected}}"
+#~ msgstr "{count, plural, zero {ファイル未選択} one {1 ファイル選択済み} other {# ファイル選択済み}}"
 
-#: /Users/ins/Code/fluenti/apps/playground-vue/src/pages/RichText.vue:14
-#, fuzzy
-msgid "Visit our <link>documentation</link> to learn more."
-msgstr "詳しくは<link>ドキュメント</link>をご覧ください。"
+#~ msgid "Visit our <link>documentation</link> to learn more."
+#~ msgstr "詳しくは<link>ドキュメント</link>をご覧ください。"
 
-#: /Users/ins/Code/fluenti/apps/playground-vue/src/pages/RichText.vue:23
-#, fuzzy
-msgid "This is <bold>important</bold> information."
-msgstr "これは<bold>重要な</bold>情報です。"
+#~ msgid "This is <bold>important</bold> information."
+#~ msgstr "これは<bold>重要な</bold>情報です。"
 
-#: /Users/ins/Code/fluenti/apps/playground-vue/src/pages/RichText.vue:32
-#, fuzzy
-msgid "Please <link>sign in</link> or <bold>register</bold> to continue."
-msgstr "<link>ログイン</link>または<bold>登録</bold>してください。"
+#~ msgid "Please <link>sign in</link> or <bold>register</bold> to continue."
+#~ msgstr "<link>ログイン</link>または<bold>登録</bold>してください。"
 
-#: /Users/ins/Code/fluenti/apps/playground-vue/src/pages/RichText.vue:44
-#, fuzzy
-msgid "Go to the <home>home page</home> or check out <plurals>plurals</plurals>."
-msgstr "<home>ホーム</home>または<plurals>複数形</plurals>をご覧ください。"
+#~ msgid "Go to the <home>home page</home> or check out <plurals>plurals</plurals>."
+#~ msgstr "<home>ホーム</home>または<plurals>複数形</plurals>をご覧ください。"
 
-#: /Users/ins/Code/fluenti/apps/playground-vue/src/pages/RichText.vue:56
-#, fuzzy
-msgid "Read the <link>getting started guide</link> for setup instructions."
-msgstr "<link>スタートガイド</link>をお読みください。"
+#~ msgid "Read the <link>getting started guide</link> for setup instructions."
+#~ msgstr "<link>スタートガイド</link>をお読みください。"

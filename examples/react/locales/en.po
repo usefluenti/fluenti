@@ -1,139 +1,149 @@
 msgid ""
 msgstr "Content-Type: text/plain; charset=utf-8\n"
 
-#: ./src/App.tsx:34
-msgid "Fluenti React Playground"
-msgstr ""
-
-#: ./src/App.tsx:36
-msgid "Write text. Fluenti translates it. Zero config."
-msgstr ""
-
-#: ./src/App.tsx:42
-msgid "Home"
-msgstr ""
-
-#: ./src/App.tsx:45
-msgid "Plurals"
-msgstr ""
-
-#: ./src/App.tsx:48
-msgid "Rich Text"
-msgstr ""
-
-#: ./src/App.tsx:82
-msgid "Welcome to Fluenti"
-msgstr ""
-
-#: ./src/App.tsx:83
-msgid "A modern i18n library for React"
-msgstr ""
-
-#: ./src/App.tsx:84
-msgid "Hello, {name}!"
-msgstr ""
-
-#: ./src/App.tsx:85
-msgid "You have {itemCount} items in your cart."
-msgstr ""
-
-#: ./src/App.tsx:86
-msgid "Current locale: {locale}"
-msgstr ""
-
-#: ./src/App.tsx:91
-msgid "Formatting Components"
-msgstr ""
-
-#: ./src/App.tsx:105
-msgid "Advanced ICU"
-msgstr ""
-
-#: ./src/App.tsx:121
-msgid "This key only exists in English"
-msgstr ""
-
-#: ./src/App.tsx:123
-msgid "Features"
-msgstr ""
-
-#: ./src/App.tsx:125
-msgid "Reactive locale switching"
-msgstr ""
-
-#: ./src/App.tsx:126
-msgid "Rich text with React components"
-msgstr ""
-
-#: ./src/App.tsx:127
-msgid "Built-in plural support"
-msgstr ""
-
-#: ./src/App.tsx:128
-msgid "Type-safe message catalogs"
-msgstr ""
-
-#: ./src/App.tsx:135
-msgid "Plural Demos"
-msgstr ""
-
-#: ./src/App.tsx:137
-msgid "{count, plural, =0 {No messages} one {# message} other {# messages}}"
-msgstr ""
-
-#: ./src/App.tsx:146
-msgid "Add"
-msgstr ""
-
-#: ./src/App.tsx:149
-msgid "Remove"
-msgstr ""
-
-#: ./src/App.tsx:152
-msgid "Reset"
-msgstr ""
-
-#: ./src/App.tsx:156
-msgid "Select Demo"
-msgstr ""
-
-#: ./src/App.tsx:166
-msgid "Male"
-msgstr ""
-
-#: ./src/App.tsx:167
-msgid "Female"
-msgstr ""
-
-#: ./src/App.tsx:168
-msgid "Other"
-msgstr ""
-
-#: ./src/App.tsx:175
-msgid "Rich Text Demos"
-msgstr ""
-
-#: ./src/App.tsx:177
-msgid "Read the <0>documentation</0> for more info."
-msgstr ""
-
-#: ./src/App.tsx:180
-msgid "This is <0>important</0> information."
-msgstr ""
-
-#: ./src/App.tsx:183
-msgid "Please <0>sign in</0> or <1>register</1> to continue."
-msgstr ""
-
-#: ./src/App.tsx:189
-msgid "Built with Fluenti and React"
-msgstr ""
-
-msgid "You have {count} items in your cart."
-msgstr ""
-
+#: /Users/ins/Code/fluenti/examples/react/src/App.tsx:8
+#. msg tagged template
 msgid "Administrator"
 msgstr "Administrator"
 
+#: /Users/ins/Code/fluenti/examples/react/src/App.tsx:9
+#. msg tagged template
 msgid "Regular User"
 msgstr "Regular User"
+
+#: /Users/ins/Code/fluenti/examples/react/src/App.tsx:35
+msgid "Fluenti React Playground"
+msgstr ""
+
+#: /Users/ins/Code/fluenti/examples/react/src/App.tsx:37
+msgid "Write text. Fluenti translates it. Zero config."
+msgstr ""
+
+#: /Users/ins/Code/fluenti/examples/react/src/App.tsx:43
+msgid "Home"
+msgstr ""
+
+#: /Users/ins/Code/fluenti/examples/react/src/App.tsx:46
+msgid "Plurals"
+msgstr ""
+
+#: /Users/ins/Code/fluenti/examples/react/src/App.tsx:49
+msgid "Rich Text"
+msgstr ""
+
+#: /Users/ins/Code/fluenti/examples/react/src/App.tsx:83
+msgid "Welcome to Fluenti"
+msgstr ""
+
+#: /Users/ins/Code/fluenti/examples/react/src/App.tsx:84
+msgid "A modern i18n library for React"
+msgstr ""
+
+#: /Users/ins/Code/fluenti/examples/react/src/App.tsx:85
+msgid "Hello, {name}!"
+msgstr ""
+
+#: /Users/ins/Code/fluenti/examples/react/src/App.tsx:86
+msgid "You have {itemCount} items in your cart."
+msgstr ""
+
+#: /Users/ins/Code/fluenti/examples/react/src/App.tsx:87
+msgid "Current locale: {locale}"
+msgstr ""
+
+#: /Users/ins/Code/fluenti/examples/react/src/App.tsx:92
+msgid "Formatting Components"
+msgstr ""
+
+#: /Users/ins/Code/fluenti/examples/react/src/App.tsx:106
+msgid "Advanced ICU"
+msgstr ""
+
+#: /Users/ins/Code/fluenti/examples/react/src/App.tsx:122
+msgid "This key only exists in English"
+msgstr ""
+
+#: /Users/ins/Code/fluenti/examples/react/src/App.tsx:124
+msgid "Features"
+msgstr ""
+
+#: /Users/ins/Code/fluenti/examples/react/src/App.tsx:126
+msgid "Reactive locale switching"
+msgstr ""
+
+#: /Users/ins/Code/fluenti/examples/react/src/App.tsx:127
+msgid "Rich text with React components"
+msgstr ""
+
+#: /Users/ins/Code/fluenti/examples/react/src/App.tsx:128
+msgid "Built-in plural support"
+msgstr ""
+
+#: /Users/ins/Code/fluenti/examples/react/src/App.tsx:129
+msgid "Type-safe message catalogs"
+msgstr ""
+
+#: /Users/ins/Code/fluenti/examples/react/src/App.tsx:136
+msgid "Plural Demos"
+msgstr ""
+
+#: /Users/ins/Code/fluenti/examples/react/src/App.tsx:138
+msgid "{count, plural, =0 {No messages} one {# message} other {# messages}}"
+msgstr ""
+
+#: /Users/ins/Code/fluenti/examples/react/src/App.tsx:147
+msgid "Add"
+msgstr ""
+
+#: /Users/ins/Code/fluenti/examples/react/src/App.tsx:150
+msgid "Remove"
+msgstr ""
+
+#: /Users/ins/Code/fluenti/examples/react/src/App.tsx:153
+msgid "Reset"
+msgstr ""
+
+#: /Users/ins/Code/fluenti/examples/react/src/App.tsx:157
+msgid "Select Demo"
+msgstr ""
+
+#: /Users/ins/Code/fluenti/examples/react/src/App.tsx:159
+msgid ""
+"{gender, select, male {He liked your post} female {She liked your post} "
+"other {They liked your post}}"
+msgstr ""
+
+#: /Users/ins/Code/fluenti/examples/react/src/App.tsx:167
+msgid "Male"
+msgstr ""
+
+#: /Users/ins/Code/fluenti/examples/react/src/App.tsx:168
+msgid "Female"
+msgstr ""
+
+#: /Users/ins/Code/fluenti/examples/react/src/App.tsx:169
+msgid "Other"
+msgstr ""
+
+#: /Users/ins/Code/fluenti/examples/react/src/App.tsx:176
+msgid "Rich Text Demos"
+msgstr ""
+
+#: /Users/ins/Code/fluenti/examples/react/src/App.tsx:178
+msgid "Read the <0>documentation</0> for more info."
+msgstr ""
+
+#: /Users/ins/Code/fluenti/examples/react/src/App.tsx:181
+msgid "This is <0>important</0> information."
+msgstr ""
+
+#: /Users/ins/Code/fluenti/examples/react/src/App.tsx:184
+msgid "Please <0>sign in</0> or <1>register</1> to continue."
+msgstr ""
+
+#: /Users/ins/Code/fluenti/examples/react/src/App.tsx:190
+msgid "Built with Fluenti and React"
+msgstr ""
+
+#~ msgid "You have {count} items in your cart."
+#~ msgstr ""

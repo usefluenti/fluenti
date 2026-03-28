@@ -420,6 +420,127 @@ try {
   fail('CLI: overall test', err)
 }
 
+// ═════════════════════════════════════════════════════════════════════════
+// PART B: Example-based framework tests (build + dev mode)
+// Uses existing examples/ with workspace links (catches integration bugs)
+// ═════════════════════════════════════════════════════════════════════════
+
+/**
+ * Test an example app: build it, optionally start dev server and fetch a page.
+ */
+async function testExample(name, dir, { buildCmd, devCmd, devPort, devTimeout = 15_000, checkContent }) {
+  console.log(`\n${CYAN}Test: ${name}${RESET}`)
+
+  // ── Build mode ──
+  try {
+    run(buildCmd, { cwd: dir, timeout: 120_000 })
+    pass(`${name}: build succeeds`)
+  } catch (err) {
+    fail(`${name}: build`, err)
+    return // skip dev if build fails
+  }
+
+  // ── Verify build output exists ──
+  const distDirs = ['.next', '.output', 'dist', '.nuxt']
+  const hasOutput = distDirs.some(d => existsSync(join(dir, d)))
+  if (hasOutput) {
+    pass(`${name}: build output exists`)
+  } else {
+    fail(`${name}: build output`, new Error('No dist/.next/.output directory'))
+  }
+
+  // ── Dev mode (start server, fetch page, kill) ──
+  if (devCmd && devPort) {
+    // Kill anything on the port first
+    try { run(`lsof -ti:${devPort} | xargs kill -9 2>/dev/null || true`) } catch {}
+
+    // Start dev server in background using nohup + &
+    const pidFile = join(dir, '.dev-pid')
+    try {
+      run(`nohup sh -c '${devCmd}' > /dev/null 2>&1 & echo $! > ${pidFile}`, { cwd: dir, timeout: 5000 })
+    } catch { /* nohup may return before server is ready */ }
+
+    // Poll until server responds using curl (no Node event loop issues)
+    const startTime = Date.now()
+    let devBody = null
+    while (Date.now() - startTime < devTimeout) {
+      try {
+        devBody = run(`curl -s -m 2 http://localhost:${devPort}/`, { timeout: 5000 })
+        if (devBody.length > 0) break
+      } catch {
+        // Server not ready yet
+      }
+      run('sleep 1')
+    }
+
+    if (devBody && devBody.length > 0) {
+      pass(`${name}: dev server starts and responds`)
+      if (checkContent && checkContent(devBody)) {
+        pass(`${name}: dev page contains expected content`)
+      } else if (checkContent) {
+        fail(`${name}: dev page content`, new Error('Content check failed'))
+      }
+    } else {
+      fail(`${name}: dev server`, new Error(`Not ready after ${devTimeout}ms`))
+    }
+
+    // Kill dev server by port
+    try { run(`lsof -ti:${devPort} | xargs kill -9 2>/dev/null || true`) } catch {}
+  }
+}
+
+// ── React SPA (Vite) ──
+await testExample('React SPA', join(ROOT, 'examples/react'), {
+  buildCmd: 'pnpm build',
+  devCmd: 'pnpm dev --port 4510',
+  devPort: 4510,
+  checkContent: (html) => html.includes('root') || html.includes('app'),
+})
+
+// ── Vue SPA (Vite) ──
+await testExample('Vue SPA', join(ROOT, 'examples/vue'), {
+  buildCmd: 'pnpm build',
+  devCmd: 'pnpm dev --port 4511',
+  devPort: 4511,
+  checkContent: (html) => html.includes('app'),
+})
+
+// ── Solid SPA (Vite) ──
+await testExample('Solid SPA', join(ROOT, 'examples/solid'), {
+  buildCmd: 'pnpm build',
+  devCmd: 'pnpm dev --port 4512',
+  devPort: 4512,
+  checkContent: (html) => html.includes('root') || html.includes('app'),
+})
+
+// ── Next.js (App Router) — build only, SSR dev is too slow for simulation ──
+await testExample('Next.js', join(ROOT, 'examples/nextjs'), {
+  buildCmd: 'pnpm build',
+})
+
+// ── React Router ──
+await testExample('React Router', join(ROOT, 'examples/react-router'), {
+  buildCmd: 'pnpm build',
+  devCmd: 'pnpm dev --port 4514',
+  devPort: 4514,
+  checkContent: (html) => html.includes('root') || html.includes('app'),
+})
+
+// ── TanStack Start — build only ──
+await testExample('TanStack Start', join(ROOT, 'examples/tanstack-start'), {
+  buildCmd: 'pnpm build',
+})
+
+// ── SolidStart — build only ──
+await testExample('SolidStart', join(ROOT, 'examples/solid-start'), {
+  buildCmd: 'pnpm build',
+})
+
+// ── Nuxt — build only ──
+await testExample('Nuxt', join(ROOT, 'examples/nuxt'), {
+  buildCmd: 'pnpm build',
+})
+
 // ── Cleanup ─────────────────────────────────────────────────────────────
 rmSync(packDir, { recursive: true, force: true })
 
@@ -433,3 +554,5 @@ if (failed === 0) {
   console.error(`${RED}${failed} of ${total} user simulation tests FAILED.${RESET}`)
   process.exit(1)
 }
+// Force exit — async dev server cleanup may leave dangling handles
+setTimeout(() => process.exit(failed > 0 ? 1 : 0), 1000)

@@ -1,6 +1,6 @@
 'use client'
 
-import { t, useI18n, msg } from '@fluenti/react'
+import { useI18n, msg } from '@fluenti/react'
 
 const ROLES = {
   admin: msg`Administrator`,
@@ -8,7 +8,7 @@ const ROLES = {
 }
 
 export default function Home() {
-  const { i18n, d, n, locale } = useI18n()
+  const { t, d, n, locale } = useI18n()
   const name = 'World'
   const count = 3
 
@@ -23,9 +23,9 @@ export default function Home() {
       <p data-testid="number">{n(1234.5)}</p>
 
       <div data-testid="msg-roles">
-        <span data-testid="msg-admin">{i18n.t(ROLES.admin)}</span>
+        <span data-testid="msg-admin">{t(ROLES.admin)}</span>
         {' / '}
-        <span data-testid="msg-user">{i18n.t(ROLES.user)}</span>
+        <span data-testid="msg-user">{t(ROLES.user)}</span>
       </div>
       <p data-testid="fallback-only">{t`This key only exists in English`}</p>
 
