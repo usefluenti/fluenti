@@ -1,5 +1,5 @@
 import { createFluenti } from '@fluenti/vue'
-import { interpolate } from '@fluenti/core/internal'
+import { interpolate } from '@fluenti/vue/components'
 
 const messages = {
   en: {

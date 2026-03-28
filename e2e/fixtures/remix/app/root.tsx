@@ -1,6 +1,6 @@
 import { Links, Meta, Outlet, Scripts, ScrollRestoration, Link } from '@remix-run/react'
 import { I18nProvider, t, useI18n } from '@fluenti/react'
-import { interpolate } from '@fluenti/react'
+import { interpolate } from '@fluenti/react/components'
 import { getDirection } from '@fluenti/core'
 import { useState } from 'react'
 import en from './locales/compiled/en.js'

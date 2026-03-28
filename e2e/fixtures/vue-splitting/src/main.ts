@@ -1,6 +1,6 @@
 import { createApp } from 'vue'
 import { createFluenti } from '@fluenti/vue'
-import { interpolate } from '@fluenti/vue'
+import { interpolate } from '@fluenti/vue/components'
 import App from './App.vue'
 import router from './router'
 import en from './locales/compiled/en.js'

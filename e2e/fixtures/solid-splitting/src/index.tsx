@@ -1,6 +1,6 @@
 import { render } from 'solid-js/web'
 import { I18nProvider } from '@fluenti/solid'
-import { interpolate } from '@fluenti/solid'
+import { interpolate } from '@fluenti/solid/components'
 import en from './locales/compiled/en.js'
 import { App } from './App'
 
