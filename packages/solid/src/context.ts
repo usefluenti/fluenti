@@ -167,6 +167,7 @@ export function createFluentiContext(config: FluentiCoreConfig | FluentiConfig):
   if (config.missing !== undefined) coreConfig.missing = config.missing
   if (i18nConfig.diagnostics !== undefined) coreConfig.diagnostics = i18nConfig.diagnostics as FluentiCoreConfigFull['diagnostics']
   if (i18nConfig.interpolate !== undefined) coreConfig.interpolate = i18nConfig.interpolate
+  coreConfig.devWarnings = coreConfig.devWarnings ?? (typeof process !== 'undefined' && process.env?.['NODE_ENV'] === 'development')
   const i18n = createFluentiCore(coreConfig)
 
   function t(strings: TemplateStringsArray, ...exprs: unknown[]): LocalizedString

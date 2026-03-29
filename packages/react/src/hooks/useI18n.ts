@@ -20,3 +20,15 @@ export function useI18n(): FluentiContext {
   }
   return ctx
 }
+
+/**
+ * Shorthand hook that returns only the current locale string.
+ *
+ * @example
+ * ```tsx
+ * const locale = useLocale() // 'en'
+ * ```
+ */
+export function useLocale(): string {
+  return useI18n().locale
+}

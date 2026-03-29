@@ -157,6 +157,7 @@ export function createFluenti(config: FluentiConfig): FluentiInstance {
     if (missing !== undefined) cfg.missing = missing
     if (diagnostics !== undefined) cfg.diagnostics = diagnostics as Parameters<typeof createFluentiCore>[0]['diagnostics']
     if (interpolate !== undefined) cfg.interpolate = interpolate
+    cfg.devWarnings = cfg.devWarnings ?? (typeof process !== 'undefined' && process.env?.['NODE_ENV'] === 'development')
     return createFluentiCore(cfg)
   }, [currentLocale, loadedMessages, fallbackLocale, fallbackChain, dateFormats, numberFormats, missing, diagnostics, interpolate])
 

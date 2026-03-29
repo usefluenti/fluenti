@@ -151,12 +151,30 @@ function applyFluenti(
     startDevWatcher(watcherOpts)
   }
 
+  // Detect Next.js version to use correct Turbopack config key
+  // Next 15+: top-level `turbopack` key
+  // Next 14: `experimental.turbo` key
+  let nextMajor = 15
+  try {
+    const nextPkg = require('next/package.json') as { version?: string }
+    if (nextPkg.version) nextMajor = parseInt(nextPkg.version.split('.')[0]!, 10) || 15
+  } catch { /* next not resolvable at config time */ }
+
+  const turboConfig = mergeTurbopackConfig(
+    (nextMajor >= 15
+      ? nextConfig['turbopack']
+      : (nextConfig['experimental'] as Record<string, unknown> | undefined)?.['turbo']
+    ) as Record<string, unknown> | undefined,
+    { rules: fluentTurboRules, resolveAlias: fluentTurboAlias },
+  )
+
+  const turboKey = nextMajor >= 15
+    ? { turbopack: turboConfig }
+    : { experimental: { ...(nextConfig['experimental'] as Record<string, unknown> ?? {}), turbo: turboConfig } }
+
   return {
     ...nextConfig,
-    turbopack: mergeTurbopackConfig(
-      nextConfig['turbopack'] as Record<string, unknown> | undefined,
-      { rules: fluentTurboRules, resolveAlias: fluentTurboAlias },
-    ),
+    ...turboKey,
     webpack(config: WebpackConfig, options: WebpackOptions) {
       // Add fluenti loader
       const loaderEnforce = fluentConfig.loaderEnforce === undefined && !('loaderEnforce' in (fluentConfig as Record<string, unknown>))

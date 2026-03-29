@@ -168,11 +168,13 @@ export interface I18nMiddlewareConfig {
   }) => NextResponseInstance | void | undefined
 }
 
+/** Minimal request shape required by the middleware. Pass the real NextRequest for full type access in detectLocale. */
 type NextRequest = {
   nextUrl: { pathname: string; search: string; basePath?: string }
   url: string
   cookies: { get(name: string): { value: string } | undefined }
   headers: Headers
+  [key: string]: unknown  // Allow accessing .geo, .ip, etc. without type assertion
 }
 
 type NextResponseStatic<R extends NextResponseInstance = NextResponseInstance> = {

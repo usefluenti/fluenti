@@ -35,3 +35,8 @@ export function useI18n(): FluentiContext {
   }
   return ctx
 }
+
+/** Shorthand composable that returns only the reactive locale ref. */
+export function useLocale() {
+  return useI18n().locale
+}

@@ -33,6 +33,11 @@ interface NavigationLinkProps<P extends string = string, L extends string = stri
   href: P | (string & Record<never, never>)
   locale?: L
   children?: ReactNode
+  prefetch?: boolean | null
+  replace?: boolean
+  scroll?: boolean
+  target?: string
+  className?: string
   [key: string]: unknown
 }
 

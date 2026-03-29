@@ -1,6 +1,6 @@
 export { createFluenti, FLUENTI_KEY } from './plugin'
 export type { FluentiConfig, FluentiPlugin, FluentiContext } from './plugin'
-export { useI18n } from './use-i18n'
+export { useI18n, useLocale } from './use-i18n'
 export { t } from './compile-time-t'
 export { msg } from './msg'
 

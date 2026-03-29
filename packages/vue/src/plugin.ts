@@ -198,6 +198,7 @@ export function createFluenti(options: FluentiConfig): FluentiPlugin {
   if (options.missing !== undefined) coreConfig.missing = options.missing
   if (options.diagnostics !== undefined) coreConfig.diagnostics = options.diagnostics as Parameters<typeof createFluentiCore>[0]['diagnostics']
   if (options.interpolate !== undefined) coreConfig.interpolate = options.interpolate
+  coreConfig.devWarnings = coreConfig.devWarnings ?? (typeof process !== 'undefined' && process.env?.['NODE_ENV'] === 'development')
   const i18n = createFluentiCore(coreConfig)
 
   const locale = ref(options.locale)

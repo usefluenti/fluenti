@@ -11,7 +11,7 @@ export { I18nProvider } from './provider'
 export { I18nContext } from './context'
 
 // Hooks
-export { useI18n } from './hooks/useI18n'
+export { useI18n, useLocale } from './hooks/useI18n'
 export { t } from './compile-time-t'
 
 // Lazy messages

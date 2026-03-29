@@ -1,7 +1,7 @@
 export { createFluentiContext } from './context'
 export type { FluentiContext, FluentiConfig } from './context'
 export { I18nProvider } from './provider'
-export { useI18n } from './use-i18n'
+export { useI18n, useLocale } from './use-i18n'
 export { t } from './compile-time-t'
 export { msg } from './msg'
 
