@@ -1,6 +1,6 @@
 {
   "name": "@fluenti/vite-plugin",
-  "version": "0.4.0-rc.1",
+  "version": "0.4.0-rc.2",
   "type": "module",
   "description": "Vite plugin for Fluenti — build-time transforms, virtual modules, code splitting",
   "homepage": "https://fluenti.dev",
