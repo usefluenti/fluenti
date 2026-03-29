@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { useState } from 'react'
 import { render, screen, act, waitFor, cleanup } from '@testing-library/react'
-import { I18nProvider, useI18n } from '../src'
+import { I18nProvider, useI18n, useLocale } from '../src'
 import { getGlobalI18n, clearGlobalI18n } from '../src/global-registry'
 import { interpolate } from '../../core/src/interpolate'
 
@@ -813,5 +813,24 @@ describe('minimal provider config', () => {
     )
     // Without messages, the key itself (or a fallback) should be returned
     expect(screen.getByTestId('text').textContent).toBe('some.key')
+  })
+})
+
+describe('useLocale', () => {
+  afterEach(cleanup)
+
+  it('returns current locale string', () => {
+    function Display() {
+      const locale = useLocale()
+      return <span data-testid="locale">{locale}</span>
+    }
+
+    render(
+      <I18nProvider locale="ja" messages={{ ja: { hello: 'こんにちは' } }}>
+        <Display />
+      </I18nProvider>,
+    )
+
+    expect(screen.getByTestId('locale').textContent).toBe('ja')
   })
 })
