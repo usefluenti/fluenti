@@ -667,4 +667,421 @@ describe('createI18nMiddleware', () => {
       expect(setCookieCall![1]).toContain('NEXT_LOCALE=ja')
     })
   })
+
+  // ── localePrefix: 'never' ──────────────────────────────────────────────
+
+  describe("localePrefix: 'never'", () => {
+    const NEVER_CONFIG = { ...BASE_CONFIG, localePrefix: 'never' as const }
+
+    it('skips path locale detection — /en/about is NOT treated as locale', () => {
+      const mw = createI18nMiddleware(NEVER_CONFIG)
+      mw(makeRequest('/en/about'))
+
+      // Should pass through, not redirect or strip /en
+      expect(mockNextResponse.next).toHaveBeenCalled()
+      expect(mockNextResponse.redirect).not.toHaveBeenCalled()
+    })
+
+    it('uses detection chain for locale', () => {
+      const mw = createI18nMiddleware(NEVER_CONFIG)
+      mw(makeRequest('/about', { cookie: 'ja' }))
+
+      const res = mockNextResponse.next.mock.results[0]!.value as { headers: { set: ReturnType<typeof vi.fn> } }
+      expect(res.headers.set).toHaveBeenCalledWith(LOCALE_HEADER, 'ja')
+    })
+
+    it('with rewriteDefaultLocale rewrites to /{locale}{path}', () => {
+      const mw = createI18nMiddleware({ ...NEVER_CONFIG, rewriteDefaultLocale: true })
+      mw(makeRequest('/about', { cookie: 'ja' }))
+
+      expect(mockNextResponse.rewrite).toHaveBeenCalled()
+      const url = mockNextResponse.rewrite.mock.calls[0]![0] as URL
+      expect(url.pathname).toBe('/ja/about')
+    })
+
+    it('without rewriteDefaultLocale passes through', () => {
+      const mw = createI18nMiddleware(NEVER_CONFIG)
+      mw(makeRequest('/about'))
+
+      expect(mockNextResponse.next).toHaveBeenCalled()
+      expect(mockNextResponse.redirect).not.toHaveBeenCalled()
+      expect(mockNextResponse.rewrite).not.toHaveBeenCalled()
+    })
+
+    it('always sets LOCALE_HEADER', () => {
+      const mw = createI18nMiddleware(NEVER_CONFIG)
+      mw(makeRequest('/about'))
+
+      const res = mockNextResponse.next.mock.results[0]!.value as { headers: { set: ReturnType<typeof vi.fn> } }
+      expect(res.headers.set).toHaveBeenCalledWith(LOCALE_HEADER, 'en')
+    })
+
+    it('respects detectLocale custom function', () => {
+      const mw = createI18nMiddleware({
+        ...NEVER_CONFIG,
+        detectLocale: () => 'zh-CN',
+      })
+      mw(makeRequest('/about'))
+
+      const res = mockNextResponse.next.mock.results[0]!.value as { headers: { set: ReturnType<typeof vi.fn> } }
+      expect(res.headers.set).toHaveBeenCalledWith(LOCALE_HEADER, 'zh-CN')
+    })
+  })
+
+  // ── alternateLinks ─────────────────────────────────────────────────────
+
+  describe('alternateLinks', () => {
+    it('adds Link header with all locales when enabled', () => {
+      const mw = createI18nMiddleware({ ...BASE_CONFIG, alternateLinks: true })
+      mw(makeRequest('/about'))
+
+      const res = mockNextResponse.next.mock.results[0]!.value as { headers: { set: ReturnType<typeof vi.fn> } }
+      const linkCall = res.headers.set.mock.calls.find(([name]) => name === 'Link')
+      expect(linkCall).toBeTruthy()
+      const linkValue = linkCall![1] as string
+      expect(linkValue).toContain('hreflang="en"')
+      expect(linkValue).toContain('hreflang="ja"')
+      expect(linkValue).toContain('hreflang="zh-CN"')
+      expect(linkValue).toContain('hreflang="x-default"')
+    })
+
+    it('as-needed: sourceLocale has no prefix in alternate links', () => {
+      const mw = createI18nMiddleware({ ...BASE_CONFIG, alternateLinks: true })
+      mw(makeRequest('/about'))
+
+      const res = mockNextResponse.next.mock.results[0]!.value as { headers: { set: ReturnType<typeof vi.fn> } }
+      const linkCall = res.headers.set.mock.calls.find(([name]) => name === 'Link')
+      const linkValue = linkCall![1] as string
+      // en (source) should have /about, not /en/about
+      expect(linkValue).toContain('<http://localhost/about>; rel="alternate"; hreflang="en"')
+      // ja should have /ja/about
+      expect(linkValue).toContain('<http://localhost/ja/about>; rel="alternate"; hreflang="ja"')
+    })
+
+    it('always mode: all locales have prefix', () => {
+      const mw = createI18nMiddleware({ ...BASE_CONFIG, localePrefix: 'always', alternateLinks: true })
+      mw(makeRequest('/en/about'))
+
+      const res = mockNextResponse.next.mock.results[0]!.value as { headers: { set: ReturnType<typeof vi.fn> } }
+      const linkCall = res.headers.set.mock.calls.find(([name]) => name === 'Link')
+      const linkValue = linkCall![1] as string
+      expect(linkValue).toContain('/en/about')
+      expect(linkValue).toContain('/ja/about')
+      expect(linkValue).toContain('/zh-CN/about')
+    })
+
+    it('no Link header when alternateLinks is false (default)', () => {
+      const mw = createI18nMiddleware(BASE_CONFIG)
+      mw(makeRequest('/about'))
+
+      const res = mockNextResponse.next.mock.results[0]!.value as { headers: { set: ReturnType<typeof vi.fn> } }
+      const linkCall = res.headers.set.mock.calls.find(([name]) => name === 'Link')
+      expect(linkCall).toBeFalsy()
+    })
+  })
+
+  // ── pathnames ──────────────────────────────────────────────────────────
+
+  describe('pathnames', () => {
+    const PATHNAMES_CONFIG = {
+      ...BASE_CONFIG,
+      pathnames: {
+        '/about': { ja: '/about-ja', 'zh-CN': '/guanyu' },
+        '/contact': { ja: '/otoiawase' },
+      },
+    }
+
+    it('localized path rewrites to internal path', () => {
+      const mw = createI18nMiddleware(PATHNAMES_CONFIG)
+      mw(makeRequest('/ja/about-ja'))
+
+      expect(mockNextResponse.rewrite).toHaveBeenCalled()
+      const url = mockNextResponse.rewrite.mock.calls[0]![0] as URL
+      expect(url.pathname).toBe('/ja/about')
+    })
+
+    it('internal path redirects to localized path', () => {
+      const mw = createI18nMiddleware(PATHNAMES_CONFIG)
+      mw(makeRequest('/ja/about'))
+
+      expect(mockNextResponse.redirect).toHaveBeenCalled()
+      const url = mockNextResponse.redirect.mock.calls[0]![0] as URL
+      expect(url.pathname).toBe('/ja/about-ja')
+    })
+
+    it('unmapped paths pass through normally', () => {
+      const mw = createI18nMiddleware(PATHNAMES_CONFIG)
+      mw(makeRequest('/ja/other-page'))
+
+      expect(mockNextResponse.next).toHaveBeenCalled()
+    })
+
+    it('unmapped locale for a path passes through', () => {
+      const mw = createI18nMiddleware(PATHNAMES_CONFIG)
+      // /contact has ja mapping but not zh-CN
+      mw(makeRequest('/zh-CN/contact'))
+
+      expect(mockNextResponse.next).toHaveBeenCalled()
+    })
+
+    it('source locale paths are not mapped (no redirect loop)', () => {
+      const mw = createI18nMiddleware(PATHNAMES_CONFIG)
+      // /about has ja/zh-CN mappings but no en mapping → pass through for source locale
+      mw(makeRequest('/about'))
+
+      // Should not redirect (no en mapping)
+      expect(mockNextResponse.redirect).not.toHaveBeenCalled()
+    })
+  })
+
+  // ── beforeResponse ─────────────────────────────────────────────────────
+
+  describe('beforeResponse', () => {
+    it('called with correct context for redirect', () => {
+      const spy = vi.fn()
+      const mw = createI18nMiddleware({ ...BASE_CONFIG, beforeResponse: spy })
+      const req = makeRequest('/about', { cookie: 'ja' })
+      mw(req)
+
+      expect(spy).toHaveBeenCalledWith(expect.objectContaining({
+        locale: 'ja',
+        type: 'redirect',
+        request: req,
+      }))
+    })
+
+    it('called with correct context for pass-through', () => {
+      const spy = vi.fn()
+      const mw = createI18nMiddleware({ ...BASE_CONFIG, beforeResponse: spy })
+      mw(makeRequest('/about'))
+
+      expect(spy).toHaveBeenCalledWith(expect.objectContaining({
+        locale: 'en',
+        type: 'next',
+      }))
+    })
+
+    it('can modify response headers', () => {
+      const mw = createI18nMiddleware({
+        ...BASE_CONFIG,
+        beforeResponse: ({ response }) => {
+          response.headers.set('x-custom', 'test')
+        },
+      })
+      mw(makeRequest('/about'))
+
+      const res = mockNextResponse.next.mock.results[0]!.value as { headers: { set: ReturnType<typeof vi.fn> } }
+      expect(res.headers.set).toHaveBeenCalledWith('x-custom', 'test')
+    })
+
+    it('can replace response entirely', () => {
+      const customResponse = makeResponse()
+      const mw = createI18nMiddleware({
+        ...BASE_CONFIG,
+        beforeResponse: () => customResponse,
+      })
+      const result = mw(makeRequest('/about'))
+
+      expect(result).toBe(customResponse)
+    })
+
+    it('returning undefined uses default response', () => {
+      const mw = createI18nMiddleware({
+        ...BASE_CONFIG,
+        beforeResponse: () => undefined,
+      })
+      mw(makeRequest('/about'))
+
+      expect(mockNextResponse.next).toHaveBeenCalled()
+    })
+
+    it('type is rewrite for rewrite responses', () => {
+      const spy = vi.fn()
+      const mw = createI18nMiddleware({
+        ...BASE_CONFIG,
+        rewriteDefaultLocale: true,
+        beforeResponse: spy,
+      })
+      mw(makeRequest('/about'))
+
+      expect(spy).toHaveBeenCalledWith(expect.objectContaining({
+        type: 'rewrite',
+      }))
+    })
+  })
+
+  // ── cookieOptions ────────────────────────────────────────────────────────
+
+  describe('cookieOptions', () => {
+    it('includes domain in Set-Cookie header', () => {
+      const mw = createI18nMiddleware({
+        ...BASE_CONFIG,
+        setCookie: true,
+        cookieOptions: { domain: '.example.com' },
+      })
+      const req = makeRequest('/about', { acceptLanguage: 'ja' })
+      mw(req)
+
+      const res = mockNextResponse.redirect.mock.results[0]!.value as { headers: { set: ReturnType<typeof vi.fn> } }
+      const setCookieCall = res.headers.set.mock.calls.find(([name]: [string]) => name === 'set-cookie')
+      expect(setCookieCall![1]).toContain('domain=.example.com')
+    })
+
+    it('includes secure flag for https URLs', () => {
+      const mw = createI18nMiddleware({ ...BASE_CONFIG, setCookie: true })
+      const headers = new Headers()
+      headers.set('accept-language', 'ja')
+      const req = {
+        nextUrl: { pathname: '/about', search: '' },
+        url: 'https://example.com/about',
+        cookies: { get: () => undefined },
+        headers,
+      }
+      mw(req)
+
+      const res = mockNextResponse.redirect.mock.results[0]!.value as { headers: { set: ReturnType<typeof vi.fn> } }
+      const setCookieCall = res.headers.set.mock.calls.find(([name]: [string]) => name === 'set-cookie')
+      expect(setCookieCall![1]).toContain('secure')
+    })
+
+    it('uses custom sameSite and maxAge', () => {
+      const mw = createI18nMiddleware({
+        ...BASE_CONFIG,
+        setCookie: true,
+        cookieOptions: { sameSite: 'strict', maxAge: 3600 },
+      })
+      mw(makeRequest('/about', { acceptLanguage: 'ja' }))
+
+      const res = mockNextResponse.redirect.mock.results[0]!.value as { headers: { set: ReturnType<typeof vi.fn> } }
+      const setCookieCall = res.headers.set.mock.calls.find(([name]: [string]) => name === 'set-cookie')
+      expect(setCookieCall![1]).toContain('samesite=strict')
+      expect(setCookieCall![1]).toContain('max-age=3600')
+    })
+  })
+
+  // ── localeDetection: false ──────────────────────────────────────────────
+
+  describe('localeDetection: false', () => {
+    it('always uses sourceLocale when detection is disabled', () => {
+      const mw = createI18nMiddleware({
+        ...BASE_CONFIG,
+        localeDetection: false,
+      })
+      mw(makeRequest('/about', { cookie: 'ja', acceptLanguage: 'ja' }))
+
+      // Should NOT redirect to /ja (detection disabled)
+      expect(mockNextResponse.redirect).not.toHaveBeenCalled()
+      const res = mockNextResponse.next.mock.results[0]!.value as { headers: { set: ReturnType<typeof vi.fn> } }
+      expect(res.headers.set).toHaveBeenCalledWith(LOCALE_HEADER, 'en')
+    })
+
+    it('still respects locale from URL path', () => {
+      const mw = createI18nMiddleware({
+        ...BASE_CONFIG,
+        localeDetection: false,
+      })
+      mw(makeRequest('/ja/about'))
+
+      const res = mockNextResponse.next.mock.results[0]!.value as { headers: { set: ReturnType<typeof vi.fn> } }
+      expect(res.headers.set).toHaveBeenCalledWith(LOCALE_HEADER, 'ja')
+    })
+  })
+
+  // ── domains ─────────────────────────────────────────────────────────────
+
+  describe('domains', () => {
+    const DOMAIN_CONFIG = {
+      ...BASE_CONFIG,
+      domains: [
+        { domain: 'fr.example.com', defaultLocale: 'ja' },
+        { domain: 'example.co.jp', defaultLocale: 'ja' },
+      ],
+    }
+
+    function makeRequestWithHost(pathname: string, host: string) {
+      const headers = new Headers()
+      headers.set('host', host)
+      return {
+        nextUrl: { pathname, search: '' },
+        url: `http://${host}${pathname}`,
+        cookies: { get: () => undefined },
+        headers,
+      }
+    }
+
+    it('detects locale from domain', () => {
+      const mw = createI18nMiddleware(DOMAIN_CONFIG)
+      mw(makeRequestWithHost('/about', 'fr.example.com'))
+
+      // Should redirect to /ja/about (domain defaultLocale is ja)
+      expect(mockNextResponse.redirect).toHaveBeenCalled()
+      const url = mockNextResponse.redirect.mock.calls[0]![0] as URL
+      expect(url.pathname).toBe('/ja/about')
+    })
+
+    it('falls back to normal detection when domain not matched', () => {
+      const mw = createI18nMiddleware(DOMAIN_CONFIG)
+      mw(makeRequestWithHost('/about', 'example.com'))
+
+      // No domain match → source locale → pass through
+      expect(mockNextResponse.next).toHaveBeenCalled()
+    })
+  })
+
+  // ── dynamic pathnames ([slug], [...path]) ───────────────────────────────
+
+  describe('dynamic pathnames', () => {
+    const DYNAMIC_CONFIG = {
+      ...BASE_CONFIG,
+      pathnames: {
+        '/blog/[slug]': { ja: '/articles/[slug]' } as Record<string, string>,
+        '/docs/[...path]': { ja: '/documentation/[...path]' } as Record<string, string>,
+      },
+    }
+
+    it('rewrites dynamic localized path to internal path', () => {
+      const mw = createI18nMiddleware(DYNAMIC_CONFIG)
+      mw(makeRequest('/ja/articles/hello-world'))
+
+      expect(mockNextResponse.rewrite).toHaveBeenCalled()
+      const url = mockNextResponse.rewrite.mock.calls[0]![0] as URL
+      expect(url.pathname).toBe('/ja/blog/hello-world')
+    })
+
+    it('redirects internal dynamic path to localized form', () => {
+      const mw = createI18nMiddleware(DYNAMIC_CONFIG)
+      mw(makeRequest('/ja/blog/hello-world'))
+
+      expect(mockNextResponse.redirect).toHaveBeenCalled()
+      const url = mockNextResponse.redirect.mock.calls[0]![0] as URL
+      expect(url.pathname).toBe('/ja/articles/hello-world')
+    })
+
+    it('rewrites catch-all localized path', () => {
+      const mw = createI18nMiddleware(DYNAMIC_CONFIG)
+      mw(makeRequest('/ja/documentation/getting-started/install'))
+
+      expect(mockNextResponse.rewrite).toHaveBeenCalled()
+      const url = mockNextResponse.rewrite.mock.calls[0]![0] as URL
+      expect(url.pathname).toBe('/ja/docs/getting-started/install')
+    })
+  })
+
+  // ── getAlternateLinks callback ──────────────────────────────────────────
+
+  describe('getAlternateLinks callback', () => {
+    it('uses custom callback when provided', () => {
+      const mw = createI18nMiddleware({
+        ...BASE_CONFIG,
+        getAlternateLinks: ({ origin, locales }) =>
+          locales.map(l => ({ href: `${origin}/${l}`, hreflang: l })),
+      })
+      mw(makeRequest('/about'))
+
+      const res = mockNextResponse.next.mock.results[0]!.value as { headers: { set: ReturnType<typeof vi.fn> } }
+      const linkCall = res.headers.set.mock.calls.find(([name]: [string]) => name === 'Link')
+      expect(linkCall).toBeTruthy()
+      expect(linkCall![1]).toContain('hreflang="en"')
+    })
+  })
 })

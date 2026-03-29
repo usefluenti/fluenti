@@ -1,5 +1,6 @@
-import { join } from 'node:path'
+import { join, resolve } from 'node:path'
 import { createRequire } from 'node:module'
+import { mkdirSync } from 'node:fs'
 
 export interface DevRunnerOptions {
   cwd: string
@@ -27,6 +28,25 @@ export interface DevRunnerOptions {
  * falling back to shell-out — keeping the process boundary clean.
  */
 export async function runExtractCompile(options: DevRunnerOptions): Promise<void> {
+  // Ensure compileOutDir exists on first run (auto-init for zero-config DX)
+  try {
+    const projectRequire = createRequire(join(options.cwd, 'package.json'))
+    const { DEFAULT_FLUENTI_CONFIG, loadConfigSync } = projectRequire('@fluenti/core/config') as {
+      DEFAULT_FLUENTI_CONFIG: { compileOutDir: string; catalogDir: string }
+      loadConfigSync: (path?: string, cwd?: string) => { compileOutDir: string; catalogDir: string }
+    }
+    let config: { compileOutDir: string; catalogDir: string }
+    try {
+      config = loadConfigSync(undefined, options.cwd)
+    } catch {
+      config = DEFAULT_FLUENTI_CONFIG
+    }
+    mkdirSync(resolve(options.cwd, config.compileOutDir), { recursive: true })
+    mkdirSync(resolve(options.cwd, config.catalogDir), { recursive: true })
+  } catch {
+    // Non-critical — directories may already exist or config may not be available
+  }
+
   if (options.onBeforeCompile) {
     const result = await options.onBeforeCompile()
     if (result === false) return

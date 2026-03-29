@@ -9,6 +9,16 @@ import type { FluentiBuildConfig } from '@fluenti/core/internal'
 export interface WithFluentConfig {
   /** fluenti.config.ts path or inline config */
   config?: string | FluentiBuildConfig
+  /**
+   * Shorthand for `config: { locales }`. Specify target locales without a separate config file.
+   * Ignored if `config` is also provided.
+   *
+   * @example
+   * ```ts
+   * export default withFluenti({ locales: ['en', 'ja', 'zh-CN'] })({ reactStrictMode: true })
+   * ```
+   */
+  locales?: string[]
 
   // ---- Next.js-specific ----
 

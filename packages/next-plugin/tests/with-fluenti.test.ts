@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { existsSync } from 'node:fs'
+import { existsSync, mkdirSync } from 'node:fs'
 import { withFluenti } from '../src/with-fluenti'
 
 // Mock the generate-server-module to avoid filesystem operations
@@ -35,6 +35,7 @@ vi.mock('node:fs', async () => {
   return {
     ...actual,
     existsSync: vi.fn(() => true),
+    mkdirSync: vi.fn(),
   }
 })
 
@@ -252,20 +253,13 @@ describe('withFluenti', () => {
     )
   })
 
-  it('warns when compiled catalogs directory does not exist', () => {
+  it('auto-creates compiled catalogs directory when missing', () => {
     vi.mocked(existsSync).mockReturnValue(false)
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
     withFluenti()({})
 
-    expect(warnSpy).toHaveBeenCalledWith(
-      expect.stringContaining('[fluenti] Compiled catalogs not found'),
-    )
-    expect(warnSpy).toHaveBeenCalledWith(
-      expect.stringContaining('npx fluenti extract && npx fluenti compile'),
-    )
-
-    warnSpy.mockRestore()
+    // Should auto-create the directory instead of warning
+    expect(mkdirSync).toHaveBeenCalled()
     vi.mocked(existsSync).mockReturnValue(true)
   })
 
@@ -469,20 +463,13 @@ describe('withFluenti', () => {
 
   // --- Edge case tests: missing compiled catalogs, devAutoCompile, loader enforce ---
 
-  it('logs warning with instructions when compiled catalogs directory is missing', () => {
+  it('auto-creates compiled catalogs directory when missing (edge case)', () => {
     vi.mocked(existsSync).mockReturnValue(false)
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
     withFluenti()({})
 
-    expect(warnSpy).toHaveBeenCalledWith(
-      expect.stringContaining('Compiled catalogs not found'),
-    )
-    expect(warnSpy).toHaveBeenCalledWith(
-      expect.stringContaining('npx fluenti extract'),
-    )
-
-    warnSpy.mockRestore()
+    // Should auto-create instead of logging warning
+    expect(mkdirSync).toHaveBeenCalled()
     vi.mocked(existsSync).mockReturnValue(true)
   })
 

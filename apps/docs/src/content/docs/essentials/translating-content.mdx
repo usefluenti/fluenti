@@ -44,14 +44,13 @@ For the full v-t reference (interpolation, explicit IDs, pluralization, attribut
 
 ## t() Function
 
-The `t()` function is available in all frameworks. It looks up messages from the compiled catalog by hash:
+The `t()` function looks up messages from the compiled catalog by hash. For most translation-only usage, prefer `import { t }` directly. Use `useI18n()` when you also need `d()`, `n()`, `locale`, `setLocale`, or other runtime features.
 
 <Tabs>
 <TabItem label="Vue">
 ```vue
 <script setup>
-import { useI18n } from '@fluenti/vue'
-const { t } = useI18n()
+import { t } from '@fluenti/vue'
 </script>
 
 <template>
@@ -63,10 +62,9 @@ const { t } = useI18n()
 
 <TabItem label="React">
 ```tsx
-import { useI18n } from '@fluenti/react'
+import { t } from '@fluenti/react'
 
 function Greeting() {
-  const { t } = useI18n()
   const name = 'World'
   return (
     <div>
@@ -82,10 +80,9 @@ Prefer `` t`…` `` tagged template over `t()` — see the [Tagged Templates](#t
 
 <TabItem label="Solid">
 ```tsx
-import { useI18n } from '@fluenti/solid'
+import { t } from '@fluenti/solid'
 
 function Greeting() {
-  const { t } = useI18n()
   return (
     <div>
       <p>{t('Welcome to Fluenti')}</p>
@@ -96,6 +93,14 @@ function Greeting() {
 ```
 </TabItem>
 </Tabs>
+
+<Aside type="note">
+**Two ways to access `t`:**
+- **`import { t } from '@fluenti/…'`** — compile-time import, recommended for translation-only code. The build plugin transforms it at compile time.
+- **`const { t } = useI18n()`** — runtime hook, use when you also need `d()`, `n()`, `locale`, `setLocale`, `te()`, `tm()`, or other runtime features from the same destructure.
+
+Both produce the same translated output. Choose based on whether you need the full runtime API.
+</Aside>
 
 ### Compile-Time Transform
 

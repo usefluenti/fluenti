@@ -13,7 +13,7 @@
   <a href="https://www.npmjs.com/package/@fluenti/core"><img src="https://img.shields.io/npm/dm/@fluenti/core?color=6366f1&label=" alt="npm downloads" /></a>
   <a href="https://github.com/usefluenti/fluenti/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/usefluenti/fluenti/ci.yml?label=CI" alt="CI" /></a>
   <a href="https://github.com/usefluenti/fluenti/actions/workflows/e2e.yml"><img src="https://img.shields.io/github/actions/workflow/status/usefluenti/fluenti/e2e.yml?label=E2E" alt="E2E" /></a>
-  <img src="https://img.shields.io/badge/tests-3213%20unit%20%2B%20854%20e2e-4caf50" alt="tests" />
+  <img src="https://img.shields.io/badge/tests-3366%20unit%20%2B%20144%20e2e-4caf50" alt="tests" />
   <img src="https://img.shields.io/badge/coverage-97%25-4caf50" alt="coverage" />
   <a href="https://github.com/usefluenti/fluenti/blob/main/LICENSE"><img src="https://img.shields.io/github/license/usefluenti/fluenti?color=4338ca&label=" alt="license" /></a>
 </p>
@@ -55,27 +55,27 @@ Traditional i18n libraries parse messages at runtime — adding bundle weight an
 
 ```vue
 <script setup>
-import { useI18n } from '@fluenti/vue'
-const { t } = useI18n()
+import { t } from '@fluenti/vue'
+const count = 3
 </script>
 
 <template>
   <h1 v-t>Hello, world!</h1>
-  <p>{{ t('You have {count} items', { count: 3 }) }}</p>
+  <p>{{ t`You have ${count} items` }}</p>
 </template>
 ```
 
 **React**
 
 ```tsx
-import { useI18n } from '@fluenti/react'
+import { t } from '@fluenti/react'
 
 function App() {
-  const { t } = useI18n()
+  const count = 3
   return (
     <>
       <h1>{t`Hello, world!`}</h1>
-      <p>{t('You have {count} items', { count: 3 })}</p>
+      <p>{t`You have ${count} items`}</p>
     </>
   )
 }
@@ -84,14 +84,14 @@ function App() {
 **Solid**
 
 ```tsx
-import { useI18n } from '@fluenti/solid'
+import { t } from '@fluenti/solid'
 
 function App() {
-  const { t } = useI18n()
+  const count = 3
   return (
     <>
       <h1>{t`Hello, world!`}</h1>
-      <p>{t('You have {count} items', { count: 3 })}</p>
+      <p>{t`You have ${count} items`}</p>
     </>
   )
 }

@@ -1,4 +1,4 @@
-import { existsSync } from 'node:fs'
+import { existsSync, mkdirSync } from 'node:fs'
 import { execSync } from 'node:child_process'
 import { resolve, dirname, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -18,18 +18,16 @@ type NextConfig = Record<string, any>
  * Adds a webpack loader that transforms `t\`\`` and `t()` calls,
  * and generates a server module for RSC i18n.
  *
- * @example
+ * @example Minimal — no fluenti.config.ts needed
  * ```ts
- * // next.config.ts — function style (recommended)
  * import { withFluenti } from '@fluenti/next'
- * export default withFluenti()({ reactStrictMode: true })
+ * export default withFluenti({ locales: ['en', 'ja'] })({ reactStrictMode: true })
  * ```
  *
- * @example
+ * @example With fluenti.config.ts (advanced)
  * ```ts
- * // next.config.ts — direct style
  * import { withFluenti } from '@fluenti/next'
- * export default withFluenti({ reactStrictMode: true })
+ * export default withFluenti()({ reactStrictMode: true })
  * ```
  */
 export function withFluenti(fluentConfig?: WithFluentConfig): (nextConfig?: NextConfig) => NextConfig
@@ -50,7 +48,7 @@ export function withFluenti(
 
 function isFluentConfig(obj: Record<string, unknown>): boolean {
   const fluentOnlyKeys = [
-    'config', 'serverModule', 'serverModuleOutDir', 'resolveLocale',
+    'config', 'locales', 'serverModule', 'serverModuleOutDir', 'resolveLocale',
     'cookieName', 'loaderEnforce',
   ]
   return fluentOnlyKeys.some((key) => key in obj)
@@ -65,13 +63,10 @@ function applyFluenti(
   const fluentiConfig = resolved.fluentiConfig
   const compiledDir = fluentiConfig.compileOutDir
 
-  // Warn if compiled catalogs directory doesn't exist yet
+  // Auto-create compiled catalogs directory if missing
   const compiledDirAbs = resolve(projectRoot, compiledDir)
   if (!existsSync(compiledDirAbs)) {
-    console.warn(
-      `\n[fluenti] Compiled catalogs not found at ${compiledDir}.\n` +
-      `Run: npx fluenti extract && npx fluenti compile\n`,
-    )
+    mkdirSync(compiledDirAbs, { recursive: true })
   }
 
   // Generate server module for RSC

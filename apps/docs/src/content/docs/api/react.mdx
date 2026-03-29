@@ -51,6 +51,8 @@ import zhCN from './locales/compiled/zh-CN'
 
 Access the i18n context from the nearest provider. Throws if used outside an `<I18nProvider>`.
 
+Use `useI18n()` when you need the full runtime API (`d`, `n`, `locale`, `setLocale`, `te`, `tm`, etc.). For translation-only code, prefer [`import { t }`](#t-compile-time-import) instead.
+
 ```tsx
 import { useI18n } from '@fluenti/react'
 

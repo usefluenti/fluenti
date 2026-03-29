@@ -100,10 +100,9 @@ function Hero({ name }: { name: string }) {
 **Fluenti** — source text as the key:
 
 ```tsx
-import { useI18n } from '@fluenti/react'
+import { t } from '@fluenti/react'
 
 function Hero({ name }: { name: string }) {
-  const { t } = useI18n()
   return (
     <h1>{t`Welcome to our app`}</h1>
     <p>{t`Hello, ${name}!`}</p>
@@ -119,7 +118,7 @@ fluenti compile   # PO → optimized JS modules
 ## Migrating from next-intl
 
 Run `fluenti migrate --from next-intl` to convert:
-- `useTranslations()` → `useI18n()`
+- `useTranslations()` → `import { t }` (translation-only) or `useI18n()` (full API)
 - Namespaced `t('key')` → `` t`source text` ``
 - JSON catalogs → PO or JSON format
 - next-intl middleware → Fluenti middleware

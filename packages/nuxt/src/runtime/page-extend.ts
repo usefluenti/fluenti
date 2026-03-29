@@ -114,6 +114,9 @@ function prefixPage(
   if (page.children) {
     prefixed.children = page.children.map((child) => {
       const childOverride = routeOverrides?.[child.path]?.[locale]
+      // Skip cloning if no changes needed
+      if (!childOverride && !child.name) return child
+
       const prefixedChild: PageRoute = {
         ...child,
         ...(childOverride ? { path: childOverride } : {}),

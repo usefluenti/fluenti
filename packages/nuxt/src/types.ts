@@ -213,6 +213,15 @@ export interface FluentNuxtOptions {
    */
   globalMiddleware?: boolean
   /**
+   * Whether to register the page meta transform plugin.
+   *
+   * When enabled (default), `defineI18nRoute()` and `definePageMeta({ i18n: ... })`
+   * are automatically transformed. Set to `false` to disable the Vite transform.
+   *
+   * @default true
+   */
+  pageMetaTransform?: boolean
+  /**
    * Whether to register the `NuxtLinkLocale` component globally.
    *
    * Set to `false` to disable registration. You can still import it manually

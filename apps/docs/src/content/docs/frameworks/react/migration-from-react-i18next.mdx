@@ -1,0 +1,289 @@
+---
+title: "Migrating from react-i18next"
+description: "Step-by-step guide to migrate a React app from react-i18next to Fluenti."
+---
+
+import { Tabs, TabItem, Aside, Steps } from '@astrojs/starlight/components'
+
+This guide walks you through replacing react-i18next with Fluenti in a React application (Vite, Create React App, or any bundler).
+
+<Aside type="tip">
+For a quick automated migration, run `fluenti migrate --from react-i18next --write`. This converts your JSON namespaces to PO format and generates a `fluenti.config.ts`.
+</Aside>
+
+## API Mapping
+
+| react-i18next | Fluenti | Notes |
+|---------------|---------|-------|
+| `useTranslation()` | `import { t }` or `useI18n()` | Direct import for translation-only; `useI18n()` for full API |
+| `useTranslation('ns')` | `import { t }` or `useI18n()` | No namespaces needed (natural keys) |
+| `i18n.changeLanguage()` | `setLocale()` | From `useI18n()` |
+| `i18n.language` | `locale` | From `useI18n()` |
+| `<Trans>` | `<Trans>` | Similar component, different import |
+| `t('key')` | `` t`Source text` `` | Natural language keys |
+| `t('key', { count })` | `` t`You have ${count} items` `` | ICU plurals in source text |
+| `I18nextProvider` | `I18nProvider` | Simpler props |
+| `i18n.init()` | Plugin config | Build-time, not runtime |
+| `i18n.addResourceBundle()` | `loadMessages()` | Dynamic locale loading |
+| `withTranslation()(Component)` | `useI18n()` | HOC → Hook |
+| `i18n.exists('key')` | `te('key')` | Translation exists check |
+| Namespace loading | Code splitting | `splitting: 'dynamic'` |
+
+## Step 1: Install
+
+```bash
+pnpm remove i18next react-i18next i18next-browser-languagedetector i18next-http-backend
+pnpm add @fluenti/core @fluenti/react
+pnpm add -D @fluenti/cli @fluenti/vite-plugin
+```
+
+## Step 2: Convert messages
+
+react-i18next uses JSON with namespaces:
+```json
+// locales/en/common.json
+{
+  "welcome": "Welcome, {{name}}!",
+  "items_one": "{{count}} item",
+  "items_other": "{{count}} items"
+}
+```
+
+Fluenti uses PO format with ICU syntax:
+
+```bash
+fluenti migrate --from react-i18next --write
+```
+
+```po
+# locales/ja.po
+msgid "Welcome, {name}!"
+msgstr "{name}さん、ようこそ！"
+
+msgid "{count, plural, one {# item} other {# items}}"
+msgstr "{count, plural, other {#個のアイテム}}"
+```
+
+Key syntax differences:
+- `{{name}}` → `{name}` (single braces)
+- `_one` / `_other` suffixes → ICU `{count, plural, one {...} other {...}}`
+- Namespace files → single PO file per locale
+
+## Step 3: Replace Vite config
+
+<Tabs>
+<TabItem label="Before (react-i18next)">
+```ts
+// vite.config.ts — no i18n plugin needed
+export default defineConfig({
+  plugins: [react()],
+})
+```
+</TabItem>
+<TabItem label="After (Fluenti)">
+```ts
+import react from '@vitejs/plugin-react'
+import fluentiReact from '@fluenti/react/vite-plugin'
+
+export default defineConfig({
+  plugins: [
+    react(),
+    fluentiReact({ config: { locales: ['en', 'ja'] } }),
+  ],
+})
+```
+</TabItem>
+</Tabs>
+
+## Step 4: Replace initialization
+
+<Tabs>
+<TabItem label="Before (react-i18next)">
+```tsx
+// src/i18n.ts
+import i18n from 'i18next'
+import { initReactI18next } from 'react-i18next'
+import LanguageDetector from 'i18next-browser-languagedetector'
+import Backend from 'i18next-http-backend'
+
+i18n
+  .use(Backend)
+  .use(LanguageDetector)
+  .use(initReactI18next)
+  .init({
+    fallbackLng: 'en',
+    ns: ['common', 'home'],
+    defaultNS: 'common',
+    interpolation: { escapeValue: false },
+  })
+
+// src/main.tsx
+import './i18n'
+import { Suspense } from 'react'
+
+ReactDOM.createRoot(root).render(
+  <Suspense fallback="Loading...">
+    <App />
+  </Suspense>
+)
+```
+</TabItem>
+<TabItem label="After (Fluenti)">
+```tsx
+// src/main.tsx — no separate i18n init file needed
+import { I18nProvider } from '@fluenti/react'
+import en from './locales/compiled/en'
+
+ReactDOM.createRoot(root).render(
+  <I18nProvider
+    locale="en"
+    messages={{ en }}
+    loadMessages={(locale) => import(`./locales/compiled/${locale}.js`)}
+  >
+    <App />
+  </I18nProvider>
+)
+```
+</TabItem>
+</Tabs>
+
+## Step 5: Replace translation calls
+
+<Tabs>
+<TabItem label="Before (react-i18next)">
+```tsx
+import { useTranslation } from 'react-i18next'
+
+function Home() {
+  const { t } = useTranslation()
+  return (
+    <>
+      <h1>{t('welcome', { name: 'World' })}</h1>
+      <p>{t('items', { count: 3 })}</p>
+    </>
+  )
+}
+```
+</TabItem>
+<TabItem label="After (Fluenti)">
+```tsx
+import { t } from '@fluenti/react'
+
+function Home() {
+  const name = 'World'
+  const count = 3
+  return (
+    <>
+      <h1>{t`Welcome, ${name}!`}</h1>
+      <p>{t`${count} items`}</p>
+    </>
+  )
+}
+```
+</TabItem>
+</Tabs>
+
+## Step 6: Replace Trans component
+
+<Tabs>
+<TabItem label="Before (react-i18next)">
+```tsx
+import { Trans } from 'react-i18next'
+
+<Trans i18nKey="welcome">
+  Welcome to <strong>our site</strong>
+</Trans>
+```
+</TabItem>
+<TabItem label="After (Fluenti)">
+```tsx
+import { Trans } from '@fluenti/react/components'
+
+<Trans>
+  Welcome to <strong>our site</strong>
+</Trans>
+```
+</TabItem>
+</Tabs>
+
+## Step 7: Replace locale switching
+
+<Tabs>
+<TabItem label="Before (react-i18next)">
+```tsx
+import { useTranslation } from 'react-i18next'
+
+function LanguageSwitcher() {
+  const { i18n } = useTranslation()
+  return (
+    <button onClick={() => i18n.changeLanguage('ja')}>
+      日本語
+    </button>
+  )
+}
+```
+</TabItem>
+<TabItem label="After (Fluenti)">
+```tsx
+import { useI18n } from '@fluenti/react'
+
+function LanguageSwitcher() {
+  const { setLocale, preloadLocale } = useI18n()
+  return (
+    <button
+      onMouseEnter={() => preloadLocale('ja')}
+      onClick={() => setLocale('ja')}
+    >
+      日本語
+    </button>
+  )
+}
+```
+</TabItem>
+</Tabs>
+
+## Step 8: Replace namespace-based code splitting
+
+react-i18next uses namespaces for code splitting. Fluenti uses locale-based splitting instead:
+
+<Tabs>
+<TabItem label="Before (react-i18next)">
+```tsx
+// Namespace-based splitting
+const { t } = useTranslation('dashboard')
+
+// i18next backend loads /locales/en/dashboard.json on demand
+```
+</TabItem>
+<TabItem label="After (Fluenti)">
+```tsx
+// Locale-based splitting — all messages for a locale in one chunk
+// Configured in Vite plugin:
+// fluentiReact({ config: { locales: ['en', 'ja'], splitting: 'dynamic' } })
+
+import { t } from '@fluenti/react'
+// Messages loaded automatically when locale switches
+```
+</TabItem>
+</Tabs>
+
+## Step 9: Build and verify
+
+```bash
+fluenti extract --format po
+fluenti compile
+pnpm build
+```
+
+## Key Differences to Remember
+
+| Concept | react-i18next | Fluenti |
+|---------|---------------|---------|
+| Message keys | String IDs (`home.welcome`) | Source text (`` t`Welcome` ``) |
+| Interpolation | `{{variable}}` double braces | `{variable}` single braces (ICU) |
+| Plurals | `_one` / `_other` suffixes | ICU `{count, plural, ...}` |
+| Namespaces | File-based (`common.json`) | Not needed |
+| Initialization | Runtime `i18n.init()` | Build-time (Vite plugin) |
+| Backend | `i18next-http-backend` | `loadMessages` prop or `splitting: 'dynamic'` |
+| Detection | `i18next-browser-languagedetector` | Built into middleware or SSR detection |
+| Formatting | `i18next` format functions | Built-in `d()` and `n()` |

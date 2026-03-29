@@ -1,0 +1,232 @@
+---
+title: "Migrating from next-intl"
+description: "Step-by-step guide to migrate a Next.js App Router project from next-intl to Fluenti."
+---
+
+import { Tabs, TabItem, Aside, Steps } from '@astrojs/starlight/components'
+
+This guide walks you through replacing next-intl with Fluenti in a Next.js App Router project.
+
+<Aside type="tip">
+For a quick automated migration, run `fluenti migrate --from next-intl --write`. This converts your JSON messages to PO format and generates a `fluenti.config.ts`.
+</Aside>
+
+## API Mapping
+
+| next-intl | Fluenti | Notes |
+|-----------|---------|-------|
+| `createNavigation(routing)` | `createNavigation(routing)` | Same factory pattern |
+| `useTranslations()` | `import { t }` or `useI18n()` | Direct import for translation-only; `useI18n()` for full API |
+| `useLocale()` | `useI18n().locale` | Part of the unified hook |
+| `useFormatter()` | `useI18n().d` / `useI18n().n` | Built into the main hook |
+| `useTimeZone()` | — | Use `Intl.DateTimeFormat` directly |
+| `useMessages()` | — | Not needed (compiled at build time) |
+| `NextIntlClientProvider` | `I18nProvider` | Auto-generated server component |
+| `getTranslations()` | `getI18n()` | Server-side, async |
+| `createMiddleware()` | `createI18nMiddleware()` | Same concept, different config shape |
+| `t('key')` | `` t`Source text` `` | Natural language keys, not IDs |
+| `t.rich('key', { bold: (chunks) => ... })` | `<Trans>` component | Compile-time rich text |
+| `t.markup('key')` | `format()` | Raw ICU interpolation |
+
+## Step 1: Install
+
+```bash
+pnpm remove next-intl
+pnpm add @fluenti/core @fluenti/react @fluenti/next
+pnpm add -D @fluenti/cli
+```
+
+## Step 2: Convert messages
+
+next-intl uses JSON with nested keys:
+```json
+{
+  "HomePage": {
+    "title": "Welcome to {name}",
+    "items": "You have {count, plural, one {# item} other {# items}}"
+  }
+}
+```
+
+Fluenti uses PO format with the source text as the key:
+
+```bash
+# Auto-convert
+fluenti migrate --from next-intl --write
+
+# Or manually create locales/en.po, locales/ja.po
+fluenti extract --format po
+```
+
+```po
+# locales/ja.po
+msgid "Welcome to {name}"
+msgstr "{name}へようこそ"
+
+msgid "{count, plural, one {# item} other {# items}}"
+msgstr "{count, plural, one {#個のアイテム} other {#個のアイテム}}"
+```
+
+## Step 3: Replace next.config.ts
+
+<Tabs>
+<TabItem label="Before (next-intl)">
+```ts
+import createNextIntlPlugin from 'next-intl/plugin'
+const withNextIntl = createNextIntlPlugin()
+export default withNextIntl({ reactStrictMode: true })
+```
+</TabItem>
+<TabItem label="After (Fluenti)">
+```ts
+import { withFluenti } from '@fluenti/next'
+export default withFluenti({ locales: ['en', 'ja'] })({ reactStrictMode: true })
+```
+</TabItem>
+</Tabs>
+
+## Step 4: Replace middleware
+
+<Tabs>
+<TabItem label="Before (next-intl)">
+```ts
+import createMiddleware from 'next-intl/middleware'
+import { routing } from './i18n/routing'
+
+export default createMiddleware(routing)
+
+export const config = {
+  matcher: ['/', '/(ja|en)/:path*']
+}
+```
+</TabItem>
+<TabItem label="After (Fluenti)">
+```ts
+import { NextResponse } from 'next/server'
+import { createI18nMiddleware } from '@fluenti/next/middleware'
+
+export default createI18nMiddleware({
+  NextResponse,
+  rewriteDefaultLocale: true,
+  alternateLinks: true,
+})
+
+export const config = {
+  matcher: ['/((?!_next|api|favicon).*)'],
+}
+```
+</TabItem>
+</Tabs>
+
+## Step 5: Replace providers
+
+<Tabs>
+<TabItem label="Before (next-intl)">
+```tsx
+// app/[locale]/layout.tsx
+import { NextIntlClientProvider } from 'next-intl'
+import { getMessages } from 'next-intl/server'
+
+export default async function Layout({ children, params }) {
+  const messages = await getMessages()
+  return (
+    <NextIntlClientProvider messages={messages}>
+      {children}
+    </NextIntlClientProvider>
+  )
+}
+```
+</TabItem>
+<TabItem label="After (Fluenti)">
+```tsx
+// app/[locale]/layout.tsx
+import { I18nProvider } from '@fluenti/next'
+
+export default async function Layout({ children, params }) {
+  const { locale } = await params
+  return (
+    <I18nProvider locale={locale}>
+      {children}
+    </I18nProvider>
+  )
+}
+```
+</TabItem>
+</Tabs>
+
+## Step 6: Replace translation calls
+
+<Tabs>
+<TabItem label="Before (next-intl)">
+```tsx
+import { useTranslations } from 'next-intl'
+
+export function Home() {
+  const t = useTranslations('HomePage')
+  return (
+    <h1>{t('title', { name: 'Fluenti' })}</h1>
+  )
+}
+```
+</TabItem>
+<TabItem label="After (Fluenti)">
+```tsx
+import { t } from '@fluenti/react'
+
+export function Home() {
+  const name = 'Fluenti'
+  return (
+    <h1>{t`Welcome to ${name}`}</h1>
+  )
+}
+```
+</TabItem>
+</Tabs>
+
+## Step 7: Replace navigation
+
+<Tabs>
+<TabItem label="Before (next-intl)">
+```tsx
+import { Link, useRouter, usePathname } from '@/i18n/navigation'
+
+export function Nav() {
+  const pathname = usePathname()
+  const router = useRouter()
+  return <Link href="/about">About</Link>
+}
+```
+</TabItem>
+<TabItem label="After (Fluenti)">
+```tsx
+import { Link, useRouter, usePathname } from '@/lib/navigation'
+// Where @/lib/navigation.ts exports:
+// export const { Link, useRouter, usePathname } = createNavigation({ ... })
+
+export function Nav() {
+  const pathname = usePathname()
+  const router = useRouter()
+  return <Link href="/about">About</Link>
+}
+```
+</TabItem>
+</Tabs>
+
+## Step 8: Build and verify
+
+```bash
+fluenti extract --format po
+fluenti compile
+pnpm build
+```
+
+## Key Differences to Remember
+
+| Concept | next-intl | Fluenti |
+|---------|-----------|---------|
+| Message keys | Nested JSON keys (`HomePage.title`) | Source text (`` t`Welcome` ``) |
+| Message format | JSON files | PO files (gettext) |
+| Parsing | Runtime | Compile-time (zero runtime cost) |
+| Provider setup | Manual message loading | Auto-generated server component |
+| Rich text | `t.rich()` with render functions | `<Trans>` component |
+| Namespaces | `useTranslations('Namespace')` | Not needed (natural keys) |

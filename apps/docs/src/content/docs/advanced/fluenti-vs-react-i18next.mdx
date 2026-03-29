@@ -64,10 +64,9 @@ function Hero({ name }: { name: string }) {
 **Fluenti** — source text as the key:
 
 ```tsx
-import { useI18n } from '@fluenti/react'
+import { t } from '@fluenti/react'
 
 function Hero({ name }: { name: string }) {
-  const { t } = useI18n()
   return (
     <h1>{t`Welcome to our app`}</h1>
     <p>{t`Hello, ${name}!`}</p>
@@ -105,7 +104,7 @@ react-i18next is React-only. i18next has adapters for other frameworks, but they
 ## Migrating from react-i18next
 
 Run `fluenti migrate --from react-i18next` for AI-assisted migration that converts:
-- `useTranslation()` → `useI18n()`
+- `useTranslation()` → `import { t }` (translation-only) or `useI18n()` (full API)
 - `t('key')` → `` t`source text` ``
 - JSON catalogs → PO or JSON format
 

@@ -36,8 +36,9 @@ export interface GetLocalePathOptions {
    * Locale prefix strategy. Matches the middleware `localePrefix` setting.
    * - `'as-needed'` (default): source locale has no prefix (`/about` for en, `/fr/about` for fr)
    * - `'always'`: all locales get a prefix (`/en/about`, `/fr/about`)
+   * - `'never'`: no locale prefix in URLs
    */
-  localePrefix?: 'always' | 'as-needed'
+  localePrefix?: 'always' | 'as-needed' | 'never'
 }
 
 /**
@@ -77,6 +78,11 @@ export function getLocalePath(
     ? '/' + segments.slice(2).join('/')
     : pathname
 
+  // 'never' mode: no prefix for any locale
+  if (localePrefix === 'never') {
+    return pathWithoutLocale || '/'
+  }
+
   // In 'as-needed' mode, source locale gets no prefix
   if (localePrefix !== 'always' && locale === sourceLocale) {
     return pathWithoutLocale || '/'
@@ -101,7 +107,7 @@ export function useLocaleSwitcher(options?: {
    */
   cookieName?: string
   /** Locale prefix strategy — must match the middleware `localePrefix` option. */
-  localePrefix?: 'always' | 'as-needed'
+  localePrefix?: 'always' | 'as-needed' | 'never'
 }) {
   const router = useRouter()
   const pathname = usePathname()
@@ -139,3 +145,7 @@ export function useLocaleSwitcher(options?: {
     sourceLocale,
   }
 }
+
+// Re-export createNavigation from the same subpath for convenience
+export { createNavigation } from './create-navigation'
+export type { RoutingConfig } from './create-navigation'

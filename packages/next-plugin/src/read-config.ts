@@ -16,6 +16,9 @@ export function resolveConfig(
   if (overrides?.config && typeof overrides.config === 'object') {
     // Inline config — merge with defaults
     fluentiConfig = { ...DEFAULT_FLUENTI_CONFIG, ...overrides.config }
+  } else if (!overrides?.config && overrides?.locales) {
+    // Locales shorthand — build inline config with just locales
+    fluentiConfig = { ...DEFAULT_FLUENTI_CONFIG, locales: overrides.locales }
   } else {
     // string path or auto-discover
     fluentiConfig = loadConfigSync(

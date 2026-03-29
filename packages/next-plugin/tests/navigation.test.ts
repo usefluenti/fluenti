@@ -212,4 +212,23 @@ describe('useLocaleSwitcher', () => {
       expect(mockPush).toHaveBeenCalledWith('/fr/about')
     })
   })
+
+  describe("localePrefix: 'never'", () => {
+    it('getLocalePath returns path without prefix for any locale', () => {
+      expect(getLocalePath('/about', 'fr', { localePrefix: 'never' })).toBe('/about')
+      expect(getLocalePath('/about', 'en', { localePrefix: 'never' })).toBe('/about')
+      expect(getLocalePath('/about', 'ja', { localePrefix: 'never' })).toBe('/about')
+    })
+
+    it('getLocalePath strips existing prefix in never mode', () => {
+      expect(getLocalePath('/fr/about', 'en', { localePrefix: 'never', locales: ['en', 'fr'] })).toBe('/about')
+    })
+
+    it('useLocaleSwitcher navigates without locale prefix in never mode', async () => {
+      const useLocaleSwitcher = await getHook()
+      const { switchLocale } = useLocaleSwitcher({ localePrefix: 'never' })
+      switchLocale('fr')
+      expect(mockPush).toHaveBeenCalledWith('/about')
+    })
+  })
 })

@@ -30,10 +30,9 @@ export function createPageMetaTransform(): Plugin {
       //        →  definePageMeta({ i18nRoute: { locales: [...] } })
       // Transform: defineI18nRoute(false)
       //        →  definePageMeta({ i18nRoute: false })
-      const defineI18nRouteRegex = /defineI18nRoute\s*\(([^)]{1,5000})\)/g
-      if (defineI18nRouteRegex.test(transformed)) {
+      if (transformed.includes('defineI18nRoute')) {
         transformed = transformed.replace(
-          /defineI18nRoute\s*\(([^)]{1,5000})\)/g,
+          /defineI18nRoute\s*\(([^)]*?)\)/g,
           (_match, arg: string) => `definePageMeta({ i18nRoute: ${arg.trim()} })`,
         )
       }
@@ -44,9 +43,8 @@ export function createPageMetaTransform(): Plugin {
         // Simple regex for { i18n: ... } within definePageMeta
         // This handles the common case; complex nested objects may need
         // AST-based transformation in the future.
-        // Length limit on [^}] prevents catastrophic backtracking (ReDoS)
         transformed = transformed.replace(
-          /(definePageMeta\s*\(\s*\{[^}]{0,5000})\bi18n\s*:/g,
+          /(definePageMeta\s*\(\s*\{[^}]*?)\bi18n\s*:/g,
           '$1i18nRoute:',
         )
       }

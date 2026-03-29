@@ -1,4 +1,5 @@
 import { defineEventHandler, sendRedirect, getHeader, getCookie, getQuery } from 'h3'
+import { parseAcceptLanguage } from '../utils/parse-accept-language'
 
 /**
  * Nitro server middleware for locale-based redirects.
@@ -56,34 +57,22 @@ export default defineEventHandler((event) => {
   // Detect locale from various sources
   let detectedLocale = config.defaultLocale
 
-  // 1. Query parameter
+  // Detection chain: query → cookie → Accept-Language → default
   const queryKey = config.queryParamKey ?? 'locale'
-  const query = getQuery(event)
-  const queryLocale = query[queryKey]
-  // Use a flag: queryLocale may be a string array (e.g. ?locale=en&locale=ja)
-  // in which case it is truthy but not a valid match — must not skip cookie/header detection
-  let queryMatched = false
+  const queryLocale = getQuery(event)[queryKey]
+
   if (typeof queryLocale === 'string' && config.locales.includes(queryLocale)) {
     detectedLocale = queryLocale
-    queryMatched = true
-  }
-
-  // 2. Cookie
-  if (!queryMatched) {
+  } else {
     const cookieKey = config.detectBrowserLanguage?.cookieKey ?? 'fluenti_locale'
     const cookieLocale = getCookie(event, cookieKey)
     if (cookieLocale && config.locales.includes(cookieLocale)) {
       detectedLocale = cookieLocale
-    }
-  }
-
-  // 3. Accept-Language header
-  if (!queryMatched) {
-    const acceptLang = getHeader(event, 'accept-language')
-    if (acceptLang) {
-      const preferred = parseAcceptLanguage(acceptLang, config.locales)
-      if (preferred) {
-        detectedLocale = preferred
+    } else {
+      const acceptLang = getHeader(event, 'accept-language')
+      if (acceptLang) {
+        const preferred = parseAcceptLanguage(acceptLang, config.locales)
+        if (preferred) detectedLocale = preferred
       }
     }
   }
@@ -94,39 +83,6 @@ export default defineEventHandler((event) => {
 
   return sendRedirect(event, redirectUrl, 302)
 })
-
-/**
- * Parse Accept-Language header and find the best matching locale.
- */
-function parseAcceptLanguage(header: string, locales: string[]): string | null {
-  const entries = header
-    .split(',')
-    .map((part) => {
-      const [lang = '', q = ''] = part.trim().split(';q=')
-      const parsed = q ? parseFloat(q) : 1.0
-      const quality = Number.isFinite(parsed) ? Math.min(1, Math.max(0, parsed)) : 0
-      return {
-        lang: lang!.trim().toLowerCase(),
-        quality,
-      }
-    })
-    .filter((e) => e.quality > 0)
-    .sort((a, b) => b.quality - a.quality)
-
-  for (const entry of entries) {
-    // Exact match
-    const exact = locales.find((l) => l.toLowerCase() === entry.lang)
-    if (exact) return exact
-
-    // Prefix match (e.g., 'en' matches 'en-US')
-    const prefix = locales.find(
-      (l) => l.toLowerCase().startsWith(entry.lang) || entry.lang.startsWith(l.toLowerCase()),
-    )
-    if (prefix) return prefix
-  }
-
-  return null
-}
 
 /**
  * Read Fluenti runtime config from the event context.

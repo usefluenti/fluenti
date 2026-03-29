@@ -6,47 +6,34 @@
  * Uses `x-fluenti-locale` request header to pass locale from middleware to
  * server components — avoids `Set-Cookie` on every request (CDN-friendly).
  *
- * Cookie is only used to remember user preference (set by LocaleSwitcher).
- *
- * @example Minimal — locales/sourceLocale/cookieName auto-read from fluenti.config.ts
+ * @example Minimal
  * ```ts
- * // src/middleware.ts
  * import { NextResponse } from 'next/server'
  * import { createI18nMiddleware } from '@fluenti/next/middleware'
  *
  * export default createI18nMiddleware({ NextResponse })
- *
- * export const config = {
- *   matcher: ['/((?!_next|api|favicon).*)'],
- * }
  * ```
  *
- * @example With app/[locale]/ directory structure (rewriteDefaultLocale)
+ * @example With pathnames + alternateLinks + domains
  * ```ts
  * import { NextResponse } from 'next/server'
  * import { createI18nMiddleware } from '@fluenti/next/middleware'
  *
- * export default createI18nMiddleware({ NextResponse, rewriteDefaultLocale: true })
- * ```
- *
- * @example Composing with Clerk
- * ```ts
- * import { NextResponse } from 'next/server'
- * import { clerkMiddleware } from '@clerk/nextjs/server'
- * import { createI18nMiddleware } from '@fluenti/next/middleware'
- *
- * const i18nMiddleware = createI18nMiddleware({ NextResponse })
- *
- * export default clerkMiddleware(async (auth, req) => {
- *   await auth.protect()
- *   return i18nMiddleware(req)
+ * export default createI18nMiddleware({
+ *   NextResponse,
+ *   rewriteDefaultLocale: true,
+ *   alternateLinks: true,
+ *   pathnames: {
+ *     '/about': { fr: '/a-propos' },
+ *     '/blog/[slug]': { fr: '/articles/[slug]' },
+ *   },
+ *   domains: [
+ *     { domain: 'fr.example.com', defaultLocale: 'fr' },
+ *   ],
  * })
  * ```
  */
 
-// Auto-generated config values are resolved at Next.js build time via withFluenti's
-// webpack/Turbopack alias: @fluenti/next/i18n-config → .fluenti/i18n-config.js
-// This import is kept external (not bundled by tsup) so the alias can take effect.
 import {
   locales as _configLocales,
   sourceLocale as _configSourceLocale,
@@ -55,6 +42,33 @@ import {
 
 /** Header name used to pass resolved locale from middleware to RSC */
 export const LOCALE_HEADER = 'x-fluenti-locale'
+
+export interface CookieOptions {
+  /** Cookie domain (e.g. '.example.com' for cross-subdomain) */
+  domain?: string
+  /** Secure flag (default: auto-detect from request URL) */
+  secure?: boolean
+  /** SameSite attribute (default: 'lax') */
+  sameSite?: 'lax' | 'strict' | 'none'
+  /** Max age in seconds (default: 31536000 = 1 year) */
+  maxAge?: number
+  /** Cookie path (default: '/') */
+  path?: string
+}
+
+export interface DomainConfig {
+  /** Domain hostname (e.g. 'fr.example.com') */
+  domain: string
+  /** Default locale for this domain */
+  defaultLocale: string
+  /** Optional subset of locales available on this domain */
+  locales?: string[]
+}
+
+export interface AlternateLinkEntry {
+  href: string
+  hreflang: string
+}
 
 export interface I18nMiddlewareConfig {
   /** Available locales. If omitted, reads from `fluenti.config.ts`. */
@@ -65,62 +79,93 @@ export interface I18nMiddlewareConfig {
   cookieName?: string
   /**
    * Locale prefix strategy:
-   * - `'always'`: all locales get a URL prefix (e.g. `/en/about`, `/fr/about`)
-   * - `'as-needed'`: source locale has no prefix, others do (e.g. `/about`, `/fr/about`)
+   * - `'always'`: all locales get a URL prefix
+   * - `'as-needed'`: source locale has no prefix, others do
+   * - `'never'`: no locale prefix in URLs; locale determined by detection chain
    *
    * Default: `'as-needed'`
    */
-  localePrefix?: 'always' | 'as-needed'
+  localePrefix?: 'always' | 'as-needed' | 'never'
   /**
-   * When true, bare paths for the source locale are internally rewritten to include
-   * the source locale prefix. Required when using `app/[locale]/` directory structure
-   * with `localePrefix: 'as-needed'`.
-   *
-   * Also changes the handling of explicit source-locale URLs (e.g. `/en/about`):
-   * instead of rewriting to `/about`, they are **redirected** to `/about` so the
-   * browser follows the canonical URL, which is then rewritten internally.
-   *
-   * Example: `GET /about` → internally rewritten to `/en/about` (URL stays `/about`)
-   * Example: `GET /en/about` → 302 redirect → `/about` → rewritten to `/en/about`
+   * When true, bare paths are internally rewritten to include the locale prefix.
+   * Required when using `app/[locale]/` directory structure.
    *
    * Default: `false`
    */
   rewriteDefaultLocale?: boolean
   /**
-   * When true, the detected locale is written to a `Set-Cookie` response header so the
-   * preference is persisted across requests (useful when locale is detected from
-   * `Accept-Language` rather than an existing cookie).
-   *
+   * When true, detected locale is persisted in a cookie.
    * Disabled by default to keep responses CDN-cacheable.
-   *
-   * The cookie is only written when the locale was **detected** (not read from the URL
-   * path), and only when it differs from the existing cookie value.
    */
   setCookie?: boolean
+  /** Fine-grained cookie configuration for multi-domain / secure deployments. */
+  cookieOptions?: CookieOptions
+  /**
+   * Set to false to disable automatic locale detection.
+   * Bare paths will always use `sourceLocale` instead of detecting from cookie / Accept-Language.
+   *
+   * Default: `true`
+   */
+  localeDetection?: boolean
   /**
    * Custom locale detection function. Called when no locale is present in the URL path.
-   * Return a locale string to override the default cookie → Accept-Language → default chain.
-   * Return `undefined` to fall through to built-in detection.
+   * Return a locale string to override the default chain, or `undefined` to fall through.
+   */
+  detectLocale?: (req: NextRequest) => string | undefined
+  /**
+   * Domain-based locale routing. Each domain maps to a default locale.
+   * Domain matching is checked before cookie/Accept-Language detection.
    *
-   * Useful for JWT-based preferences, subdomain detection, or any custom logic.
-   *
-   * @example Subdomain detection
+   * @example
    * ```ts
-   * detectLocale: (req) => {
-   *   const host = req.headers.get('host') ?? ''
-   *   if (host.startsWith('fr.')) return 'fr'
-   * }
+   * domains: [
+   *   { domain: 'fr.example.com', defaultLocale: 'fr' },
+   *   { domain: 'example.co.jp', defaultLocale: 'ja' },
+   * ]
    * ```
+   */
+  domains?: DomainConfig[]
+  /**
+   * Map internal paths to localized paths per locale.
+   * Supports dynamic segments: `[param]` and `[...slug]`.
    *
-   * @example JWT claim
+   * @example
    * ```ts
-   * detectLocale: (req) => {
-   *   const token = req.cookies.get('auth')?.value
-   *   return token ? parseLocaleFromJwt(token) : undefined
+   * pathnames: {
+   *   '/about': { fr: '/a-propos' },
+   *   '/blog/[slug]': { fr: '/articles/[slug]' },
    * }
    * ```
    */
-  detectLocale?: (req: NextRequest) => string | undefined
+  pathnames?: Record<string, Record<string, string>>
+  /**
+   * When true, adds `Link` response headers with `rel="alternate"` hreflang
+   * and `rel="canonical"` for SEO.
+   *
+   * Default: `false`
+   */
+  alternateLinks?: boolean
+  /**
+   * Custom function to build alternate link entries. Overrides default `alternateLinks` behavior.
+   * Return an array of `{ href, hreflang }` entries.
+   */
+  getAlternateLinks?: (context: {
+    pathname: string
+    locale: string
+    locales: string[]
+    origin: string
+    basePath: string
+  }) => AlternateLinkEntry[]
+  /**
+   * Called before the middleware returns a response.
+   * Modify headers, cookies, or return a replacement response.
+   */
+  beforeResponse?: (context: {
+    response: NextResponseInstance
+    request: NextRequest
+    locale: string
+    type: 'redirect' | 'rewrite' | 'next'
+  }) => NextResponseInstance | void | undefined
 }
 
 type NextRequest = {
@@ -130,10 +175,10 @@ type NextRequest = {
   headers: Headers
 }
 
-type NextResponseStatic = {
-  redirect(url: URL): NextResponseInstance
-  rewrite(url: URL, init?: Record<string, unknown>): NextResponseInstance
-  next(init?: Record<string, unknown>): NextResponseInstance
+type NextResponseStatic<R extends NextResponseInstance = NextResponseInstance> = {
+  redirect(url: URL): R
+  rewrite(url: URL, init?: Record<string, unknown>): R
+  next(init?: Record<string, unknown>): R
 }
 
 type NextResponseInstance = {
@@ -142,19 +187,10 @@ type NextResponseInstance = {
 
 /**
  * Create an i18n middleware function for Next.js.
- *
- * Requires `NextResponse` to be passed in because the middleware module runs
- * in Next.js Edge Runtime where `require('next/server')` is not available.
- *
- * @example
- * ```ts
- * import { NextResponse } from 'next/server'
- * import { createI18nMiddleware } from '@fluenti/next/middleware'
- *
- * export default createI18nMiddleware({ NextResponse })
- * ```
  */
-export function createI18nMiddleware(config: I18nMiddlewareConfig & { NextResponse: NextResponseStatic }) {
+export function createI18nMiddleware<R extends NextResponseInstance = NextResponseInstance>(
+  config: I18nMiddlewareConfig & { NextResponse: NextResponseStatic<R> },
+) {
   const { NextResponse } = config
   const resolvedLocales: string[] = config.locales ?? _configLocales
   const resolvedSourceLocale: string = config.sourceLocale ?? _configSourceLocale
@@ -162,153 +198,218 @@ export function createI18nMiddleware(config: I18nMiddlewareConfig & { NextRespon
   const localePrefix = config.localePrefix ?? 'as-needed'
   const rewriteDefaultLocale = config.rewriteDefaultLocale ?? false
   const setCookieEnabled = config.setCookie ?? false
+  const cookieOpts: CookieOptions = config.cookieOptions ?? {}
+  const localeDetectionEnabled = config.localeDetection ?? true
+  const alternateLinksEnabled = config.alternateLinks ?? false
+  const pathnamesMap = config.pathnames
+  const domainsConfig = config.domains
+  const beforeResponse = config.beforeResponse
 
-  return function i18nMiddleware(request: NextRequest) {
+  function finalizeResponse(
+    response: R,
+    request: NextRequest,
+    locale: string,
+    type: 'redirect' | 'rewrite' | 'next',
+    pathLocale: string | null,
+  ): R {
+    response.headers.set(LOCALE_HEADER, locale)
+    if (setCookieEnabled) {
+      maybeSetCookie(response, request, locale, cookieName, pathLocale, cookieOpts)
+    }
+    if (alternateLinksEnabled || config.getAlternateLinks) {
+      const linkHeader = config.getAlternateLinks
+        ? buildCustomAlternateLinks(config.getAlternateLinks, request, locale, resolvedLocales)
+        : buildAlternateLinks(request, resolvedLocales, resolvedSourceLocale, localePrefix, request.nextUrl.basePath ?? '', pathnamesMap)
+      response.headers.set('Link', linkHeader)
+    }
+    if (beforeResponse) {
+      const replacement = beforeResponse({ response, request, locale, type })
+      if (replacement) return replacement as R
+    }
+    return response
+  }
+
+  return function i18nMiddleware(request: NextRequest): R {
     const locales = resolvedLocales
     const sourceLocale = resolvedSourceLocale
     const { pathname, search } = request.nextUrl
     const basePath = request.nextUrl.basePath ?? ''
 
-    // Extract locale from URL path (case-insensitive — /ZH-CN → zh-CN)
-    // Note: request.nextUrl.pathname already strips basePath (Next.js behavior)
+    // Extract locale from URL path ('never' mode skips this)
     const segments = pathname.split('/')
     const firstSegment = segments[1] ?? ''
-    const pathLocale = findLocale(firstSegment, locales)
+    const pathLocale = localePrefix === 'never' ? null : findLocale(firstSegment, locales)
 
     // Determine the active locale
     let locale: string
 
     if (pathLocale) {
       locale = pathLocale
+    } else if (!localeDetectionEnabled) {
+      locale = sourceLocale
     } else {
-      // No locale in path — try custom detection first, then cookie → Accept-Language → default
+      // Detection chain: custom → domains → cookie → Accept-Language → default
       const custom = config.detectLocale?.(request)
-      locale =
-        custom !== undefined && findLocale(custom, locales) !== null
-          ? findLocale(custom, locales)!
-          : detectLocale(request, locales, sourceLocale, cookieName)
+      if (custom !== undefined && findLocale(custom, locales) !== null) {
+        locale = findLocale(custom, locales)!
+      } else if (domainsConfig) {
+        const domainLocale = detectFromDomain(request, domainsConfig, locales)
+        locale = domainLocale ?? detectLocale(request, locales, sourceLocale, cookieName)
+      } else {
+        locale = detectLocale(request, locales, sourceLocale, cookieName)
+      }
     }
 
-    // Build new request headers preserving originals (auth headers, etc.)
+    // Build request headers
     const requestHeaders = new Headers(request.headers)
     requestHeaders.set(LOCALE_HEADER, locale)
 
-    // Case 1: No locale in path → redirect to /{locale}{path}
-    // In 'always' mode: redirect all bare paths (including source locale)
-    // In 'as-needed' mode: only redirect non-source locales
-    if (!pathLocale && (localePrefix === 'always' || locale !== sourceLocale)) {
-      const redirectUrl = new URL(
-        `${basePath}/${locale}${pathname}${search}`,
-        request.url,
-      )
-      const response = NextResponse.redirect(redirectUrl)
-      response.headers.set(LOCALE_HEADER, locale)
-      maybeSetCookie(response, request, locale, cookieName, setCookieEnabled, pathLocale)
-      return response
-    }
-
-    // Case 2: as-needed + no prefix + source locale + rewriteDefaultLocale
-    // → internally rewrite to /{sourceLocale}{path} so Next.js matches [locale] segment
-    // Use `pathname` directly (preserves trailing slash for trailingSlash:true compat)
-    if (!pathLocale && locale === sourceLocale && rewriteDefaultLocale) {
-      const rewriteUrl = new URL(
-        `${basePath}/${sourceLocale}${pathname}${search}`,
-        request.url,
-      )
-      const response = NextResponse.rewrite(rewriteUrl, {
-        request: { headers: requestHeaders },
-      })
-      response.headers.set(LOCALE_HEADER, locale)
-      maybeSetCookie(response, request, locale, cookieName, setCookieEnabled, pathLocale)
-      return response
-    }
-
-    // Case 3: as-needed mode, source locale has explicit prefix → strip it
-    // rewriteDefaultLocale=false: rewrite to /about (flat app/about/ structure)
-    // rewriteDefaultLocale=true:  redirect to /about (browser re-requests, Case 2 rewrites)
-    if (localePrefix === 'as-needed' && pathLocale === sourceLocale) {
-      const pathWithoutLocale = ('/' + segments.slice(2).join('/')).replace(/\/+/g, '/')
+    // ── 'never' mode ──────────────────────────────────────────────────────
+    if (localePrefix === 'never') {
       if (rewriteDefaultLocale) {
-        const redirectUrl = new URL(
-          `${basePath}${pathWithoutLocale}${search}`,
-          request.url,
+        const rewriteUrl = new URL(`${basePath}/${locale}${pathname}${search}`, request.url)
+        return finalizeResponse(
+          NextResponse.rewrite(rewriteUrl, { request: { headers: requestHeaders } }),
+          request, locale, 'rewrite', null,
         )
-        const response = NextResponse.redirect(redirectUrl)
-        response.headers.set(LOCALE_HEADER, locale)
-        return response
       }
-      const rewriteUrl = new URL(
-        `${basePath}${pathWithoutLocale}${search}`,
-        request.url,
+      return finalizeResponse(
+        NextResponse.next({ request: { headers: requestHeaders } }),
+        request, locale, 'next', null,
       )
-      const response = NextResponse.rewrite(rewriteUrl, {
-        request: { headers: requestHeaders },
-      })
-      response.headers.set(LOCALE_HEADER, locale)
-      return response
     }
 
-    // Case 4: No prefix + source locale (rewriteDefaultLocale=false) → pass through
-    // Case 5: Non-source locale with correct prefix → pass through
-    const response = NextResponse.next({
-      request: { headers: requestHeaders },
-    })
-    response.headers.set(LOCALE_HEADER, locale)
-    maybeSetCookie(response, request, locale, cookieName, setCookieEnabled, pathLocale)
+    // ── Pathnames mapping ─────────────────────────────────────────────────
+    if (pathnamesMap && pathLocale) {
+      const pathWithoutLocale = normalizeSlashes('/' + segments.slice(2).join('/'))
+      const internalPath = resolveInternalPath(pathWithoutLocale, locale, pathnamesMap)
 
-    return response
+      if (internalPath) {
+        const rewriteUrl = new URL(`${basePath}/${locale}${internalPath}${search}`, request.url)
+        return finalizeResponse(
+          NextResponse.rewrite(rewriteUrl, { request: { headers: requestHeaders } }),
+          request, locale, 'rewrite', pathLocale,
+        )
+      }
+
+      const localizedPath = resolveLocalizedPath(pathWithoutLocale, locale, pathnamesMap)
+      if (localizedPath && localizedPath !== pathWithoutLocale) {
+        const redirectUrl = new URL(`${basePath}/${locale}${localizedPath}${search}`, request.url)
+        return finalizeResponse(
+          NextResponse.redirect(redirectUrl),
+          request, locale, 'redirect', pathLocale,
+        )
+      }
+    }
+
+    // ── Case 1: No locale in path → redirect ──────────────────────────────
+    if (!pathLocale && (localePrefix === 'always' || locale !== sourceLocale)) {
+      // If pathnames configured, redirect to localized path
+      let targetPath = pathname
+      if (pathnamesMap) {
+        const localized = resolveLocalizedPath(pathname, locale, pathnamesMap)
+        if (localized) targetPath = localized
+      }
+      const redirectUrl = new URL(`${basePath}/${locale}${targetPath}${search}`, request.url)
+      return finalizeResponse(
+        NextResponse.redirect(redirectUrl),
+        request, locale, 'redirect', pathLocale,
+      )
+    }
+
+    // ── Case 2: as-needed + source locale + rewriteDefaultLocale ──────────
+    if (!pathLocale && locale === sourceLocale && rewriteDefaultLocale) {
+      const rewriteUrl = new URL(`${basePath}/${sourceLocale}${pathname}${search}`, request.url)
+      return finalizeResponse(
+        NextResponse.rewrite(rewriteUrl, { request: { headers: requestHeaders } }),
+        request, locale, 'rewrite', pathLocale,
+      )
+    }
+
+    // ── Case 3: as-needed, source locale has explicit prefix → strip ──────
+    if (localePrefix === 'as-needed' && pathLocale === sourceLocale) {
+      const pathWithoutLocale = normalizeSlashes('/' + segments.slice(2).join('/'))
+      if (rewriteDefaultLocale) {
+        const redirectUrl = new URL(`${basePath}${pathWithoutLocale}${search}`, request.url)
+        return finalizeResponse(
+          NextResponse.redirect(redirectUrl),
+          request, locale, 'redirect', pathLocale,
+        )
+      }
+      const rewriteUrl = new URL(`${basePath}${pathWithoutLocale}${search}`, request.url)
+      return finalizeResponse(
+        NextResponse.rewrite(rewriteUrl, { request: { headers: requestHeaders } }),
+        request, locale, 'rewrite', pathLocale,
+      )
+    }
+
+    // ── Case 4/5: pass through ────────────────────────────────────────────
+    return finalizeResponse(
+      NextResponse.next({ request: { headers: requestHeaders } }),
+      request, locale, 'next', pathLocale,
+    )
   }
 }
 
-/**
- * Case-insensitive locale lookup. Returns the canonical form from the locales array,
- * or null if not found. Handles BCP 47 case variance (e.g. zh-cn → zh-CN).
- */
+// ── Helpers ────────────────────────────────────────────────────────────────
+
 function findLocale(candidate: string, locales: string[]): string | null {
   if (!candidate) return null
   const lower = candidate.toLowerCase()
   return locales.find(l => l.toLowerCase() === lower) ?? null
 }
 
-/**
- * Conditionally add a Set-Cookie header to persist the detected locale.
- * Only writes when setCookie is enabled, locale was not from URL path,
- * and cookie value differs from detected locale.
- */
+function normalizeSlashes(path: string): string {
+  return path.replace(/\/+/g, '/') || '/'
+}
+
 function maybeSetCookie(
   response: NextResponseInstance,
   request: NextRequest,
   locale: string,
   cookieName: string,
-  setCookie: boolean,
   pathLocale: string | null,
+  opts: CookieOptions,
 ): void {
-  if (!setCookie || pathLocale) return
+  if (pathLocale) return
   if (request.cookies.get(cookieName)?.value === locale) return
-  response.headers.set(
-    'set-cookie',
-    `${cookieName}=${encodeURIComponent(locale)};path=/;max-age=31536000;samesite=lax`,
-  )
+
+  const parts = [`${cookieName}=${encodeURIComponent(locale)}`]
+  parts.push(`path=${opts.path ?? '/'}`)
+  parts.push(`max-age=${opts.maxAge ?? 31536000}`)
+  parts.push(`samesite=${opts.sameSite ?? 'lax'}`)
+  if (opts.domain) parts.push(`domain=${opts.domain}`)
+  if (opts.secure ?? request.url.startsWith('https')) parts.push('secure')
+  response.headers.set('set-cookie', parts.join(';'))
 }
 
-/**
- * Detect locale from request: cookie → Accept-Language → default.
- * All comparisons are case-insensitive (BCP 47).
- */
+function detectFromDomain(
+  request: NextRequest,
+  domains: DomainConfig[],
+  locales: string[],
+): string | null {
+  const host = request.headers.get('host')?.split(':')[0] ?? ''
+  for (const d of domains) {
+    if (host === d.domain || host.endsWith('.' + d.domain)) {
+      const found = findLocale(d.defaultLocale, d.locales ?? locales)
+      if (found) return found
+    }
+  }
+  return null
+}
+
 function detectLocale(
   request: NextRequest,
   locales: string[],
   defaultLocale: string,
   cookieName: string,
 ): string {
-  // 1. Cookie (user preference) — case-insensitive
   const cookieLocale = request.cookies.get(cookieName)?.value
   if (cookieLocale) {
     const found = findLocale(cookieLocale, locales)
     if (found) return found
   }
 
-  // 2. Accept-Language header — case-insensitive
   const acceptLang = request.headers.get('accept-language')
   if (acceptLang) {
     for (const part of acceptLang.split(',')) {
@@ -324,6 +425,136 @@ function detectLocale(
     }
   }
 
-  // 3. Default
   return defaultLocale
+}
+
+function stripLocalePrefix(pathname: string, locales: string[]): string {
+  const segments = pathname.split('/')
+  const first = segments[1] ?? ''
+  if (findLocale(first, locales)) {
+    return normalizeSlashes('/' + segments.slice(2).join('/'))
+  }
+  return pathname
+}
+
+/** Match a pathname against a pattern with [param] and [...slug] segments. */
+function matchPattern(pattern: string, pathname: string): Record<string, string> | null {
+  const patternParts = pattern.split('/').filter(Boolean)
+  const pathParts = pathname.split('/').filter(Boolean)
+
+  const params: Record<string, string> = {}
+
+  for (let i = 0; i < patternParts.length; i++) {
+    const pp = patternParts[i]!
+    if (pp.startsWith('[...') && pp.endsWith(']')) {
+      // Catch-all: consume the rest
+      const key = pp.slice(4, -1)
+      params[key] = pathParts.slice(i).join('/')
+      return params
+    }
+    if (pp.startsWith('[') && pp.endsWith(']')) {
+      // Dynamic segment
+      if (i >= pathParts.length) return null
+      params[pp.slice(1, -1)] = pathParts[i]!
+      continue
+    }
+    // Static segment
+    if (i >= pathParts.length || pp !== pathParts[i]) return null
+  }
+
+  if (patternParts.length !== pathParts.length) return null
+  return params
+}
+
+/** Substitute params into a pattern. */
+function substituteParams(pattern: string, params: Record<string, string>): string {
+  return pattern.replace(/\[\.\.\.(\w+)\]|\[(\w+)\]/g, (_, catchAll, param) => {
+    const key = catchAll ?? param
+    return params[key] ?? ''
+  })
+}
+
+function resolveInternalPath(
+  localizedPath: string,
+  locale: string,
+  pathnames: Record<string, Record<string, string>>,
+): string | null {
+  for (const [internal, mapping] of Object.entries(pathnames)) {
+    const localized = mapping[locale]
+    if (!localized) continue
+    // Exact match
+    if (localized === localizedPath) return internal
+    // Pattern match
+    const params = matchPattern(localized, localizedPath)
+    if (params) return substituteParams(internal, params)
+  }
+  return null
+}
+
+function resolveLocalizedPath(
+  internalPath: string,
+  locale: string,
+  pathnames: Record<string, Record<string, string>>,
+): string | null {
+  for (const [internal, mapping] of Object.entries(pathnames)) {
+    const localized = mapping[locale]
+    if (!localized) continue
+    // Exact match
+    if (internal === internalPath) return localized
+    // Pattern match
+    const params = matchPattern(internal, internalPath)
+    if (params) return substituteParams(localized, params)
+  }
+  return null
+}
+
+function buildAlternateLinks(
+  request: NextRequest,
+  locales: string[],
+  sourceLocale: string,
+  localePrefix: 'always' | 'as-needed' | 'never',
+  basePath: string,
+  pathnames?: Record<string, Record<string, string>>,
+): string {
+  const origin = new URL(request.url).origin
+  const cleanPath = stripLocalePrefix(request.nextUrl.pathname, locales)
+
+  const links = locales.map(loc => {
+    let localePath: string
+    if (localePrefix === 'never') {
+      localePath = cleanPath
+    } else if (localePrefix === 'as-needed' && loc === sourceLocale) {
+      localePath = cleanPath
+    } else {
+      localePath = `/${loc}${cleanPath}`
+    }
+    if (pathnames) {
+      const mapped = resolveLocalizedPath(cleanPath, loc, pathnames)
+      if (mapped) {
+        localePath = localePrefix === 'never' || (localePrefix === 'as-needed' && loc === sourceLocale)
+          ? mapped
+          : `/${loc}${mapped}`
+      }
+    }
+    return `<${origin}${basePath}${localePath}>; rel="alternate"; hreflang="${loc}"`
+  })
+
+  // x-default
+  const defaultPath = localePrefix === 'always' ? `/${sourceLocale}${cleanPath}` : cleanPath
+  links.push(`<${origin}${basePath}${defaultPath}>; rel="alternate"; hreflang="x-default"`)
+
+  return links.join(', ')
+}
+
+function buildCustomAlternateLinks(
+  getAlternateLinks: NonNullable<I18nMiddlewareConfig['getAlternateLinks']>,
+  request: NextRequest,
+  locale: string,
+  locales: string[],
+): string {
+  const origin = new URL(request.url).origin
+  const cleanPath = stripLocalePrefix(request.nextUrl.pathname, locales)
+  const basePath = request.nextUrl.basePath ?? ''
+  const entries = getAlternateLinks({ pathname: cleanPath, locale, locales, origin, basePath })
+  return entries.map(e => `<${e.href}>; rel="alternate"; hreflang="${e.hreflang}"`).join(', ')
 }

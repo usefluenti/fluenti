@@ -1,5 +1,6 @@
 import { useRequestHeaders } from '#imports'
 import type { LocaleDetectContext } from '../../types'
+import { parseAcceptLanguage } from '../utils/parse-accept-language'
 
 /** Detect locale from Accept-Language header (SSR only) */
 export default function detectHeader(ctx: LocaleDetectContext): void {
@@ -8,7 +9,7 @@ export default function detectHeader(ctx: LocaleDetectContext): void {
   // Prefer pre-read header from plugin (hoisted before await)
   const acceptLang = ctx.acceptLanguage ?? readAcceptLanguage()
   if (acceptLang) {
-    const matched = negotiateLocale(acceptLang, ctx.locales)
+    const matched = parseAcceptLanguage(acceptLang, ctx.locales)
     if (matched) {
       ctx.setLocale(matched)
     }
@@ -22,23 +23,4 @@ function readAcceptLanguage(): string | undefined {
   } catch {
     return undefined
   }
-}
-
-function negotiateLocale(acceptLanguage: string, locales: string[]): string | null {
-  const preferred = acceptLanguage
-    .split(',')
-    .map((part) => {
-      const [lang, q] = part.trim().split(';q=')
-      const parsed = q ? parseFloat(q) : 1
-      return { lang: lang!.trim().toLowerCase(), q: Number.isFinite(parsed) ? parsed : 0 }
-    })
-    .sort((a, b) => b.q - a.q)
-
-  for (const { lang } of preferred) {
-    if (locales.includes(lang)) return lang
-    const prefix = lang.split('-')[0]!
-    if (locales.includes(prefix)) return prefix
-  }
-
-  return null
 }

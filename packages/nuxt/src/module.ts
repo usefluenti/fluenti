@@ -113,9 +113,11 @@ export default defineNuxtModule<FluentNuxtOptions>({
     }
 
     // --- Register definePageMeta({ i18n }) transform ---
-    nuxt.options.vite = nuxt.options.vite || {}
-    nuxt.options.vite.plugins = nuxt.options.vite.plugins || []
-    ;(nuxt.options.vite.plugins as unknown[]).push(createPageMetaTransform())
+    if (options.pageMetaTransform !== false) {
+      nuxt.options.vite = nuxt.options.vite || {}
+      nuxt.options.vite.plugins = nuxt.options.vite.plugins || []
+      ;(nuxt.options.vite.plugins as unknown[]).push(createPageMetaTransform())
+    }
 
     // --- Register runtime plugin ---
     addPlugin({

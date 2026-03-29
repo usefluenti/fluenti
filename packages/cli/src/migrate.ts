@@ -170,12 +170,58 @@ export function buildMigratePrompt(
   const sections: string[] = []
 
   sections.push(
-    `You are a migration assistant helping convert a ${library.framework} project from "${library.name}" to Fluenti (@fluenti).`,
+    `You are a migration tool converting a ${library.framework} project from "${library.name}" to Fluenti (@fluenti).`,
     '',
-    'Your task:',
-    '1. Generate a `fluenti.config.ts` file based on the existing i18n configuration',
-    '2. Convert each locale/translation file to Fluenti PO format',
-    '3. List the code changes needed (file by file) to migrate source code from the old API to Fluenti API',
+    'Tasks:',
+    '1. Generate a `fluenti.config.ts` based on the existing i18n configuration',
+    '2. Convert each locale/translation file to standard gettext PO format',
+    '3. Generate unified diff patches for every source file that needs changes',
+    '4. Generate install/uninstall commands',
+    '',
+    '=== TRANSLATION API RULES ===',
+    'Fluenti provides a compile-time `t` tagged template that does NOT require useI18n():',
+    '',
+    '  import { t } from \'@fluenti/react\'   // or @fluenti/vue, @fluenti/solid',
+    '  const name = "World"',
+    '  t`Hello, ${name}!`',
+    '',
+    'Use `import { t }` for ALL translation calls. Only use `useI18n()` when you need:',
+    '- `d()` / `n()` for date/number formatting',
+    '- `setLocale()` for locale switching',
+    '- `locale` for reading the current locale reactively',
+    '',
+    '=== SOURCE CODE REWRITING RULES ===',
+    'Imports:',
+    `- ${library.name}: remove all imports from "${library.name}" (and related packages)`,
+    `- Add: import { t } from '@fluenti/${library.framework === 'Vue' ? 'vue' : library.framework === 'Next.js' ? 'react' : library.framework.toLowerCase()}'`,
+    '- Only add useI18n import if d()/n()/setLocale is needed in that file',
+    '',
+    'Translation calls:',
+    '- t(\'key\') → t`Source text` (tagged template with the actual source text, not the key)',
+    '- t(\'key\', { name }) → t`Hello, ${name}` (interpolate directly in template)',
+    '- $t(\'key\') → t`Source text` (Vue template)',
+    '- Remove useI18n()/useTranslation()/useTranslations() destructuring if only t was used',
+    '',
+    'Components:',
+    '- <i18n-t keypath="key"> → <Trans>Source text</Trans>',
+    '- <Trans i18nKey="key"> → <Trans>Source text</Trans>',
+    '',
+    'ICU syntax conversion:',
+    '- {{variable}} (double braces) → {variable} (single braces)',
+    '- _one/_other suffixes → ICU {count, plural, one {...} other {...}}',
+    '- @:key references → inline the referenced text directly',
+    '- Pipe-separated plurals → ICU plural',
+    '',
+    '=== PO FORMAT RULES ===',
+    'Each PO file must have a standard header:',
+    '  msgid ""',
+    '  msgstr ""',
+    '  "Content-Type: text/plain; charset=UTF-8\\n"',
+    '  "Content-Transfer-Encoding: 8bit\\n"',
+    '  "Language: {locale}\\n"',
+    '',
+    'Message entries: msgid is the source text (English), msgstr is the translation.',
+    'Flatten nested JSON keys: "home.title" → use the actual source text as msgid.',
     '',
   )
 
@@ -219,26 +265,35 @@ export function buildMigratePrompt(
   sections.push(
     '',
     '=== OUTPUT FORMAT ===',
-    'Respond with the following sections, each starting with the exact header shown:',
+    'Output ONLY the following sections. No explanations, no commentary.',
     '',
     '### FLUENTI_CONFIG',
     '```ts',
-    '// The fluenti.config.ts content',
+    '// Complete fluenti.config.ts',
     '```',
     '',
     '### LOCALE_FILES',
-    'For each locale file, output:',
     '#### LOCALE: {locale_code}',
     '```po',
-    '// The PO file content',
+    '// Complete PO file with standard header',
     '```',
+    '(repeat for each locale)',
     '',
-    '### MIGRATION_STEPS',
-    'A numbered checklist of specific code changes needed, with before/after examples.',
+    '### SOURCE_PATCHES',
+    '#### FILE: {relative_file_path}',
+    '```diff',
+    '--- a/{file_path}',
+    '+++ b/{file_path}',
+    '@@ ... @@',
+    ' context line',
+    '-removed line',
+    '+added line',
+    '```',
+    '(repeat for each file that needs changes)',
     '',
     '### INSTALL_COMMANDS',
     '```bash',
-    '// The install and uninstall commands',
+    '// install + uninstall commands',
     '```',
   )
 
@@ -273,6 +328,7 @@ async function invokeAI(provider: AIProvider, prompt: string): Promise<string> {
 interface MigrateResult {
   config: string | undefined
   localeFiles: Array<{ locale: string; content: string }>
+  sourcePatches: Array<{ file: string; patch: string }>
   steps: string | undefined
   installCommands: string | undefined
 }
@@ -286,6 +342,7 @@ export function parseResponse(response: string): MigrateResult {
   const result: MigrateResult = {
     config: undefined,
     localeFiles: [],
+    sourcePatches: [],
     steps: undefined,
     installCommands: undefined,
   }
@@ -297,7 +354,7 @@ export function parseResponse(response: string): MigrateResult {
   }
 
   // Extract locale files
-  const localeSection = safeResponse.match(/### LOCALE_FILES([\s\S]*?)(?=### MIGRATION_STEPS|### INSTALL_COMMANDS|$)/)
+  const localeSection = safeResponse.match(/### LOCALE_FILES([\s\S]*?)(?=### SOURCE_PATCHES|### MIGRATION_STEPS|### INSTALL_COMMANDS|$)/)
   if (localeSection) {
     const localeRegex = /#### LOCALE:\s*(\S+)\s*\n```(?:po)?\n([\s\S]*?)```/g
     let match
@@ -309,7 +366,20 @@ export function parseResponse(response: string): MigrateResult {
     }
   }
 
-  // Extract migration steps
+  // Extract source patches (new format)
+  const patchSection = safeResponse.match(/### SOURCE_PATCHES([\s\S]*?)(?=### INSTALL_COMMANDS|$)/)
+  if (patchSection) {
+    const patchRegex = /#### FILE:\s*(\S+)\s*\n```(?:diff)?\n([\s\S]*?)```/g
+    let match
+    while ((match = patchRegex.exec(patchSection[1]!)) !== null) {
+      result.sourcePatches.push({
+        file: match[1]!,
+        patch: match[2]!.trim(),
+      })
+    }
+  }
+
+  // Extract migration steps (legacy format — still supported for backward compat)
   const stepsMatch = safeResponse.match(/### MIGRATION_STEPS\s*\n([\s\S]*?)(?=### INSTALL_COMMANDS|$)/)
   if (stepsMatch) {
     result.steps = stepsMatch[1]!.trim()
@@ -415,8 +485,33 @@ export async function runMigrate(options: MigrateOptions): Promise<void> {
     }
   }
 
-  // Display migration steps
-  if (result.steps) {
+  // Display or apply source patches
+  if (result.sourcePatches.length > 0) {
+    if (write) {
+      consola.log('')
+      consola.info(`Generated ${result.sourcePatches.length} source patch(es). Apply with:`)
+      for (const patch of result.sourcePatches) {
+        const patchPath = resolve(`.fluenti-migrate-${patch.file.replace(/[/\\]/g, '-')}.patch`)
+        const { writeFileSync } = await import('node:fs')
+        writeFileSync(patchPath, patch.patch, 'utf-8')
+        consola.success(`Patch written: ${patchPath}`)
+        consola.log(`  patch -p1 < ${patchPath}`)
+      }
+    } else {
+      for (const patch of result.sourcePatches) {
+        consola.log('')
+        consola.box({
+          title: `Patch: ${patch.file}`,
+          message: patch.patch.length > 800
+            ? patch.patch.slice(0, 800) + '\n... (use --write to save full patch)'
+            : patch.patch,
+        })
+      }
+    }
+  }
+
+  // Display migration steps (legacy format fallback)
+  if (result.steps && result.sourcePatches.length === 0) {
     consola.log('')
     consola.box({
       title: 'Migration Steps',
@@ -424,9 +519,9 @@ export async function runMigrate(options: MigrateOptions): Promise<void> {
     })
   }
 
-  if (!write && (result.config || result.localeFiles.length > 0)) {
+  if (!write && (result.config || result.localeFiles.length > 0 || result.sourcePatches.length > 0)) {
     consola.log('')
-    consola.info('Run with --write to save generated files to disk:')
+    consola.info('Run with --write to save generated files and patches to disk:')
     consola.log(`  fluenti migrate --from ${from} --write`)
   }
 }

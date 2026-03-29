@@ -141,7 +141,7 @@ describe('buildMigratePrompt', () => {
 
     expect(result).toContain('FLUENTI_CONFIG')
     expect(result).toContain('LOCALE_FILES')
-    expect(result).toContain('MIGRATION_STEPS')
+    expect(result).toContain('SOURCE_PATCHES')
     expect(result).toContain('INSTALL_COMMANDS')
   })
 })

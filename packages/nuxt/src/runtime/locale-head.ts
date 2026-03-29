@@ -61,14 +61,19 @@ export function buildLocaleHead(
   if (options?.addSeoAttributes) {
     const baseUrl = options.baseUrl ?? ''
 
+    // Memoize domain lookups to avoid repeated .find() calls
+    const domainMap = config.domains?.length
+      ? new Map(config.domains.map(d => [d.locale, d]))
+      : null
+
     // hreflang alternate links for each locale
     for (const loc of config.locales) {
       const locProps = config.localeProperties?.[loc]
       const locIso = locProps?.iso ?? loc
 
-      if (config.strategy === 'domains' && config.domains?.length) {
+      if (config.strategy === 'domains' && domainMap) {
         // For domain strategy, build absolute URLs using domain configs
-        const domainEntry = config.domains.find((d) => d.locale === loc)
+        const domainEntry = domainMap?.get(loc)
         if (domainEntry) {
           const protocol = baseUrl.startsWith('https') ? 'https' : 'http'
           head.link.push({
@@ -94,8 +99,8 @@ export function buildLocaleHead(
     }
 
     // x-default hreflang
-    if (config.strategy === 'domains' && config.domains?.length) {
-      const defaultDomain = config.domains.find((d) => d.locale === config.defaultLocale)
+    if (config.strategy === 'domains' && domainMap) {
+      const defaultDomain = domainMap?.get(config.defaultLocale)
       if (defaultDomain) {
         const protocol = baseUrl.startsWith('https') ? 'https' : 'http'
         head.link.push({
@@ -121,8 +126,8 @@ export function buildLocaleHead(
 
     // Canonical link tag (defaults to true when addSeoAttributes is enabled)
     if (options.addCanonical !== false) {
-      if (config.strategy === 'domains' && config.domains?.length) {
-        const domainEntry = config.domains.find((d) => d.locale === locale)
+      if (config.strategy === 'domains' && domainMap) {
+        const domainEntry = domainMap?.get(locale)
         if (domainEntry) {
           const protocol = baseUrl.startsWith('https') ? 'https' : 'http'
           head.link.push({
