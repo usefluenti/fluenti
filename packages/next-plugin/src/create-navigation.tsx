@@ -24,18 +24,10 @@
 
 import { createElement, forwardRef } from 'react'
 import type { ReactNode } from 'react'
+import { resolveLocalizedPath } from './routing'
+import type { RoutingConfig } from './routing'
 
-// ── Types ─────────────────────────────────────────────────────────────────
-
-export interface RoutingConfig<
-  L extends string = string,
-  P extends string = string,
-> {
-  locales: readonly L[]
-  sourceLocale: L
-  localePrefix?: 'always' | 'as-needed' | 'never'
-  pathnames?: Record<P, Partial<Record<L, string>>>
-}
+export type { RoutingConfig }
 
 interface NavigationLinkProps<P extends string = string, L extends string = string> {
   href: P | (string & Record<never, never>)
@@ -62,10 +54,10 @@ export function createNavigation<
   const { locales, sourceLocale, localePrefix = 'as-needed', pathnames } = routing
 
   function resolvePath(href: string, locale: string): string {
-    // Apply pathnames mapping if configured
+    // Apply pathnames mapping if configured (supports [param] and [...slug])
     let resolved = href
     if (pathnames) {
-      const mapped = (pathnames as Record<string, Record<string, string>>)[href]?.[locale]
+      const mapped = resolveLocalizedPath(href, locale, pathnames as Record<string, Record<string, string>>)
       if (mapped) resolved = mapped
     }
 

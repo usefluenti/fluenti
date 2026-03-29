@@ -69,6 +69,17 @@ function applyFluenti(
     mkdirSync(compiledDirAbs, { recursive: true })
   }
 
+  // Auto-detect app/[locale]/ directory structure
+  // If detected and rewriteDefaultLocale not explicitly set, enable it automatically
+  const appLocaleDir = resolve(projectRoot, 'app', '[locale]')
+  const srcAppLocaleDir = resolve(projectRoot, 'src', 'app', '[locale]')
+  if (existsSync(appLocaleDir) || existsSync(srcAppLocaleDir)) {
+    if (!('rewriteDefaultLocale' in (fluentConfig as Record<string, unknown>))) {
+      // Auto-enable rewriteDefaultLocale when app/[locale]/ is detected
+      (resolved as { _autoRewriteDefaultLocale?: boolean })._autoRewriteDefaultLocale = true
+    }
+  }
+
   // Generate server module for RSC
   const serverModulePath = generateServerModule(projectRoot, resolved)
 

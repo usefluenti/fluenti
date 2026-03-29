@@ -437,76 +437,9 @@ function stripLocalePrefix(pathname: string, locales: string[]): string {
   return pathname
 }
 
-/** Match a pathname against a pattern with [param] and [...slug] segments. */
-function matchPattern(pattern: string, pathname: string): Record<string, string> | null {
-  const patternParts = pattern.split('/').filter(Boolean)
-  const pathParts = pathname.split('/').filter(Boolean)
-
-  const params: Record<string, string> = {}
-
-  for (let i = 0; i < patternParts.length; i++) {
-    const pp = patternParts[i]!
-    if (pp.startsWith('[...') && pp.endsWith(']')) {
-      // Catch-all: consume the rest
-      const key = pp.slice(4, -1)
-      params[key] = pathParts.slice(i).join('/')
-      return params
-    }
-    if (pp.startsWith('[') && pp.endsWith(']')) {
-      // Dynamic segment
-      if (i >= pathParts.length) return null
-      params[pp.slice(1, -1)] = pathParts[i]!
-      continue
-    }
-    // Static segment
-    if (i >= pathParts.length || pp !== pathParts[i]) return null
-  }
-
-  if (patternParts.length !== pathParts.length) return null
-  return params
-}
-
-/** Substitute params into a pattern. */
-function substituteParams(pattern: string, params: Record<string, string>): string {
-  return pattern.replace(/\[\.\.\.(\w+)\]|\[(\w+)\]/g, (_, catchAll, param) => {
-    const key = catchAll ?? param
-    return params[key] ?? ''
-  })
-}
-
-function resolveInternalPath(
-  localizedPath: string,
-  locale: string,
-  pathnames: Record<string, Record<string, string>>,
-): string | null {
-  for (const [internal, mapping] of Object.entries(pathnames)) {
-    const localized = mapping[locale]
-    if (!localized) continue
-    // Exact match
-    if (localized === localizedPath) return internal
-    // Pattern match
-    const params = matchPattern(localized, localizedPath)
-    if (params) return substituteParams(internal, params)
-  }
-  return null
-}
-
-function resolveLocalizedPath(
-  internalPath: string,
-  locale: string,
-  pathnames: Record<string, Record<string, string>>,
-): string | null {
-  for (const [internal, mapping] of Object.entries(pathnames)) {
-    const localized = mapping[locale]
-    if (!localized) continue
-    // Exact match
-    if (internal === internalPath) return localized
-    // Pattern match
-    const params = matchPattern(internal, internalPath)
-    if (params) return substituteParams(localized, params)
-  }
-  return null
-}
+// Path resolution utilities imported from shared routing module
+// (bundled by tsup, safe for Edge Runtime)
+import { resolveInternalPath, resolveLocalizedPath } from './routing'
 
 function buildAlternateLinks(
   request: NextRequest,

@@ -146,6 +146,76 @@ export function useLocaleSwitcher(options?: {
   }
 }
 
-// Re-export createNavigation from the same subpath for convenience
+// Re-export createNavigation and routing utilities
 export { createNavigation } from './create-navigation'
-export type { RoutingConfig } from './create-navigation'
+export { defineRouting, resolveLocalizedPath } from './routing'
+export type { RoutingConfig } from './routing'
+
+// ── useAlternateLinks ─────────────────────────────────────────────────────
+
+export interface AlternateLink {
+  hreflang: string
+  href: string
+}
+
+/**
+ * Generate alternate link entries for SEO `<head>` tags.
+ *
+ * Returns an array of `{ hreflang, href }` entries for all configured locales
+ * plus `x-default`. Use in `<head>` for hreflang tags.
+ *
+ * @example
+ * ```tsx
+ * import { useAlternateLinks } from '@fluenti/next/navigation'
+ * import { routing } from '@/i18n/routing'
+ *
+ * export function Head() {
+ *   const links = useAlternateLinks({ routing, baseUrl: 'https://example.com' })
+ *   return (
+ *     <head>
+ *       {links.map(l => (
+ *         <link key={l.hreflang} rel="alternate" hreflang={l.hreflang} href={l.href} />
+ *       ))}
+ *     </head>
+ *   )
+ * }
+ * ```
+ */
+export function useAlternateLinks(options: {
+  routing: { locales: readonly string[]; sourceLocale: string; localePrefix?: 'always' | 'as-needed' | 'never'; pathnames?: Record<string, Record<string, string>> }
+  baseUrl?: string
+}): AlternateLink[] {
+  const { routing: r, baseUrl = '' } = options
+  const pathname = usePathname()
+  // Strip locale prefix from current path
+  const segments = pathname.split('/')
+  const firstSeg = segments[1] ?? ''
+  const isLocalePrefix = (r.locales as string[]).some(l => l.toLowerCase() === firstSeg.toLowerCase())
+  const cleanPath = isLocalePrefix ? '/' + segments.slice(2).join('/') || '/' : pathname
+
+  const links: AlternateLink[] = (r.locales as string[]).map(loc => {
+    let localePath = cleanPath
+    if (r.pathnames) {
+      const { resolveLocalizedPath: resolve } = require('./routing') as typeof import('./routing')
+      const mapped = resolve(cleanPath, loc, r.pathnames as Record<string, Record<string, string>>)
+      if (mapped) localePath = mapped
+    }
+
+    let href: string
+    if (r.localePrefix === 'never') {
+      href = `${baseUrl}${localePath}`
+    } else if (r.localePrefix !== 'always' && loc === r.sourceLocale) {
+      href = `${baseUrl}${localePath}`
+    } else {
+      href = `${baseUrl}/${loc}${localePath}`
+    }
+
+    return { hreflang: loc, href }
+  })
+
+  // x-default
+  const defaultPath = r.localePrefix === 'always' ? `${baseUrl}/${r.sourceLocale}${cleanPath}` : `${baseUrl}${cleanPath}`
+  links.push({ hreflang: 'x-default', href: defaultPath })
+
+  return links
+}

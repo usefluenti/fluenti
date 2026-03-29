@@ -21,6 +21,8 @@
  */
 export { withFluenti } from './with-fluenti'
 export type { WithFluentConfig, I18nProviderProps } from './types'
+export { defineRouting } from './routing'
+export type { RoutingConfig } from './routing'
 export { msg } from '@fluenti/react'
 
 // ── Runtime stubs ────────────────────────────────────────────────────
