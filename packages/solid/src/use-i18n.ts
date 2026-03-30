@@ -19,6 +19,6 @@ export function useI18n(): FluentiContext {
 }
 
 /** Shorthand hook that returns only the current locale accessor. */
-export function useLocale() {
+export function useLocale(): () => string {
   return useI18n().locale
 }

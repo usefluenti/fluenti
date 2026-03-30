@@ -70,11 +70,17 @@ export const SelectComp: Component<FluentiSelectProps> = (props) => {
   const { t } = useI18n()
 
   const content = () => {
+    const RESERVED_KEYS = new Set(['value', 'id', 'context', 'comment', 'options', 'other', 'tag', 'children', 'ref', 'class', 'className', 'style', 'classList', 'on', 'oncapture', 'use', 'prop'])
     const forms: Record<string, unknown> = props.options !== undefined
       ? { ...props.options, other: props.other }
       : {
         ...Object.fromEntries(
-          Object.entries(props).filter(([key]) => !['value', 'id', 'context', 'comment', 'options', 'other', 'tag'].includes(key)),
+          Object.entries(props).filter(([key]) =>
+            !RESERVED_KEYS.has(key)
+            && !key.startsWith('data-')
+            && !key.startsWith('aria-')
+            && !key.startsWith('on'),
+          ),
         ),
         other: props.other,
       }

@@ -124,7 +124,11 @@ export function createServerI18n(config: ServerI18nConfig): ServerI18n {
   let fallbackStore: RequestStore = { locale: null, instance: null }
 
   function getStore(): RequestStore {
-    return als.getStore() ?? fallbackStore
+    const store = als.getStore()
+    if (!store && typeof process !== 'undefined' && process.env?.['NODE_ENV'] === 'development') {
+      console.warn('[fluenti] Server i18n used without withLocale() — locale state is shared across requests. Use withLocale() for concurrent SSR safety.')
+    }
+    return store ?? fallbackStore
   }
 
   function setLocale(locale: string): void {
