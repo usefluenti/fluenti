@@ -124,7 +124,7 @@
     "next": "^16",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "typescript": "^5.9",
+    "typescript": "^6.0",
     "vite": "^8",
     "vite-plugin-dts": "^4",
     "vitest": "^4",
