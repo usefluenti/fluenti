@@ -10,7 +10,7 @@
     "@fluenti/cli": "workspace:*",
     "@fluenti/core": "workspace:*",
     "@fluenti/solid": "workspace:*",
-    "solid-js": "^1.8"
+    "solid-js": "^1.9"
   },
   "devDependencies": {
     "typescript": "^5.9",
