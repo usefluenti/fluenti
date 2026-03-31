@@ -13,9 +13,8 @@ describe('components-entry subpath', () => {
     expect(typeof NumberFormat).toBe('function')
   })
 
-  it('main entry does not export component values', () => {
-    // Main entry only re-exports types for components, not the runtime values
-    expect((mainExports as Record<string, unknown>).Trans).toBeUndefined()
+  it('main entry exports Trans but not other component values', () => {
+    expect((mainExports as Record<string, unknown>).Trans).toBeDefined()
     expect((mainExports as Record<string, unknown>).Plural).toBeUndefined()
     expect((mainExports as Record<string, unknown>).Select).toBeUndefined()
     expect((mainExports as Record<string, unknown>).DateTime).toBeUndefined()

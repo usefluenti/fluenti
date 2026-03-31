@@ -31,8 +31,11 @@ export type {
   NumberFormatOptions,
 } from './types'
 
-// Components moved to @fluenti/react/components:
-//   import { Trans, Plural, Select, DateTime, NumberFormat } from '@fluenti/react/components'
+// Trans is compile-time (no parser dependency) — safe to export from main entry
+export { Trans } from './components/Trans'
+
+// Plural, Select, DateTime, NumberFormat require @fluenti/react/components
+// (they pull in the ICU parser for runtime fallback)
 export type { FluentiTransProps } from './components/Trans'
 export type { FluentiPluralProps } from './components/Plural'
 export type { FluentiSelectProps } from './components/Select'
