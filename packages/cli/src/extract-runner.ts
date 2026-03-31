@@ -62,7 +62,7 @@ export async function runExtract(cwd: string, options?: RunExtractOptions): Prom
   const config = await loadConfig(undefined, cwd)
   const localeCodes = resolveLocaleCodes(config.locales)
 
-  const files = await fg(config.include, { cwd, ignore: config.exclude ?? [] })
+  const files = await fg(config.include, { cwd, ignore: config.exclude ?? [], absolute: false })
   const allMessages: ExtractedMessage[] = []
   const useCache = options?.useCache !== false
   const cache = useCache ? new ExtractCache(resolve(cwd, config.catalogDir), deriveProjectId(cwd)) : null

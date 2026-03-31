@@ -76,7 +76,7 @@ const extract = defineCommand({
     const localeCodes = resolveLocaleCodes(config.locales)
     consola.info(`Extracting messages from ${config.include.join(', ')}`)
 
-    const files = await fg(config.include, { ignore: config.exclude ?? [] })
+    const files = await fg(config.include, { ignore: config.exclude ?? [], absolute: false })
     const allMessages: ExtractedMessage[] = []
     const useCache = !(args['no-cache'] ?? false)
     const cache = useCache ? new ExtractCache(config.catalogDir, deriveProjectId(process.cwd())) : null
