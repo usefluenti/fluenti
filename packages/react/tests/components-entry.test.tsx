@@ -30,14 +30,13 @@ describe('components-entry subpath', () => {
     expect((NumberFormat as any).$$typeof).toBeDefined()
   })
 
-  it('main entry exports Trans but not other component values', () => {
-    // Trans is compile-time (no parser dep) — exported from main entry
+  it('main entry also exports all components', () => {
+    // All components available from main entry (tree-shaking removes unused ones)
     expect((mainExports as Record<string, unknown>).Trans).toBeDefined()
-    // Plural/Select/DateTime/NumberFormat require parser — only in /components
-    expect((mainExports as Record<string, unknown>).Plural).toBeUndefined()
-    expect((mainExports as Record<string, unknown>).Select).toBeUndefined()
-    expect((mainExports as Record<string, unknown>).DateTime).toBeUndefined()
-    expect((mainExports as Record<string, unknown>).NumberFormat).toBeUndefined()
+    expect((mainExports as Record<string, unknown>).Plural).toBeDefined()
+    expect((mainExports as Record<string, unknown>).Select).toBeDefined()
+    expect((mainExports as Record<string, unknown>).DateTime).toBeDefined()
+    expect((mainExports as Record<string, unknown>).NumberFormat).toBeDefined()
   })
 
   it('renders Trans component', () => {

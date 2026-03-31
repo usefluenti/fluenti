@@ -31,11 +31,14 @@ export type {
   NumberFormatOptions,
 } from './types'
 
-// Trans is compile-time (no parser dependency) — safe to export from main entry
+// Components — all available from main entry
+// Bundlers tree-shake unused components (and their parser deps) from the bundle
 export { Trans } from './components/Trans'
+export { Plural } from './components/Plural'
+export { Select } from './components/Select'
+export { DateTime } from './components/DateTime'
+export { NumberFormat } from './components/Number'
 
-// Plural, Select, DateTime, NumberFormat require @fluenti/react/components
-// (they pull in the ICU parser for runtime fallback)
 export type { FluentiTransProps } from './components/Trans'
 export type { FluentiPluralProps } from './components/Plural'
 export type { FluentiSelectProps } from './components/Select'

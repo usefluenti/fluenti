@@ -5,10 +5,13 @@ export { useI18n, useLocale } from './use-i18n'
 export { t } from './compile-time-t'
 export { msg } from './msg'
 
-// Trans is compile-time — safe to export from main entry
+// Components — all available from main entry
 export { Trans } from './trans'
+export { Plural } from './plural'
+export { SelectComp as Select } from './select'
+export { DateTime } from './components/DateTime'
+export { NumberFormat } from './components/NumberFormat'
 
-// Plural, Select, DateTime, NumberFormat require @fluenti/solid/components
 export type { FluentiTransProps } from './trans'
 export type { FluentiPluralProps } from './plural'
 export type { FluentiSelectProps } from './select'
