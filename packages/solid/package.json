@@ -1,6 +1,6 @@
 {
   "name": "@fluenti/solid",
-  "version": "0.4.0-rc.4",
+  "version": "0.5.0",
   "type": "module",
   "description": "SolidJS compile-time i18n — Trans/Plural/Select components, I18nProvider, useI18n",
   "homepage": "https://fluenti.dev",

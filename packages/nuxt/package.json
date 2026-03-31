@@ -1,6 +1,6 @@
 {
   "name": "@fluenti/nuxt",
-  "version": "0.4.0-rc.4",
+  "version": "0.5.0",
   "type": "module",
   "description": "Nuxt module for Fluenti — locale-prefixed routes, SEO helpers, auto locale detection",
   "homepage": "https://fluenti.dev",
