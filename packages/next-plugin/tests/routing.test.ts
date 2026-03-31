@@ -77,6 +77,15 @@ describe('resolveLocalizedPath', () => {
   it('returns null for unknown path', () => {
     expect(resolveLocalizedPath('/contact', 'fr', pathnames)).toBeNull()
   })
+
+  it('prefers exact static routes over generic dynamic routes', () => {
+    const overlapping = {
+      '/blog/[slug]': { fr: '/articles/[slug]' },
+      '/blog/settings': { fr: '/reglages' },
+    }
+
+    expect(resolveLocalizedPath('/blog/settings', 'fr', overlapping)).toBe('/reglages')
+  })
 })
 
 describe('resolveInternalPath', () => {
@@ -95,5 +104,14 @@ describe('resolveInternalPath', () => {
 
   it('returns null for unknown localized path', () => {
     expect(resolveInternalPath('/unknown', 'fr', pathnames)).toBeNull()
+  })
+
+  it('prefers exact static localized routes over generic dynamic routes', () => {
+    const overlapping = {
+      '/blog/[slug]': { fr: '/articles/[slug]' },
+      '/blog/settings': { fr: '/reglages' },
+    }
+
+    expect(resolveInternalPath('/reglages', 'fr', overlapping)).toBe('/blog/settings')
   })
 })

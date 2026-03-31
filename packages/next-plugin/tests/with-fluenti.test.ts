@@ -563,7 +563,7 @@ describe('buildAutoCompile — execSync', () => {
     }
   })
 
-  it('swallows execSync errors gracefully (CLI not installed)', async () => {
+  it('throws when production auto-compile fails', async () => {
     const { execSync } = await import('node:child_process')
     vi.mocked(execSync).mockImplementation(() => { throw new Error('npx: command not found') })
 
@@ -573,9 +573,8 @@ describe('buildAutoCompile — execSync', () => {
     process.argv = ['node', 'next', 'build']
 
     try {
-      // Should not throw
       const wrapper = withFluenti()
-      expect(() => wrapper({})).not.toThrow()
+      expect(() => wrapper({})).toThrow(/Production auto-compile failed/)
     } finally {
       process.env['NODE_ENV'] = origEnv
       process.argv = origArgv

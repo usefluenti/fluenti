@@ -452,29 +452,34 @@ function buildAlternateLinks(
 ): string {
   const origin = new URL(request.url).origin
   const cleanPath = stripLocalePrefix(request.nextUrl.pathname, locales)
+  const firstSegment = request.nextUrl.pathname.split('/')[1] ?? ''
+  const requestLocale = localePrefix === 'never'
+    ? sourceLocale
+    : findLocale(firstSegment, locales) ?? sourceLocale
+  const internalPath = pathnames
+    ? resolveInternalPath(cleanPath, requestLocale, pathnames) ?? cleanPath
+    : cleanPath
 
   const links = locales.map(loc => {
+    const outwardPath = pathnames
+      ? resolveLocalizedPath(internalPath, loc, pathnames) ?? internalPath
+      : internalPath
     let localePath: string
     if (localePrefix === 'never') {
-      localePath = cleanPath
+      localePath = outwardPath
     } else if (localePrefix === 'as-needed' && loc === sourceLocale) {
-      localePath = cleanPath
+      localePath = outwardPath
     } else {
-      localePath = `/${loc}${cleanPath}`
-    }
-    if (pathnames) {
-      const mapped = resolveLocalizedPath(cleanPath, loc, pathnames)
-      if (mapped) {
-        localePath = localePrefix === 'never' || (localePrefix === 'as-needed' && loc === sourceLocale)
-          ? mapped
-          : `/${loc}${mapped}`
-      }
+      localePath = `/${loc}${outwardPath}`
     }
     return `<${origin}${basePath}${localePath}>; rel="alternate"; hreflang="${loc}"`
   })
 
   // x-default
-  const defaultPath = localePrefix === 'always' ? `/${sourceLocale}${cleanPath}` : cleanPath
+  const sourceOutwardPath = pathnames
+    ? resolveLocalizedPath(internalPath, sourceLocale, pathnames) ?? internalPath
+    : internalPath
+  const defaultPath = localePrefix === 'always' ? `/${sourceLocale}${sourceOutwardPath}` : sourceOutwardPath
   links.push(`<${origin}${basePath}${defaultPath}>; rel="alternate"; hreflang="x-default"`)
 
   return links.join(', ')

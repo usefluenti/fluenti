@@ -121,6 +121,33 @@ describe('generateServerModule', () => {
     expect(serverSource).not.toContain("cookieStore.get('locale')")
   })
 
+  it('escapes quotes in generated import paths for compiled catalogs', () => {
+    generateServerModule('/project', {
+      ...baseConfig,
+      fluentiConfig: {
+        ...baseConfig.fluentiConfig,
+        compileOutDir: "./src/compiled's",
+      },
+    })
+
+    const serverSource = writtenFiles['/project/node_modules/.fluenti/server.js']!
+    const clientSource = writtenFiles['/project/node_modules/.fluenti/client-provider.js']!
+
+    expect(serverSource).toContain("case 'en': return import('../../src/compiled\\'s/en')")
+    expect(serverSource).toContain("default: return import('../../src/compiled\\'s/en')")
+    expect(clientSource).toContain("import en from '../../src/compiled\\'s/en'")
+  })
+
+  it('escapes quotes in custom resolveLocale import path', () => {
+    generateServerModule('/project', {
+      ...baseConfig,
+      resolveLocale: "./lib/resolve'locale",
+    })
+
+    const serverSource = writtenFiles['/project/node_modules/.fluenti/server.js']!
+    expect(serverSource).toContain("import __resolveLocale from '../../lib/resolve\\'locale'")
+  })
+
   // ── Template injection / escaping ──────────────────────────────────────
   it('escapes single quotes in cookieName to prevent JS injection', () => {
     generateServerModule('/project', {

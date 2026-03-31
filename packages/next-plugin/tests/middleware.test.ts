@@ -778,6 +778,24 @@ describe('createI18nMiddleware', () => {
       const linkCall = res.headers.set.mock.calls.find(([name]) => name === 'Link')
       expect(linkCall).toBeFalsy()
     })
+
+    it('resolves localized paths back to internal routes before building alternate links', () => {
+      const mw = createI18nMiddleware({
+        ...BASE_CONFIG,
+        alternateLinks: true,
+        pathnames: {
+          '/about': { en: '/company', ja: '/kaisha' },
+        },
+      })
+      const res = mw(makeRequest('/ja/kaisha')) as { headers: { set: ReturnType<typeof vi.fn> } }
+
+      const linkCall = res.headers.set.mock.calls.find(([name]) => name === 'Link')
+      const linkValue = linkCall![1] as string
+
+      expect(linkValue).toContain('<http://localhost/company>; rel="alternate"; hreflang="en"')
+      expect(linkValue).toContain('<http://localhost/ja/kaisha>; rel="alternate"; hreflang="ja"')
+      expect(linkValue).toContain('<http://localhost/company>; rel="alternate"; hreflang="x-default"')
+    })
   })
 
   // ── pathnames ──────────────────────────────────────────────────────────

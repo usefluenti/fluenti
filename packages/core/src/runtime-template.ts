@@ -43,6 +43,19 @@ export interface RuntimePrimitives {
   runtimeKey: string
 }
 
+function toForwardSlash(path: string): string {
+  return path.split('\\').join('/')
+}
+
+function toSingleQuotedJsString(value: string): string {
+  return `'${value
+    .replace(/\\/g, '\\\\')
+    .replace(/'/g, "\\'")
+    .replace(/\n/g, '\\n')
+    .replace(/\r/g, '\\r')
+    .replace(/\0/g, '\\0')}'`
+}
+
 /**
  * Create a RuntimeGenerator from framework-specific primitives.
  *
@@ -54,24 +67,26 @@ export function createRuntimeGenerator(primitives: RuntimePrimitives): RuntimeGe
     generateRuntime(options: RuntimeGeneratorOptions): string {
       const { rootDir, catalogDir, catalogExtension, locales, sourceLocale, defaultBuildLocale } = options
       const defaultLocale = defaultBuildLocale || sourceLocale
-      const absoluteCatalogDir = resolve(rootDir, catalogDir)
+      const absoluteCatalogDir = toForwardSlash(resolve(rootDir, catalogDir))
       const ext = catalogExtension || '.js'
       const lazyLocales = locales.filter((locale) => locale !== defaultLocale)
+      const defaultLocaleLiteral = toSingleQuotedJsString(defaultLocale)
+      const defaultCatalogImport = toSingleQuotedJsString(`${absoluteCatalogDir}/${defaultLocale}${ext}`)
 
       return `
 ${primitives.imports}
-import __defaultMsgs from '${absoluteCatalogDir}/${defaultLocale}${ext}'
+import __defaultMsgs from ${defaultCatalogImport}
 
 ${primitives.catalogInit}
 ${primitives.localeInit(defaultLocale)}
-const __loadedLocales = new Set(['${defaultLocale}'])
+const __loadedLocales = new Set([${defaultLocaleLiteral}])
 ${primitives.loadingInit}
 const __cache = new Map()
 const __normalizeMessages = (mod) => mod.default ?? mod
 let __switchId = 0
 
 const __loaders = {
-${lazyLocales.map((l) => `  '${l}': () => import('${absoluteCatalogDir}/${l}${ext}'),`).join('\n')}
+${lazyLocales.map((l) => `  '${l}': () => import(${toSingleQuotedJsString(`${absoluteCatalogDir}/${l}${ext}`)}),`).join('\n')}
 }
 
 async function __switchLocale(locale) {
@@ -121,7 +136,7 @@ async function __preloadLocale(locale) {
   return p
 }
 
-globalThis[Symbol.for('${primitives.runtimeKey}')] = { __switchLocale, __preloadLocale }
+globalThis[Symbol.for(${toSingleQuotedJsString(primitives.runtimeKey)})] = { __switchLocale, __preloadLocale }
 
 export { __catalog, __switchLocale, __preloadLocale, __currentLocale, __loading, __loadedLocales }
 `

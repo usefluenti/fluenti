@@ -108,6 +108,19 @@ describe('createRuntimeGenerator', () => {
       expect(code).toContain('const __loading = ref(false)')
       expect(code).toContain("const __currentLocale = ref('en')")
     })
+
+    it('escapes quotes in generated import specifiers and normalizes backslashes', () => {
+      const generator = createRuntimeGenerator(mockPrimitives)
+      const code = generator.generateRuntime({
+        ...baseOptions,
+        rootDir: "/app's",
+        catalogDir: 'locales\\compiled',
+      })
+
+      expect(code).toContain("import __defaultMsgs from '/app\\'s/locales/compiled/en.js'")
+      expect(code).toContain("'ja': () => import('/app\\'s/locales/compiled/ja.js')")
+      expect(code).not.toContain("import __defaultMsgs from '/app's")
+    })
   })
 
   describe('__switchLocale guards', () => {

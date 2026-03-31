@@ -52,6 +52,43 @@ export function defineRouting<
   return config
 }
 
+function getPatternSegments(pattern: string): string[] {
+  return pattern.split('/').filter(Boolean)
+}
+
+function getSegmentPriority(segment: string | undefined): number {
+  if (!segment) return 0
+  if (segment.startsWith('[...') && segment.endsWith(']')) return 1
+  if (segment.startsWith('[') && segment.endsWith(']')) return 2
+  return 3
+}
+
+function comparePatterns(a: string, b: string): number {
+  const aSegments = getPatternSegments(a)
+  const bSegments = getPatternSegments(b)
+  const maxLength = Math.max(aSegments.length, bSegments.length)
+
+  for (let i = 0; i < maxLength; i++) {
+    const aPriority = getSegmentPriority(aSegments[i])
+    const bPriority = getSegmentPriority(bSegments[i])
+    if (aPriority !== bPriority) {
+      return bPriority - aPriority
+    }
+  }
+
+  if (aSegments.length !== bSegments.length) {
+    return bSegments.length - aSegments.length
+  }
+
+  return a.localeCompare(b)
+}
+
+function getSortedPathnameEntries(
+  pathnames: Record<string, Record<string, string>>,
+): Array<[string, Record<string, string>]> {
+  return Object.entries(pathnames).sort(([a], [b]) => comparePatterns(a, b))
+}
+
 // ── Shared path resolution utilities ──────────────────────────────────────
 
 /** Match a pathname against a pattern with [param] and [...slug] segments. */
@@ -94,7 +131,7 @@ export function resolveInternalPath(
   locale: string,
   pathnames: Record<string, Record<string, string>>,
 ): string | null {
-  for (const [internal, mapping] of Object.entries(pathnames)) {
+  for (const [internal, mapping] of getSortedPathnameEntries(pathnames)) {
     const localized = mapping[locale]
     if (!localized) continue
     if (localized === localizedPath) return internal
@@ -110,7 +147,7 @@ export function resolveLocalizedPath(
   locale: string,
   pathnames: Record<string, Record<string, string>>,
 ): string | null {
-  for (const [internal, mapping] of Object.entries(pathnames)) {
+  for (const [internal, mapping] of getSortedPathnameEntries(pathnames)) {
     const localized = mapping[locale]
     if (!localized) continue
     if (internal === internalPath) return localized

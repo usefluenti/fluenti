@@ -4,15 +4,23 @@ import { getLocalePath } from '../src/navigation'
 // ── Mock next/navigation and @fluenti/react for useLocaleSwitcher ────────────
 const mockPush = vi.fn()
 const mockRefresh = vi.fn()
+let mockPathname = '/about'
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: mockPush, refresh: mockRefresh }),
-  usePathname: () => '/about',
+  usePathname: () => mockPathname,
 }))
 
 const mockSetLocale = vi.fn()
 const mockGetLocales = vi.fn(() => ['en', 'fr', 'ja'])
+let mockI18nLocale = 'en'
+let mockUseI18nThrows = false
 vi.mock('@fluenti/react', () => ({
-  useI18n: () => ({ locale: 'en', setLocale: mockSetLocale, getLocales: mockGetLocales }),
+  useI18n: () => {
+    if (mockUseI18nThrows) {
+      throw new Error('[fluenti] useI18n() must be used within an <I18nProvider>')
+    }
+    return { locale: mockI18nLocale, setLocale: mockSetLocale, getLocales: mockGetLocales }
+  },
 }))
 
 describe('getLocalePath', () => {
@@ -45,20 +53,20 @@ describe('getLocalePath', () => {
 
   // ── Strip existing prefix ─────────────────────────────────────────────
   it('strips existing locale prefix when switching locale', () => {
-    expect(getLocalePath('/fr/about', 'ja')).toBe('/ja/about')
+    expect(getLocalePath('/fr/about', 'ja', { locales: ['en', 'fr', 'ja'] })).toBe('/ja/about')
   })
 
   it('strips existing locale prefix when switching to source locale', () => {
-    expect(getLocalePath('/fr/about', 'en')).toBe('/about')
+    expect(getLocalePath('/fr/about', 'en', { locales: ['en', 'fr', 'ja'] })).toBe('/about')
   })
 
   it('strips existing locale prefix at root', () => {
     // /fr → strips "fr" → pathWithoutLocale is "/" → result is "/ja/"
-    expect(getLocalePath('/fr', 'ja')).toBe('/ja/')
+    expect(getLocalePath('/fr', 'ja', { locales: ['en', 'fr', 'ja'] })).toBe('/ja/')
   })
 
   it('strips existing locale prefix for same locale', () => {
-    expect(getLocalePath('/fr/about', 'fr')).toBe('/fr/about')
+    expect(getLocalePath('/fr/about', 'fr', { locales: ['en', 'fr', 'ja'] })).toBe('/fr/about')
   })
 
   // ── locales list (exact match, avoid false positives) ────────────────
@@ -78,6 +86,12 @@ describe('getLocalePath', () => {
     expect(getLocalePath('/my/account', 'fr', { locales })).toBe('/fr/my/account')
   })
 
+  it('does not guess locale prefixes when locales are omitted', () => {
+    expect(getLocalePath('/fr/about', 'ja')).toBe('/ja/fr/about')
+    expect(getLocalePath('/my/account', 'fr')).toBe('/fr/my/account')
+    expect(getLocalePath('/us/pricing', 'ja')).toBe('/ja/us/pricing')
+  })
+
   // ── Edge cases ──────────────────────────────────────────────────────
   it('handles zh-CN locale format', () => {
     expect(getLocalePath('/about', 'zh-CN')).toBe('/zh-CN/about')
@@ -88,7 +102,7 @@ describe('getLocalePath', () => {
   })
 
   it('strips zh-CN prefix when switching', () => {
-    expect(getLocalePath('/zh-CN/about', 'ja')).toBe('/ja/about')
+    expect(getLocalePath('/zh-CN/about', 'ja', { locales: ['en', 'ja', 'zh-CN'] })).toBe('/ja/about')
   })
 
   // ── localePrefix: 'always' ────────────────────────────────────────────
@@ -102,7 +116,7 @@ describe('getLocalePath', () => {
     })
 
     it('strips and re-adds prefix for non-source locale', () => {
-      expect(getLocalePath('/fr/about', 'ja', { localePrefix: 'always' })).toBe('/ja/about')
+      expect(getLocalePath('/fr/about', 'ja', { localePrefix: 'always', locales: ['en', 'fr', 'ja'] })).toBe('/ja/about')
     })
 
     it('still adds prefix for source locale even when it matches sourceLocale option', () => {
@@ -122,6 +136,9 @@ describe('useLocaleSwitcher', () => {
     mockPush.mockReset()
     mockRefresh.mockReset()
     mockSetLocale.mockReset()
+    mockPathname = '/about'
+    mockI18nLocale = 'en'
+    mockUseI18nThrows = false
   })
 
   // Import lazily so mocks above are in place
@@ -230,5 +247,84 @@ describe('useLocaleSwitcher', () => {
       switchLocale('fr')
       expect(mockPush).toHaveBeenCalledWith('/about')
     })
+  })
+})
+
+describe('useAlternateLinks', () => {
+  beforeEach(() => {
+    mockPathname = '/about'
+    mockI18nLocale = 'en'
+    mockUseI18nThrows = false
+  })
+
+  async function getHook() {
+    const { useAlternateLinks } = await import('../src/navigation')
+    return useAlternateLinks
+  }
+
+  it('resolves localized current paths back to internal routes before building links', async () => {
+    mockPathname = '/ja/kaisha'
+    mockI18nLocale = 'ja'
+
+    const useAlternateLinks = await getHook()
+    const links = useAlternateLinks({
+      baseUrl: 'https://example.com',
+      routing: {
+        locales: ['en', 'ja'],
+        sourceLocale: 'en',
+        localePrefix: 'as-needed',
+        pathnames: {
+          '/about': { en: '/company', ja: '/kaisha' },
+        },
+      },
+    })
+
+    expect(links).toContainEqual({ hreflang: 'en', href: 'https://example.com/company' })
+    expect(links).toContainEqual({ hreflang: 'ja', href: 'https://example.com/ja/kaisha' })
+    expect(links).toContainEqual({ hreflang: 'x-default', href: 'https://example.com/company' })
+  })
+
+  it('uses the active locale for reverse lookup when locale prefixes are disabled', async () => {
+    mockPathname = '/kaisha'
+    mockI18nLocale = 'ja'
+
+    const useAlternateLinks = await getHook()
+    const links = useAlternateLinks({
+      baseUrl: 'https://example.com',
+      routing: {
+        locales: ['en', 'ja'],
+        sourceLocale: 'en',
+        localePrefix: 'never',
+        pathnames: {
+          '/about': { en: '/company', ja: '/kaisha' },
+        },
+      },
+    })
+
+    expect(links).toContainEqual({ hreflang: 'en', href: 'https://example.com/company' })
+    expect(links).toContainEqual({ hreflang: 'ja', href: 'https://example.com/kaisha' })
+    expect(links).toContainEqual({ hreflang: 'x-default', href: 'https://example.com/company' })
+  })
+
+  it('falls back to sourceLocale when used outside I18nProvider', async () => {
+    mockPathname = '/about'
+    mockUseI18nThrows = true
+
+    const useAlternateLinks = await getHook()
+    const links = useAlternateLinks({
+      baseUrl: 'https://example.com',
+      routing: {
+        locales: ['en', 'ja'],
+        sourceLocale: 'en',
+        localePrefix: 'as-needed',
+        pathnames: {
+          '/about': { en: '/company', ja: '/kaisha' },
+        },
+      },
+    })
+
+    expect(links).toContainEqual({ hreflang: 'en', href: 'https://example.com/company' })
+    expect(links).toContainEqual({ hreflang: 'ja', href: 'https://example.com/ja/kaisha' })
+    expect(links).toContainEqual({ hreflang: 'x-default', href: 'https://example.com/company' })
   })
 })

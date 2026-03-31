@@ -9,6 +9,12 @@ import zhCN from './locales/compiled/zh-CN.js'
 import ja from './locales/compiled/ja.js'
 import { Layout } from './pages/Layout'
 import { Home } from './pages/Home'
+import {
+  AVAILABLE_LOCALES,
+  getCookieLocale,
+  getQueryLocale,
+  serializeLocaleCookie,
+} from './locale'
 
 // Lazy-loaded routes — messages for these pages are tree-shaken
 // into separate chunks by the Vite plugin
@@ -18,17 +24,12 @@ const RichText = lazy(() => import('./pages/RichText').then(m => ({ default: m.R
 const messages = { en, 'zh-CN': zhCN, ja }
 
 function getInitialLocale(): string {
-  const urlParams = new URLSearchParams(window.location.search)
-  const queryLang = urlParams.get('lang')
-  if (queryLang) {
-    document.cookie = `locale=${queryLang};path=/;max-age=31536000`
-    return queryLang
+  const queryLocale = getQueryLocale(window.location.search, AVAILABLE_LOCALES)
+  if (queryLocale) {
+    document.cookie = serializeLocaleCookie(queryLocale)
+    return queryLocale
   }
-  const match = document.cookie.match(/(?:^|;\s*)locale=([^;]*)/)
-  if (match) {
-    try { return decodeURIComponent(match[1]) } catch { return match[1] }
-  }
-  return 'en'
+  return getCookieLocale(document.cookie, AVAILABLE_LOCALES) ?? 'en'
 }
 
 function Root() {
@@ -40,7 +41,7 @@ function Root() {
   }, [locale])
 
   const handleLocaleChange = (loc: string) => {
-    document.cookie = `locale=${loc};path=/;max-age=31536000`
+    document.cookie = serializeLocaleCookie(loc)
     setLocale(loc)
   }
 

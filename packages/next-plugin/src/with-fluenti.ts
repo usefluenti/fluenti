@@ -131,8 +131,13 @@ function applyFluenti(
         'npx fluenti compile' + (fluentiConfig.parallelCompile ? ' --parallel' : ''),
         { cwd: projectRoot, stdio: 'inherit' },
       )
-    } catch {
-      // @fluenti/cli not installed or compile failed — user sees stdio output
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : String(error)
+      throw new Error(
+        `[fluenti] Production auto-compile failed. ` +
+        `Run "fluenti compile" successfully before continuing the Next.js build.\n` +
+        `  ${detail}`,
+      )
     }
   }
 

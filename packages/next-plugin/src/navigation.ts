@@ -22,6 +22,7 @@
 import { useRouter, usePathname } from 'next/navigation'
 import { useI18n } from '@fluenti/react'
 import { cookieName as _configCookieName } from '@fluenti/next/i18n-config'
+import { resolveInternalPath, resolveLocalizedPath } from './routing'
 
 export interface GetLocalePathOptions {
   /** Source/default locale (no prefix in as-needed mode) */
@@ -50,8 +51,8 @@ export interface GetLocalePathOptions {
  * ```ts
  * getLocalePath('/about', 'fr')                           // → '/fr/about'
  * getLocalePath('/about', 'en')                           // → '/about' (source locale, no prefix)
- * getLocalePath('/fr/about', 'en')                        // → '/about'
- * getLocalePath('/fr/about', 'ja')                        // → '/ja/about'
+ * getLocalePath('/fr/about', 'en', { locales: ['en', 'fr', 'ja'] }) // → '/about'
+ * getLocalePath('/fr/about', 'ja', { locales: ['en', 'fr', 'ja'] }) // → '/ja/about'
  * getLocalePath('/about', 'en', { localePrefix: 'always' }) // → '/en/about'
  * ```
  */
@@ -67,13 +68,10 @@ export function getLocalePath(
   const segments = pathname.split('/')
   const firstSegment = segments[1] ?? ''
 
-  // Check if the first segment is a locale prefix.
-  // If a locales list is provided, do an exact membership check to avoid false positives
-  // on generic 2-letter path segments (e.g. /my/page or /us/pricing).
-  // Otherwise fall back to the heuristic regex.
+  // Only strip an existing locale prefix when the caller provides the known locale list.
   const hasLocalePrefix = options?.locales
-    ? options.locales.includes(firstSegment)
-    : /^[a-z]{2}(-[A-Za-z]{2,})?$/.test(firstSegment)
+    ? options.locales.some(loc => loc.toLowerCase() === firstSegment.toLowerCase())
+    : false
   const pathWithoutLocale = hasLocalePrefix
     ? '/' + segments.slice(2).join('/')
     : pathname
@@ -187,19 +185,28 @@ export function useAlternateLinks(options: {
 }): AlternateLink[] {
   const { routing: r, baseUrl = '' } = options
   const pathname = usePathname()
+  let activeLocale = r.sourceLocale
+  try {
+    activeLocale = useI18n().locale
+  } catch {
+    // Outside I18nProvider, fall back to sourceLocale.
+  }
   // Strip locale prefix from current path
   const segments = pathname.split('/')
   const firstSeg = segments[1] ?? ''
-  const isLocalePrefix = (r.locales as string[]).some(l => l.toLowerCase() === firstSeg.toLowerCase())
-  const cleanPath = isLocalePrefix ? '/' + segments.slice(2).join('/') || '/' : pathname
+  const pathLocale = r.localePrefix === 'never'
+    ? null
+    : (r.locales as string[]).find(l => l.toLowerCase() === firstSeg.toLowerCase()) ?? null
+  const cleanPath = pathLocale ? '/' + segments.slice(2).join('/') || '/' : pathname
+  const requestLocale = pathLocale ?? activeLocale ?? r.sourceLocale
+  const internalPath = r.pathnames
+    ? resolveInternalPath(cleanPath, requestLocale, r.pathnames as Record<string, Record<string, string>>) ?? cleanPath
+    : cleanPath
 
   const links: AlternateLink[] = (r.locales as string[]).map(loc => {
-    let localePath = cleanPath
-    if (r.pathnames) {
-      const { resolveLocalizedPath: resolve } = require('./routing') as typeof import('./routing')
-      const mapped = resolve(cleanPath, loc, r.pathnames as Record<string, Record<string, string>>)
-      if (mapped) localePath = mapped
-    }
+    const localePath = r.pathnames
+      ? resolveLocalizedPath(internalPath, loc, r.pathnames as Record<string, Record<string, string>>) ?? internalPath
+      : internalPath
 
     let href: string
     if (r.localePrefix === 'never') {
@@ -214,7 +221,12 @@ export function useAlternateLinks(options: {
   })
 
   // x-default
-  const defaultPath = r.localePrefix === 'always' ? `${baseUrl}/${r.sourceLocale}${cleanPath}` : `${baseUrl}${cleanPath}`
+  const sourcePath = r.pathnames
+    ? resolveLocalizedPath(internalPath, r.sourceLocale, r.pathnames as Record<string, Record<string, string>>) ?? internalPath
+    : internalPath
+  const defaultPath = r.localePrefix === 'always'
+    ? `${baseUrl}/${r.sourceLocale}${sourcePath}`
+    : `${baseUrl}${sourcePath}`
   links.push({ hreflang: 'x-default', href: defaultPath })
 
   return links
