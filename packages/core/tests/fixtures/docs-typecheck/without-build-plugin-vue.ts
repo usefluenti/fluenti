@@ -1,5 +1,5 @@
 import { h } from 'vue'
-import { Trans, Plural, Select, DateTime, NumberFormat } from '@fluenti/vue/components'
+import { Trans, Plural, Select, DateTime, NumberFormat } from '@fluenti/vue'
 
 export function renderBanner(count: number, role: string) {
   return [

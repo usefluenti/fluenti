@@ -50,7 +50,7 @@ describe('subpath imports', () => {
     expect(result.raw).toBeGreaterThan(0)
   })
 
-  it('@fluenti/react/components exports resolve and bundle', () => {
+  it('@fluenti/react exports resolve and bundle', () => {
     const result = bundleAndMeasure(
       `
       import { Trans, Plural, Select, DateTime, NumberFormat } from '${ROOT}/packages/react/dist/components-entry.js'
@@ -61,7 +61,7 @@ describe('subpath imports', () => {
     expect(result.raw).toBeGreaterThan(0)
   })
 
-  it('@fluenti/vue/components exports resolve and bundle', () => {
+  it('@fluenti/vue exports resolve and bundle', () => {
     const result = bundleAndMeasure(
       `
       import { Trans, Plural, Select, DateTime, NumberFormat } from '${ROOT}/packages/vue/dist/components-entry.js'
@@ -72,7 +72,7 @@ describe('subpath imports', () => {
     expect(result.raw).toBeGreaterThan(0)
   })
 
-  it('@fluenti/solid/components exports resolve and bundle', () => {
+  it('@fluenti/solid exports resolve and bundle', () => {
     const result = bundleAndMeasure(
       `
       import { Trans, Plural, Select, DateTime, NumberFormat } from '${ROOT}/packages/solid/dist/components-entry.js'

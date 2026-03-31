@@ -39,7 +39,7 @@ describe('bundle analysis', () => {
   })
 
   it('parser is only present when interpolate is imported', () => {
-    // The React example imports `interpolate` from @fluenti/react/components
+    // The React example imports `interpolate` from @fluenti/react
     // for runtime <Plural>/<Select> support, which pulls in the parser.
     // This is expected. Apps that don't use interpolate should not have the parser.
     //

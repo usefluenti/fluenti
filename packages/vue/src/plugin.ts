@@ -2,7 +2,7 @@ import { type App, type Ref, ref, shallowReactive } from 'vue'
 import type { AllMessages, Locale, LocalizedString, Messages, CompiledMessage, MessageDescriptor, DiagnosticsConfig, CustomFormatter } from '@fluenti/core'
 import { createFluentiCore } from '@fluenti/core'
 import { FLUENTI_KEY } from './injection-key'
-// Components are in @fluenti/vue/components subpath.
+// Components are in @fluenti/vue subpath.
 // Global component registration is opt-in via `components` config option.
 
 /** Escape HTML special characters to prevent XSS. @internal */
@@ -134,12 +134,12 @@ export interface FluentiConfig {
   /**
    * Components to register globally via `app.component()`.
    *
-   * Import from `@fluenti/vue/components` and pass here to enable global
+   * Import from `@fluenti/vue` and pass here to enable global
    * component registration without bloating the default bundle.
    *
    * @example
    * ```ts
-   * import * as components from '@fluenti/vue/components'
+   * import * as components from '@fluenti/vue'
    * app.use(createFluenti({ components, ... }))
    * ```
    */

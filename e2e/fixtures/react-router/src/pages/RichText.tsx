@@ -1,4 +1,4 @@
-import { Trans } from '@fluenti/react/components'
+import { Trans } from '@fluenti/react'
 
 export function RichText() {
   return (

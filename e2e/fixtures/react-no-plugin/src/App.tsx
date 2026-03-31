@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useI18n } from '@fluenti/react'
-import { Trans, Plural, Select, DateTime, NumberFormat } from '@fluenti/react/components'
+import { Trans, Plural, Select, DateTime, NumberFormat } from '@fluenti/react'
 
 const DEMO_DATE = new Date(Date.UTC(2025, 0, 15, 12))
 

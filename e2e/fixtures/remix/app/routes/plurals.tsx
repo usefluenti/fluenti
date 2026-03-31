@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { t } from '@fluenti/react'
-import { Plural } from '@fluenti/react/components'
+import { Plural } from '@fluenti/react'
 
 export default function Plurals() {
   const [count, setCount] = useState(0)

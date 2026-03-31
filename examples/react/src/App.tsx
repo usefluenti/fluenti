@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useI18n, msg } from '@fluenti/react'
-import { Trans, Plural, Select, DateTime, NumberFormat } from '@fluenti/react/components'
+import { Trans, Plural, Select, DateTime, NumberFormat } from '@fluenti/react'
 import { getDirection } from '@fluenti/core'
 
 // Lazy message descriptors — equivalent to Lingui's defineMessage/msg

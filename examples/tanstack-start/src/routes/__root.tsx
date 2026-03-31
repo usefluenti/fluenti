@@ -7,7 +7,7 @@ import {
 } from '@tanstack/react-router'
 import { useState } from 'react'
 import { I18nProvider, useI18n } from '@fluenti/react'
-import { interpolate } from '@fluenti/react/components'
+import { interpolate } from '@fluenti/react'
 import { getDirection } from '@fluenti/core'
 import type { ReactNode } from 'react'
 import en from '../locales/compiled/en.js'

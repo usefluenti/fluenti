@@ -1,7 +1,7 @@
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { I18nProvider } from '@fluenti/react'
-import { interpolate } from '@fluenti/react/components'
+import { interpolate } from '@fluenti/react'
 import { getDirection } from '@fluenti/core'
 import { useState, useEffect, lazy, Suspense } from 'react'
 import en from './locales/compiled/en.js'

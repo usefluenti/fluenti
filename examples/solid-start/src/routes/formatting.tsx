@@ -1,6 +1,6 @@
 import type { Component } from 'solid-js'
 import { useI18n } from '@fluenti/solid'
-import { DateTime, NumberFormat } from '@fluenti/solid/components'
+import { DateTime, NumberFormat } from '@fluenti/solid'
 import { msg } from '@fluenti/core'
 
 // Demonstrate msg`` for module-level message descriptors

@@ -1,4 +1,4 @@
-import { Trans, Plural, Select, DateTime, NumberFormat } from '@fluenti/solid/components'
+import { Trans, Plural, Select, DateTime, NumberFormat } from '@fluenti/solid'
 
 export function Banner(props: { count: number; role: string }) {
   return (

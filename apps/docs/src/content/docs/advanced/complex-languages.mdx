@@ -66,7 +66,7 @@ needs.
 </template>
 
 <script setup>
-import { Plural } from '@fluenti/vue/components'
+import { Plural } from '@fluenti/vue'
 
 const props = defineProps<{ unreadCount: number }>()
 </script>
@@ -75,7 +75,7 @@ const props = defineProps<{ unreadCount: number }>()
 
 <TabItem label="React">
 ```tsx
-import { Plural } from '@fluenti/react/components'
+import { Plural } from '@fluenti/react'
 
 function Inbox({ unreadCount }: { unreadCount: number }) {
   return <Plural value={unreadCount} one="# message" other="# messages" />
@@ -85,7 +85,7 @@ function Inbox({ unreadCount }: { unreadCount: number }) {
 
 <TabItem label="Solid">
 ```tsx
-import { Plural } from '@fluenti/solid/components'
+import { Plural } from '@fluenti/solid'
 
 function Inbox(props: { unreadCount: number }) {
   return <Plural value={props.unreadCount} one="# message" other="# messages" />
@@ -177,7 +177,7 @@ When gender matters, use `<Select>` with `<Plural>` inside:
 </template>
 
 <script setup>
-import { Select } from '@fluenti/vue/components'
+import { Select } from '@fluenti/vue'
 const props = defineProps<{ gender: string }>()
 </script>
 ```
@@ -185,7 +185,7 @@ const props = defineProps<{ gender: string }>()
 
 <TabItem label="React">
 ```tsx
-import { Select } from '@fluenti/react/components'
+import { Select } from '@fluenti/react'
 
 function ArrivalNotice({ gender }: { gender: string }) {
   return (
@@ -201,7 +201,7 @@ function ArrivalNotice({ gender }: { gender: string }) {
 
 <TabItem label="Solid">
 ```tsx
-import { Select } from '@fluenti/solid/components'
+import { Select } from '@fluenti/solid'
 
 function ArrivalNotice(props: { gender: string }) {
   return (
@@ -342,7 +342,7 @@ source code uses `<Plural>` — the translator handles gender in the catalog.
 </template>
 
 <script setup>
-import { Plural } from '@fluenti/vue/components'
+import { Plural } from '@fluenti/vue'
 const props = defineProps<{ count: number }>()
 </script>
 ```
@@ -350,7 +350,7 @@ const props = defineProps<{ count: number }>()
 
 <TabItem label="React">
 ```tsx
-import { Plural } from '@fluenti/react/components'
+import { Plural } from '@fluenti/react'
 
 function FriendStatus({ count }: { count: number }) {
   return <Plural value={count} one="# friend is online" other="# friends are online" />
@@ -360,7 +360,7 @@ function FriendStatus({ count }: { count: number }) {
 
 <TabItem label="Solid">
 ```tsx
-import { Plural } from '@fluenti/solid/components'
+import { Plural } from '@fluenti/solid'
 
 function FriendStatus(props: { count: number }) {
   return <Plural value={props.count} one="# friend is online" other="# friends are online" />

@@ -1,6 +1,6 @@
 import { createSignal, createEffect, type Component, type JSX } from 'solid-js'
 import { useI18n, msg } from '@fluenti/solid'
-import { Trans, Plural, Select, DateTime, NumberFormat } from '@fluenti/solid/components'
+import { Trans, Plural, Select, DateTime, NumberFormat } from '@fluenti/solid'
 import { getDirection } from '@fluenti/core'
 
 const Bold: Component<{ children?: JSX.Element }> = (props) => (
