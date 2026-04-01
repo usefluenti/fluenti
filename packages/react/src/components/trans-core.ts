@@ -67,7 +67,7 @@ export function reconstruct(
   components: ReactElement[],
 ): ReactNode {
   const COMBINED_RE = /<(\d+)(?:\/>|(>)([\s\S]*?)<\/\1>)/g
-  if (components.length === 0 || !translated.includes('<')) {
+  if (!translated.includes('<')) {
     return translated
   }
 
