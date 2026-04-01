@@ -1,5 +1,6 @@
 import { existsSync, mkdirSync } from 'node:fs'
 import { execSync } from 'node:child_process'
+import { createRequire } from 'node:module'
 import { resolve, dirname, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import type { WithFluentConfig } from './types'
@@ -127,8 +128,12 @@ function applyFluenti(
   if (!isDev && buildAutoCompile && !buildCompileRan) {
     buildCompileRan = true
     try {
+      // Resolve the CLI entry via Node module resolution so it works
+      // in all package managers (pnpm, npm, yarn) without npx fallback
+      const req = createRequire(resolve(projectRoot, 'noop.js'))
+      const cliBin = resolve(dirname(req.resolve('@fluenti/cli')), 'cli.js')
       execSync(
-        'npx fluenti compile' + (fluentiConfig.parallelCompile ? ' --parallel' : ''),
+        `node "${cliBin}" compile` + (fluentiConfig.parallelCompile ? ' --parallel' : ''),
         { cwd: projectRoot, stdio: 'inherit' },
       )
     } catch (error) {

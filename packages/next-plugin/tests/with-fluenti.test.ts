@@ -538,7 +538,7 @@ describe('buildAutoCompile — execSync', () => {
       const wrapper = withFluenti()
       wrapper({})
       expect(vi.mocked(execSync)).toHaveBeenCalledWith(
-        'npx fluenti compile',
+        expect.stringContaining('compile'),
         expect.objectContaining({ stdio: 'inherit' }),
       )
     } finally {
