@@ -1,8 +1,9 @@
 import { Dynamic } from 'solid-js/web'
 import type { Component, JSX } from 'solid-js'
-import { hashMessage, buildICUPluralMessage, PLURAL_CATEGORIES, type PluralCategory } from '@fluenti/core/internal'
+import { buildICUPluralMessage, PLURAL_CATEGORIES, type PluralCategory } from '@fluenti/core/runtime'
 import { useI18n } from './use-i18n'
 import { reconstruct, serializeRichForms } from './rich-dom'
+import { buildPlainPluralMessage, resolveCompiledMessageId, resolvePropValue } from './plain-runtime'
 
 /** Props for the `<Plural>` component */
 export interface FluentiPluralProps {
@@ -59,7 +60,7 @@ export interface FluentiPluralProps {
  *
  * @example
  * ```tsx
- * import { Plural } from '@fluenti/solid'
+ * import { Plural } from '@fluenti/solid/components'
  *
  * function ItemCount(props: { count: number }) {
  *   return <Plural value={props.count} one="# item" other="# items" />
@@ -69,21 +70,32 @@ export interface FluentiPluralProps {
 export const Plural: Component<FluentiPluralProps> = (props) => {
   const { t } = useI18n()
 
-  /** Resolve a category prop value — handles string, accessor function, and JSX */
-  function resolveProp(val: string | JSX.Element | undefined): string | JSX.Element | undefined {
-    if (typeof val === 'function') return (val as () => string | JSX.Element)()
-    return val
-  }
-
   return (() => {
-    // Resolve all category values (handles Solid accessors from createMemo)
     const resolvedValues: Partial<Record<PluralCategory, string | JSX.Element>> = {}
     for (const cat of PLURAL_CATEGORIES) {
-      const resolved = resolveProp(props[cat])
+      const resolved = resolvePropValue(props[cat]) as string | JSX.Element | undefined
       if (resolved !== undefined) {
         resolvedValues[cat] = resolved
       }
     }
+    const plainMessage = buildPlainPluralMessage(resolvedValues, props.offset)
+    if (plainMessage !== undefined) {
+      const translated = t(
+        {
+          id: resolveCompiledMessageId(props.id, plainMessage, props.context),
+          message: plainMessage,
+          ...(props.context !== undefined ? { context: props.context } : {}),
+          ...(props.comment !== undefined ? { comment: props.comment } : {}),
+        },
+        { count: props.value },
+      )
+
+      if (props.tag) {
+        return (<Dynamic component={props.tag}>{translated}</Dynamic>) as JSX.Element
+      }
+      return (<>{translated}</>) as JSX.Element
+    }
+
     const { messages, components } = serializeRichForms(PLURAL_CATEGORIES, resolvedValues)
     const icuMessage = buildICUPluralMessage(
       {
@@ -99,7 +111,7 @@ export const Plural: Component<FluentiPluralProps> = (props) => {
 
     const translated = t(
       {
-        id: props.id ?? (props.context === undefined ? icuMessage : hashMessage(icuMessage, props.context)),
+        id: resolveCompiledMessageId(props.id, icuMessage, props.context),
         message: icuMessage,
         ...(props.context !== undefined ? { context: props.context } : {}),
         ...(props.comment !== undefined ? { comment: props.comment } : {}),

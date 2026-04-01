@@ -50,8 +50,7 @@ import { Steps } from '@astrojs/starlight/components'
 
    ```tsx
    // src/Home.tsx
-   import { t, useI18n } from '@fluenti/react'
-   import { Trans, Plural } from '@fluenti/react'
+   import { t, useI18n, Trans, Plural } from '@fluenti/react'
 
    export function Home() {
      const { setLocale } = useI18n()
@@ -151,6 +150,8 @@ import { Plural } from '@fluenti/react'
 ```
 
 ## Framework compatibility
+
+`@fluenti/react/components` remains available when you want an explicit components-only subpath, but the default authoring path is the main `@fluenti/react` entry.
 
 `@fluenti/react` works with any React-based framework:
 

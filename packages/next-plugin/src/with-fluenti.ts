@@ -49,7 +49,7 @@ export function withFluenti(
 function isFluentConfig(obj: Record<string, unknown>): boolean {
   const fluentOnlyKeys = [
     'config', 'locales', 'serverModule', 'serverModuleOutDir', 'resolveLocale',
-    'cookieName', 'loaderEnforce',
+    'cookieName', 'runtimeInterpolate', 'loaderEnforce',
   ]
   return fluentOnlyKeys.some((key) => key in obj)
 }

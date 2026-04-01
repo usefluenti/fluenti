@@ -50,8 +50,7 @@ import { Steps } from '@astrojs/starlight/components'
 
    ```tsx
    // src/Home.tsx
-   import { t, useI18n } from '@fluenti/solid'
-   import { Trans, Plural } from '@fluenti/solid'
+   import { t, useI18n, Trans, Plural } from '@fluenti/solid'
    import { createSignal } from 'solid-js'
 
    export function Home() {
@@ -137,6 +136,8 @@ import { Steps } from '@astrojs/starlight/components'
 - Naturally reactive — JSX expressions that call `t` re-run inside Solid's reactive scopes
 
 ## Rich text with `<Trans>`
+
+`@fluenti/solid/components` remains available when you want an explicit runtime-only component import path, but the default authoring path is the main `@fluenti/solid` entry.
 
 ```tsx
 <Trans>Click <a href="/next">here</a> to continue.</Trans>

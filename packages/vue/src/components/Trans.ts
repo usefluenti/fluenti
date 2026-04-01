@@ -33,7 +33,7 @@ const transProps = {
 
 export type FluentiTransProps = Readonly<ExtractPropTypes<typeof transProps>>
 
-export const Trans = defineComponent({
+export const Trans = /* @__PURE__ */ defineComponent({
   name: 'Trans',
   props: transProps,
   setup(props, { slots }) {

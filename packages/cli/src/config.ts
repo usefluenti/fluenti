@@ -1,4 +1,4 @@
-import type { FluentiBuildConfig } from '@fluenti/core/internal'
+import type { FluentiBuildConfig } from '@fluenti/core/compiler'
 
 /**
  * Define a Fluenti configuration with full type inference and IDE autocompletion.

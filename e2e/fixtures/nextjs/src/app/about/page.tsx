@@ -1,9 +1,8 @@
 'use client'
 
-import { useI18n } from '@fluenti/react'
+import { t } from '@fluenti/react'
 
 export default function About() {
-  const { t } = useI18n()
   const email = 'hello@fluenti.dev'
   return (
     <div data-testid="about-page">

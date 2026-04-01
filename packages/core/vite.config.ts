@@ -3,7 +3,8 @@ import { createPackageConfig } from '../../scripts/vite-config-factory'
 export default createPackageConfig({
   entry: {
     index: 'src/index.ts',
-    internal: 'src/internal.ts',
+    runtime: 'src/runtime.ts',
+    compiler: 'src/compiler.ts',
     'ssr-entry': 'src/ssr-entry.ts',
     'formatters-entry': 'src/formatters-entry.ts',
     transform: 'src/transform.ts',

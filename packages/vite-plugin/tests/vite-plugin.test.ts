@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { Plugin } from 'vite'
-import { hashMessage } from '@fluenti/core/internal'
-import type { FluentiBuildConfig } from '@fluenti/core/internal'
+import { hashMessage } from '@fluenti/core/compiler'
+import type { FluentiBuildConfig } from '@fluenti/core/compiler'
 import { createFluentiPlugins } from '../src/index'
 import type { FluentiCoreOptions } from '../src/types'
 
@@ -125,6 +125,37 @@ export function Hero() {
       expect(result?.code).not.toContain("import { t } from '@fluenti/react'")
     })
 
+    it('reroutes main-entry component imports to /components', () => {
+      const plugins = createFluentiPlugins({ framework: 'react' }, [])
+      const plugin = plugins.find(p => p.name === 'fluenti:script-transform')!
+      const code = `
+import { Trans, Plural } from '@fluenti/react'
+export function Hero() {
+  return <Trans>Hello</Trans>
+}
+`
+      const result = callHook(plugin.transform, {}, code, 'Hero.tsx') as { code: string } | undefined
+
+      expect(result?.code).toContain("import { Trans, Plural } from '@fluenti/react/components'")
+      expect(result?.code).not.toContain("from '@fluenti/react'")
+    })
+
+    it('splits mixed main-entry imports so compile-time t stays on the main entry', () => {
+      const plugins = createFluentiPlugins({ framework: 'react' }, [])
+      const plugin = plugins.find(p => p.name === 'fluenti:script-transform')!
+      const code = `
+import { t, Trans } from '@fluenti/react'
+export function Hero() {
+  return <Trans>{t\`Hello\`}</Trans>
+}
+`
+      const result = callHook(plugin.transform, {}, code, 'Hero.tsx') as { code: string } | undefined
+
+      expect(result?.code).toContain("import { useI18n } from '@fluenti/react'")
+      expect(result?.code).toContain("import { Trans } from '@fluenti/react/components'")
+      expect(result?.code).not.toContain("import { t, Trans } from '@fluenti/react'")
+    })
+
     it('supports direct-import descriptor calls with stable ids', () => {
       const plugins = createFluentiPlugins({ framework: 'react' }, [])
       const plugin = plugins.find(p => p.name === 'fluenti:script-transform')!
@@ -142,21 +173,40 @@ export function Nav() {
       expect(result?.code).not.toContain("comment: 'main link'")
     })
 
+    it('rewrites rich React <Plural> to the compiled rich component path', () => {
+      const plugins = createFluentiPlugins({ framework: 'react' }, [])
+      const plugin = plugins.find(p => p.name === 'fluenti:script-transform')!
+      const code = `
+import { Plural } from '@fluenti/react'
+export function Cart(props: { count: number }) {
+  return <Plural value={props.count} one={<><strong>#</strong> item</>} other={<><strong>#</strong> items</>} />
+}
+`
+      const result = callHook(plugin.transform, {}, code, 'Cart.tsx') as { code: string } | undefined
+
+      expect(result?.code).toContain('__FluentiCompiledRichPlural')
+      expect(result?.code).toContain("from '@fluenti/react/components'")
+      expect(result?.code).toContain('<__FluentiCompiledRichPlural')
+      expect(result?.code).toContain('components={[<strong />, <strong />]}')
+    })
+
     it('detects direct-import t when it is not the first imported specifier', () => {
       const plugins = createFluentiPlugins({ framework: 'solid' }, [])
       const plugin = plugins.find(p => p.name === 'fluenti:script-transform')!
       const code = `
-import { Plural, t } from '@fluenti/solid'
+import { t } from '@fluenti/solid'
+import { Plural } from '@fluenti/solid/components'
 export default function Demo() {
   return <Plural value={count()} zero={t\`Zero\`} other={t\`Many\`} />
 }
 `
       const result = callHook(plugin.transform, {}, code, 'Demo.tsx') as { code: string } | undefined
 
-      expect(result?.code).toContain("import { Plural, useI18n } from '@fluenti/solid'")
+      expect(result?.code).toContain("import { useI18n } from '@fluenti/solid'")
+      expect(result?.code).toContain("import { Plural } from '@fluenti/solid/components'")
       expect(result?.code).toContain('zero={__fluenti_t({ id:')
       expect(result?.code).toContain('other={__fluenti_t({ id:')
-      expect(result?.code).not.toContain("import { Plural, t } from '@fluenti/solid'")
+      expect(result?.code).not.toContain("import { t } from '@fluenti/solid'")
     })
 
     it('throws for unsupported top-level direct-import t usage', () => {
@@ -199,6 +249,57 @@ const label = t('nav.home')
       expect(result?.code).toContain(`__id="${hashMessage('Welcome', 'hero')}"`)
       expect(result?.code).toContain('__message="Welcome"')
       expect(result?.code).toContain('context="hero"')
+    })
+
+    it('rewrites Solid <Trans> to the compiled internal component path', () => {
+      const plugins = createFluentiPlugins({ framework: 'solid' }, [])
+      const plugin = plugins.find(p => p.name === 'fluenti:script-transform')!
+      const code = `
+import { Trans } from '@fluenti/solid'
+export function Hero() {
+  return <Trans>Hello <strong>world</strong></Trans>
+}
+`
+      const result = callHook(plugin.transform, {}, code, 'Hero.tsx') as { code: string } | undefined
+
+      expect(result?.code).toContain("__FluentiCompiledTrans")
+      expect(result?.code).toContain("from '@fluenti/solid/components'")
+      expect(result?.code).toContain('message={"Hello <0>world</0>"}')
+      expect(result?.code).toContain('components={[<strong />]}')
+    })
+
+    it('rewrites React <Plural> static string forms to the compiled component path', () => {
+      const plugins = createFluentiPlugins({ framework: 'react' }, [])
+      const plugin = plugins.find(p => p.name === 'fluenti:script-transform')!
+      const code = `
+import { Plural } from '@fluenti/react'
+export function Counter(props: { count: number }) {
+  return <Plural value={props.count} one="# item" other="# items" />
+}
+`
+      const result = callHook(plugin.transform, {}, code, 'Counter.tsx') as { code: string } | undefined
+
+      expect(result?.code).toContain('import { __FluentiCompiledPlural')
+      expect(result?.code).toContain("from '@fluenti/react/components'")
+      expect(result?.code).toContain('<__FluentiCompiledPlural')
+      expect(result?.code).toContain('message={"{count, plural, one {# item} other {# items}}"}')
+    })
+
+    it('rewrites Solid <Select> static options to the compiled component path', () => {
+      const plugins = createFluentiPlugins({ framework: 'solid' }, [])
+      const plugin = plugins.find(p => p.name === 'fluenti:script-transform')!
+      const code = `
+import { Select } from '@fluenti/solid'
+export function Role(props: { role: string }) {
+  return <Select value={props.role} options={{ admin: 'Admin', editor: 'Editor' }} other="Guest" />
+}
+`
+      const result = callHook(plugin.transform, {}, code, 'Role.tsx') as { code: string } | undefined
+
+      expect(result?.code).toContain('import { __FluentiCompiledSelect')
+      expect(result?.code).toContain("from '@fluenti/solid/components'")
+      expect(result?.code).toContain('<__FluentiCompiledSelect')
+      expect(result?.code).toContain('message={"{value, select, admin {Admin} editor {Editor} other {Guest}}"}')
     })
 
     it('skips node_modules and non-script vue blocks', () => {

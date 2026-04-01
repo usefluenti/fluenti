@@ -1,6 +1,6 @@
 import type { CatalogData } from './catalog'
-import { hashMessage, parse } from '@fluenti/core/internal'
-import type { ASTNode, PluralNode, SelectNode, VariableNode, FunctionNode } from '@fluenti/core/internal'
+import { hashMessage, parse } from '@fluenti/core/compiler'
+import type { ASTNode, PluralNode, SelectNode, VariableNode, FunctionNode } from '@fluenti/core/compiler'
 
 const ICU_VAR_REGEX = /\{(\w+)\}/g
 const ICU_VAR_TEST = /\{(\w+)\}/

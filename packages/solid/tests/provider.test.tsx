@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { render } from '@solidjs/testing-library'
-import { interpolate } from '@fluenti/core/internal'
+import { interpolate } from '@fluenti/core/runtime'
 import { I18nProvider, useI18n } from '../src'
 
 const messages = {

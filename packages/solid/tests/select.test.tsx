@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { createSignal } from 'solid-js'
 import { render } from '@solidjs/testing-library'
-import { interpolate } from '@fluenti/core/internal'
+import { interpolate } from '@fluenti/core/runtime'
 import { I18nProvider } from '../src'
 import { SelectComp as Select } from '../src/select'
 

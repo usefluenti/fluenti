@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { render, screen, cleanup } from '@testing-library/react'
 import { I18nProvider, useI18n, createFluenti } from '../src'
-import { interpolate } from '../../core/src/interpolate'
+import { interpolate } from '../../core/src/runtime'
 
 const messages = {
   en: { hello: 'Hello', greeting: 'Hello {name}!' },

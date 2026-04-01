@@ -1,4 +1,4 @@
-import type { ExtractedMessage } from '@fluenti/core/internal'
+import type { ExtractedMessage } from '@fluenti/core/compiler'
 import { parse as parseSFC } from '@vue/compiler-sfc'
 import { createMessageId } from '@fluenti/core/transform'
 import { extractFromTsx } from './tsx-extractor'

@@ -32,7 +32,7 @@ export function App() {
 }
 ```
 
-`I18nProvider` creates a reactive i18n context using `createFluentiContext()` internally and provides it to the component tree via Solid's context API. All child components can access it through `useI18n()`.
+`I18nProvider` provides the same reactive i18n runtime that `createFluenti()` exposes, wired into Solid's context API for the component tree. All child components can access it through `useI18n()`.
 
 ### Lazy Locale Loading
 
@@ -141,8 +141,7 @@ function PageHeader(props: { page: keyof typeof PAGE_TITLES }) {
 The `<Trans>` component renders translations that contain embedded components:
 
 ```tsx
-import { Trans } from '@fluenti/solid'
-import { t } from '@fluenti/solid'
+import { t, Trans } from '@fluenti/solid'
 
 const Bold = (props) => <strong>{props.children}</strong>
 const Link = (props) => <a href="/docs">{props.children}</a>

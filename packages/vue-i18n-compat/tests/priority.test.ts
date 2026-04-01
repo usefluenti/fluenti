@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { createFluenti } from '@fluenti/vue'
-import { interpolate } from '../../core/src/interpolate'
+import { interpolate } from '../../core/src/runtime'
 import { createFluentBridge } from '../src/bridge'
 import { createMockVueI18n } from './_helpers'
 

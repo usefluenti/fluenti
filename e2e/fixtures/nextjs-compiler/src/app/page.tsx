@@ -1,9 +1,8 @@
 'use client'
 
-import { useI18n } from '@fluenti/react'
+import { t } from '@fluenti/react'
 
 export default function Home() {
-  const { t } = useI18n()
   const name = 'World'
   return (
     <div data-testid="home-page">

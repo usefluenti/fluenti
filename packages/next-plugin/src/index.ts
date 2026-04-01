@@ -34,9 +34,57 @@ export { msg } from '@fluenti/react'
 
 import type { ReactNode, ReactElement } from 'react'
 import type { CompileTimeT, FluentiCoreInstanceFull } from '@fluenti/core'
+import type { I18nProviderProps } from './types'
 
-const NOT_CONFIGURED =
-  '[fluenti] `withFluenti()` must be configured in next.config.ts before importing from "@fluenti/next".'
+interface NextTransProps {
+  children: ReactNode
+  id?: string
+  context?: string
+  comment?: string
+  render?: (translation: ReactNode) => ReactNode
+}
+
+interface NextPluralProps {
+  value: number
+  id?: string
+  context?: string
+  comment?: string
+  zero?: ReactNode
+  one?: ReactNode
+  two?: ReactNode
+  few?: ReactNode
+  many?: ReactNode
+  other: ReactNode
+  offset?: number
+}
+
+interface NextSelectProps {
+  value: string
+  id?: string
+  context?: string
+  comment?: string
+  other: ReactNode
+  options?: Record<string, ReactNode>
+  [key: string]: ReactNode | Record<string, ReactNode> | string | undefined
+}
+
+interface NextDateTimeProps {
+  value: Date | number
+  style?: string
+}
+
+interface NextNumberFormatProps {
+  value: number
+  style?: string
+}
+
+const NOT_CONFIGURED = [
+  '[fluenti] `@fluenti/next` was imported before `withFluenti()` generated the server module.',
+  'Fix this by:',
+  "  1. Wrapping next.config.ts with `withFluenti()` from '@fluenti/next'",
+  '  2. Restarting the Next dev server after the generated module is written',
+  "  3. Importing client runtime APIs from '@fluenti/react' and server APIs from '@fluenti/next'",
+].join('\n')
 
 function throwNotConfigured(): never {
   throw new Error(NOT_CONFIGURED)
@@ -49,14 +97,26 @@ export const getI18n: () => Promise<FluentiCoreInstanceFull & { locale: string }
 /** @see Generated module for the real implementation. */
 export const t: CompileTimeT = throwNotConfigured as unknown as CompileTimeT
 /** @see Generated module for the real implementation. */
-export const Trans: (props: { children: ReactNode; id?: string; context?: string; comment?: string; render?: (translation: ReactNode) => ReactNode }) => Promise<ReactElement> = throwNotConfigured as unknown as typeof Trans
+export async function Trans(_props: NextTransProps): Promise<ReactElement> {
+  return throwNotConfigured()
+}
 /** @see Generated module for the real implementation. */
-export const Plural: (props: { value: number; id?: string; context?: string; comment?: string; zero?: ReactNode; one?: ReactNode; two?: ReactNode; few?: ReactNode; many?: ReactNode; other: ReactNode; offset?: number }) => Promise<ReactElement> = throwNotConfigured as unknown as typeof Plural
+export async function Plural(_props: NextPluralProps): Promise<ReactElement> {
+  return throwNotConfigured()
+}
 /** @see Generated module for the real implementation. */
-export const Select: (props: { value: string; id?: string; context?: string; comment?: string; other: ReactNode; options?: Record<string, ReactNode>; [key: string]: ReactNode | Record<string, ReactNode> | string | undefined }) => Promise<ReactElement> = throwNotConfigured as unknown as typeof Select
+export async function Select(_props: NextSelectProps): Promise<ReactElement> {
+  return throwNotConfigured()
+}
 /** @see Generated module for the real implementation. */
-export const DateTime: (props: { value: Date | number; style?: string }) => Promise<ReactElement> = throwNotConfigured as unknown as typeof DateTime
+export async function DateTime(_props: NextDateTimeProps): Promise<ReactElement> {
+  return throwNotConfigured()
+}
 /** @see Generated module for the real implementation. */
-export const NumberFormat: (props: { value: number; style?: string }) => Promise<ReactElement> = throwNotConfigured as unknown as typeof NumberFormat
+export async function NumberFormat(_props: NextNumberFormatProps): Promise<ReactElement> {
+  return throwNotConfigured()
+}
 /** @see Generated module for the real implementation. */
-export const I18nProvider: (props: { locale?: string; children: ReactNode }) => Promise<ReactElement> = throwNotConfigured as unknown as typeof I18nProvider
+export async function I18nProvider(_props: I18nProviderProps): Promise<ReactElement> {
+  return throwNotConfigured()
+}

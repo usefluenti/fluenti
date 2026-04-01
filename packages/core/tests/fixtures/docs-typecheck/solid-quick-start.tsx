@@ -1,6 +1,5 @@
 import { createSignal } from 'solid-js'
-import { t, useI18n } from '@fluenti/solid'
-import { Trans, Plural } from '@fluenti/solid'
+import { t, useI18n, Trans, Plural } from '@fluenti/solid'
 
 export function Home() {
   const { setLocale } = useI18n()

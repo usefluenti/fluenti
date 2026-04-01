@@ -66,7 +66,7 @@ export interface I18nProviderProps {
   diagnostics?: DiagnosticsConfig
   /**
    * Custom message interpolation function.
-   * Pass `interpolate` from `@fluenti/core/internal` for full ICU support at runtime.
+   * Pass `interpolate` from `@fluenti/core/runtime` for full ICU support at runtime.
    */
   interpolate?: (message: string, values: Record<string, unknown> | undefined, locale: string, formatters?: Record<string, unknown>) => string
   /** App content */

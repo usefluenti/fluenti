@@ -17,7 +17,7 @@ vi.mock('react', async () => {
   }
 })
 
-import { interpolate } from '../../core/src/interpolate'
+import { interpolate } from '../../core/src/runtime'
 import { createServerI18n } from '../src/server'
 import { hashMessage } from '../src/components/trans-core'
 

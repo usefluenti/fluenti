@@ -1,5 +1,5 @@
 import type { CatalogData } from './catalog'
-import { hashMessage } from '@fluenti/core/internal'
+import { hashMessage } from '@fluenti/core/compiler'
 import * as gettextParser from 'gettext-parser'
 
 const CUSTOM_ID_MARKER = 'fluenti-id:'

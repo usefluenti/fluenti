@@ -1,6 +1,6 @@
 import { createApp, type InjectionKey } from 'vue'
 import { createFluenti } from '@fluenti/vue'
-import { interpolate } from '@fluenti/vue'
+import { interpolate } from '@fluenti/core/runtime'
 import {
   extractLocaleFromPath,
 } from '@fluenti/nuxt/client'

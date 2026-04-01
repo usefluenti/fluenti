@@ -359,12 +359,12 @@ export interface FluentiCoreConfigFull extends FluentiCoreConfig {
    * Custom message interpolation function.
    *
    * By default, the runtime uses a lightweight `{key}` replacer.
-   * Pass the full `interpolate` from `@fluenti/core/internal` for
+   * Pass the full `interpolate` from `@fluenti/core/runtime` for
    * runtime ICU MessageFormat parsing (adds ~2.5 KB gzip).
    *
    * @example
    * ```ts
-   * import { interpolate } from '@fluenti/core/internal'
+   * import { interpolate } from '@fluenti/core/runtime'
    * createFluentiCore({ interpolate, ... })
    * ```
    */
@@ -446,4 +446,3 @@ export type FluentiBuildConfig = FluentiConfig
 export function normalizeConfig(config: FluentiBuildConfig): FluentiBuildConfig {
   return config
 }
-

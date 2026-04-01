@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { cleanup, render } from '@testing-library/react'
 import type { ReactNode } from 'react'
-import { interpolate } from '../../core/src/interpolate'
+import { interpolate } from '../../core/src/runtime'
 import {
   contractLocale,
   contractMessageIds,

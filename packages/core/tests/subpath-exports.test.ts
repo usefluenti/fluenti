@@ -41,22 +41,36 @@ describe('subpath exports', () => {
     })
   })
 
-  describe('@fluenti/core/internal entry', () => {
-    it('exports parser, compiler, interpolation, and utility modules', async () => {
-      const internalEntry = await import('../src/internal')
-      expect(internalEntry.parse).toBeTypeOf('function')
-      expect(internalEntry.compile).toBeTypeOf('function')
-      expect(internalEntry.interpolate).toBeTypeOf('function')
-      expect(internalEntry.Catalog).toBeTypeOf('function')
-      expect(internalEntry.resolvePlural).toBeTypeOf('function')
-      expect(internalEntry.createDiagnostics).toBeTypeOf('function')
-      expect(internalEntry.LRUCache).toBeTypeOf('function')
-      expect(internalEntry.buildICUMessage).toBeTypeOf('function')
-      expect(internalEntry.resolveDescriptorId).toBeTypeOf('function')
-      expect(internalEntry.hashMessage).toBeTypeOf('function')
-      expect(internalEntry.createPluginRunner).toBeTypeOf('function')
-      expect(internalEntry.resolveLocaleCodes).toBeTypeOf('function')
-      expect(internalEntry.normalizeConfig).toBeTypeOf('function')
+  describe('@fluenti/core/runtime entry', () => {
+    it('exports runtime interpolation, formatter, and component helpers', async () => {
+      const runtimeEntry = await import('../src/runtime')
+      expect(runtimeEntry.interpolate).toBeTypeOf('function')
+      expect(runtimeEntry.Catalog).toBeTypeOf('function')
+      expect(runtimeEntry.resolvePlural).toBeTypeOf('function')
+      expect(runtimeEntry.createDiagnostics).toBeTypeOf('function')
+      expect(runtimeEntry.buildICUMessage).toBeTypeOf('function')
+      expect(runtimeEntry.buildICUPluralMessage).toBeTypeOf('function')
+      expect(runtimeEntry.buildICUSelectMessage).toBeTypeOf('function')
+      expect(runtimeEntry.normalizeSelectForms).toBeTypeOf('function')
+      expect(runtimeEntry.hashMessage).toBeTypeOf('function')
+      expect(runtimeEntry.resolveDescriptorId).toBeTypeOf('function')
+      expect(runtimeEntry.formatDate).toBeTypeOf('function')
+      expect(runtimeEntry.formatNumber).toBeTypeOf('function')
+      expect(runtimeEntry.formatRelativeTime).toBeTypeOf('function')
+    })
+  })
+
+  describe('@fluenti/core/compiler entry', () => {
+    it('exports parser, compiler, and build tooling helpers', async () => {
+      const compilerEntry = await import('../src/compiler')
+      expect(compilerEntry.parse).toBeTypeOf('function')
+      expect(compilerEntry.compile).toBeTypeOf('function')
+      expect(compilerEntry.createPluginRunner).toBeTypeOf('function')
+      expect(compilerEntry.resolveLocaleCodes).toBeTypeOf('function')
+      expect(compilerEntry.normalizeConfig).toBeTypeOf('function')
+      expect(compilerEntry.hashMessage).toBeTypeOf('function')
+      expect(compilerEntry.LRUCache).toBeTypeOf('function')
+      expect(compilerEntry.createDiagnostics).toBeTypeOf('function')
     })
   })
 

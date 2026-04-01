@@ -10,7 +10,7 @@
 //   <tag v-t.alt alt="text" />                → <tag :alt="$t('hash')" />
 //   <tag v-t.placeholder placeholder="t" />   → <tag :placeholder="$t('hash')" />
 
-import { hashMessage } from '@fluenti/core/internal'
+import { hashMessage } from '@fluenti/core/compiler'
 
 // NodeTypes from @vue/compiler-core (inlined to avoid hard dep at runtime)
 export const NT_ELEMENT = 1

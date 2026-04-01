@@ -1,8 +1,8 @@
 import { memo, useContext, type ReactNode } from 'react'
-import { hashMessage } from '@fluenti/core/internal'
 import { I18nContext } from '../context'
 import { PLURAL_CATEGORIES, type PluralCategory } from './plural-core'
 import { buildICUPluralMessage, renderRichTranslation, serializeRichForms } from './icu-rich'
+import { buildPlainPluralMessage, resolveCompiledMessageId } from './plain'
 
 export interface FluentiPluralProps {
   /** The count value */
@@ -37,7 +37,7 @@ export interface FluentiPluralProps {
  * <Plural value={count} zero="No messages" one="# message" other="# messages" />
  * ```
  */
-export const Plural = memo(function Plural({
+export const Plural = /* @__PURE__ */ memo(function Plural({
   value,
   id,
   context,
@@ -63,6 +63,19 @@ export const Plural = memo(function Plural({
     many,
     other,
   }
+  const plainMessage = buildPlainPluralMessage(forms, offset)
+  if (plainMessage !== undefined) {
+    return <>{ctx.t(
+      {
+        id: resolveCompiledMessageId(id, plainMessage, context),
+        message: plainMessage,
+        ...(context !== undefined ? { context } : {}),
+        ...(comment !== undefined ? { comment } : {}),
+      },
+      { count: value },
+    )}</>
+  }
+
   const { messages, components } = serializeRichForms(PLURAL_CATEGORIES, forms)
   const icuMessage = buildICUPluralMessage(
     {
@@ -77,7 +90,7 @@ export const Plural = memo(function Plural({
   )
 
   const descriptor = {
-    id: id ?? (context === undefined ? icuMessage : hashMessage(icuMessage, context)),
+    id: resolveCompiledMessageId(id, icuMessage, context),
     message: icuMessage,
     ...(context !== undefined ? { context } : {}),
     ...(comment !== undefined ? { comment } : {}),

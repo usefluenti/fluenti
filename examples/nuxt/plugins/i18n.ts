@@ -1,6 +1,6 @@
 import { createFluenti } from '@fluenti/vue'
-import { interpolate } from '@fluenti/vue'
-import * as components from '@fluenti/vue'
+import { interpolate } from '@fluenti/core/runtime'
+import * as components from '@fluenti/vue/components'
 import { getHydratedLocale } from '@fluenti/core'
 import en from '~/locales/compiled/en.js'
 import ja from '~/locales/compiled/ja.js'

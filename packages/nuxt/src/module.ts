@@ -1,9 +1,9 @@
 import { defineNuxtModule, addPlugin, addImports, addComponent, addRouteMiddleware, addServerHandler, createResolver } from '@nuxt/kit'
-import { createRequire } from 'node:module'
 import type { FluentNuxtOptions } from './types'
 import { resolveLocaleProperties, resolveDomainConfigs } from './types'
-import { resolveLocaleCodes } from '@fluenti/core/internal'
-import type { FluentiBuildConfig } from '@fluenti/core/internal'
+import { resolveLocaleCodes } from '@fluenti/core/compiler'
+import type { FluentiBuildConfig } from '@fluenti/core/compiler'
+import { DEFAULT_FLUENTI_CONFIG, loadConfigSync } from '@fluenti/core/config'
 import fluentiVue from '@fluenti/vue/vite-plugin'
 import { extendPages } from './runtime/page-extend'
 import { validateISRConfig } from './isr-validation'
@@ -14,7 +14,7 @@ export type { FluentNuxtOptions, Strategy, FluentNuxtRuntimeConfig, DetectBrowse
 export { generateSitemapUrls, createSitemapHook } from './sitemap'
 export type { SitemapUrl } from './sitemap'
 export { resolveLocaleProperties, resolveDomainConfigs } from './types'
-export { resolveLocaleCodes } from '@fluenti/core/internal'
+export { resolveLocaleCodes } from '@fluenti/core/compiler'
 export { localePath, extractLocaleFromPath, switchLocalePath } from './runtime/path-utils'
 export { extendPages } from './runtime/page-extend'
 export type { PageRoute, RouteNameTemplate, ExtendPagesOptions } from './runtime/page-extend'
@@ -26,11 +26,14 @@ export { defineI18nRoute } from './runtime/define-i18n-route'
 export const MODULE_NAME = '@fluenti/nuxt'
 export const CONFIG_KEY = 'fluenti'
 
-// Module-level require that works in both CJS and ESM after bundling.
-// See packages/core/src/config-loader.ts for explanation of the pattern.
-const _require = createRequire(
-  typeof __filename !== 'undefined' ? __filename : import.meta.url,
-)
+type PortableNuxtModule<TOptions> = {
+  (this: void, resolvedOptions: TOptions, nuxt: any): any
+  getOptions?: (inlineOptions?: Partial<TOptions>, nuxt?: any) => Promise<TOptions>
+  getModuleDependencies?: (nuxt: any) => any
+  getMeta?: () => Promise<any>
+  onInstall?: (nuxt: any) => any
+  onUpgrade?: (nuxt: any, options: TOptions, previousVersion: string) => any
+}
 
 /**
  * Resolve the FluentiBuildConfig from the module options.
@@ -38,22 +41,16 @@ const _require = createRequire(
 function resolveFluentiBuildConfig(configOption: string | FluentiBuildConfig | undefined, rootDir: string): FluentiBuildConfig {
 
   if (typeof configOption === 'object') {
-    const { DEFAULT_FLUENTI_CONFIG } = _require('@fluenti/core/config') as {
-      DEFAULT_FLUENTI_CONFIG: FluentiBuildConfig
-    }
     return { ...DEFAULT_FLUENTI_CONFIG, ...configOption }
   }
 
-  const { loadConfigSync } = _require('@fluenti/core/config') as {
-    loadConfigSync: (configPath?: string, cwd?: string) => FluentiBuildConfig
-  }
   return loadConfigSync(
     typeof configOption === 'string' ? configOption : undefined,
     rootDir,
   )
 }
 
-export default defineNuxtModule<FluentNuxtOptions>({
+const fluentiNuxtModule: PortableNuxtModule<FluentNuxtOptions> = defineNuxtModule<FluentNuxtOptions>({
   meta: {
     name: MODULE_NAME,
     configKey: CONFIG_KEY,
@@ -172,11 +169,11 @@ export default defineNuxtModule<FluentNuxtOptions>({
     }
 
     // Auto-import DateTime and NumberFormat from @fluenti/vue
-    addComponent({ name: `${prefix}Trans`, filePath: '@fluenti/vue', export: 'Trans' })
-    addComponent({ name: `${prefix}Plural`, filePath: '@fluenti/vue', export: 'Plural' })
-    addComponent({ name: `${prefix}Select`, filePath: '@fluenti/vue', export: 'Select' })
-    addComponent({ name: `${prefix}DateTime`, filePath: '@fluenti/vue', export: 'DateTime' })
-    addComponent({ name: `${prefix}NumberFormat`, filePath: '@fluenti/vue', export: 'NumberFormat' })
+    addComponent({ name: `${prefix}Trans`, filePath: '@fluenti/vue/components', export: 'Trans' })
+    addComponent({ name: `${prefix}Plural`, filePath: '@fluenti/vue/components', export: 'Plural' })
+    addComponent({ name: `${prefix}Select`, filePath: '@fluenti/vue/components', export: 'Select' })
+    addComponent({ name: `${prefix}DateTime`, filePath: '@fluenti/vue/components', export: 'DateTime' })
+    addComponent({ name: `${prefix}NumberFormat`, filePath: '@fluenti/vue/components', export: 'NumberFormat' })
 
     // --- SSG / ISR: configure nitro prerender and route rules ---
     if (strategy !== 'no_prefix' && strategy !== 'domains') {
@@ -228,3 +225,5 @@ export default defineNuxtModule<FluentNuxtOptions>({
     }
   },
 })
+
+export default fluentiNuxtModule

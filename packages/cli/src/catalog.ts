@@ -1,4 +1,4 @@
-import type { ExtractedMessage } from '@fluenti/core/internal'
+import type { ExtractedMessage } from '@fluenti/core/compiler'
 
 export interface CatalogEntry {
   message?: string | undefined

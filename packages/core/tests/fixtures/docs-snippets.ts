@@ -127,7 +127,7 @@ export const docsSnippetFixtures: readonly DocsSnippetFixture[] = [
   {
     name: 'without build plugin components',
     code: [
-      "import { Trans, Plural, Select } from '@fluenti/react'",
+      "import { Trans, Plural, Select } from '@fluenti/react/components'",
       'export function Banner({ count, role }) {',
       '  return (',
       '    <>',

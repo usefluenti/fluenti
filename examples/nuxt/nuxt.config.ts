@@ -12,6 +12,8 @@ export default defineNuxtConfig({
     locales: ['en', 'ja', 'ar'],
     defaultLocale: 'en',
     sourceLocale: 'en',
+    // This demo relies on cookie-based locale detection rather than locale-prefixed URLs.
+    strategy: 'no_prefix',
     catalogDir: 'locales/compiled',
     detectBrowserLanguage: {
       useCookie: true,

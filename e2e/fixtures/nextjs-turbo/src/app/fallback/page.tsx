@@ -1,9 +1,9 @@
 'use client'
 
-import { useI18n } from '@fluenti/react'
+import { t, useI18n } from '@fluenti/react'
 
 export default function FallbackPage() {
-  const { t, locale } = useI18n()
+  const { locale } = useI18n()
 
   return (
     <div data-testid="fallback-page">

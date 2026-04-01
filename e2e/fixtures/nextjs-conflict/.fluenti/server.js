@@ -20,20 +20,15 @@ const serverI18n = createServerI18n({
       const { cookies, headers } = await import('next/headers')
       const [cookieStore, headerStore] = await Promise.all([cookies(), headers()])
 
-      // 1. Referer URL path segment (available in Server Action context)
-      const referer = headerStore.get('referer')
-      if (referer) {
-        try {
-          const seg = new URL(referer).pathname.split('/')[1]
-          if (seg && __locales.includes(seg)) return seg
-        } catch {}
-      }
+      // 0. x-fluenti-locale header (set by createI18nMiddleware — most authoritative)
+      const fromMiddleware = headerStore.get('x-fluenti-locale')
+      if (fromMiddleware && __locales.includes(fromMiddleware)) return fromMiddleware
 
-      // 2. Cookie (configurable name)
+      // 1. Cookie (configurable name)
       const fromCookie = cookieStore.get('locale')?.value
       if (fromCookie && __locales.includes(fromCookie)) return fromCookie
 
-      // 3. Accept-Language header
+      // 2. Accept-Language header
       const acceptLang = headerStore.get('accept-language')
       if (acceptLang) {
         for (const part of acceptLang.split(',')) {
@@ -81,9 +76,15 @@ export async function I18nProvider({ locale, children }) {
   serverI18n.setLocale(activeLocale)
   await serverI18n.getI18n()
 
-  // 2. Import the local 'use client' provider that has messages statically bundled.
-  // Messages contain functions (interpolation) which can't be serialized across the RSC boundary.
-  const { ClientI18nProvider } = await import('./client-provider.js')
+  // 2. Import the locale-specific client provider chunk. It eagerly bundles the
+  // active locale and shared fallback locales, and lazily loads the rest.
+  const { ClientI18nProvider } = await (async () => {
+    switch (activeLocale) {
+      case 'en': return import('./client-provider-en.js')
+      case 'ja': return import('./client-provider-ja.js')
+      default: return import('./client-provider-en.js')
+    }
+  })()
 
   return createElement(ClientI18nProvider, {
     locale: activeLocale,

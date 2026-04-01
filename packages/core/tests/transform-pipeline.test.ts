@@ -9,7 +9,7 @@ describe('createTransformPipeline', () => {
 
   it('transforms JSX file with <Trans> component', () => {
     const code = `
-import { Trans } from '@fluenti/react'
+import { Trans } from '@fluenti/react/components'
 export default function App() {
   return <Trans>Hello <b>world</b></Trans>
 }
@@ -34,7 +34,8 @@ function App() {
 
   it('transforms file with both <Trans> and t``', () => {
     const code = `
-import { useI18n, Trans } from '@fluenti/react'
+import { useI18n } from '@fluenti/react'
+import { Trans } from '@fluenti/react/components'
 function App() {
   const { t } = useI18n()
   const msg = t\`Greeting\`
@@ -45,6 +46,48 @@ function App() {
     expect(result.transformed).toBe(true)
     expect(result.code).toContain('__id')
     expect(result.code).toContain("message: 'Greeting'")
+  })
+
+  it('transforms React <Plural> to the compiled plain-text path', () => {
+    const code = `
+import { Plural } from '@fluenti/react'
+export default function App(props: { count: number }) {
+  return <Plural value={props.count} one="# item" other="# items" />
+}
+`
+
+    const result = pipeline.transform(code, 'src/App.tsx')
+    expect(result.transformed).toBe(true)
+    expect(result.code).toContain('__FluentiCompiledPlural')
+    expect(result.code).toContain('message={"{count, plural, one {# item} other {# items}}"}')
+  })
+
+  it('transforms React <Select> to the compiled plain-text path', () => {
+    const code = `
+import { Select } from '@fluenti/react'
+export default function App(props: { role: string }) {
+  return <Select value={props.role} admin="Admin" other="Guest" />
+}
+`
+
+    const result = pipeline.transform(code, 'src/App.tsx')
+    expect(result.transformed).toBe(true)
+    expect(result.code).toContain('__FluentiCompiledSelect')
+    expect(result.code).toContain('message={"{value, select, admin {Admin} other {Guest}}"}')
+  })
+
+  it('transforms React rich <Plural> to the compiled rich path', () => {
+    const code = `
+import { Plural } from '@fluenti/react'
+export default function App(props: { count: number }) {
+  return <Plural value={props.count} one={<><strong>#</strong> item</>} other={<><strong>#</strong> items</>} />
+}
+`
+
+    const result = pipeline.transform(code, 'src/App.tsx')
+    expect(result.transformed).toBe(true)
+    expect(result.code).toContain('__FluentiCompiledRichPlural')
+    expect(result.code).toContain('components={[<strong />, <strong />]}')
   })
 
   it('skips Trans transform for .ts files (non-JSX)', () => {
@@ -73,12 +116,28 @@ console.log(x)
 
   it('transformTrans() delegates correctly', () => {
     const code = `
-import { Trans } from '@fluenti/react'
+import { Trans } from '@fluenti/react/components'
 export default () => <Trans>Hello <b>world</b></Trans>
 `
     const result = pipeline.transformTrans(code)
     expect(result.transformed).toBe(true)
     expect(result.code).toContain('__id')
+  })
+
+  it('uses the compiled Solid Trans fast path when the pipeline framework is solid', () => {
+    const solidPipeline = createTransformPipeline({ framework: 'solid' })
+    const code = `
+import { Trans } from '@fluenti/solid'
+export default function App() {
+  return <Trans>Hello <strong>world</strong></Trans>
+}
+`
+
+    const result = solidPipeline.transform(code, 'src/App.tsx')
+    expect(result.transformed).toBe(true)
+    expect(result.code).toContain('__FluentiCompiledTrans')
+    expect(result.code).toContain("from '@fluenti/solid/components'")
+    expect(result.code).toContain('message={"Hello <0>world</0>"}')
   })
 
   it('transformScope() accepts overrides', () => {
@@ -103,6 +162,22 @@ function App() {
     const result = pipeline.transformScope(code)
     expect(result.transformed).toBe(true)
     expect(result.code).toContain("message: 'Hello'")
+  })
+
+  it('transformScope() can reroute main-entry components to a dedicated subpath', () => {
+    const code = `
+import { Trans } from '@fluenti/react'
+export default function App() {
+  return <Trans>Hello</Trans>
+}
+`
+
+    const result = pipeline.transformScope(code, {
+      componentModuleImport: '@fluenti/react/components',
+    })
+
+    expect(result.transformed).toBe(true)
+    expect(result.code).toContain("import { Trans } from '@fluenti/react/components'")
   })
 })
 

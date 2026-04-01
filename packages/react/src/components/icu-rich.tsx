@@ -4,7 +4,7 @@ import {
   buildICUSelectMessage,
   normalizeSelectForms,
   offsetIndices,
-} from '@fluenti/core/internal'
+} from '@fluenti/core/runtime'
 import type { ReactElement, ReactNode } from 'react'
 import { extractMessage, reconstruct } from './trans-core'
 

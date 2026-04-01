@@ -2,7 +2,7 @@ import { describe, it, expect, afterEach } from 'vitest'
 import { render, screen, cleanup } from '@testing-library/react'
 import { Trans, Plural, Select, DateTime, NumberFormat } from '../src/components-entry'
 import { I18nProvider } from '../src'
-import { interpolate } from '../../core/src/interpolate'
+import { interpolate } from '../../core/src/runtime'
 import * as mainExports from '../src'
 
 describe('components-entry subpath', () => {
@@ -30,13 +30,16 @@ describe('components-entry subpath', () => {
     expect((NumberFormat as any).$$typeof).toBeDefined()
   })
 
-  it('main entry also exports all components', () => {
-    // All components available from main entry (tree-shaking removes unused ones)
-    expect((mainExports as Record<string, unknown>).Trans).toBeDefined()
-    expect((mainExports as Record<string, unknown>).Plural).toBeDefined()
-    expect((mainExports as Record<string, unknown>).Select).toBeDefined()
-    expect((mainExports as Record<string, unknown>).DateTime).toBeDefined()
-    expect((mainExports as Record<string, unknown>).NumberFormat).toBeDefined()
+  it('main entry re-exports runtime APIs and components', () => {
+    expect((mainExports as Record<string, unknown>).createFluenti).toBeDefined()
+    expect((mainExports as Record<string, unknown>).I18nProvider).toBeDefined()
+    expect((mainExports as Record<string, unknown>).useI18n).toBeDefined()
+    expect((mainExports as Record<string, unknown>).Trans).toBe(Trans)
+    expect((mainExports as Record<string, unknown>).Plural).toBe(Plural)
+    expect((mainExports as Record<string, unknown>).Select).toBe(Select)
+    expect((mainExports as Record<string, unknown>).DateTime).toBe(DateTime)
+    expect((mainExports as Record<string, unknown>).NumberFormat).toBe(NumberFormat)
+    expect((mainExports as Record<string, unknown>).interpolate).toBeUndefined()
   })
 
   it('renders Trans component', () => {

@@ -75,6 +75,8 @@ import { t, useI18n, Trans, Plural, Select } from '@fluenti/react'
 function Dashboard() {
   const { d, n, locale, setLocale } = useI18n()
   const name = 'Alice'
+  const count = 3
+  const role = 'editor'
 
   return (
     <div>
@@ -100,6 +102,8 @@ function Dashboard() {
   )
 }
 ```
+
+`@fluenti/react/components` remains available as an explicit subpath when you want to keep component imports separate in bundle-sensitive or no-plugin setups.
 
 ---
 

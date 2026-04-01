@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { render } from '@solidjs/testing-library'
 import type { JSX } from 'solid-js'
-import { interpolate } from '@fluenti/core/internal'
+import { interpolate } from '@fluenti/core/runtime'
 import {
   contractLocale,
   contractMessages,

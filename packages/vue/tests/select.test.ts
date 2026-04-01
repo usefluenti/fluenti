@@ -3,7 +3,7 @@ import { mount } from '@vue/test-utils'
 import { h } from 'vue'
 import { createFluenti } from '../src/plugin'
 import { Select } from '../src/components/Select'
-import { interpolate } from '../../core/src/interpolate'
+import { interpolate } from '../../core/src/runtime'
 
 function createPlugin() {
   return createFluenti({

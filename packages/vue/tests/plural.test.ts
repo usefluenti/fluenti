@@ -3,7 +3,7 @@ import { h, nextTick } from 'vue'
 import { mount } from '@vue/test-utils'
 import { createFluenti } from '../src/plugin'
 import { Plural } from '../src/components/Plural'
-import { interpolate } from '../../core/src/interpolate'
+import { interpolate } from '../../core/src/runtime'
 
 function createPlugin() {
   return createFluenti({

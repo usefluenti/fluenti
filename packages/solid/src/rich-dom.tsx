@@ -11,7 +11,7 @@ function resolveValue(value: unknown): unknown {
   return value
 }
 
-import { offsetIndices } from '@fluenti/core/internal'
+import { offsetIndices } from '@fluenti/core/runtime'
 
 export function extractMessage(value: unknown): {
   message: string
@@ -155,4 +155,3 @@ export function serializeRichForms<T extends string>(
 
   return { messages, components }
 }
-

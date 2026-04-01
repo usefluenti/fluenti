@@ -3,7 +3,7 @@ import { Comment, Text, createTextVNode, createVNode, h } from 'vue'
 import { mount } from '@vue/test-utils'
 import { createFluenti } from '../src/plugin'
 import { Trans } from '../src/components/Trans'
-import { hashMessage } from '@fluenti/core/internal'
+import { hashMessage } from '@fluenti/core/compiler'
 import { extractMessage, reconstruct, serializeRichForms } from '../src/components/rich-text'
 
 function createPlugin(messages: Record<string, string> = {}) {

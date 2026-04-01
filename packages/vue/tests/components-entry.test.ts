@@ -20,12 +20,15 @@ describe('components-entry subpath', () => {
     expect(NumberFormat).toBeDefined()
   })
 
-  it('main entry also exports all components', () => {
-    expect((mainExports as Record<string, unknown>).Trans).toBeDefined()
-    expect((mainExports as Record<string, unknown>).Plural).toBeDefined()
-    expect((mainExports as Record<string, unknown>).Select).toBeDefined()
-    expect((mainExports as Record<string, unknown>).DateTime).toBeDefined()
-    expect((mainExports as Record<string, unknown>).NumberFormat).toBeDefined()
+  it('main entry re-exports runtime APIs and components', () => {
+    expect((mainExports as Record<string, unknown>).createFluenti).toBeDefined()
+    expect((mainExports as Record<string, unknown>).useI18n).toBeDefined()
+    expect((mainExports as Record<string, unknown>).Trans).toBe(Trans)
+    expect((mainExports as Record<string, unknown>).Plural).toBe(Plural)
+    expect((mainExports as Record<string, unknown>).Select).toBe(Select)
+    expect((mainExports as Record<string, unknown>).DateTime).toBe(DateTime)
+    expect((mainExports as Record<string, unknown>).NumberFormat).toBe(NumberFormat)
+    expect((mainExports as Record<string, unknown>).interpolate).toBeUndefined()
   })
 
   it('Trans renders via components-entry', () => {

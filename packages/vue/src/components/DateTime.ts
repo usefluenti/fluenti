@@ -20,7 +20,7 @@ const dateTimeProps = {
 
 export type FluentiDateTimeProps = Readonly<ExtractPropTypes<typeof dateTimeProps>>
 
-export const DateTime = defineComponent({
+export const DateTime = /* @__PURE__ */ defineComponent({
   name: 'DateTime',
   props: dateTimeProps,
   setup(props) {

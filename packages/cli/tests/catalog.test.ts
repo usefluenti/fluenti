@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { updateCatalog } from '../src/catalog'
 import type { CatalogData } from '../src/catalog'
-import type { ExtractedMessage } from '@fluenti/core/internal'
+import type { ExtractedMessage } from '@fluenti/core/compiler'
 
 function makeMessage(id: string, message: string, file = 'test.vue', line = 1): ExtractedMessage {
   return { id, message, origin: { file, line } }

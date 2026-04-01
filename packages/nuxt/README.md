@@ -91,14 +91,20 @@ For rich text with embedded HTML and components:
 
 ### Template Literal Tag
 
-Use `` t`...` `` in script and template expressions:
+Use direct-import `` t`...` `` in script expressions:
 
 ```vue
 <script setup>
-const { t } = useI18n()
+import { computed } from 'vue'
+import { t } from '@fluenti/vue'
+
 const greeting = computed(() => t`Hello, {name}!`)
 </script>
+```
 
+Use `` t`...` `` directly in templates:
+
+```vue
 <template>
   <p>{{ t`You have {count, plural, one {# item} other {# items}}` }}</p>
 </template>

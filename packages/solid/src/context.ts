@@ -78,7 +78,7 @@ export interface FluentiConfig extends FluentiCoreConfig {
    * Custom message interpolation function.
    *
    * By default, the runtime uses a lightweight `{key}` replacer.
-   * Pass the full `interpolate` from `@fluenti/core/internal` for
+   * Pass the full `interpolate` from `@fluenti/core/runtime` for
    * runtime ICU MessageFormat support (plurals, selects, nested arguments).
    */
   interpolate?: (
@@ -129,10 +129,10 @@ export interface FluentiContext {
  *
  * @example
  * ```tsx
- * import { createFluentiContext } from '@fluenti/solid'
+ * import { createFluenti } from '@fluenti/solid'
  * import messages from './locales/compiled/en.js'
  *
- * const ctx = createFluentiContext({
+ * const ctx = createFluenti({
  *   locale: 'en',
  *   messages: { en: messages },
  * })
@@ -298,3 +298,5 @@ export function createFluentiContext(config: FluentiCoreConfig | FluentiConfig):
 
   return { locale, setLocale, t, loadMessages, getLocales, d, n, format, isLoading, loadedLocales, preloadLocale, te, tm }
 }
+
+export const createFluenti = createFluentiContext

@@ -19,7 +19,7 @@ export type FluentiNumberFormatProps = NumberFormatProps
  * <Number value={1234.56} format="currency" />
  * ```
  */
-export const NumberFormat = memo(function NumberFormat({ value, format }: NumberFormatProps) {
+export const NumberFormat = /* @__PURE__ */ memo(function NumberFormat({ value, format }: NumberFormatProps) {
   const ctx = useContext(I18nContext)
   if (!ctx) {
     throw new Error('[fluenti] <Number> must be used within an <I18nProvider>')

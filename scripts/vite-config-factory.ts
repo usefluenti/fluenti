@@ -41,6 +41,37 @@ function loadDtsPlugin() {
   return plugin.default ?? plugin
 }
 
+function createTestAliases(cwd: string) {
+  const packagesDir = join(cwd, '..')
+  const entry = (pkg: string, file: string) => join(packagesDir, pkg, 'src', file)
+
+  return [
+    { find: /^@fluenti\/core\/runtime$/, replacement: entry('core', 'runtime.ts') },
+    { find: /^@fluenti\/core\/compiler$/, replacement: entry('core', 'compiler.ts') },
+    { find: /^@fluenti\/core\/transform\/browser$/, replacement: entry('core', 'transform-browser.ts') },
+    { find: /^@fluenti\/core\/transform$/, replacement: entry('core', 'transform.ts') },
+    { find: /^@fluenti\/core\/ssr$/, replacement: entry('core', 'ssr-entry.ts') },
+    { find: /^@fluenti\/core\/formatters$/, replacement: entry('core', 'formatters-entry.ts') },
+    { find: /^@fluenti\/core\/config$/, replacement: entry('core', 'config.ts') },
+    { find: /^@fluenti\/core$/, replacement: entry('core', 'index.ts') },
+    { find: /^@fluenti\/react\/components$/, replacement: entry('react', 'components-entry.ts') },
+    { find: /^@fluenti\/react\/server$/, replacement: entry('react', 'server.ts') },
+    { find: /^@fluenti\/react\/vite-plugin$/, replacement: entry('react', 'vite-plugin.ts') },
+    { find: /^@fluenti\/react$/, replacement: entry('react', 'index.ts') },
+    { find: /^@fluenti\/vue\/components$/, replacement: entry('vue', 'components-entry.ts') },
+    { find: /^@fluenti\/vue\/server$/, replacement: entry('vue', 'server.ts') },
+    { find: /^@fluenti\/vue\/vite-plugin$/, replacement: entry('vue', 'vite-plugin.ts') },
+    { find: /^@fluenti\/vue$/, replacement: entry('vue', 'index.ts') },
+    { find: /^@fluenti\/solid\/components$/, replacement: entry('solid', 'components-entry.ts') },
+    { find: /^@fluenti\/solid\/server$/, replacement: entry('solid', 'server.ts') },
+    { find: /^@fluenti\/solid\/vite-plugin$/, replacement: entry('solid', 'vite-plugin.ts') },
+    { find: /^@fluenti\/solid$/, replacement: entry('solid', 'index.ts') },
+    { find: /^@fluenti\/vite-plugin\/sfc-transform$/, replacement: entry('vite-plugin', 'sfc-transform.ts') },
+    { find: /^@fluenti\/vite-plugin$/, replacement: entry('vite-plugin', 'index.ts') },
+    { find: /^@fluenti\/next$/, replacement: entry('next-plugin', 'index.ts') },
+  ]
+}
+
 export function createPackageConfig(options: PackageConfigOptions) {
   return defineConfig(async ({ command }) => {
     const plugins = [...(options.plugins ?? [])]
@@ -51,6 +82,7 @@ export function createPackageConfig(options: PackageConfigOptions) {
     }
 
     return {
+      ...(command === 'build' ? {} : { resolve: { alias: createTestAliases(process.cwd()) } }),
       build: {
         lib: {
           entry: options.entry,

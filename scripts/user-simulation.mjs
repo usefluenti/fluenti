@@ -293,7 +293,8 @@ try {
     'test.mjs': `
       // Test all subpath imports resolve correctly
       import { createFluentiCore, Catalog, negotiateLocale, detectLocale } from '@fluenti/core'
-      import { parse, compile, interpolate } from '@fluenti/core/internal'
+      import { parse, compile } from '@fluenti/core/compiler'
+      import { interpolate } from '@fluenti/core/runtime'
       import { detectLocale as ssrDetect } from '@fluenti/core/ssr'
       import { formatDate, formatNumber } from '@fluenti/core/formatters'
       import { I18nProvider, useI18n } from '@fluenti/react'

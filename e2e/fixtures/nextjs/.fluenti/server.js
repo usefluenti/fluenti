@@ -77,9 +77,16 @@ export async function I18nProvider({ locale, children }) {
   serverI18n.setLocale(activeLocale)
   await serverI18n.getI18n()
 
-  // 2. Import the local 'use client' provider that has messages statically bundled.
-  // Messages contain functions (interpolation) which can't be serialized across the RSC boundary.
-  const { ClientI18nProvider } = await import('./client-provider.js')
+  // 2. Import the locale-specific client provider chunk. It eagerly bundles the
+  // active locale and shared fallback locales, and lazily loads the rest.
+  const { ClientI18nProvider } = await (async () => {
+    switch (activeLocale) {
+      case 'en': return import('./client-provider-en.js')
+      case 'ja': return import('./client-provider-ja.js')
+      case 'ar': return import('./client-provider-ar.js')
+      default: return import('./client-provider-en.js')
+    }
+  })()
 
   return createElement(ClientI18nProvider, {
     locale: activeLocale,

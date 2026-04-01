@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "baseUrl": ".",
     "target": "ES2022",
     "module": "ESNext",
     "moduleResolution": "bundler",
@@ -20,6 +21,36 @@
     "noImplicitOverride": true,
     "exactOptionalPropertyTypes": true,
     "noPropertyAccessFromIndexSignature": true,
-    "verbatimModuleSyntax": true
+    "verbatimModuleSyntax": true,
+    "paths": {
+      "@fluenti/core": ["packages/core/src/index.ts"],
+      "@fluenti/core/runtime": ["packages/core/src/runtime.ts"],
+      "@fluenti/core/compiler": ["packages/core/src/compiler.ts"],
+      "@fluenti/core/ssr": ["packages/core/src/ssr-entry.ts"],
+      "@fluenti/core/formatters": ["packages/core/src/formatters-entry.ts"],
+      "@fluenti/core/transform": ["packages/core/src/transform.ts"],
+      "@fluenti/core/transform/browser": ["packages/core/src/transform-browser.ts"],
+      "@fluenti/core/config": ["packages/core/src/config.ts"],
+      "@fluenti/react": ["packages/react/src/index.ts"],
+      "@fluenti/react/components": ["packages/react/src/components-entry.ts"],
+      "@fluenti/react/server": ["packages/react/src/server.ts"],
+      "@fluenti/react/vite-plugin": ["packages/react/src/vite-plugin.ts"],
+      "@fluenti/vue": ["packages/vue/src/index.ts"],
+      "@fluenti/vue/components": ["packages/vue/src/components-entry.ts"],
+      "@fluenti/vue/server": ["packages/vue/src/server.ts"],
+      "@fluenti/vue/vite-plugin": ["packages/vue/src/vite-plugin.ts"],
+      "@fluenti/solid": ["packages/solid/src/index.ts"],
+      "@fluenti/solid/components": ["packages/solid/src/components-entry.ts"],
+      "@fluenti/solid/server": ["packages/solid/src/server.ts"],
+      "@fluenti/solid/vite-plugin": ["packages/solid/src/vite-plugin.ts"],
+      "@fluenti/next": ["packages/next-plugin/src/index.ts"],
+      "@fluenti/next/server": ["packages/next-plugin/src/server.ts"],
+      "@fluenti/next/provider": ["packages/next-plugin/src/provider.tsx"],
+      "@fluenti/next/middleware": ["packages/next-plugin/src/middleware.ts"],
+      "@fluenti/next/navigation": ["packages/next-plugin/src/navigation.ts"],
+      "@fluenti/next/i18n-config": ["packages/next-plugin/src/i18n-config.ts"],
+      "@fluenti/vite-plugin": ["packages/vite-plugin/src/index.ts"],
+      "@fluenti/vite-plugin/sfc-transform": ["packages/vite-plugin/src/sfc-transform.ts"]
+    }
   }
 }

@@ -78,6 +78,14 @@ export function scopeTransformAst(
   const trackedTBindings = collectTrackedTBindings(program, importBindings)
   const hasTrackedBindings = trackedTBindings.size > 0
   const hasDirectImports = importBindings.directClientT.size > 0 || importBindings.directServerT.size > 0
+  const hasComponentImportReroutes = !!options.componentModuleImport
+    && importBindings.frameworkImports.some((declaration) => {
+      return declaration.specifiers.some((specifier) => {
+        if (!isImportSpecifier(specifier)) return false
+        const importedName = readImportedName(specifier)
+        return importedName !== undefined && SERVER_AUTHORING_EXPORTS.has(importedName)
+      })
+    })
   const hasServerAuthoringImports = options.rerouteServerAuthoringImports
     && importBindings.frameworkImports.some((declaration) => {
       return declaration.specifiers.some((specifier) => {
@@ -87,7 +95,7 @@ export function scopeTransformAst(
       })
     })
 
-  if (!hasTrackedBindings && !hasDirectImports && !hasServerAuthoringImports) {
+  if (!hasTrackedBindings && !hasDirectImports && !hasServerAuthoringImports && !hasComponentImportReroutes) {
     return { code, transformed: false }
   }
 
@@ -312,11 +320,11 @@ export function scopeTransformAst(
 
   walk(program, null, createScope(null), [])
 
-  if (!transformed && !hasServerAuthoringImports) {
+  if (!transformed && !hasServerAuthoringImports && !hasComponentImportReroutes) {
     return { code, transformed: false }
   }
 
-  if (hasServerAuthoringImports) {
+  if (hasServerAuthoringImports || hasComponentImportReroutes) {
     transformed = true
   }
 

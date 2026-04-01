@@ -12,7 +12,7 @@ import { createFluenti } from '../src/plugin'
 import { Trans } from '../src/components/Trans'
 import { Plural } from '../src/components/Plural'
 import { Select } from '../src/components/Select'
-import { interpolate } from '../../core/src/interpolate'
+import { interpolate } from '../../core/src/runtime'
 
 function createPlugin() {
   return createFluenti({

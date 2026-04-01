@@ -8,7 +8,8 @@
     "baseUrl": "../../../../../",
     "paths": {
       "@fluenti/core": ["packages/core/src/index.ts"],
-      "@fluenti/core/internal": ["packages/core/src/internal.ts"],
+      "@fluenti/core/runtime": ["packages/core/src/runtime.ts"],
+      "@fluenti/core/compiler": ["packages/core/src/compiler.ts"],
       "@fluenti/core/ssr": ["packages/core/src/ssr-entry.ts"],
       "@fluenti/core/formatters": ["packages/core/src/formatters-entry.ts"],
       "@fluenti/core/transform": ["packages/core/src/transform.ts"],

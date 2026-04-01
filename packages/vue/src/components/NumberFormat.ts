@@ -20,7 +20,7 @@ const numberFormatProps = {
 
 export type FluentiNumberFormatProps = Readonly<ExtractPropTypes<typeof numberFormatProps>>
 
-export const NumberFormat = defineComponent({
+export const NumberFormat = /* @__PURE__ */ defineComponent({
   name: 'NumberFormat',
   props: numberFormatProps,
   setup(props) {

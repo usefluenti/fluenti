@@ -1,5 +1,5 @@
 import { Comment, Text, h, isVNode, type VNode, type VNodeChild } from 'vue'
-import { offsetIndices } from '@fluenti/core/internal'
+import { offsetIndices } from '@fluenti/core/runtime'
 
 export function extractMessage(children: VNodeChild | VNodeChild[] | undefined): {
   message: string
@@ -98,4 +98,3 @@ export function serializeRichForms<T extends string>(
 
   return { messages, components }
 }
-

@@ -26,9 +26,13 @@
       "import": { "types": "./dist/index.d.ts", "default": "./dist/index.js" },
       "require": { "types": "./dist/index.d.ts", "default": "./dist/index.cjs" }
     },
-    "./internal": {
-      "import": { "types": "./dist/internal.d.ts", "default": "./dist/internal.js" },
-      "require": { "types": "./dist/internal.d.ts", "default": "./dist/internal.cjs" }
+    "./runtime": {
+      "import": { "types": "./dist/runtime.d.ts", "default": "./dist/runtime.js" },
+      "require": { "types": "./dist/runtime.d.ts", "default": "./dist/runtime.cjs" }
+    },
+    "./compiler": {
+      "import": { "types": "./dist/compiler.d.ts", "default": "./dist/compiler.js" },
+      "require": { "types": "./dist/compiler.d.ts", "default": "./dist/compiler.cjs" }
     },
     "./transform": {
       "import": { "types": "./dist/transform.d.ts", "default": "./dist/transform.js" },

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { hashMessage } from '@fluenti/core/internal'
+import { hashMessage } from '@fluenti/core/compiler'
 import { readPoCatalog, writePoCatalog } from '../src/po-format'
 import type { CatalogData } from '../src/catalog'
 

@@ -9,6 +9,8 @@ describe('transformTransComponents', () => {
     expect(result.code).toContain('__id=')
     expect(result.code).toContain('__message="Hello world"')
     expect(result.code).not.toContain('__components')
+    expect(result.code).toContain('/>')
+    expect(result.code).not.toContain('</Trans>')
   })
 
   it('transforms single element child', () => {
@@ -17,6 +19,7 @@ describe('transformTransComponents', () => {
     expect(result.transformed).toBe(true)
     expect(result.code).toContain('__message="Hello <0>world</0>"')
     expect(result.code).toContain('__components={[<b />]}')
+    expect(result.code).not.toContain('<b>world</b>')
   })
 
   it('transforms multiple element children', () => {
@@ -25,6 +28,23 @@ describe('transformTransComponents', () => {
     expect(result.transformed).toBe(true)
     expect(result.code).toContain('__message="Read the <0>documentation</0> for <1>more</1> info."')
     expect(result.code).toContain('__components={[<a href="/docs" />, <b />]}')
+    expect(result.code).not.toContain('documentation</a>')
+  })
+
+  it('rewrites Solid Trans to the compiled component path', () => {
+    const code = `
+import { Trans } from '@fluenti/solid'
+export default function App() {
+  return <Trans>Hello <strong>world</strong></Trans>
+}
+`
+    const result = transformTransComponents(code, { framework: 'solid' })
+    expect(result.transformed).toBe(true)
+    expect(result.code).toContain("import { __FluentiCompiledTrans } from '@fluenti/solid/components'")
+    expect(result.code).toContain('<__FluentiCompiledTrans')
+    expect(result.code).toContain('message={"Hello <0>world</0>"}')
+    expect(result.code).toContain('components={[<strong />]}')
+    expect(result.code).not.toContain('<Trans>Hello <strong>world</strong></Trans>')
   })
 
   it('uses custom id prop instead of hash', () => {

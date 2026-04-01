@@ -35,8 +35,8 @@ export { detectLocale, getSSRLocaleScript, getHydratedLocale } from './ssr'
 
 // ---- Minimal runtime exports ----
 // Heavy modules moved to subpaths:
-//   @fluenti/core/internal  → parse, compile, interpolate, FluentParseError
-//   @fluenti/core/formatters → formatNumber, formatDate, formatRelativeTime
+//   @fluenti/core/runtime   → interpolate, formatters, runtime ICU helpers
+//   @fluenti/core/compiler  → parse, compile, extraction/plugin APIs
 export { Catalog } from './catalog'
 export { negotiateLocale, parseLocale, isRTL, getDirection, validateLocale } from './locale'
 export type { ParsedLocale } from './locale'

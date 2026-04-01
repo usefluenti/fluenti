@@ -7,7 +7,7 @@ import {
   type ReactNode,
   type ReactElement,
 } from 'react'
-import { hashMessage, offsetIndices } from '@fluenti/core/internal'
+import { hashMessage, offsetIndices } from '@fluenti/core/runtime'
 
 export { hashMessage }
 

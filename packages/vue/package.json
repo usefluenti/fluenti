@@ -20,19 +20,23 @@
   "keywords": ["i18n", "internationalization", "compile-time", "icu", "messageformat", "vue", "vue3", "directive", "composable"],
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "types": "./dist/vue/src/index.d.ts",
   "exports": {
     ".": {
-      "import": { "types": "./dist/index.d.ts", "default": "./dist/index.js" },
-      "require": { "types": "./dist/index.d.ts", "default": "./dist/index.cjs" }
+      "import": { "types": "./dist/vue/src/index.d.ts", "default": "./dist/index.js" },
+      "require": { "types": "./dist/vue/src/index.d.ts", "default": "./dist/index.cjs" }
     },
     "./server": {
-      "import": { "types": "./dist/server.d.ts", "default": "./dist/server.js" },
-      "require": { "types": "./dist/server.d.ts", "default": "./dist/server.cjs" }
+      "import": { "types": "./dist/vue/src/server.d.ts", "default": "./dist/server.js" },
+      "require": { "types": "./dist/vue/src/server.d.ts", "default": "./dist/server.cjs" }
+    },
+    "./components": {
+      "import": { "types": "./dist/vue/src/components-entry.d.ts", "default": "./dist/components-entry.js" },
+      "require": { "types": "./dist/vue/src/components-entry.d.ts", "default": "./dist/components-entry.cjs" }
     },
     "./vite-plugin": {
-      "import": { "types": "./dist/vite-plugin.d.ts", "default": "./dist/vite-plugin.js" },
-      "require": { "types": "./dist/vite-plugin.d.ts", "default": "./dist/vite-plugin.cjs" }
+      "import": { "types": "./dist/vue/src/vite-plugin.d.ts", "default": "./dist/vite-plugin.js" },
+      "require": { "types": "./dist/vue/src/vite-plugin.d.ts", "default": "./dist/vite-plugin.cjs" }
     }
   },
   "files": ["dist", "llms*.txt"],

@@ -40,12 +40,12 @@ export declare function Select(props: {
 
 export declare function DateTime(props: {
   value: Date | number
-  style?: string
+  format?: string
 }): Promise<ReactElement>
 
 export declare function NumberFormat(props: {
   value: number
-  style?: string
+  format?: string
 }): Promise<ReactElement>
 
 export declare function I18nProvider(props: {

@@ -3,9 +3,8 @@
  * Mirrors @fluenti/cli compile logic — generates JS module code from catalog.
  */
 
-import { parse } from '@fluenti/core/internal'
-import type { ASTNode, PluralNode, SelectNode } from '@fluenti/core/internal'
-import { hashMessage } from '@fluenti/core/internal'
+import { hashMessage, parse } from '@fluenti/core/compiler'
+import type { ASTNode, PluralNode, SelectNode } from '@fluenti/core/compiler'
 import type { CatalogData } from './catalog'
 
 const ICU_VAR_REGEX = /\{(\w+)\}/g
@@ -58,6 +57,8 @@ function astNodeToJs(node: ASTNode, locale: string): string {
     case 'function':
       return `String(v.${node.variable} ?? '')`
   }
+
+  return "''"
 }
 
 function pluralToJs(node: PluralNode, locale: string): string {

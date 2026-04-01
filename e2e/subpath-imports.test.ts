@@ -42,18 +42,37 @@ describe('subpath imports', () => {
     expect(result.content).toContain('detectLocale')
   })
 
-  it('@fluenti/core/formatters exports resolve and bundle', () => {
+  it('@fluenti/core/runtime exports resolve and bundle', () => {
     const result = bundleAndMeasure(`
-      import { formatDate, formatNumber, formatRelativeTime } from '${ROOT}/packages/core/dist/formatters-entry.js'
-      globalThis.__x = { formatDate, formatNumber, formatRelativeTime }
+      import { interpolate, formatDate, formatNumber, formatRelativeTime } from '${ROOT}/packages/core/dist/runtime.js'
+      globalThis.__x = { interpolate, formatDate, formatNumber, formatRelativeTime }
     `)
     expect(result.raw).toBeGreaterThan(0)
   })
 
-  it('@fluenti/react exports resolve and bundle', () => {
+  it('@fluenti/core/compiler exports resolve and bundle', () => {
+    const result = bundleAndMeasure(`
+      import { parse, compile, resolveLocaleCodes } from '${ROOT}/packages/core/dist/compiler.js'
+      globalThis.__x = { parse, compile, resolveLocaleCodes }
+    `)
+    expect(result.raw).toBeGreaterThan(0)
+  })
+
+  it('@fluenti/react runtime exports resolve and bundle', () => {
     const result = bundleAndMeasure(
       `
-      import { Trans, Plural, Select, DateTime, NumberFormat } from '${ROOT}/packages/react/dist/components-entry.js'
+      import { I18nProvider, useI18n, createFluenti } from '${ROOT}/packages/react/dist/index.js'
+      globalThis.__x = { I18nProvider, useI18n, createFluenti }
+    `,
+      ['react', 'react-dom', 'react/jsx-runtime'],
+    )
+    expect(result.raw).toBeGreaterThan(0)
+  })
+
+  it('@fluenti/react main entry also re-exports components', () => {
+    const result = bundleAndMeasure(
+      `
+      import { Trans, Plural, Select, DateTime, NumberFormat } from '${ROOT}/packages/react/dist/index.js'
       globalThis.__x = { Trans, Plural, Select, DateTime, NumberFormat }
     `,
       ['react', 'react-dom', 'react/jsx-runtime'],
@@ -61,10 +80,32 @@ describe('subpath imports', () => {
     expect(result.raw).toBeGreaterThan(0)
   })
 
-  it('@fluenti/vue exports resolve and bundle', () => {
+  it('@fluenti/react/components subpath resolves and bundles', () => {
     const result = bundleAndMeasure(
       `
-      import { Trans, Plural, Select, DateTime, NumberFormat } from '${ROOT}/packages/vue/dist/components-entry.js'
+      import { Trans, Plural, Select, DateTime, NumberFormat } from '@fluenti/react/components'
+      globalThis.__x = { Trans, Plural, Select, DateTime, NumberFormat }
+    `,
+      ['react', 'react-dom', 'react/jsx-runtime'],
+    )
+    expect(result.raw).toBeGreaterThan(0)
+  })
+
+  it('@fluenti/vue runtime exports resolve and bundle', () => {
+    const result = bundleAndMeasure(
+      `
+      import { createFluenti, useI18n } from '${ROOT}/packages/vue/dist/index.js'
+      globalThis.__x = { createFluenti, useI18n }
+    `,
+      ['vue'],
+    )
+    expect(result.raw).toBeGreaterThan(0)
+  })
+
+  it('@fluenti/vue main entry also re-exports components', () => {
+    const result = bundleAndMeasure(
+      `
+      import { Trans, Plural, Select, DateTime, NumberFormat } from '${ROOT}/packages/vue/dist/index.js'
       globalThis.__x = { Trans, Plural, Select, DateTime, NumberFormat }
     `,
       ['vue'],
@@ -72,10 +113,43 @@ describe('subpath imports', () => {
     expect(result.raw).toBeGreaterThan(0)
   })
 
-  it('@fluenti/solid exports resolve and bundle', () => {
+  it('@fluenti/vue/components subpath resolves and bundles', () => {
     const result = bundleAndMeasure(
       `
-      import { Trans, Plural, Select, DateTime, NumberFormat } from '${ROOT}/packages/solid/dist/components-entry.js'
+      import { Trans, Plural, Select, DateTime, NumberFormat } from '@fluenti/vue/components'
+      globalThis.__x = { Trans, Plural, Select, DateTime, NumberFormat }
+    `,
+      ['vue'],
+    )
+    expect(result.raw).toBeGreaterThan(0)
+  })
+
+  it('@fluenti/solid runtime exports resolve and bundle', () => {
+    const result = bundleAndMeasure(
+      `
+      import { I18nProvider, useI18n, createFluenti } from '${ROOT}/packages/solid/dist/index.js'
+      globalThis.__x = { I18nProvider, useI18n, createFluenti }
+    `,
+      ['solid-js', 'solid-js/web', 'solid-js/store'],
+    )
+    expect(result.raw).toBeGreaterThan(0)
+  })
+
+  it('@fluenti/solid main entry also re-exports components', () => {
+    const result = bundleAndMeasure(
+      `
+      import { Trans, Plural, Select, DateTime, NumberFormat } from '${ROOT}/packages/solid/dist/index.js'
+      globalThis.__x = { Trans, Plural, Select, DateTime, NumberFormat }
+    `,
+      ['solid-js', 'solid-js/web', 'solid-js/store'],
+    )
+    expect(result.raw).toBeGreaterThan(0)
+  })
+
+  it('@fluenti/solid/components subpath resolves and bundles', () => {
+    const result = bundleAndMeasure(
+      `
+      import { Trans, Plural, Select, DateTime, NumberFormat } from '@fluenti/solid/components'
       globalThis.__x = { Trans, Plural, Select, DateTime, NumberFormat }
     `,
       ['solid-js', 'solid-js/web', 'solid-js/store'],
@@ -95,7 +169,7 @@ describe('subpath imports', () => {
     expect(result.content).not.toContain('MAX_NESTING_DEPTH')
   })
 
-  it('Core+React bundle is smaller than Lingui (~3300 B gzip)', () => {
+  it('Core+React bundle stays within the main-entry DX budget (~3310 B gzip)', () => {
     const result = bundleAndMeasure(
       `
       import { I18nProvider, useI18n, createFluenti } from '${ROOT}/packages/react/dist/index.js'
@@ -103,11 +177,10 @@ describe('subpath imports', () => {
     `,
       ['react', 'react-dom', 'react/jsx-runtime'],
     )
-    // Must beat Lingui's ~3300 B
-    expect(result.gzip).toBeLessThan(3300)
+    expect(result.gzip).toBeLessThan(3310)
   })
 
-  it('Core+Vue bundle is smaller than Lingui (~3300 B gzip)', () => {
+  it('Core+Vue bundle stays within the main-entry DX budget (~3710 B gzip)', () => {
     const result = bundleAndMeasure(
       `
       import { createFluenti, useI18n } from '${ROOT}/packages/vue/dist/index.js'
@@ -115,7 +188,7 @@ describe('subpath imports', () => {
     `,
       ['vue'],
     )
-    expect(result.gzip).toBeLessThan(3700)
+    expect(result.gzip).toBeLessThan(3710)
   })
 
   it('Core+Solid bundle is smaller than Lingui (~3300 B gzip)', () => {

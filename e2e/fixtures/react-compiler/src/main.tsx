@@ -1,6 +1,6 @@
 import { createRoot } from 'react-dom/client'
 import { I18nProvider } from '@fluenti/react'
-import { interpolate } from '@fluenti/react'
+import { interpolate } from '@fluenti/core/runtime'
 import { useState } from 'react'
 import { en, ja } from './messages'
 import { App } from './App'

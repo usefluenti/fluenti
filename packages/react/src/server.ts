@@ -8,7 +8,7 @@ import type {
   DateFormatOptions,
   NumberFormatOptions,
 } from '@fluenti/core'
-import { hashMessage as hashSyntheticMessage } from '@fluenti/core/internal'
+import { hashMessage as hashSyntheticMessage } from '@fluenti/core/runtime'
 import { createElement, Fragment, type ReactNode, type ReactElement } from 'react'
 import { hashMessage, extractMessage, reconstruct } from './components/trans-core'
 import { PLURAL_CATEGORIES, type PluralCategory } from './components/plural-core'
@@ -62,12 +62,12 @@ export interface ServerI18nConfig {
    * Custom interpolation function for ICU MessageFormat parsing.
    *
    * By default, the runtime uses a lightweight `{key}` replacer.
-   * Pass the full `interpolate` from `@fluenti/core` for runtime
+   * Pass the full `interpolate` from `@fluenti/core/runtime` for runtime
    * ICU MessageFormat parsing (plurals, selects, nested arguments).
    *
    * @example
    * ```ts
-   * import { interpolate } from '@fluenti/core'
+   * import { interpolate } from '@fluenti/core/runtime'
    * createServerI18n({ interpolate, ... })
    * ```
    */

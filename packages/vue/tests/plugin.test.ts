@@ -2,7 +2,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest'
 import { createApp, defineComponent, h, inject, nextTick, ref, resolveDirective, withDirectives } from 'vue'
 import { createFluenti, FLUENTI_KEY } from '../src/plugin'
 import type { FluentiContext } from '../src/plugin'
-import { interpolate } from '../../core/src/interpolate'
+import { interpolate } from '../../core/src/runtime'
 import * as components from '../src/components-entry'
 
 function createTestApp(setup: () => any) {

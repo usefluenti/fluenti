@@ -41,6 +41,7 @@ export function finalizeImports(
 ): void {
   const frameworkSource = FLUENTI_PACKAGES[options.framework] ?? `@fluenti/${options.framework}`
   const serverSource = options.serverModuleImport ?? '@fluenti/next'
+  const componentSource = options.componentModuleImport
 
   for (const statement of program.body) {
     if (!isImportDeclaration(statement)) continue
@@ -57,9 +58,21 @@ export function finalizeImports(
       }
     }
 
+    if (componentSource && source === frameworkSource) {
+      for (const specifier of statement.specifiers) {
+        if (!isImportSpecifier(specifier)) continue
+        const importedName = readImportedName(specifier)
+        if (!importedName || !SERVER_AUTHORING_EXPORTS.has(importedName)) continue
+        ensureNamedImport(program, componentSource, importedName, specifier.local.name)
+      }
+    }
+
     const nextSpecifiers = statement.specifiers.filter((specifier) => {
       if (!isImportSpecifier(specifier)) return true
       const importedName = readImportedName(specifier)
+      if (componentSource && source === frameworkSource && importedName && SERVER_AUTHORING_EXPORTS.has(importedName)) {
+        return false
+      }
       if (options.rerouteServerAuthoringImports && source === frameworkSource && importedName && SERVER_AUTHORING_EXPORTS.has(importedName)) {
         return false
       }
@@ -96,7 +109,11 @@ export function ensureNamedImport(
 
   if (existing) {
     const alreadyImported = existing.specifiers.some(
-      (specifier) => isImportSpecifier(specifier) && readImportedName(specifier) === importedName,
+      (specifier) => {
+        return isImportSpecifier(specifier)
+          && readImportedName(specifier) === importedName
+          && specifier.local.name === localName
+      },
     )
     if (!alreadyImported) {
       existing.specifiers.push(importSpecifier(importedName, localName))

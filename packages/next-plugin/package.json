@@ -29,55 +29,55 @@
   ],
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "types": "./dist/packages/next-plugin/src/index.d.ts",
   "exports": {
     ".": {
       "import": {
-        "types": "./dist/index.d.ts",
+        "types": "./dist/packages/next-plugin/src/index.d.ts",
         "default": "./dist/index.js"
       },
       "require": {
-        "types": "./dist/index.d.ts",
+        "types": "./dist/packages/next-plugin/src/index.d.ts",
         "default": "./dist/index.cjs"
       }
     },
     "./server": {
       "import": {
-        "types": "./dist/server.d.ts",
+        "types": "./dist/packages/next-plugin/src/server.d.ts",
         "default": "./dist/server.js"
       },
       "require": {
-        "types": "./dist/server.d.ts",
+        "types": "./dist/packages/next-plugin/src/server.d.ts",
         "default": "./dist/server.cjs"
       }
     },
     "./provider": {
       "import": {
-        "types": "./dist/provider.d.ts",
+        "types": "./dist/packages/next-plugin/src/provider.d.ts",
         "default": "./dist/provider.js"
       },
       "require": {
-        "types": "./dist/provider.d.ts",
+        "types": "./dist/packages/next-plugin/src/provider.d.ts",
         "default": "./dist/provider.cjs"
       }
     },
     "./middleware": {
       "import": {
-        "types": "./dist/middleware.d.ts",
+        "types": "./dist/packages/next-plugin/src/middleware.d.ts",
         "default": "./dist/middleware.js"
       },
       "require": {
-        "types": "./dist/middleware.d.ts",
+        "types": "./dist/packages/next-plugin/src/middleware.d.ts",
         "default": "./dist/middleware.cjs"
       }
     },
     "./navigation": {
       "import": {
-        "types": "./dist/navigation.d.ts",
+        "types": "./dist/packages/next-plugin/src/navigation.d.ts",
         "default": "./dist/navigation.js"
       },
       "require": {
-        "types": "./dist/navigation.d.ts",
+        "types": "./dist/packages/next-plugin/src/navigation.d.ts",
         "default": "./dist/navigation.cjs"
       }
     },
@@ -87,11 +87,11 @@
     },
     "./i18n-config": {
       "import": {
-        "types": "./dist/i18n-config.d.ts",
+        "types": "./dist/packages/next-plugin/src/i18n-config.d.ts",
         "default": "./dist/i18n-config.js"
       },
       "require": {
-        "types": "./dist/i18n-config.d.ts",
+        "types": "./dist/packages/next-plugin/src/i18n-config.d.ts",
         "default": "./dist/i18n-config.cjs"
       }
     }

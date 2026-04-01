@@ -250,6 +250,8 @@ The `<Trans>` component extracts the text content of its default slot (including
 
 `Trans` works both with and without the build plugin. The plugin only removes runtime extraction work by precomputing the message ID and component list.
 
+Framework main entries re-export the runtime-capable components. The `/components` subpath remains available when you want an explicit component-only boundary.
+
 <Aside type="tip">
 Vue and Solid expose a `tag` prop when you need a wrapper element. React uses the `render` prop instead when you want to control wrapping.
 </Aside>

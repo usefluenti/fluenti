@@ -119,6 +119,55 @@ describe('fluentLoader', () => {
     expect(result).not.toContain("from '@fluenti/react'")
   })
 
+  it('reroutes client authoring components from @fluenti/react to the components entry', () => {
+    const ctx = createLoaderContext('/project/src/components/Nav.tsx')
+    const source = [
+      "'use client'",
+      "import { Trans, Plural } from '@fluenti/react'",
+      'export function Nav() {',
+      '  return <Trans>Hello</Trans>',
+      '}',
+    ].join('\n')
+
+    const result = fluentLoader.call(ctx as never, source)
+    expect(result).toContain("import { Trans, Plural } from '@fluenti/react/components'")
+    expect(result).not.toContain("from '@fluenti/react'")
+  })
+
+  it('rewrites client <Plural> to the compiled component path', () => {
+    const ctx = createLoaderContext('/project/src/components/Nav.tsx')
+    const source = [
+      "'use client'",
+      "import { Plural } from '@fluenti/react'",
+      'export function Nav(props: { count: number }) {',
+      '  return <Plural value={props.count} one="# item" other="# items" />',
+      '}',
+    ].join('\n')
+
+    const result = fluentLoader.call(ctx as never, source)
+    expect(result).toContain('import { __FluentiCompiledPlural')
+    expect(result).toContain("from '@fluenti/react/components'")
+    expect(result).toContain('<__FluentiCompiledPlural')
+    expect(result).toContain('message={"{count, plural, one {# item} other {# items}}"}')
+  })
+
+  it('rewrites client rich <Select> to the compiled rich component path', () => {
+    const ctx = createLoaderContext('/project/src/components/Nav.tsx')
+    const source = [
+      "'use client'",
+      "import { Select } from '@fluenti/react'",
+      'export function Nav(props: { role: string }) {',
+      '  return <Select value={props.role} admin={<><strong>Admin</strong> access</>} other={<em>Guest</em>} />',
+      '}',
+    ].join('\n')
+
+    const result = fluentLoader.call(ctx as never, source)
+    expect(result).toContain('__FluentiCompiledRichSelect')
+    expect(result).toContain("from '@fluenti/react/components'")
+    expect(result).toContain('<__FluentiCompiledRichSelect')
+    expect(result).toContain('components={[<strong />, <em />]}')
+  })
+
   it('auto-promotes sync server component to async when using direct-import t', () => {
     const ctx = createLoaderContext('/project/src/app/page.tsx')
     const source = [

@@ -33,6 +33,14 @@ function switchLocale(loc: string) {
   // Set a cookie so the server can detect locale on next request
   if (import.meta.client) {
     document.cookie = `fluenti_locale=${loc};path=/;max-age=31536000`
+
+    const url = new URL(window.location.href)
+    if (loc === 'en') {
+      url.searchParams.delete('locale')
+    } else {
+      url.searchParams.set('locale', loc)
+    }
+    window.history.replaceState(window.history.state, '', url)
   }
   setLocale(loc)
 }
@@ -68,9 +76,9 @@ if (import.meta.server) {
     </header>
 
     <nav class="nav-links">
-      <NuxtLink to="/" v-t>Home</NuxtLink>
-      <NuxtLink to="/rich-text" v-t>Rich Text</NuxtLink>
-      <NuxtLink to="/plurals" v-t>Plurals</NuxtLink>
+      <a href="/" v-t>Home</a>
+      <a href="/rich-text" v-t>Rich Text</a>
+      <a href="/plurals" v-t>Plurals</a>
     </nav>
 
     <main>

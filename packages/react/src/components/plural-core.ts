@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
-import type { PluralCategory } from '@fluenti/core/internal'
+import type { PluralCategory } from '@fluenti/core/runtime'
 
-export { PLURAL_CATEGORIES, type PluralCategory } from '@fluenti/core/internal'
+export { PLURAL_CATEGORIES, type PluralCategory } from '@fluenti/core/runtime'
 
 /**
  * Resolve which plural category to use.

@@ -17,6 +17,13 @@ export type { ScopeTransformAstResult } from './scope-transform-ast'
 export { transformTransComponents } from './trans-transform'
 export type { TransTransformResult } from './trans-transform'
 
+// ── Plural / Select Component Transform ─────────────────────────────────────
+export { transformPluralSelectComponents } from './plural-select-transform'
+export type {
+  PluralSelectTransformOptions,
+  PluralSelectTransformResult,
+} from './plural-select-transform'
+
 // ── Message Identity ─────────────────────────────────────────────────────────
 export {
   canonicalizeMessageIdentity,
@@ -45,6 +52,8 @@ export type { RuntimePrimitives, RuntimeGenerator, RuntimeGeneratorOptions } fro
 
 import { transformTransComponents } from './trans-transform'
 import type { TransTransformResult } from './trans-transform'
+import { transformPluralSelectComponents } from './plural-select-transform'
+import type { PluralSelectTransformResult } from './plural-select-transform'
 import { scopeTransform } from './scope-transform'
 import type { ScopeTransformOptions, ScopeTransformResult } from './scope-types'
 
@@ -65,6 +74,8 @@ export interface TransformPipeline {
   transform(code: string, fileId: string): TransformResult
   /** Run only the Trans component transform. */
   transformTrans(code: string): TransTransformResult
+  /** Run only the Plural / Select plain-text component transform. */
+  transformPluralSelect(code: string, componentModuleImport?: string): PluralSelectTransformResult
   /** Run only the scope transform, with optional per-call overrides. */
   transformScope(code: string, overrides?: Partial<ScopeTransformOptions>): ScopeTransformResult
 }
@@ -115,7 +126,10 @@ export function createTransformPipeline(options: TransformPipelineOptions): Tran
   }
 
   function pipelineTransformTrans(code: string): TransTransformResult {
-    return transformTransComponents(code)
+    return transformTransComponents(code, {
+      framework: options.framework,
+      componentModuleImport: `@fluenti/${options.framework}/components`,
+    })
   }
 
   function pipelineTransformScope(
@@ -126,15 +140,42 @@ export function createTransformPipeline(options: TransformPipelineOptions): Tran
     return scopeTransform(code, merged)
   }
 
+  function pipelineTransformPluralSelect(
+    code: string,
+    componentModuleImport?: string,
+  ): PluralSelectTransformResult {
+    return transformPluralSelectComponents(code, {
+      framework: options.framework,
+      ...(componentModuleImport ? { componentModuleImport } : {}),
+    })
+  }
+
   function pipelineTransform(code: string, fileId: string): TransformResult {
     let result = code
     let changed = false
 
     // Step 1: <Trans> compile-time optimization (JSX/TSX only)
     if (/\.[jt]sx(\?|$)/.test(fileId) && /<Trans[\s>]/.test(result)) {
-      const transResult = transformTransComponents(result)
+      const transResult = transformTransComponents(result, {
+        framework: options.framework,
+        componentModuleImport: `@fluenti/${options.framework}/components`,
+      })
       if (transResult.transformed) {
         result = transResult.code
+        changed = true
+      }
+    }
+
+    if (
+      /\.[jt]sx(\?|$)/.test(fileId)
+      && (options.framework === 'react' || options.framework === 'solid')
+      && /<(Plural|Select)[\s/>]/.test(result)
+    ) {
+      const componentResult = transformPluralSelectComponents(result, {
+        framework: options.framework,
+      })
+      if (componentResult.transformed) {
+        result = componentResult.code
         changed = true
       }
     }
@@ -153,6 +194,7 @@ export function createTransformPipeline(options: TransformPipelineOptions): Tran
   return {
     transform: pipelineTransform,
     transformTrans: pipelineTransformTrans,
+    transformPluralSelect: pipelineTransformPluralSelect,
     transformScope: pipelineTransformScope,
   }
 }

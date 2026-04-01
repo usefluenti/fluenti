@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { hashMessage } from '@fluenti/core/internal'
+import { hashMessage } from '@fluenti/core/compiler'
 
 describe('hashMessage', () => {
   it('returns the same hash for the same input (consistency)', () => {

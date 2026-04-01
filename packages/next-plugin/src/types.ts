@@ -1,4 +1,4 @@
-import type { FluentiBuildConfig } from '@fluenti/core/internal'
+import type { FluentiBuildConfig } from '@fluenti/core/compiler'
 
 /**
  * Configuration for `withFluenti()`.
@@ -43,6 +43,14 @@ export interface WithFluentConfig {
   cookieName?: string
 
   /**
+   * Include full runtime ICU interpolation in the generated Next server/client modules.
+   *
+   * Disabled by default to keep parser/runtime ICU code out of Next bundles when
+   * catalogs are compiled ahead of time.
+   */
+  runtimeInterpolate?: boolean
+
+  /**
    * Webpack loader enforce mode (default: 'pre').
    *
    * Set to `undefined` to let webpack determine ordering, or `'post'` to run after other loaders.
@@ -61,6 +69,7 @@ export interface ResolvedFluentConfig {
   serverModuleOutDir: string
   resolveLocale?: string
   cookieName: string
+  runtimeInterpolate: boolean
 }
 
 /**

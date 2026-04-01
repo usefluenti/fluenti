@@ -1,8 +1,9 @@
 import type { Component, JSX } from 'solid-js'
 import { Dynamic } from 'solid-js/web'
-import { hashMessage, buildICUSelectMessage, normalizeSelectForms } from '@fluenti/core/internal'
+import { buildICUSelectMessage, normalizeSelectForms } from '@fluenti/core/runtime'
 import { useI18n } from './use-i18n'
 import { reconstruct, serializeRichForms } from './rich-dom'
+import { buildPlainSelectMessage, resolveCompiledMessageId } from './plain-runtime'
 
 /** Props for the `<Select>` component */
 export interface FluentiSelectProps {
@@ -53,7 +54,7 @@ export interface FluentiSelectProps {
  *
  * @example
  * ```tsx
- * import { Select } from '@fluenti/solid'
+ * import { Select } from '@fluenti/solid/components'
  *
  * function Greeting(props: { gender: string }) {
  *   return (
@@ -84,6 +85,18 @@ export const SelectComp: Component<FluentiSelectProps> = (props) => {
         ),
         other: props.other,
       }
+    const plain = buildPlainSelectMessage(forms)
+    if (plain !== undefined) {
+      return t(
+        {
+          id: resolveCompiledMessageId(props.id, plain.message, props.context),
+          message: plain.message,
+          ...(props.context !== undefined ? { context: props.context } : {}),
+          ...(props.comment !== undefined ? { comment: props.comment } : {}),
+        },
+        { value: plain.valueMap[props.value] ?? 'other' },
+      )
+    }
 
     const orderedKeys = [...Object.keys(forms).filter(key => key !== 'other'), 'other'] as const
     const { messages, components } = serializeRichForms(orderedKeys, forms)
@@ -92,9 +105,7 @@ export const SelectComp: Component<FluentiSelectProps> = (props) => {
     )
     const translated = t(
       {
-        id: props.id ?? (props.context === undefined
-          ? buildICUSelectMessage(normalized.forms)
-          : hashMessage(buildICUSelectMessage(normalized.forms), props.context)),
+        id: resolveCompiledMessageId(props.id, buildICUSelectMessage(normalized.forms), props.context),
         message: buildICUSelectMessage(normalized.forms),
         ...(props.context !== undefined ? { context: props.context } : {}),
         ...(props.comment !== undefined ? { comment: props.comment } : {}),

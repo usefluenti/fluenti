@@ -1,6 +1,6 @@
 import { defineComponent, h } from 'vue'
 import type { ExtractPropTypes, SetupContext, VNodeChild } from 'vue'
-import { hashMessage, buildICUPluralMessage, PLURAL_CATEGORIES, type PluralCategory } from '@fluenti/core/internal'
+import { hashMessage, buildICUPluralMessage, PLURAL_CATEGORIES, type PluralCategory } from '@fluenti/core/runtime'
 import { useI18n } from '../use-i18n'
 import { reconstruct, serializeRichForms } from './rich-text'
 
@@ -69,7 +69,7 @@ const pluralProps = {
 
 export type FluentiPluralProps = Readonly<ExtractPropTypes<typeof pluralProps>>
 
-export const Plural = defineComponent({
+export const Plural = /* @__PURE__ */ defineComponent({
   name: 'Plural',
   props: pluralProps,
   setup(props, { slots }: SetupContext) {

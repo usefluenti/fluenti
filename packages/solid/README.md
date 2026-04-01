@@ -61,16 +61,14 @@ render(
 ### 4. Translate
 
 ```tsx
-import { useI18n, Trans, Plural, Select } from '@fluenti/solid'
+import { t, useI18n, Trans, Plural, Select } from '@fluenti/solid'
 
 function Demo(props) {
-  const { t, d, n, locale, setLocale } = useI18n()
+  const { d, n, setLocale } = useI18n()
+  const name = 'World'
 
   return (
     <div>
-      {/* Function call with catalog lookup */}
-      <h1>{t('Hello, {name}!', { name: 'World' })}</h1>
-
       {/* Tagged template literal */}
       <h1>{t`Hello, ${name}!`}</h1>
 
@@ -88,6 +86,8 @@ function Demo(props) {
   )
 }
 ```
+
+`@fluenti/solid/components` remains available as an explicit subpath when you want runtime-only component imports or a stricter bundle boundary.
 
 ## What the compiler does
 

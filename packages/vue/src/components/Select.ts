@@ -1,6 +1,6 @@
 import { defineComponent, h } from 'vue'
 import type { ExtractPropTypes, PropType, SetupContext, VNodeChild } from 'vue'
-import { hashMessage, buildICUSelectMessage, normalizeSelectForms } from '@fluenti/core/internal'
+import { hashMessage, buildICUSelectMessage, normalizeSelectForms } from '@fluenti/core/runtime'
 import { useI18n } from '../use-i18n'
 import { reconstruct, serializeRichForms } from './rich-text'
 
@@ -58,7 +58,7 @@ const selectProps = {
 
 export type FluentiSelectProps = Readonly<ExtractPropTypes<typeof selectProps>>
 
-export const Select = defineComponent({
+export const Select = /* @__PURE__ */ defineComponent({
   name: 'Select',
   inheritAttrs: false,
   props: selectProps,

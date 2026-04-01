@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import { createApp, defineComponent, h, inject, nextTick, ref } from 'vue'
 import { createFluenti } from '@fluenti/vue'
-import { interpolate } from '../../core/src/interpolate'
+import { interpolate } from '../../core/src/runtime'
 import { createFluentBridge, BRIDGE_KEY } from '../src/bridge'
 import type { VueI18nInstance, VueI18nGlobal, BridgeContext } from '../src/types'
 

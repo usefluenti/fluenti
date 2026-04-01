@@ -16,7 +16,7 @@ export interface FluentiDateTimeProps {
  * <DateTime value={new Date()} format="long" />
  * ```
  */
-export const DateTime = memo(function DateTime({ value, format }: FluentiDateTimeProps) {
+export const DateTime = /* @__PURE__ */ memo(function DateTime({ value, format }: FluentiDateTimeProps) {
   const ctx = useContext(I18nContext)
   if (!ctx) {
     throw new Error('[fluenti] <DateTime> must be used within an <I18nProvider>')

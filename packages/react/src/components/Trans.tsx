@@ -11,7 +11,7 @@ import { hashMessage, extractMessage, reconstruct } from './trans-core'
 
 export interface FluentiTransProps {
   /** Source text with embedded components */
-  children: ReactNode
+  children?: ReactNode
   /** Override auto-generated hash ID */
   id?: string
   /** Message context used for identity and translator disambiguation */
@@ -38,7 +38,7 @@ export interface FluentiTransProps {
  * <Trans>Read the <a href="/docs">documentation</a> for more info.</Trans>
  * ```
  */
-export const Trans = memo(function Trans({
+export const Trans = /* @__PURE__ */ memo(function Trans({
   children,
   id,
   context,
@@ -56,12 +56,27 @@ export const Trans = memo(function Trans({
 
   // Fast path: build plugin pre-computed message and components
   const hasPrecomputed = __message !== undefined
+  if (hasPrecomputed) {
+    const message = __message!
+    const components = __components ?? []
+    const messageId = id ?? __id ?? hashMessage(message, context)
+    const translated = ctx.t(
+      {
+        id: messageId,
+        message,
+        ...(context !== undefined ? { context } : {}),
+        ...(comment !== undefined ? { comment } : {}),
+      },
+    )
+
+    const result = reconstruct(translated, components)
+    if (render) return render(result)
+    return tag ? createElement(tag, null, result) : <>{result}</>
+  }
 
   const { message, components } = useMemo(
-    () => hasPrecomputed
-      ? { message: __message!, components: __components ?? [] }
-      : extractMessage(children),
-    [hasPrecomputed, __message, __components, children],
+    () => extractMessage(children),
+    [children],
   )
   const messageId = useMemo(
     () => id ?? __id ?? hashMessage(message, context),

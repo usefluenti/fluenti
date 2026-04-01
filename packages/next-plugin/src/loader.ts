@@ -35,6 +35,13 @@ export default function fluentLoader(this: LoaderContext, source: string): strin
     }
   }
 
+  if (isClientModule && /\.[jt]sx$/.test(this.resourcePath) && /<(Plural|Select)[\s/>]/.test(result)) {
+    const componentResult = pipeline.transformPluralSelect(result, '@fluenti/react/components')
+    if (componentResult.transformed) {
+      result = componentResult.code
+    }
+  }
+
   // Quick check: does this file contain any Fluenti patterns?
   if (!hasScopeTransformCandidate(result)) {
     return result
@@ -43,6 +50,7 @@ export default function fluentLoader(this: LoaderContext, source: string): strin
   // Try scope-aware transform (AST-based, zero false positives)
   try {
     const scoped = pipeline.transformScope(result, {
+      componentModuleImport: isClientModule ? '@fluenti/react/components' : '@fluenti/next',
       serverModuleImport: '@fluenti/next',
       treatFrameworkDirectImportsAsServer: !isClientModule,
       rerouteServerAuthoringImports: !isClientModule,

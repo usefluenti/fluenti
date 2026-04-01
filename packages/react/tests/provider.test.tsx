@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { render, screen, act, waitFor, cleanup } from '@testing-library/react'
 import { I18nProvider, useI18n, useLocale } from '../src'
 import { getGlobalI18n, clearGlobalI18n } from '../src/global-registry'
-import { interpolate } from '../../core/src/interpolate'
+import { interpolate } from '../../core/src/runtime'
 
 const messages = {
   en: { hello: 'Hello', greeting: 'Hello {name}!' },

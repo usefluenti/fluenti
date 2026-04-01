@@ -1,7 +1,7 @@
 import { createElement, memo, useContext, type ReactNode } from 'react'
-import { hashMessage } from '@fluenti/core/internal'
 import { I18nContext } from '../context'
 import { buildICUSelectMessage, normalizeSelectForms, renderRichTranslation, serializeRichForms } from './icu-rich'
+import { buildPlainSelectMessage, resolveCompiledMessageId } from './plain'
 
 export interface FluentiSelectProps {
   /** The selector value */
@@ -35,7 +35,7 @@ export interface FluentiSelectProps {
  * />
  * ```
  */
-export const Select = memo(function Select(props: FluentiSelectProps) {
+export const Select = /* @__PURE__ */ memo(function Select(props: FluentiSelectProps) {
   const ctx = useContext(I18nContext)
   if (!ctx) {
     throw new Error('[fluenti] <Select> must be used within an <I18nProvider>')
@@ -53,6 +53,20 @@ export const Select = memo(function Select(props: FluentiSelectProps) {
       ...options,
       other,
     }
+  const plain = buildPlainSelectMessage(forms)
+  if (plain !== undefined) {
+    const translated = ctx.t(
+      {
+        id: resolveCompiledMessageId(id, plain.message, context),
+        message: plain.message,
+        ...(context !== undefined ? { context } : {}),
+        ...(comment !== undefined ? { comment } : {}),
+      },
+      { value: plain.valueMap[value] ?? 'other' },
+    )
+
+    return tag ? createElement(tag, null, translated) : <>{translated}</>
+  }
 
   const orderedKeys = [...Object.keys(forms).filter(key => key !== 'other'), 'other'] as const
   const { messages, components } = serializeRichForms(orderedKeys, forms)
@@ -64,7 +78,7 @@ export const Select = memo(function Select(props: FluentiSelectProps) {
   const icuMessage = buildICUSelectMessage(normalized.forms)
 
   const descriptor = {
-    id: id ?? (context === undefined ? icuMessage : hashMessage(icuMessage, context)),
+    id: resolveCompiledMessageId(id, icuMessage, context),
     message: icuMessage,
     ...(context !== undefined ? { context } : {}),
     ...(comment !== undefined ? { comment } : {}),

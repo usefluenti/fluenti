@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render } from '@solidjs/testing-library'
-import { interpolate } from '@fluenti/core/internal'
+import { interpolate } from '@fluenti/core/runtime'
 import { I18nProvider, useI18n } from '../src'
 import { Trans } from '../src/trans'
 import { Plural } from '../src/plural'

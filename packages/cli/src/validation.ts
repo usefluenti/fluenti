@@ -7,8 +7,8 @@ export interface ValidationResult {
   syntaxErrors: string[]
 }
 
-import { parse } from '@fluenti/core/internal'
-import type { ASTNode } from '@fluenti/core/internal'
+import { parse } from '@fluenti/core/compiler'
+import type { ASTNode } from '@fluenti/core/compiler'
 
 const ICU_PLURAL_SELECT_RE = /\{(\w+),\s*(plural|select|selectordinal)\s*,/
 

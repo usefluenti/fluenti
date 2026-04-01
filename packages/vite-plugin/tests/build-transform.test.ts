@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { transformForDynamicSplit, transformForStaticSplit, injectCatalogImport } from '../src/build-transform'
-import { hashMessage } from '@fluenti/core/internal'
+import { hashMessage } from '@fluenti/core/compiler'
 
 function catalogIdForSource(message: string): string {
   return hashMessage(message)
@@ -409,7 +409,7 @@ describe('CLI ↔ vite-plugin hash consistency', () => {
 describe('JSX component hash collection', () => {
   it('collects hash from <Trans __id="...">', () => {
     const code = `
-import { Trans } from '@fluenti/react'
+import { Trans } from '@fluenti/react/components'
 function App() {
   return <Trans __id="greeting">Hello</Trans>
 }
@@ -420,7 +420,7 @@ function App() {
 
   it('collects hash from <Trans id="...">', () => {
     const code = `
-import { Trans } from '@fluenti/react'
+import { Trans } from '@fluenti/react/components'
 function App() {
   return <Trans id="hero.title">Hello</Trans>
 }
@@ -442,7 +442,7 @@ function App() {
 
   it('collects hash from <Plural one="..." other="..." :value={count} />', () => {
     const code = `
-import { Plural } from '@fluenti/react'
+import { Plural } from '@fluenti/react/components'
 function App({ count }) {
   return <Plural value={count} one="one item" other="{count} items" />
 }
@@ -465,7 +465,7 @@ function App({ count }) {
 
   it('collects hash from <Select value={v} male="He" female="She" other="They" />', () => {
     const code = `
-import { Select } from '@fluenti/react'
+import { Select } from '@fluenti/react/components'
 function App({ gender }) {
   return <Select value={gender} male="He" female="She" other="They" />
 }

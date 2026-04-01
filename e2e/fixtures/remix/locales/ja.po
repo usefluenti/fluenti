@@ -1,15 +1,15 @@
 msgid ""
 msgstr "Content-Type: text/plain; charset=utf-8\n"
 
-#: /Users/ins/Code/fluenti/e2e/fixtures/remix/app/root.tsx:36
+#: /Users/ins/Code/fluenti/e2e/fixtures/remix/app/root.tsx:37
 msgid "Home"
 msgstr "ホーム"
 
-#: /Users/ins/Code/fluenti/e2e/fixtures/remix/app/root.tsx:38
+#: /Users/ins/Code/fluenti/e2e/fixtures/remix/app/root.tsx:39
 msgid "About"
 msgstr "概要"
 
-#: /Users/ins/Code/fluenti/e2e/fixtures/remix/app/root.tsx:40
+#: /Users/ins/Code/fluenti/e2e/fixtures/remix/app/root.tsx:41
 msgid "Plurals"
 msgstr "複数形"
 
@@ -37,14 +37,14 @@ msgstr "Fluenti についてもっと学びましょう。"
 msgid "Contact us at {email}"
 msgstr "お問い合わせ：{email}"
 
-#: /Users/ins/Code/fluenti/e2e/fixtures/remix/app/routes/plurals.tsx:11
+#: /Users/ins/Code/fluenti/e2e/fixtures/remix/app/routes/plurals.tsx:12
 msgid "{count, plural, =0 {No messages} one {# message} other {# messages}}"
 msgstr ""
 
-#: /Users/ins/Code/fluenti/e2e/fixtures/remix/app/routes/plurals.tsx:20
+#: /Users/ins/Code/fluenti/e2e/fixtures/remix/app/routes/plurals.tsx:21
 msgid "Add"
 msgstr "追加"
 
-#: /Users/ins/Code/fluenti/e2e/fixtures/remix/app/routes/plurals.tsx:23
+#: /Users/ins/Code/fluenti/e2e/fixtures/remix/app/routes/plurals.tsx:24
 msgid "Reset"
 msgstr "リセット"

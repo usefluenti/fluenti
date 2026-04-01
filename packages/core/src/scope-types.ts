@@ -29,6 +29,7 @@ export interface ScopeTransformOptions {
   framework: string
   allowTopLevelImportedT?: boolean
   serverModuleImport?: string
+  componentModuleImport?: string
   treatFrameworkDirectImportsAsServer?: boolean
   rerouteServerAuthoringImports?: boolean
   errorOnServerUseI18n?: boolean

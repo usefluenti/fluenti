@@ -228,6 +228,8 @@ import { NumberFormat } from '@fluenti/solid'
 
 ## `msg`
 
+`@fluenti/solid/components` remains available when you want an explicit runtime-only component entry.
+
 Re-exported from `@fluenti/core`. Create lazy message descriptors for module-level constants.
 
 ```tsx
@@ -245,14 +247,14 @@ function RoleBadge(props: { role: string }) {
 }
 ```
 
-## `createFluentiContext(config)`
+## `createFluenti(config)`
 
 Low-level factory that creates the i18n context object used internally by `I18nProvider`. Useful for advanced scenarios like testing, SSR without components, or custom context management.
 
 ```tsx
-import { createFluentiContext } from '@fluenti/solid'
+import { createFluenti } from '@fluenti/solid'
 
-const ctx = createFluentiContext({
+const ctx = createFluenti({
   locale: 'en',
   messages: { en: compiledMessages },
 })

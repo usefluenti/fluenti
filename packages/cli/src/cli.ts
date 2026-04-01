@@ -22,10 +22,12 @@ import { loadGlossary, getGlossaryForLocale } from './glossary'
 import { runMigrate } from './migrate'
 import { runInit } from './init'
 import { loadConfig } from './config-loader'
+import { runCodemod } from './codemod'
+import { formatDoctorReport, runDoctor } from './doctor'
 import { createHash } from 'node:crypto'
-import type { ExtractedMessage } from '@fluenti/core/internal'
-import { resolveLocaleCodes } from '@fluenti/core/internal'
-import type { FluentiPlugin, PluginCompileContext, FluentiBuildConfig } from '@fluenti/core/internal'
+import type { ExtractedMessage } from '@fluenti/core/compiler'
+import { resolveLocaleCodes } from '@fluenti/core/compiler'
+import type { FluentiPlugin, PluginCompileContext, FluentiBuildConfig } from '@fluenti/core/compiler'
 
 function deriveProjectId(cwd: string): string {
   return createHash('md5').update(cwd).digest('hex').slice(0, 8)
@@ -694,13 +696,59 @@ const init = defineCommand({
   },
 })
 
+const doctor = defineCommand({
+  meta: { name: 'doctor', description: 'Diagnose Fluenti setup and vNext import issues' },
+  args: {
+    config: { type: 'string', description: 'Optional path to fluenti config file' },
+    strict: { type: 'boolean', description: 'Treat warnings as errors', default: false },
+  },
+  async run({ args }) {
+    const report = await runDoctor({ cwd: process.cwd(), ...(args.config ? { config: args.config } : {}) })
+    const output = formatDoctorReport(report)
+    consola.log(output)
+    const hasError = report.findings.some((finding) => finding.severity === 'error')
+    const hasWarning = report.findings.some((finding) => finding.severity === 'warning')
+    if (hasError || ((args.strict ?? false) && hasWarning)) {
+      process.exitCode = 1
+    }
+  },
+})
+
+const codemod = defineCommand({
+  meta: { name: 'codemod', description: 'Rewrite imports to the vNext Fluenti entry layout' },
+  args: {
+    write: { type: 'boolean', description: 'Write modified files to disk', default: false },
+    include: { type: 'string', description: 'Comma-separated glob list to scan' },
+  },
+  async run({ args }) {
+    const include = args.include
+      ? args.include.split(',').map((entry) => entry.trim()).filter(Boolean)
+      : undefined
+    const result = await runCodemod({
+      cwd: process.cwd(),
+      ...(include ? { include } : {}),
+      write: args.write ?? false,
+    })
+
+    if (result.changedCount === 0) {
+      consola.success('No files need import rewrites.')
+      return
+    }
+
+    for (const file of result.changedFiles) {
+      consola.log(`${args.write ? 'updated' : 'would update'} ${file.file}`)
+    }
+    consola.success(`${args.write ? 'Updated' : 'Detected'} ${result.changedCount} file(s) with Fluenti import rewrites.`)
+  },
+})
+
 const main = defineCommand({
   meta: {
     name: 'fluenti',
     version: '0.0.1',
     description: 'Compile-time i18n for modern frameworks',
   },
-  subCommands: { init, extract, compile, stats, lint, check, translate, migrate },
+  subCommands: { init, doctor, codemod, extract, compile, stats, lint, check, translate, migrate },
 })
 
 runMain(main)

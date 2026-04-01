@@ -1,5 +1,5 @@
 import { loadConfigSync, DEFAULT_FLUENTI_CONFIG } from '@fluenti/core/config'
-import type { FluentiBuildConfig } from '@fluenti/core/internal'
+import type { FluentiBuildConfig } from '@fluenti/core/compiler'
 import type { WithFluentConfig, ResolvedFluentConfig } from './types'
 
 /**
@@ -29,12 +29,14 @@ export function resolveConfig(
 
   const serverModuleOutDir = overrides?.serverModuleOutDir ?? '.fluenti'
   const cookieName = overrides?.cookieName ?? 'locale'
+  const runtimeInterpolate = overrides?.runtimeInterpolate ?? false
 
   const resolved: ResolvedFluentConfig = {
     fluentiConfig,
     serverModule: overrides?.serverModule ?? null,
     serverModuleOutDir,
     cookieName,
+    runtimeInterpolate,
   }
   if (overrides?.resolveLocale) resolved.resolveLocale = overrides.resolveLocale
   return resolved

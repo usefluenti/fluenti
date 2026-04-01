@@ -10,6 +10,9 @@ export { DateTime } from './components/DateTime'
 export type { FluentiDateTimeProps } from './components/DateTime'
 export { NumberFormat } from './components/Number'
 export type { NumberFormatProps, FluentiNumberFormatProps } from './components/Number'
-
-// Re-export interpolate for apps that use <Plural>/<Select> at runtime
-export { interpolate } from '@fluenti/core/internal'
+export {
+  __FluentiCompiledPlural,
+  __FluentiCompiledSelect,
+  __FluentiCompiledRichPlural,
+  __FluentiCompiledRichSelect,
+} from './components/compiled'

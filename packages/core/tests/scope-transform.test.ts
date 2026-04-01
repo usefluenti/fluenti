@@ -709,6 +709,41 @@ export default async function Page() {
     })).toThrow('Conflicting imports')
   })
 
+  it('reroutes framework components to an explicit components entry in client modules', () => {
+    const code = `
+import { Trans, Plural } from '@fluenti/react'
+export function Banner() {
+  return <Trans>Hello</Trans>
+}
+`
+
+    const result = scopeTransform(code, {
+      framework: 'react',
+      componentModuleImport: '@fluenti/react/components',
+    })
+
+    expect(result.transformed).toBe(true)
+    expect(result.code).toContain("import { Trans, Plural } from '@fluenti/react/components'")
+    expect(result.code).not.toContain("from '@fluenti/react'")
+  })
+
+  it('keeps local aliases when rerouting framework components to a subpath', () => {
+    const code = `
+import { Trans as RichText, Plural } from '@fluenti/react'
+export function Banner() {
+  return <RichText>Hello</RichText>
+}
+`
+
+    const result = scopeTransform(code, {
+      framework: 'react',
+      componentModuleImport: '@fluenti/react/components',
+    })
+
+    expect(result.transformed).toBe(true)
+    expect(result.code).toContain("import { Trans as RichText, Plural } from '@fluenti/react/components'")
+  })
+
   // ─── expression body arrow function with server t ──────
 
   it('converts expression-body arrow to block when injecting server helper', () => {

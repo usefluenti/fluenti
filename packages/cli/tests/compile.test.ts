@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { compileCatalog, compileIndex, collectAllIds, CATALOG_VERSION, extractMessageVariables, compileTypeDeclaration } from '../src/compile'
-import { hashMessage } from '@fluenti/core/internal'
+import { hashMessage } from '@fluenti/core/compiler'
 import type { CatalogData } from '../src/catalog'
 import { extractFromTsx } from '../src/tsx-extractor'
 

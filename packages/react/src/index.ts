@@ -14,6 +14,18 @@ export { I18nContext } from './context'
 export { useI18n, useLocale } from './hooks/useI18n'
 export { t } from './compile-time-t'
 
+// Components
+export { Trans } from './components/Trans'
+export type { FluentiTransProps } from './components/Trans'
+export { Plural } from './components/Plural'
+export type { FluentiPluralProps } from './components/Plural'
+export { Select } from './components/Select'
+export type { FluentiSelectProps } from './components/Select'
+export { DateTime } from './components/DateTime'
+export type { FluentiDateTimeProps } from './components/DateTime'
+export { NumberFormat } from './components/Number'
+export type { NumberFormatProps, FluentiNumberFormatProps } from './components/Number'
+
 // Lazy messages
 export { msg } from './msg'
 
@@ -30,18 +42,3 @@ export type {
   DateFormatOptions,
   NumberFormatOptions,
 } from './types'
-
-// Components — all available from main entry
-// Bundlers tree-shake unused components (and their parser deps) from the bundle
-export { Trans } from './components/Trans'
-export { Plural } from './components/Plural'
-export { Select } from './components/Select'
-export { DateTime } from './components/DateTime'
-export { NumberFormat } from './components/Number'
-
-export type { FluentiTransProps } from './components/Trans'
-export type { FluentiPluralProps } from './components/Plural'
-export type { FluentiSelectProps } from './components/Select'
-export type { FluentiDateTimeProps } from './components/DateTime'
-export type { NumberFormatProps, FluentiNumberFormatProps } from './components/Number'
-

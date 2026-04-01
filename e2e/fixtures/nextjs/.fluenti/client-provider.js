@@ -3,14 +3,10 @@
 // @ts-nocheck
 import { createElement } from 'react'
 import { I18nProvider } from '@fluenti/react'
-import en from '../src/locales/compiled/en'
-import ja from '../src/locales/compiled/ja'
-import ar from '../src/locales/compiled/ar'
 
-const __allMessages = { 'en': en, 'ja': ja, 'ar': ar }
 const __dateFormats = undefined
 const __numberFormats = undefined
 
-export function ClientI18nProvider({ locale, fallbackLocale, fallbackChain, children }) {
-  return createElement(I18nProvider, { locale, fallbackLocale, messages: __allMessages, fallbackChain, dateFormats: __dateFormats, numberFormats: __numberFormats }, children)
+export function ClientI18nProvider({ locale, fallbackLocale, messages, loadMessages, fallbackChain, children }) {
+  return createElement(I18nProvider, { locale, fallbackLocale, messages, loadMessages, fallbackChain, dateFormats: __dateFormats, numberFormats: __numberFormats }, children)
 }

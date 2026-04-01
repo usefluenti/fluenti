@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useI18n, msg } from '@fluenti/react'
-import { Trans } from '@fluenti/react'
+import { Trans } from '@fluenti/react/components'
 
 const PAGE_LABELS = {
   title: msg`Rich Text Demos`,

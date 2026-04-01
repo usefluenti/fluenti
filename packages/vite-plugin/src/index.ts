@@ -1,14 +1,10 @@
 import type { Plugin } from 'vite'
 import { createFilter } from 'vite'
 import type { FluentiCoreOptions, RuntimeGenerator } from './types'
-import type { FluentiBuildConfig } from '@fluenti/core/internal'
-import { resolveLocaleCodes } from '@fluenti/core/internal'
+import type { FluentiBuildConfig } from '@fluenti/core/compiler'
+import { resolveLocaleCodes } from '@fluenti/core/compiler'
+import { DEFAULT_FLUENTI_CONFIG, loadConfigSync } from '@fluenti/core/config'
 import { setResolvedMode, isBuildMode, getPluginEnvironment } from './mode-detect'
-import { createRequire } from 'node:module'
-
-const _require = createRequire(
-  typeof __filename !== 'undefined' ? __filename : import.meta.url,
-)
 import { createDebouncedRunner, runExtractCompile } from './dev-runner'
 import { transformForDynamicSplit, transformForStaticSplit, injectCatalogImport } from './build-transform'
 import { resolveVirtualSplitId, loadVirtualSplitModule } from './virtual-modules'
@@ -28,16 +24,10 @@ const RESOLVED_PREFIX = '\0virtual:fluenti/messages/'
 function resolvePluginConfig(configOption?: string | FluentiBuildConfig, cwd?: string): FluentiBuildConfig {
   if (typeof configOption === 'object') {
     // Inline config — merge with defaults
-    const { DEFAULT_FLUENTI_CONFIG } = _require('@fluenti/core/config') as {
-      DEFAULT_FLUENTI_CONFIG: FluentiBuildConfig
-    }
     return { ...DEFAULT_FLUENTI_CONFIG, ...configOption }
   }
   // string → specified path; undefined → auto-discover
-  const { loadConfigSync: loadSync } = _require('@fluenti/core/config') as {
-    loadConfigSync: (configPath?: string, cwd?: string) => FluentiBuildConfig
-  }
-  return loadSync(
+  return loadConfigSync(
     typeof configOption === 'string' ? configOption : undefined,
     cwd,
   )
@@ -154,6 +144,7 @@ export function createFluentiPlugins(
 
       // Vue .vue files need allowTopLevelImportedT for top-level `import { t }`
       const isVueSfc = framework === 'vue' && id.includes('.vue')
+      const componentModuleImport = `@fluenti/${framework}/components`
 
       let result = code
       let changed = false
@@ -167,11 +158,24 @@ export function createFluentiPlugins(
         }
       }
 
+      if (
+        id.match(/\.[jt]sx(\?|$)/)
+        && (framework === 'react' || framework === 'solid')
+        && /<(Plural|Select)[\s/>]/.test(result)
+      ) {
+        const componentResult = pipeline.transformPluralSelect(result, componentModuleImport)
+        if (componentResult.transformed) {
+          result = componentResult.code
+          changed = true
+        }
+      }
+
       // ── t`` / t() scope-aware transform ────────────────────────────────
       if (hasScopeTransformCandidate(result)) {
-        const scoped = pipeline.transformScope(result,
-          isVueSfc ? { allowTopLevelImportedT: true } : undefined,
-        )
+        const scoped = pipeline.transformScope(result, {
+          componentModuleImport,
+          ...(isVueSfc ? { allowTopLevelImportedT: true } : {}),
+        })
         if (scoped.transformed) {
           return { code: scoped.code, map: null }
         }
