@@ -1,5 +1,5 @@
 import { existsSync } from 'node:fs'
-import { resolve, dirname, relative, isAbsolute } from 'node:path'
+import { resolve, dirname, join, relative, isAbsolute } from 'node:path'
 import { createRequire } from 'node:module'
 import type { FluentiBuildConfig } from './types'
 import { normalizeConfig } from './types'
@@ -146,6 +146,35 @@ function findConfigFile(configPath: string | undefined, base: string): string | 
 }
 
 /**
+ * Infer the widest sensible project root for config security checks.
+ *
+ * Priority:
+ * 1. Nearest workspace/repo marker above the config (`pnpm-workspace.yaml` or `.git`)
+ * 2. Nearest ancestor package root (`package.json`)
+ * 3. Fallback root passed by the caller
+ */
+function findProjectRoot(startDir: string, fallbackRoot: string): string {
+  let current = resolve(startDir)
+  let nearestPackageRoot: string | undefined
+
+  while (true) {
+    if (existsSync(join(current, 'pnpm-workspace.yaml')) || existsSync(join(current, '.git'))) {
+      return current
+    }
+
+    if (!nearestPackageRoot && existsSync(join(current, 'package.json'))) {
+      nearestPackageRoot = current
+    }
+
+    const parent = dirname(current)
+    if (parent === current) break
+    current = parent
+  }
+
+  return nearestPackageRoot ?? resolve(fallbackRoot)
+}
+
+/**
  * Load Fluenti config from `fluenti.config.ts` (or `.js` / `.mjs`).
  *
  * When `cwd` is provided, config paths are resolved relative to it.
@@ -164,7 +193,8 @@ export async function loadConfig(configPath?: string, cwd?: string): Promise<Flu
   const { createJiti } = await import('jiti')
   const jiti = createJiti(typeof __filename !== 'undefined' ? __filename : import.meta.url)
 
-  const resolved = await resolveConfigChain(configFilePath, jiti, new Set(), base)
+  const projectRoot = findProjectRoot(dirname(configFilePath), base)
+  const resolved = await resolveConfigChain(configFilePath, jiti, new Set(), projectRoot)
   return normalizeConfig(resolved)
 }
 
@@ -245,7 +275,8 @@ export function loadConfigSync(configPath?: string, cwd?: string): FluentiBuildC
     ) => (path: string) => unknown
   }
 
-  const resolved = resolveConfigChainSync(configFilePath, createJiti, new Set(), base)
+  const projectRoot = findProjectRoot(dirname(configFilePath), base)
+  const resolved = resolveConfigChainSync(configFilePath, createJiti, new Set(), projectRoot)
   return normalizeConfig(resolved)
 }
 

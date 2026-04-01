@@ -26,8 +26,9 @@ describe('subpath exports', () => {
   })
 
   describe('main entry exports expected symbols', () => {
-    it('exports Catalog, negotiateLocale, parseLocale, isRTL, getDirection, validateLocale, msg, resolvePlural, createFluentiCore, clearAllCaches', async () => {
+    it('exports defineConfig, Catalog, negotiateLocale, parseLocale, isRTL, getDirection, validateLocale, msg, resolvePlural, createFluentiCore, clearAllCaches', async () => {
       const mainEntry = await import('../src/index')
+      expect(mainEntry.defineConfig).toBeTypeOf('function')
       expect(mainEntry.Catalog).toBeTypeOf('function')
       expect(mainEntry.negotiateLocale).toBeTypeOf('function')
       expect(mainEntry.parseLocale).toBeTypeOf('function')

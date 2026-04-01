@@ -888,6 +888,52 @@ describe('extends path traversal prevention', () => {
   })
 })
 
+describe('monorepo root extends resolution', () => {
+  it('allows extends from a package config to a repo-root config when a repo marker exists (async)', async () => {
+    const repoRoot = join(tmpRoot, 'repo')
+    const appDir = join(repoRoot, 'packages', 'app-a')
+    mkdirSync(join(repoRoot, '.git'), { recursive: true })
+    mkdirSync(appDir, { recursive: true })
+
+    writeMjs(
+      join(repoRoot, 'fluenti.config.mjs'),
+      configSource({ sourceLocale: 'en', locales: ['en', 'ja'], format: 'po' }),
+    )
+    writeMjs(
+      join(appDir, 'fluenti.config.mjs'),
+      'export default { extends: "../../fluenti.config.mjs" }\n',
+    )
+
+    const config = await loadConfig(undefined, appDir)
+    expect(config.sourceLocale).toBe('en')
+    expect(config.locales).toEqual(['en', 'ja'])
+  })
+
+  it('allows extends from a package config to a repo-root config when a repo marker exists (sync)', () => {
+    const repoRoot = mkdtempSync(join(tmpdir(), 'fluenti-monorepo-sync-'))
+    try {
+      const appDir = join(repoRoot, 'packages', 'app-a')
+      mkdirSync(join(repoRoot, '.git'), { recursive: true })
+      mkdirSync(appDir, { recursive: true })
+
+      writeMjs(
+        join(repoRoot, 'fluenti.config.mjs'),
+        configSource({ sourceLocale: 'ja', locales: ['ja', 'en'], format: 'json' }),
+      )
+      writeMjs(
+        join(appDir, 'fluenti.config.mjs'),
+        'export default { extends: "../../fluenti.config.mjs" }\n',
+      )
+
+      const config = loadConfigSync(undefined, appDir)
+      expect(config.sourceLocale).toBe('ja')
+      expect(config.locales).toEqual(['ja', 'en'])
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true })
+    }
+  })
+})
+
 describe('config shape validation (sync)', () => {
   it('rejects empty sourceLocale (sync)', () => {
     const dir = mkdtempSync(join(tmpdir(), 'fluenti-shape-sync-'))

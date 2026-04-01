@@ -1,6 +1,8 @@
+import { dirname, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 
-import { createPackageConfig } from '../../../scripts/vite-config-factory'
+import { createPackageConfig, rewriteDeclarationImportSpecifiers } from '../../../scripts/vite-config-factory'
 
 describe('createPackageConfig', () => {
   const configFactory = createPackageConfig({
@@ -30,5 +32,31 @@ describe('createPackageConfig', () => {
 
     expect(config.plugins ?? []).toHaveLength(1)
     expect(config.plugins?.[0]?.name).toContain('dts')
+  })
+
+  it('rewrites sibling package source imports to published package specifiers', () => {
+    const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../../..')
+    const content = [
+      "import type { FluentiCoreConfig } from '../../core/src/index.ts'",
+      "export { detectLocale } from '../../core/src/ssr-entry.ts'",
+      "type Runtime = import('../../vite-plugin/src/index.ts').RuntimeGenerator",
+      "type Local = import('./context').FluentiContext",
+    ].join('\n')
+
+    const filePath = resolve(repoRoot, 'packages/solid/dist/solid/src/types.d.ts')
+    const rewritten = rewriteDeclarationImportSpecifiers(content, filePath)
+
+    expect(rewritten).toContain(
+      "import type { FluentiCoreConfig } from '@fluenti/core'",
+    )
+    expect(rewritten).toContain(
+      "export { detectLocale } from '@fluenti/core/ssr'",
+    )
+    expect(rewritten).toContain(
+      "type Runtime = import('@fluenti/vite-plugin').RuntimeGenerator",
+    )
+    expect(rewritten).toContain(
+      "type Local = import('./context').FluentiContext",
+    )
   })
 })

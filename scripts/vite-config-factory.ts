@@ -5,7 +5,9 @@
  * the common build/test patterns into a single parameterized function.
  */
 import { createRequire } from 'node:module'
-import { join } from 'node:path'
+import { dirname, isAbsolute, join, posix, resolve, sep } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { readFileSync } from 'node:fs'
 import { defineConfig, type UserConfig } from 'vitest/config'
 import type { Plugin } from 'vite'
 
@@ -39,6 +41,58 @@ function loadDtsPlugin() {
   const require = createRequire(join(process.cwd(), 'package.json'))
   const plugin = require('vite-plugin-dts')
   return plugin.default ?? plugin
+}
+
+const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
+const DTS_IMPORT_RE = /(['"])(\.\.?\/[^'"]+)\1/g
+
+function normalizePath(value: string) {
+  return value.split(sep).join('/')
+}
+
+function loadDeclarationAliasMap() {
+  const tsconfig = JSON.parse(readFileSync(join(REPO_ROOT, 'tsconfig.base.json'), 'utf8')) as {
+    compilerOptions?: {
+      paths?: Record<string, string[]>
+    }
+  }
+
+  const aliases = new Map<string, string>()
+
+  for (const [specifier, targets] of Object.entries(tsconfig.compilerOptions?.paths ?? {})) {
+    const [target] = targets
+    if (!target) continue
+
+    const normalizedTarget = normalizePath(target)
+    aliases.set(normalizedTarget, specifier)
+
+    if (normalizedTarget.startsWith('packages/')) {
+      aliases.set(normalizedTarget.slice('packages/'.length), specifier)
+    }
+  }
+
+  return aliases
+}
+
+const declarationAliasMap = loadDeclarationAliasMap()
+
+export function rewriteDeclarationImportSpecifiers(content: string, filePath: string, cwd = process.cwd()) {
+  const absoluteFilePath = isAbsolute(filePath) ? filePath : resolve(cwd, filePath)
+  const normalizedFilePath = normalizePath(absoluteFilePath)
+  const distMarker = '/dist/'
+  const distIndex = normalizedFilePath.lastIndexOf(distMarker)
+
+  if (distIndex === -1) return content
+
+  const emittedPath = normalizedFilePath.slice(distIndex + distMarker.length)
+  const outputDir = normalizePath(dirname(emittedPath))
+
+  return content.replace(DTS_IMPORT_RE, (match, quote: string, specifier: string) => {
+    const resolvedPath = posix.resolve('/', outputDir, specifier).slice(1)
+    const alias = declarationAliasMap.get(resolvedPath)
+
+    return alias ? `${quote}${alias}${quote}` : match
+  })
 }
 
 function createTestAliases(cwd: string) {
@@ -78,7 +132,16 @@ export function createPackageConfig(options: PackageConfigOptions) {
 
     if (command === 'build') {
       const dts = loadDtsPlugin()
-      plugins.unshift(dts({ rollupTypes: false, ...options.dtsOptions }))
+      plugins.unshift(dts({
+        rollupTypes: false,
+        pathsToAliases: false,
+        beforeWriteFile(filePath, content) {
+          return {
+            content: rewriteDeclarationImportSpecifiers(content, filePath),
+          }
+        },
+        ...options.dtsOptions,
+      }))
     }
 
     return {
