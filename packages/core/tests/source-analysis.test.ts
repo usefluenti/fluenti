@@ -57,6 +57,18 @@ describe('parseSourceModule', () => {
     expect(result).not.toBeNull()
     expect(typeof result?.start === 'number' || result?.start == null).toBe(true)
   })
+
+  it('returns isolated AST copies when the same source is parsed repeatedly', () => {
+    const first = parseSourceModule('const x = 1')
+    const second = parseSourceModule('const x = 1')
+
+    expect(first).not.toBeNull()
+    expect(second).not.toBeNull()
+    expect(first).not.toBe(second)
+
+    ;(first as SourceNode & { body?: unknown[] }).body = []
+    expect((second as SourceNode & { body?: unknown[] }).body).toHaveLength(1)
+  })
 })
 
 describe('isSourceNode', () => {

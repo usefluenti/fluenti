@@ -136,7 +136,8 @@ export function Hero() {
 `
       const result = callHook(plugin.transform, {}, code, 'Hero.tsx') as { code: string } | undefined
 
-      expect(result?.code).toContain("import { Trans, Plural } from '@fluenti/react/components'")
+      expect(result?.code).toContain("from '@fluenti/react/components'")
+      expect(result?.code).toContain('__FluentiCompiledTrans')
       expect(result?.code).not.toContain("from '@fluenti/react'")
     })
 
@@ -243,11 +244,15 @@ const label = t('nav.home')
     it('applies the JSX <Trans> fast path with context-aware ids', () => {
       const plugins = createFluentiPlugins({ framework: 'react' }, [])
       const plugin = plugins.find(p => p.name === 'fluenti:script-transform')!
-      const code = 'export function Hero() { return <Trans context="hero">Welcome</Trans> }'
+      const code = `
+import { Trans } from '@fluenti/react'
+export function Hero() { return <Trans context="hero">Welcome</Trans> }
+`
       const result = callHook(plugin.transform, {}, code, 'Hero.tsx') as { code: string } | undefined
 
-      expect(result?.code).toContain(`__id="${hashMessage('Welcome', 'hero')}"`)
-      expect(result?.code).toContain('__message="Welcome"')
+      expect(result?.code).toContain('__FluentiCompiledTrans')
+      expect(result?.code).toContain(`id="${hashMessage('Welcome', 'hero')}"`)
+      expect(result?.code).toContain('message={"Welcome"}')
       expect(result?.code).toContain('context="hero"')
     })
 

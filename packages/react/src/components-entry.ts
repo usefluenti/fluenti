@@ -11,6 +11,8 @@ export type { FluentiDateTimeProps } from './components/DateTime'
 export { NumberFormat } from './components/Number'
 export type { NumberFormatProps, FluentiNumberFormatProps } from './components/Number'
 export {
+  __FluentiCompiledTrans,
+  __FluentiCompiledRichTrans,
   __FluentiCompiledPlural,
   __FluentiCompiledSelect,
   __FluentiCompiledRichPlural,

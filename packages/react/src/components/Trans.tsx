@@ -69,7 +69,7 @@ export const Trans = /* @__PURE__ */ memo(function Trans({
       },
     )
 
-    const result = reconstruct(translated, components)
+    const result = components.length > 0 ? reconstruct(translated, components) : translated
     if (render) return render(result)
     return tag ? createElement(tag, null, result) : <>{result}</>
   }
@@ -92,7 +92,7 @@ export const Trans = /* @__PURE__ */ memo(function Trans({
     },
   )
 
-  const result = reconstruct(translated, components)
+  const result = components.length > 0 ? reconstruct(translated, components) : translated
   if (render) return render(result)
   return tag ? createElement(tag, null, result) : <>{result}</>
 })

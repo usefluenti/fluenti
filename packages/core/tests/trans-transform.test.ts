@@ -47,6 +47,48 @@ export default function App() {
     expect(result.code).not.toContain('<Trans>Hello <strong>world</strong></Trans>')
   })
 
+  it('rewrites React Trans to compiled plain/rich component paths', () => {
+    const richCode = `
+import { Trans } from '@fluenti/react'
+export default function App() {
+  return <Trans>Hello <strong>world</strong></Trans>
+}
+`
+    const richResult = transformTransComponents(richCode, { framework: 'react' })
+    expect(richResult.transformed).toBe(true)
+    expect(richResult.code).toContain("import { __FluentiCompiledRichTrans } from '@fluenti/react/components'")
+    expect(richResult.code).toContain('<__FluentiCompiledRichTrans')
+    expect(richResult.code).toContain('message={"Hello <0>world</0>"}')
+    expect(richResult.code).toContain('components={[<strong />]}')
+
+    const plainCode = `
+import { Trans } from '@fluenti/react'
+export default function App() {
+  return <Trans>Welcome</Trans>
+}
+`
+    const plainResult = transformTransComponents(plainCode, { framework: 'react' })
+    expect(plainResult.transformed).toBe(true)
+    expect(plainResult.code).toContain("import { __FluentiCompiledTrans } from '@fluenti/react/components'")
+    expect(plainResult.code).toContain('<__FluentiCompiledTrans')
+    expect(plainResult.code).toContain('message={"Welcome"}')
+  })
+
+  it('inserts React compiled imports on a separate line for semicolon-free files', () => {
+    const code = `
+import { useI18n, msg } from '@fluenti/react'
+import { Trans } from '@fluenti/react/components'
+
+export function Hero() {
+  return <Trans>Hello <strong>world</strong></Trans>
+}
+`
+
+    const result = transformTransComponents(code, { framework: 'react' })
+    expect(result.transformed).toBe(true)
+    expect(result.code).toContain("import { Trans } from '@fluenti/react/components'\nimport { __FluentiCompiledRichTrans } from '@fluenti/react/components'")
+  })
+
   it('uses custom id prop instead of hash', () => {
     const code = '<Trans id="greeting">Hello world</Trans>'
     const result = transformTransComponents(code)

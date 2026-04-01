@@ -3,6 +3,8 @@ import { cleanup, render, screen } from '@testing-library/react'
 import { interpolate } from '../../core/src/runtime'
 import { I18nProvider } from '../src'
 import {
+  __FluentiCompiledTrans,
+  __FluentiCompiledRichTrans,
   __FluentiCompiledPlural,
   __FluentiCompiledSelect,
   __FluentiCompiledRichPlural,
@@ -11,6 +13,30 @@ import {
 
 describe('compiled component fast paths', () => {
   afterEach(cleanup)
+
+  it('renders the compiled plain-text Trans path', () => {
+    render(
+      <I18nProvider locale="en" messages={{ en: {} }}>
+        <__FluentiCompiledTrans message="Welcome back" />
+      </I18nProvider>,
+    )
+
+    expect(screen.getByText('Welcome back')).toBeDefined()
+  })
+
+  it('renders the compiled rich Trans path', () => {
+    render(
+      <I18nProvider locale="en" messages={{ en: {} }}>
+        <__FluentiCompiledRichTrans
+          message="Click <0>docs</0> now"
+          components={[<strong key="docs" />]}
+        />
+      </I18nProvider>,
+    )
+
+    expect(screen.getByText('docs').tagName).toBe('STRONG')
+    expect(screen.getByText(/now/)).toBeDefined()
+  })
 
   it('renders the compiled plain-text plural path', () => {
     render(

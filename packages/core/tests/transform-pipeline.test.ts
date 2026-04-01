@@ -16,7 +16,8 @@ export default function App() {
 `
     const result = pipeline.transform(code, 'src/App.tsx')
     expect(result.transformed).toBe(true)
-    expect(result.code).toContain('__id')
+    expect(result.code).toContain('__FluentiCompiledRichTrans')
+    expect(result.code).toContain('message={"Hello <0>world</0>"}')
   })
 
   it('transforms file with t`` from useI18n()', () => {
@@ -44,7 +45,7 @@ function App() {
 `
     const result = pipeline.transform(code, 'src/App.tsx')
     expect(result.transformed).toBe(true)
-    expect(result.code).toContain('__id')
+    expect(result.code).toContain('__FluentiCompiledRichTrans')
     expect(result.code).toContain("message: 'Greeting'")
   })
 
@@ -121,7 +122,7 @@ export default () => <Trans>Hello <b>world</b></Trans>
 `
     const result = pipeline.transformTrans(code)
     expect(result.transformed).toBe(true)
-    expect(result.code).toContain('__id')
+    expect(result.code).toContain('__FluentiCompiledRichTrans')
   })
 
   it('uses the compiled Solid Trans fast path when the pipeline framework is solid', () => {

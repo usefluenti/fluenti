@@ -2,11 +2,13 @@
 // @ts-nocheck
 import { createServerI18n } from '@fluenti/react/server'
 import { createElement } from 'react'
+import { interpolate as __interpolate } from '@fluenti/core/runtime'
 import __resolveLocale from '../src/lib/resolve-locale'
 
 const __locales = ["en","ja","zh-CN"]
 
 const serverI18n = createServerI18n({
+  interpolate: __interpolate,
   loadMessages: async (locale) => {
     switch (locale) {
       case 'en': return import('../src/locales/compiled/en')
@@ -49,9 +51,16 @@ export async function I18nProvider({ locale, children }) {
   serverI18n.setLocale(activeLocale)
   await serverI18n.getI18n()
 
-  // 2. Import the local 'use client' provider that has messages statically bundled.
-  // Messages contain functions (interpolation) which can't be serialized across the RSC boundary.
-  const { ClientI18nProvider } = await import('./client-provider.js')
+  // 2. Import the locale-specific client provider chunk. It eagerly bundles the
+  // active locale plus only the fallback locales relevant to that locale.
+  const { ClientI18nProvider } = await (async () => {
+    switch (activeLocale) {
+      case 'en': return import('./client-provider-en.js')
+      case 'ja': return import('./client-provider-ja.js')
+      case 'zh-CN': return import('./client-provider-zh_CN.js')
+      default: return import('./client-provider-en.js')
+    }
+  })()
 
   return createElement(ClientI18nProvider, {
     locale: activeLocale,

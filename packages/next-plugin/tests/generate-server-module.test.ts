@@ -33,7 +33,7 @@ describe('generateServerModule', () => {
     serverModule: null,
     serverModuleOutDir: 'node_modules/.fluenti',
     cookieName: 'locale',
-    runtimeInterpolate: false,
+    runtimeInterpolate: true,
   }
 
   it('generates a valid JS module file', () => {
@@ -75,23 +75,8 @@ describe('generateServerModule', () => {
     expect(serverSource).toContain('export async function I18nProvider')
   })
 
-  it('omits runtime interpolate imports by default', () => {
+  it('includes runtime interpolate imports by default', () => {
     generateServerModule('/project', baseConfig)
-
-    const serverSource = writtenFiles['/project/node_modules/.fluenti/server.js']!
-    const clientSource = writtenFiles['/project/node_modules/.fluenti/client-provider.js']!
-
-    expect(serverSource).not.toContain("from '@fluenti/core/runtime'")
-    expect(serverSource).not.toContain('interpolate: __interpolate')
-    expect(clientSource).not.toContain("from '@fluenti/core/runtime'")
-    expect(clientSource).not.toContain('interpolate: __interpolate')
-  })
-
-  it('includes runtime interpolate when explicitly enabled', () => {
-    generateServerModule('/project', {
-      ...baseConfig,
-      runtimeInterpolate: true,
-    })
 
     const serverSource = writtenFiles['/project/node_modules/.fluenti/server.js']!
     const clientSource = writtenFiles['/project/node_modules/.fluenti/client-provider.js']!
@@ -100,6 +85,21 @@ describe('generateServerModule', () => {
     expect(serverSource).toContain('interpolate: __interpolate')
     expect(clientSource).toContain("import { interpolate as __interpolate } from '@fluenti/core/runtime'")
     expect(clientSource).toContain('interpolate: __interpolate')
+  })
+
+  it('omits runtime interpolate when explicitly disabled', () => {
+    generateServerModule('/project', {
+      ...baseConfig,
+      runtimeInterpolate: false,
+    })
+
+    const serverSource = writtenFiles['/project/node_modules/.fluenti/server.js']!
+    const clientSource = writtenFiles['/project/node_modules/.fluenti/client-provider.js']!
+
+    expect(serverSource).not.toContain("from '@fluenti/core/runtime'")
+    expect(serverSource).not.toContain('interpolate: __interpolate')
+    expect(clientSource).not.toContain("from '@fluenti/core/runtime'")
+    expect(clientSource).not.toContain('interpolate: __interpolate')
   })
 
   it('generates __locales array from config', () => {
@@ -323,6 +323,30 @@ describe('generateServerModule', () => {
     expect(enProvider).toContain("case 'zh-CN': return import('../../src/locales/compiled/zh-CN')")
     expect(jaProvider).toContain("import __messages_ja from '../../src/locales/compiled/ja'")
     expect(jaProvider).toContain("import __messages_en from '../../src/locales/compiled/en'")
+  })
+
+  it('only eagerly includes fallback locales relevant to the active locale', () => {
+    generateServerModule('/project', {
+      ...baseConfig,
+      fluentiConfig: {
+        ...baseConfig.fluentiConfig,
+        locales: ['en', 'ja', 'zh-CN', 'fr'],
+        fallbackChain: {
+          'zh-CN': ['ja', 'en'],
+          fr: ['en'],
+        },
+      },
+    })
+
+    const zhProvider = writtenFiles['/project/node_modules/.fluenti/client-provider-zh_CN.js']!
+    const frProvider = writtenFiles['/project/node_modules/.fluenti/client-provider-fr.js']!
+
+    expect(zhProvider).toContain("import __messages_zh_CN from '../../src/locales/compiled/zh-CN'")
+    expect(zhProvider).toContain("import __messages_ja from '../../src/locales/compiled/ja'")
+    expect(zhProvider).toContain("import __messages_en from '../../src/locales/compiled/en'")
+    expect(frProvider).toContain("import __messages_fr from '../../src/locales/compiled/fr'")
+    expect(frProvider).toContain("import __messages_en from '../../src/locales/compiled/en'")
+    expect(frProvider).not.toContain("import __messages_ja from '../../src/locales/compiled/ja'")
   })
 
   // ── writeFileSync error handling ──────────────────────────────────────

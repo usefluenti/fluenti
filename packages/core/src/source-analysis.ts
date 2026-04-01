@@ -19,7 +19,22 @@ export interface SourceNode {
   [key: string]: unknown
 }
 
+const PARSE_CACHE_LIMIT = 64
+const sourceModuleCache = new Map<string, SourceNode | null>()
+
+function cloneSourceModule(ast: SourceNode): SourceNode {
+  if (typeof structuredClone === 'function') {
+    return structuredClone(ast) as SourceNode
+  }
+  return JSON.parse(JSON.stringify(ast)) as SourceNode
+}
+
 export function parseSourceModule(code: string): SourceNode | null {
+  if (sourceModuleCache.has(code)) {
+    const cached = sourceModuleCache.get(code)
+    return cached ? cloneSourceModule(cached) : null
+  }
+
   try {
     const parsed = parse(code, {
       sourceType: 'module',
@@ -31,8 +46,23 @@ export function parseSourceModule(code: string): SourceNode | null {
         'importAttributes',
       ],
     }) as unknown as { program?: SourceNode }
-    return parsed.program ?? null
+    const program = parsed.program ?? null
+    if (sourceModuleCache.size >= PARSE_CACHE_LIMIT) {
+      const oldest = sourceModuleCache.keys().next().value
+      if (oldest !== undefined) {
+        sourceModuleCache.delete(oldest)
+      }
+    }
+    sourceModuleCache.set(code, program)
+    return program ? cloneSourceModule(program) : null
   } catch {
+    if (sourceModuleCache.size >= PARSE_CACHE_LIMIT) {
+      const oldest = sourceModuleCache.keys().next().value
+      if (oldest !== undefined) {
+        sourceModuleCache.delete(oldest)
+      }
+    }
+    sourceModuleCache.set(code, null)
     return null
   }
 }

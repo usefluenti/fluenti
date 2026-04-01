@@ -2,10 +2,12 @@
 // @ts-nocheck
 import { createServerI18n } from '@fluenti/react/server'
 import { createElement } from 'react'
+import { interpolate as __interpolate } from '@fluenti/core/runtime'
 
 const __locales = ["en","ja"]
 
 const serverI18n = createServerI18n({
+  interpolate: __interpolate,
   loadMessages: async (locale) => {
     switch (locale) {
       case 'en': return import('../src/locales/compiled/en')
@@ -77,7 +79,7 @@ export async function I18nProvider({ locale, children }) {
   await serverI18n.getI18n()
 
   // 2. Import the locale-specific client provider chunk. It eagerly bundles the
-  // active locale and shared fallback locales, and lazily loads the rest.
+  // active locale plus only the fallback locales relevant to that locale.
   const { ClientI18nProvider } = await (async () => {
     switch (activeLocale) {
       case 'en': return import('./client-provider-en.js')

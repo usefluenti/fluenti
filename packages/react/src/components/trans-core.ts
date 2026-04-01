@@ -67,6 +67,10 @@ export function reconstruct(
   components: ReactElement[],
 ): ReactNode {
   const COMBINED_RE = /<(\d+)(?:\/>|(>)([\s\S]*?)<\/\1>)/g
+  if (components.length === 0 || !translated.includes('<')) {
+    return translated
+  }
+
   const result: ReactNode[] = []
   let lastIndex = 0
   let keyCounter = 0
@@ -74,6 +78,9 @@ export function reconstruct(
 
   COMBINED_RE.lastIndex = 0
   match = COMBINED_RE.exec(translated)
+  if (match === null) {
+    return translated
+  }
 
   while (match !== null) {
     if (match.index > lastIndex) {

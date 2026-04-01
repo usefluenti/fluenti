@@ -85,11 +85,13 @@ interface Replacement {
   start: number
   end: number
   text: string
+  importKind?: 'plainTrans' | 'richTrans'
 }
 
 interface BoundTransComponents {
   trans: Set<string>
   compiledTrans?: string
+  compiledRichTrans?: string
 }
 
 // ─── Extracted child info ────────────────────────────────────────────────────
@@ -120,6 +122,9 @@ export function transformTransComponents(
   const program = ast as ProgramNode
   if (options.framework === 'solid') {
     return transformSolidTransComponents(program, code, options)
+  }
+  if (options.framework === 'react') {
+    return transformReactTransComponents(program, code, options)
   }
 
   const replacements: Replacement[] = []
@@ -200,6 +205,70 @@ export function transformTransComponents(
   return { code: result, transformed: true }
 }
 
+function transformReactTransComponents(
+  program: ProgramNode,
+  code: string,
+  options: TransTransformOptions,
+): TransTransformResult {
+  const componentModuleImport = options.componentModuleImport ?? '@fluenti/react/components'
+  const bound = collectBoundTransComponents(program, '@fluenti/react', componentModuleImport)
+  if (bound.trans.size === 0) {
+    return { code, transformed: false }
+  }
+
+  const programBindings = collectProgramBindingNames(program)
+  const compiledTrans = bound.compiledTrans ?? createUniqueName('__FluentiCompiledTrans', programBindings)
+  programBindings.add(compiledTrans)
+  const compiledRichTrans = bound.compiledRichTrans ?? createUniqueName('__FluentiCompiledRichTrans', programBindings)
+  const replacements: Replacement[] = []
+  let usedPlainTrans = false
+  let usedRichTrans = false
+
+  walkSourceAst(program, (node: SourceNode) => {
+    if (node.type !== 'JSXElement') return
+
+    const element = node as JSXElementNode
+    const tagName = readJsxTagName(element.openingElement.name)
+    if (!tagName || !bound.trans.has(tagName)) return
+
+    const replacement = buildReactCompiledTransReplacement(element, code, compiledTrans, compiledRichTrans)
+    if (!replacement) return
+
+    replacements.push(replacement)
+    usedPlainTrans ||= replacement.importKind === 'plainTrans'
+    usedRichTrans ||= replacement.importKind === 'richTrans'
+  })
+
+  if (replacements.length === 0) {
+    return { code, transformed: false }
+  }
+
+  const missingImports: string[] = []
+  if (usedPlainTrans && !bound.compiledTrans) {
+    missingImports.push(compiledTrans === '__FluentiCompiledTrans' ? '__FluentiCompiledTrans' : `__FluentiCompiledTrans as ${compiledTrans}`)
+  }
+  if (usedRichTrans && !bound.compiledRichTrans) {
+    missingImports.push(compiledRichTrans === '__FluentiCompiledRichTrans' ? '__FluentiCompiledRichTrans' : `__FluentiCompiledRichTrans as ${compiledRichTrans}`)
+  }
+
+  if (missingImports.length > 0) {
+    const insertionPoint = findImportInsertionPoint(program)
+    replacements.push({
+      start: insertionPoint,
+      end: insertionPoint,
+      text: `${getImportInsertionPrefix(code, insertionPoint)}import { ${missingImports.join(', ')} } from '${componentModuleImport}'\n`,
+    })
+  }
+
+  replacements.sort((a, b) => b.start - a.start)
+  let result = code
+  for (const replacement of replacements) {
+    result = result.slice(0, replacement.start) + replacement.text + result.slice(replacement.end)
+  }
+
+  return { code: result, transformed: true }
+}
+
 function transformSolidTransComponents(
   program: ProgramNode,
   code: string,
@@ -239,7 +308,7 @@ function transformSolidTransComponents(
     replacements.push({
       start: insertionPoint,
       end: insertionPoint,
-      text: `import { ${compiledTrans === '__FluentiCompiledTrans' ? '__FluentiCompiledTrans' : `__FluentiCompiledTrans as ${compiledTrans}`} } from '${componentModuleImport}'\n`,
+      text: `${getImportInsertionPrefix(code, insertionPoint)}import { ${compiledTrans === '__FluentiCompiledTrans' ? '__FluentiCompiledTrans' : `__FluentiCompiledTrans as ${compiledTrans}`} } from '${componentModuleImport}'\n`,
     })
   }
 
@@ -318,6 +387,7 @@ function collectBoundTransComponents(
 ): BoundTransComponents {
   const trans = new Set<string>()
   let compiledTrans: string | undefined
+  let compiledRichTrans: string | undefined
 
   for (const statement of program.body) {
     if (!isImportDeclaration(statement)) continue
@@ -335,6 +405,8 @@ function collectBoundTransComponents(
         trans.add(specifier.local.name)
       } else if (source === componentSource && importedName === '__FluentiCompiledTrans') {
         compiledTrans = specifier.local.name
+      } else if (source === componentSource && importedName === '__FluentiCompiledRichTrans') {
+        compiledRichTrans = specifier.local.name
       }
     }
   }
@@ -342,6 +414,54 @@ function collectBoundTransComponents(
   return {
     trans,
     ...(compiledTrans !== undefined ? { compiledTrans } : {}),
+    ...(compiledRichTrans !== undefined ? { compiledRichTrans } : {}),
+  }
+}
+
+function buildReactCompiledTransReplacement(
+  element: JSXElementNode,
+  code: string,
+  compiledLocal: string,
+  compiledRichLocal: string,
+): Replacement | undefined {
+  if (element.openingElement.selfClosing) return undefined
+
+  const attrs = element.openingElement.attributes
+  if (attrs.some((attribute) => attribute.type === 'JSXSpreadAttribute')) return undefined
+  if (findJsxAttribute(attrs, '__id') || findJsxAttribute(attrs, '__message') || findJsxAttribute(attrs, 'message')) {
+    return undefined
+  }
+
+  const extracted = extractJsxChildren(element.children, code)
+  if (extracted.hasDynamic || !extracted.message) return undefined
+
+  const customId = readStaticAttribute(attrs, 'id')
+  if (customId.kind === 'dynamic') return undefined
+
+  const context = readStaticAttribute(attrs, 'context')
+  if (!customId.value && context.kind === 'dynamic') return undefined
+
+  const messageId = customId.value ?? hashMessage(extracted.message, context.value)
+  const hasExplicitId = findJsxAttribute(attrs, 'id') !== undefined
+  const propSources = attrs
+    .filter((attribute) => attribute.start != null && attribute.end != null)
+    .map((attribute) => code.slice(attribute.start!, attribute.end!))
+
+  if (!hasExplicitId) {
+    propSources.push(`id="${messageId}"`)
+  }
+  propSources.push(`message={${JSON.stringify(extracted.message)}}`)
+
+  const hasComponents = extracted.componentSources.length > 0
+  if (hasComponents) {
+    propSources.push(`components={[${extracted.componentSources.join(', ')}]}`)
+  }
+
+  return {
+    start: element.start!,
+    end: element.end!,
+    text: `<${hasComponents ? compiledRichLocal : compiledLocal} ${propSources.join(' ')} />`,
+    importKind: hasComponents ? 'richTrans' : 'plainTrans',
   }
 }
 
@@ -468,4 +588,9 @@ function findImportInsertionPoint(program: ProgramNode): number {
     break
   }
   return lastImportEnd
+}
+
+function getImportInsertionPrefix(code: string, insertionPoint: number): string {
+  if (insertionPoint <= 0) return ''
+  return code[insertionPoint - 1] === '\n' ? '' : '\n'
 }

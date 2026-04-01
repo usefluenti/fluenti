@@ -3,10 +3,11 @@
 // @ts-nocheck
 import { createElement } from 'react'
 import { I18nProvider } from '@fluenti/react'
+import { interpolate as __interpolate } from '@fluenti/core/runtime'
 
 const __dateFormats = undefined
 const __numberFormats = undefined
 
 export function ClientI18nProvider({ locale, fallbackLocale, messages, loadMessages, fallbackChain, children }) {
-  return createElement(I18nProvider, { locale, fallbackLocale, messages, loadMessages, fallbackChain, dateFormats: __dateFormats, numberFormats: __numberFormats }, children)
+  return createElement(I18nProvider, { locale, fallbackLocale, messages, loadMessages, fallbackChain, dateFormats: __dateFormats, numberFormats: __numberFormats, interpolate: __interpolate }, children)
 }

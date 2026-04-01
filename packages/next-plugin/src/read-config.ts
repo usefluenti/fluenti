@@ -29,7 +29,7 @@ export function resolveConfig(
 
   const serverModuleOutDir = overrides?.serverModuleOutDir ?? '.fluenti'
   const cookieName = overrides?.cookieName ?? 'locale'
-  const runtimeInterpolate = overrides?.runtimeInterpolate ?? false
+  const runtimeInterpolate = overrides?.runtimeInterpolate ?? true
 
   const resolved: ResolvedFluentConfig = {
     fluentiConfig,

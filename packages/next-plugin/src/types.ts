@@ -45,8 +45,10 @@ export interface WithFluentConfig {
   /**
    * Include full runtime ICU interpolation in the generated Next server/client modules.
    *
-   * Disabled by default to keep parser/runtime ICU code out of Next bundles when
-   * catalogs are compiled ahead of time.
+   * Enabled by default because Next apps can mix compiled catalogs with runtime
+   * `<Plural>` / `<Select>` / server component paths that still need ICU fallback.
+   * Set to `false` only when your app is fully compile-only and you want to trim
+   * parser/runtime ICU code from the generated modules.
    */
   runtimeInterpolate?: boolean
 

@@ -130,7 +130,8 @@ describe('fluentLoader', () => {
     ].join('\n')
 
     const result = fluentLoader.call(ctx as never, source)
-    expect(result).toContain("import { Trans, Plural } from '@fluenti/react/components'")
+    expect(result).toContain("from '@fluenti/react/components'")
+    expect(result).toContain('__FluentiCompiledTrans')
     expect(result).not.toContain("from '@fluenti/react'")
   })
 
@@ -166,6 +167,23 @@ describe('fluentLoader', () => {
     expect(result).toContain("from '@fluenti/react/components'")
     expect(result).toContain('<__FluentiCompiledRichSelect')
     expect(result).toContain('components={[<strong />, <em />]}')
+  })
+
+  it('rewrites client React <Trans> to the compiled rich component path', () => {
+    const ctx = createLoaderContext('/project/src/components/Nav.tsx')
+    const source = [
+      "'use client'",
+      "import { Trans } from '@fluenti/react'",
+      'export function Nav() {',
+      '  return <Trans>Hello <strong>world</strong></Trans>',
+      '}',
+    ].join('\n')
+
+    const result = fluentLoader.call(ctx as never, source)
+    expect(result).toContain('import { __FluentiCompiledRichTrans')
+    expect(result).toContain("from '@fluenti/react/components'")
+    expect(result).toContain('<__FluentiCompiledRichTrans')
+    expect(result).toContain('components={[<strong />]}')
   })
 
   it('auto-promotes sync server component to async when using direct-import t', () => {

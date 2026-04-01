@@ -251,7 +251,7 @@ export function transformPluralSelectComponents(
     replacements.push({
       start: insertionPoint,
       end: insertionPoint,
-      text: `import { ${missingImports.join(', ')} } from '${componentModuleImport}'\n`,
+      text: `${getImportInsertionPrefix(code, insertionPoint)}import { ${missingImports.join(', ')} } from '${componentModuleImport}'\n`,
     })
   }
 
@@ -665,6 +665,11 @@ function findImportInsertionPoint(program: ProgramNode): number {
     break
   }
   return lastImportEnd
+}
+
+function getImportInsertionPrefix(code: string, insertionPoint: number): string {
+  if (insertionPoint <= 0) return ''
+  return code[insertionPoint - 1] === '\n' ? '' : '\n'
 }
 
 function renderAttrSource(attribute: JSXAttributeNode, code: string): string {

@@ -24,6 +24,24 @@ export function Cart({ count }: { count: number }) {
     expect(result.code).not.toContain('other="# items"')
   })
 
+  it('inserts compiled imports on a separate line for semicolon-free files', () => {
+    const code = `
+import { Plural } from '@fluenti/react/components'
+
+export function Cart({ count }: { count: number }) {
+  return <Plural value={count} one="# item" other="# items" />
+}
+`
+
+    const result = transformPluralSelectComponents(code, {
+      framework: 'react',
+      componentModuleImport: '@fluenti/react/components',
+    })
+
+    expect(result.transformed).toBe(true)
+    expect(result.code).toContain("import { Plural } from '@fluenti/react/components'\nimport { __FluentiCompiledPlural } from '@fluenti/react/components'")
+  })
+
   it('rewrites Solid <Select> options object literals to the compiled component', () => {
     const code = `
 import { Select } from '@fluenti/solid'
