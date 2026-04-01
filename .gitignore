@@ -26,3 +26,4 @@ app.config.timestamp*
 .act-artifacts/
 .worktrees/
 *.dev-pid
+docs/superpowers/
