@@ -8,6 +8,7 @@ import { createRequire } from 'node:module'
 import { dirname, isAbsolute, join, posix, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { readFileSync } from 'node:fs'
+import { readdir, unlink } from 'node:fs/promises'
 import { defineConfig, type UserConfig } from 'vitest/config'
 import type { Plugin } from 'vite'
 
@@ -45,6 +46,7 @@ function loadDtsPlugin() {
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const DTS_IMPORT_RE = /(['"])(\.\.?\/[^'"]+)\1/g
+const SOURCE_MAP_REFERENCE_RE = /\r?\n\/\/# sourceMappingURL=[^\n]+$/gm
 
 function normalizePath(value: string) {
   return value.split(sep).join('/')
@@ -76,13 +78,54 @@ function loadDeclarationAliasMap() {
 
 const declarationAliasMap = loadDeclarationAliasMap()
 
+async function removeSourceMapFiles(dir: string): Promise<void> {
+  let entries: Awaited<ReturnType<typeof readdir>>
+
+  try {
+    entries = await readdir(dir, { withFileTypes: true })
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return
+    throw error
+  }
+
+  await Promise.all(entries.map(async (entry) => {
+    const entryPath = join(dir, entry.name)
+
+    if (entry.isDirectory()) {
+      await removeSourceMapFiles(entryPath)
+      return
+    }
+
+    if (entry.isFile() && entry.name.endsWith('.map')) {
+      await unlink(entryPath)
+    }
+  }))
+}
+
+function createSourceMapCleanupPlugin(): Plugin {
+  let outDir = resolve(process.cwd(), 'dist')
+
+  return {
+    name: 'fluenti:remove-source-maps',
+    apply: 'build',
+    configResolved(config) {
+      outDir = resolve(config.root, config.build.outDir)
+    },
+    async closeBundle() {
+      await removeSourceMapFiles(outDir)
+    },
+  }
+}
+
 export function rewriteDeclarationImportSpecifiers(content: string, filePath: string, cwd = process.cwd()) {
   const absoluteFilePath = isAbsolute(filePath) ? filePath : resolve(cwd, filePath)
   const normalizedFilePath = normalizePath(absoluteFilePath)
   const distMarker = '/dist/'
   const distIndex = normalizedFilePath.lastIndexOf(distMarker)
 
-  if (distIndex === -1) return content
+  if (distIndex === -1) {
+    return content.replace(SOURCE_MAP_REFERENCE_RE, '')
+  }
 
   const emittedPath = normalizedFilePath.slice(distIndex + distMarker.length)
   const outputDir = normalizePath(dirname(emittedPath))
@@ -92,7 +135,7 @@ export function rewriteDeclarationImportSpecifiers(content: string, filePath: st
     const alias = declarationAliasMap.get(resolvedPath)
 
     return alias ? `${quote}${alias}${quote}` : match
-  })
+  }).replace(SOURCE_MAP_REFERENCE_RE, '')
 }
 
 function createTestAliases(cwd: string) {
@@ -126,22 +169,38 @@ function createTestAliases(cwd: string) {
   ]
 }
 
+export function createDtsPluginOptions(overrides: Record<string, unknown> = {}) {
+  const compilerOptions = (
+    'compilerOptions' in overrides && typeof overrides['compilerOptions'] === 'object' && overrides['compilerOptions'] !== null
+      ? overrides['compilerOptions'] as Record<string, unknown>
+      : {}
+  )
+
+  return {
+    ...overrides,
+    rollupTypes: false,
+    pathsToAliases: false,
+    compilerOptions: {
+      ...compilerOptions,
+      declarationMap: false,
+      sourceMap: false,
+    },
+    beforeWriteFile(filePath: string, content: string) {
+      return {
+        content: rewriteDeclarationImportSpecifiers(content, filePath),
+      }
+    },
+  }
+}
+
 export function createPackageConfig(options: PackageConfigOptions) {
   return defineConfig(async ({ command }) => {
     const plugins = [...(options.plugins ?? [])]
 
     if (command === 'build') {
       const dts = loadDtsPlugin()
-      plugins.unshift(dts({
-        rollupTypes: false,
-        pathsToAliases: false,
-        beforeWriteFile(filePath, content) {
-          return {
-            content: rewriteDeclarationImportSpecifiers(content, filePath),
-          }
-        },
-        ...options.dtsOptions,
-      }))
+      plugins.unshift(dts(createDtsPluginOptions(options.dtsOptions)))
+      plugins.push(createSourceMapCleanupPlugin())
     }
 
     return {
@@ -154,7 +213,7 @@ export function createPackageConfig(options: PackageConfigOptions) {
         rollupOptions: {
           external: options.external,
         },
-        sourcemap: true,
+        sourcemap: false,
         emptyOutDir: true,
         ...(options.minify !== undefined ? { minify: options.minify } : {}),
       },
