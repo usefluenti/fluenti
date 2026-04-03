@@ -2,6 +2,7 @@ import { describe, it, expect, afterEach } from 'vitest'
 import { mkdtempSync, rmSync, mkdirSync, writeFileSync, readFileSync, existsSync, statSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { tmpdir } from 'node:os'
+import { createHash } from 'node:crypto'
 import { runExtract } from '../src/extract-runner'
 import { runCompile } from '../src/compile-runner'
 
@@ -41,6 +42,11 @@ function poWithTranslation(msgid: string, msgstr: string): string {
   ].join('\n')
 }
 
+function getExtractCachePath(projectDir: string): string {
+  const projectId = createHash('md5').update(projectDir).digest('hex').slice(0, 8)
+  return join(projectDir, 'locales', '.cache', projectId, 'extract-cache.json')
+}
+
 // ── tests ────────────────────────────────────────────────────────────────────
 
 describe('extract + compile pipeline (integration)', () => {
@@ -69,11 +75,44 @@ describe('extract + compile pipeline (integration)', () => {
     const enPo = readFileSync(join(tmpDir, 'locales/en.po'), 'utf-8')
     expect(enPo).toContain('msgid "Administrator"')
     expect(enPo).toContain('msgid "Regular User"')
+    expect(enPo).toMatch(/#:\s+\.?\/?src\/App\.tsx:\d+/)
+    expect(enPo).not.toContain(tmpDir)
 
     // ja.po is created for every locale, with empty translations
     const jaPo = readFileSync(join(tmpDir, 'locales/ja.po'), 'utf-8')
     expect(jaPo).toContain('msgid "Administrator"')
     expect(jaPo).toContain('msgid "Regular User"')
+  })
+
+  it('normalizes cached absolute origins back to relative paths', async () => {
+    tmpDir = createTmpProject({
+      'fluenti.config.mjs': CONFIG_MJS,
+      'src/App.tsx': `
+        import { msg } from '@fluenti/react'
+        export const HELLO = msg\`Hello from cache\`
+      `,
+    })
+
+    await runExtract(tmpDir)
+
+    const cachePath = getExtractCachePath(tmpDir)
+    const cache = JSON.parse(readFileSync(cachePath, 'utf-8')) as {
+      entries: Record<string, { messages: Array<{ origin: { file: string } }> }>
+    }
+    const absoluteOrigin = join(tmpDir, 'src', 'App.tsx')
+    for (const entry of Object.values(cache.entries)) {
+      for (const message of entry.messages) {
+        message.origin.file = absoluteOrigin
+      }
+    }
+    writeFileSync(cachePath, JSON.stringify(cache), 'utf-8')
+
+    await runExtract(tmpDir)
+
+    const enPo = readFileSync(join(tmpDir, 'locales/en.po'), 'utf-8')
+    expect(enPo).toContain('msgid "Hello from cache"')
+    expect(enPo).toMatch(/#:\s+\.?\/?src\/App\.tsx:\d+/)
+    expect(enPo).not.toContain(tmpDir)
   })
 
   // ── 2. runExtract: Vue SFC ──────────────────────────────────────────────

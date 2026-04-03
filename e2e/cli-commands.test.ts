@@ -397,6 +397,23 @@ describe('CLI cache behavior', () => {
     expect(output2).toContain('cached')
   })
 
+  it('extract writes relative source paths instead of absolute paths', () => {
+    tmpDir = createProject({
+      'fluenti.config.ts': makeConfig(['en', 'ja'], 'po'),
+      'src/App.tsx': `
+        import { msg } from '@fluenti/react'
+        export const HELLO = msg\`Hello world\`
+      `,
+    })
+
+    cli('extract --no-cache', tmpDir)
+
+    const enPo = readFileSync(join(tmpDir, 'locales/en.po'), 'utf-8')
+    expect(enPo).toContain('msgid "Hello world"')
+    expect(enPo).toMatch(/#:\s+\.?\/?src\/App\.tsx:\d+/)
+    expect(enPo).not.toContain(tmpDir)
+  })
+
   it('extract: modifying a source file invalidates cache for that file', () => {
     tmpDir = createProject({
       'fluenti.config.ts': makeConfig(),

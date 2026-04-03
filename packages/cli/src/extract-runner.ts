@@ -17,6 +17,38 @@ function deriveProjectId(cwd: string): string {
   return createHash('md5').update(cwd).digest('hex').slice(0, 8)
 }
 
+function toForwardSlash(path: string): string {
+  return path.split('\\').join('/')
+}
+
+function normalizeMessageOrigins(
+  messages: readonly ExtractedMessage[],
+  displayFile: string,
+): { messages: ExtractedMessage[]; changed: boolean } {
+  const normalizedDisplayFile = toForwardSlash(displayFile)
+  let changed = false
+
+  const normalizedMessages = messages.map((message) => {
+    if (toForwardSlash(message.origin.file) === normalizedDisplayFile) {
+      return message
+    }
+
+    changed = true
+    return {
+      ...message,
+      origin: {
+        ...message.origin,
+        file: normalizedDisplayFile,
+      },
+    }
+  })
+
+  return {
+    messages: changed ? normalizedMessages : [...messages],
+    changed,
+  }
+}
+
 export interface RunExtractOptions {
   clean?: boolean
   stripFuzzy?: boolean
@@ -69,16 +101,24 @@ export async function runExtract(cwd: string, options?: RunExtractOptions): Prom
 
   for (const file of files) {
     const absFile = resolve(cwd, file)
+    const displayFile = toForwardSlash(file)
     if (cache) {
       const cached = cache.get(absFile)
       if (cached) {
-        allMessages.push(...cached)
+        const normalizedCached = normalizeMessageOrigins(cached, displayFile)
+        allMessages.push(...normalizedCached.messages)
+        if (normalizedCached.changed) {
+          cache.set(absFile, normalizedCached.messages)
+        }
         continue
       }
     }
 
     const code = readFileSync(absFile, 'utf-8')
-    const messages = await extractFromFile(absFile, code)
+    const messages = normalizeMessageOrigins(
+      await extractFromFile(displayFile, code),
+      displayFile,
+    ).messages
     allMessages.push(...messages)
 
     if (cache) {
