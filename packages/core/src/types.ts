@@ -211,6 +211,9 @@ export interface FluentiConfig {
    * and translations will be lost.
    */
   idGenerator?: (message: string, context?: string) => string
+  /** Omit line numbers from PO source references (write `#: file` instead of `#: file:line`).
+   *  Reduces noisy diffs when source code changes without affecting translations. */
+  noLineNumbers?: boolean
 
   // Dev options
   /** Auto extract+compile in dev mode (default: true) */

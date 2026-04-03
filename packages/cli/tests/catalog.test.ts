@@ -445,4 +445,45 @@ describe('updateCatalog', () => {
 
     expect(catalog['abc']!.comment).toBe('Greeting header')
   })
+
+  // ─── noLineNumbers option ──────────────────────────────────────────────────
+
+  it('omits line numbers from origin when noLineNumbers is set', () => {
+    const extracted = [makeMessage('abc', 'Hello', 'App.vue', 42)]
+
+    const { catalog } = updateCatalog({}, extracted, { noLineNumbers: true })
+
+    expect(catalog['abc']!.origin).toBe('App.vue')
+  })
+
+  it('includes line numbers by default', () => {
+    const extracted = [makeMessage('abc', 'Hello', 'App.vue', 42)]
+
+    const { catalog } = updateCatalog({}, extracted)
+
+    expect(catalog['abc']!.origin).toBe('App.vue:42')
+  })
+
+  it('merges file-only origins when noLineNumbers is set', () => {
+    const extracted = [
+      makeMessage('abc', 'Hello', 'a.vue', 1),
+      makeMessage('abc', 'Hello', 'b.vue', 2),
+    ]
+
+    const { catalog } = updateCatalog({}, extracted, { noLineNumbers: true })
+
+    expect(catalog['abc']!.origin).toEqual(['a.vue', 'b.vue'])
+  })
+
+  it('deduplicates file-only origins when noLineNumbers is set', () => {
+    const extracted = [
+      makeMessage('abc', 'Hello', 'a.vue', 1),
+      makeMessage('abc', 'Hello', 'a.vue', 50),
+    ]
+
+    const { catalog } = updateCatalog({}, extracted, { noLineNumbers: true })
+
+    // Both from same file → single origin after dedup
+    expect(catalog['abc']!.origin).toBe('a.vue')
+  })
 })

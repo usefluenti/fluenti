@@ -48,14 +48,17 @@ const extract = defineCommand({
     clean: { type: 'boolean', description: 'Remove obsolete entries instead of marking them', default: false },
     'no-fuzzy': { type: 'boolean', description: 'Strip fuzzy flags from all entries', default: false },
     'no-cache': { type: 'boolean', description: 'Disable incremental extraction cache', default: false },
+    'no-line-numbers': { type: 'boolean', description: 'Omit line numbers from PO source references (reduces diff noise)', default: false },
   },
   async run({ args }) {
     const config = await loadConfig(args.config)
     consola.info(`Extracting messages from ${config.include.join(', ')}`)
+    const noLineNumbers = (args['no-line-numbers'] ?? false) || (config.noLineNumbers ?? false)
     const result = await runExtractWorkflow(process.cwd(), config, {
       clean: args.clean ?? false,
       stripFuzzy: args['no-fuzzy'] ?? false,
       useCache: !(args['no-cache'] ?? false),
+      noLineNumbers,
     })
 
     if (result.cacheHits > 0) {

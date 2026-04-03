@@ -54,6 +54,7 @@ export interface ExtractWorkflowOptions {
   clean?: boolean
   stripFuzzy?: boolean
   useCache?: boolean
+  noLineNumbers?: boolean
 }
 
 export interface ExtractWorkflowResult {
@@ -131,12 +132,13 @@ export async function runExtractWorkflow(
   const ext = config.format === 'json' ? '.json' : '.po'
   const clean = options?.clean ?? false
   const stripFuzzy = options?.stripFuzzy ?? false
+  const noLineNumbers = options?.noLineNumbers ?? false
   const localeResults: ExtractWorkflowResult['localeResults'] = []
 
   for (const locale of localeCodes) {
     const catalogPath = resolve(cwd, config.catalogDir, `${locale}${ext}`)
     const existing = readCatalog(catalogPath, config.format)
-    const { catalog, result } = updateCatalog(existing, allMessages, { stripFuzzy })
+    const { catalog, result } = updateCatalog(existing, allMessages, { stripFuzzy, noLineNumbers })
 
     const finalCatalog = clean
       ? Object.fromEntries(Object.entries(catalog).filter(([, entry]) => !entry.obsolete))

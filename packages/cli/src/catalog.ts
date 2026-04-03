@@ -20,6 +20,7 @@ export interface UpdateResult {
 
 export interface UpdateCatalogOptions {
   stripFuzzy?: boolean
+  noLineNumbers?: boolean
 }
 
 /** Update catalog with newly extracted messages */
@@ -40,7 +41,9 @@ export function updateCatalog(
     const carried = existingEntry
       ? undefined
       : findCarryForwardEntry(existing, msg, consumedCarryForwardIds)
-    const origin = `${msg.origin.file}:${msg.origin.line}`
+    const origin = options?.noLineNumbers
+      ? msg.origin.file
+      : `${msg.origin.file}:${msg.origin.line}`
     const baseEntry = existingEntry ?? carried?.entry
 
     if (carried) {
