@@ -2,10 +2,12 @@ import { describe, it, expect, afterEach } from 'vitest'
 import { render, cleanup } from '@solidjs/testing-library'
 import { I18nProvider } from '../src'
 import { DateTime } from '../src/components/DateTime'
+import { __resetFluentiGlobalStateForTests } from '../src/context'
 
 describe('DateTime', () => {
   afterEach(() => {
     cleanup()
+    __resetFluentiGlobalStateForTests()
   })
 
   const fixedDate = new Date('2024-06-15T12:30:00Z')
@@ -136,10 +138,10 @@ describe('DateTime', () => {
     expect(getByText(expected)).toBeDefined()
   })
 
-  it('throws when used outside of I18nProvider', () => {
-    expect(() => render(() => <DateTime value={fixedDate} />)).toThrow(
-      'useI18n() must be used inside an <I18nProvider>.',
-    )
+  it('uses the development fallback when used outside of I18nProvider', () => {
+    const expected = new Intl.DateTimeFormat('en').format(fixedDate)
+    const { getByText } = render(() => <DateTime value={fixedDate} />)
+    expect(getByText(expected)).toBeDefined()
   })
 
   // ─── Edge cases ──────────────────────────────────────────────────────

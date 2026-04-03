@@ -1,16 +1,23 @@
 import { useContext } from 'solid-js'
 import { I18nCtx } from './provider'
+import { resolveFluentiFallbackContext } from './context'
 import type { FluentiContext } from './context'
 
 /**
  * Access the i18n context from the nearest `<I18nProvider>`.
  *
- * Throws if no provider is found in the component tree.
+ * Falls back to a global `createFluenti()` singleton when present.
+ * In development, returns a no-op fallback context instead of throwing.
  */
 export function useI18n(): FluentiContext {
   const ctx = useContext(I18nCtx)
   if (ctx) {
     return ctx
+  }
+
+  const fallback = resolveFluentiFallbackContext()
+  if (fallback) {
+    return fallback.context
   }
 
   throw new Error(

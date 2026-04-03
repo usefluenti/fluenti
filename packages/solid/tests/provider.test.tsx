@@ -2,11 +2,16 @@ import { describe, it, expect, vi, afterEach } from 'vitest'
 import { render } from '@solidjs/testing-library'
 import { interpolate } from '@fluenti/core/runtime'
 import { I18nProvider, useI18n } from '../src'
+import { __resetFluentiGlobalStateForTests } from '../src/context'
 
 const messages = {
   en: { hello: 'Hello', greeting: 'Hi {name}' },
   fr: { hello: 'Bonjour', greeting: 'Salut {name}' },
 }
+
+afterEach(() => {
+  __resetFluentiGlobalStateForTests()
+})
 
 describe('I18nProvider', () => {
   it('provides context to children', () => {
@@ -179,15 +184,14 @@ describe('I18nProvider', () => {
 })
 
 describe('useI18n outside provider', () => {
-  it('throws when used without provider', () => {
+  it('returns a development fallback instead of throwing', () => {
     function BadChild() {
       const { t } = useI18n()
-      return <span>{t('hello')}</span>
+      return <span>{t({ id: 'hello', message: 'Hello' })}</span>
     }
 
-    expect(() => render(() => <BadChild />)).toThrow(
-      'useI18n() must be used inside an <I18nProvider>.',
-    )
+    const { getByText } = render(() => <BadChild />)
+    expect(getByText('Hello')).toBeDefined()
   })
 })
 

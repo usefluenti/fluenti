@@ -1,12 +1,17 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, afterEach } from 'vitest'
 import { render } from '@solidjs/testing-library'
 import { interpolate } from '@fluenti/core/runtime'
-import { I18nProvider, useI18n } from '../src'
+import { I18nProvider, createFluenti, useI18n } from '../src'
+import { __resetFluentiGlobalStateForTests } from '../src/context'
 
 const messages = {
   en: { hello: 'Hello', greeting: 'Hi {name}' },
   fr: { hello: 'Bonjour', greeting: 'Salut {name}' },
 }
+
+afterEach(() => {
+  __resetFluentiGlobalStateForTests()
+})
 
 describe('useI18n reactivity', () => {
   it('component body runs once, text updates on locale change', async () => {
@@ -277,15 +282,52 @@ describe('useI18n reactivity', () => {
 
   // ─── Edge cases ──────────────────────────────────────────────────────
 
-  it('throws when useI18n is called outside provider', () => {
+  it('returns a development fallback when useI18n is called outside provider', () => {
     function BadChild() {
+      const { t } = useI18n()
+      return <span>{t({ id: 'hello', message: 'Hello' })}</span>
+    }
+
+    const { getByText } = render(() => <BadChild />)
+    expect(getByText('Hello')).toBeDefined()
+  })
+
+  it('still throws in production when no provider or singleton is present', () => {
+    const previousNodeEnv = process.env['NODE_ENV']
+    process.env['NODE_ENV'] = 'production'
+
+    try {
+      function BadChild() {
+        const { t } = useI18n()
+        return <span>{t('hello')}</span>
+      }
+
+      expect(() => render(() => <BadChild />)).toThrow(
+        'useI18n() must be used inside an <I18nProvider>.',
+      )
+    } finally {
+      if (previousNodeEnv === undefined) {
+        delete process.env['NODE_ENV']
+      } else {
+        process.env['NODE_ENV'] = previousNodeEnv
+      }
+      __resetFluentiGlobalStateForTests()
+    }
+  })
+
+  it('uses createFluenti singleton when no provider is present', () => {
+    createFluenti({
+      locale: 'en',
+      messages,
+    })
+
+    function Child() {
       const { t } = useI18n()
       return <span>{t('hello')}</span>
     }
 
-    expect(() => render(() => <BadChild />)).toThrow(
-      'useI18n() must be used inside an <I18nProvider>.',
-    )
+    const { getByText } = render(() => <Child />)
+    expect(getByText('Hello')).toBeDefined()
   })
 
   it('returns all expected properties from useI18n', () => {

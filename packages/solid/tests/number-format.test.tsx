@@ -2,10 +2,12 @@ import { describe, it, expect, afterEach } from 'vitest'
 import { render, cleanup } from '@solidjs/testing-library'
 import { I18nProvider, useI18n } from '../src'
 import { NumberFormat } from '../src/components/NumberFormat'
+import { __resetFluentiGlobalStateForTests } from '../src/context'
 
 describe('NumberFormat', () => {
   afterEach(() => {
     cleanup()
+    __resetFluentiGlobalStateForTests()
   })
 
   it('formats an integer with grouping separators', () => {
@@ -153,10 +155,10 @@ describe('NumberFormat', () => {
     expect(getByText(expected)).toBeDefined()
   })
 
-  it('throws when used outside of I18nProvider', () => {
-    expect(() => render(() => <NumberFormat value={42} />)).toThrow(
-      'useI18n() must be used inside an <I18nProvider>.',
-    )
+  it('uses the development fallback when used outside of I18nProvider', () => {
+    const expected = new Intl.NumberFormat('en').format(42)
+    const { getByText } = render(() => <NumberFormat value={42} />)
+    expect(getByText(expected)).toBeDefined()
   })
 
   // ─── Edge cases ──────────────────────────────────────────────────────

@@ -13,6 +13,8 @@ interface SplitRuntimeModule {
 }
 
 const SPLIT_RUNTIME_KEY = Symbol.for('fluenti.runtime.solid.v1')
+const GLOBAL_FLUENTI_CONTEXT_KEY = Symbol.for('fluenti.solid.context.v1')
+const DEVELOPMENT_FALLBACK_CONTEXT_KEY = Symbol.for('fluenti.solid.fallback-context.v1')
 
 function getSplitRuntimeModule(): SplitRuntimeModule | null {
   const runtime = (globalThis as Record<PropertyKey, unknown>)[SPLIT_RUNTIME_KEY]
@@ -27,6 +29,41 @@ function resolveChunkMessages(
   return typeof loaded === 'object' && loaded !== null && 'default' in loaded
     ? (loaded as { default: Record<string, CompiledMessage> }).default
     : loaded
+}
+
+function isDevelopmentMode(): boolean {
+  try {
+    if (typeof process !== 'undefined' && process.env != null && process.env['NODE_ENV'] === 'production') {
+      return false
+    }
+  } catch {
+    // process not available
+  }
+  try {
+    if (typeof import.meta !== 'undefined' && (import.meta as { env?: { DEV?: boolean } }).env != null) {
+      return !!(import.meta as { env?: { DEV?: boolean } }).env?.DEV
+    }
+  } catch {
+    // import.meta not available
+  }
+  try {
+    if (typeof process !== 'undefined' && process.env != null) {
+      return process.env['NODE_ENV'] !== 'production'
+    }
+  } catch {
+    // process not available
+  }
+  return false
+}
+
+function getStoredContext(key: symbol): FluentiContext | undefined {
+  const value = (globalThis as Record<PropertyKey, unknown>)[key]
+  return value && typeof value === 'object' ? value as FluentiContext : undefined
+}
+
+function setStoredContext(key: symbol, context: FluentiContext): FluentiContext {
+  ;(globalThis as Record<PropertyKey, unknown>)[key] = context
+  return context
 }
 
 /** @internal Map locale → default currency code */
@@ -119,6 +156,119 @@ export interface FluentiContext {
   te(key: string, loc?: string): boolean
   /** Get the raw compiled message for a key without interpolation */
   tm(key: string, loc?: string): CompiledMessage | undefined
+}
+
+function createDevelopmentFallbackContext(): FluentiContext {
+  let currentLocale: Locale = 'en'
+  const loadedMessages: Record<string, Messages> = { en: {} }
+  const core = createFluentiCore({
+    locale: currentLocale,
+    messages: loadedMessages,
+    devWarnings: false,
+  })
+
+  const locale = (): Locale => currentLocale
+  const isLoading = (): boolean => false
+  const loadedLocales = (): Set<string> => new Set(Object.keys(loadedMessages))
+
+  function syncLocale(): void {
+    if (core.locale !== currentLocale) {
+      core.locale = currentLocale
+    }
+  }
+
+  function t(strings: TemplateStringsArray, ...exprs: unknown[]): LocalizedString
+  function t(id: string | MessageDescriptor, values?: Record<string, unknown>): LocalizedString
+  function t(idOrStrings: string | MessageDescriptor | TemplateStringsArray, ...rest: unknown[]): LocalizedString {
+    syncLocale()
+    if (Array.isArray(idOrStrings) && 'raw' in idOrStrings) {
+      return core.t(idOrStrings as TemplateStringsArray, ...rest) as LocalizedString
+    }
+    return core.t(
+      idOrStrings as string | MessageDescriptor,
+      rest[0] as Record<string, unknown> | undefined,
+    ) as LocalizedString
+  }
+
+  const setLocale = async (newLocale: Locale): Promise<void> => {
+    currentLocale = newLocale
+    core.locale = newLocale
+    loadedMessages[newLocale] ??= {}
+  }
+
+  const loadMessages = (loc: Locale, msgs: Messages): void => {
+    core.loadMessages(loc, msgs)
+    loadedMessages[loc] = { ...loadedMessages[loc], ...msgs }
+  }
+
+  const getLocales = (): Locale[] => Array.from(new Set([...core.getLocales(), ...Object.keys(loadedMessages)]))
+
+  const d = (value: Date | number, style?: string): LocalizedString => {
+    syncLocale()
+    return core.d(value, style) as LocalizedString
+  }
+
+  const n = (value: number, style?: string): LocalizedString => {
+    syncLocale()
+    return core.n(value, style) as LocalizedString
+  }
+
+  const format = (message: string, values?: Record<string, unknown>): LocalizedString => {
+    syncLocale()
+    return core.format(message, values) as LocalizedString
+  }
+
+  const preloadLocale = (_locale: string): void => {}
+
+  const te = (key: string, loc?: string): boolean => {
+    const messages = loadedMessages[loc ?? currentLocale]
+    return messages !== undefined && key in messages
+  }
+
+  const tm = (key: string, loc?: string): CompiledMessage | undefined => {
+    const messages = loadedMessages[loc ?? currentLocale]
+    return messages ? messages[key] : undefined
+  }
+
+  return {
+    locale,
+    setLocale,
+    t,
+    loadMessages,
+    getLocales,
+    d,
+    n,
+    format,
+    isLoading,
+    loadedLocales,
+    preloadLocale,
+    te,
+    tm,
+  }
+}
+
+export type FluentiContextFallbackSource = 'singleton' | 'development'
+
+export function resolveFluentiFallbackContext():
+  | { context: FluentiContext; source: FluentiContextFallbackSource }
+  | undefined {
+  const globalContext = getStoredContext(GLOBAL_FLUENTI_CONTEXT_KEY)
+  if (globalContext) {
+    return { context: globalContext, source: 'singleton' }
+  }
+
+  if (!isDevelopmentMode()) {
+    return undefined
+  }
+
+  let fallbackContext = getStoredContext(DEVELOPMENT_FALLBACK_CONTEXT_KEY)
+  if (!fallbackContext) {
+    fallbackContext = setStoredContext(
+      DEVELOPMENT_FALLBACK_CONTEXT_KEY,
+      createDevelopmentFallbackContext(),
+    )
+  }
+  return { context: fallbackContext, source: 'development' }
 }
 
 /**
@@ -299,4 +449,11 @@ export function createFluentiContext(config: FluentiCoreConfig | FluentiConfig):
   return { locale, setLocale, t, loadMessages, getLocales, d, n, format, isLoading, loadedLocales, preloadLocale, te, tm }
 }
 
-export const createFluenti = createFluentiContext
+export function createFluenti(config: FluentiCoreConfig | FluentiConfig): FluentiContext {
+  return setStoredContext(GLOBAL_FLUENTI_CONTEXT_KEY, createFluentiContext(config))
+}
+
+export function __resetFluentiGlobalStateForTests(): void {
+  delete (globalThis as Record<PropertyKey, unknown>)[GLOBAL_FLUENTI_CONTEXT_KEY]
+  delete (globalThis as Record<PropertyKey, unknown>)[DEVELOPMENT_FALLBACK_CONTEXT_KEY]
+}
