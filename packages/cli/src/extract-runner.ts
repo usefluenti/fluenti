@@ -1,88 +1,10 @@
-import fg from 'fast-glob'
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs'
-import { createHash } from 'node:crypto'
-import { resolve, dirname, extname } from 'node:path'
-import { extractFromTsx } from './tsx-extractor'
-import { updateCatalog } from './catalog'
-import type { CatalogData } from './catalog'
-import { readJsonCatalog, writeJsonCatalog } from './json-format'
-import { readPoCatalog, writePoCatalog } from './po-format'
-import { ExtractCache } from './extract-cache'
 import { loadConfig } from './config-loader'
-import type { ExtractedMessage } from '@fluenti/core/compiler'
-import { resolveLocaleCodes, createPluginRunner } from '@fluenti/core/compiler'
-import type { PluginExtractContext } from '@fluenti/core/compiler'
-
-function deriveProjectId(cwd: string): string {
-  return createHash('md5').update(cwd).digest('hex').slice(0, 8)
-}
-
-function toForwardSlash(path: string): string {
-  return path.split('\\').join('/')
-}
-
-function normalizeMessageOrigins(
-  messages: readonly ExtractedMessage[],
-  displayFile: string,
-): { messages: ExtractedMessage[]; changed: boolean } {
-  const normalizedDisplayFile = toForwardSlash(displayFile)
-  let changed = false
-
-  const normalizedMessages = messages.map((message) => {
-    if (toForwardSlash(message.origin.file) === normalizedDisplayFile) {
-      return message
-    }
-
-    changed = true
-    return {
-      ...message,
-      origin: {
-        ...message.origin,
-        file: normalizedDisplayFile,
-      },
-    }
-  })
-
-  return {
-    messages: changed ? normalizedMessages : [...messages],
-    changed,
-  }
-}
+import { runExtractWorkflow } from './extract-workflow'
 
 export interface RunExtractOptions {
   clean?: boolean
   stripFuzzy?: boolean
   useCache?: boolean
-}
-
-function readCatalog(filePath: string, format: 'json' | 'po'): CatalogData {
-  if (!existsSync(filePath)) return {}
-  const content = readFileSync(filePath, 'utf-8')
-  return format === 'json' ? readJsonCatalog(content) : readPoCatalog(content)
-}
-
-function writeCatalog(filePath: string, catalog: CatalogData, format: 'json' | 'po'): void {
-  const content = format === 'json' ? writeJsonCatalog(catalog) : writePoCatalog(catalog)
-  try {
-    mkdirSync(dirname(filePath), { recursive: true })
-    writeFileSync(filePath, content, 'utf-8')
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err)
-    throw new Error(`Failed to write catalog "${filePath}": ${message}`)
-  }
-}
-
-async function extractFromFile(filePath: string, code: string): Promise<ExtractedMessage[]> {
-  const ext = extname(filePath)
-  if (ext === '.vue') {
-    try {
-      const { extractFromVue } = await import('./vue-extractor')
-      return extractFromVue(code, filePath)
-    } catch {
-      return []
-    }
-  }
-  return extractFromTsx(code, filePath)
 }
 
 /**
@@ -92,77 +14,5 @@ async function extractFromFile(filePath: string, code: string): Promise<Extracte
  */
 export async function runExtract(cwd: string, options?: RunExtractOptions): Promise<void> {
   const config = await loadConfig(undefined, cwd)
-  const localeCodes = resolveLocaleCodes(config.locales)
-
-  const files = await fg(config.include, { cwd, ignore: config.exclude ?? [], absolute: false })
-  const allMessages: ExtractedMessage[] = []
-  const useCache = options?.useCache !== false
-  const cache = useCache ? new ExtractCache(resolve(cwd, config.catalogDir), deriveProjectId(cwd)) : null
-
-  for (const file of files) {
-    const absFile = resolve(cwd, file)
-    const displayFile = toForwardSlash(file)
-    if (cache) {
-      const cached = cache.get(absFile)
-      if (cached) {
-        const normalizedCached = normalizeMessageOrigins(cached, displayFile)
-        allMessages.push(...normalizedCached.messages)
-        if (normalizedCached.changed) {
-          cache.set(absFile, normalizedCached.messages)
-        }
-        continue
-      }
-    }
-
-    const code = readFileSync(absFile, 'utf-8')
-    const messages = normalizeMessageOrigins(
-      await extractFromFile(displayFile, code),
-      displayFile,
-    ).messages
-    allMessages.push(...messages)
-
-    if (cache) {
-      cache.set(absFile, messages)
-    }
-  }
-
-  if (cache) {
-    cache.prune(new Set(files.map((f) => resolve(cwd, f))))
-    cache.save()
-  }
-
-  // Run onAfterExtract plugin hooks
-  const pluginRunner = config.plugins?.length
-    ? createPluginRunner(config.plugins)
-    : undefined
-
-  if (pluginRunner) {
-    const messageMap = new Map<string, ExtractedMessage>()
-    for (const msg of allMessages) {
-      messageMap.set(msg.id, msg)
-    }
-    const extractContext: PluginExtractContext = {
-      messages: messageMap,
-      sourceLocale: config.sourceLocale,
-      targetLocales: localeCodes.filter((l) => l !== config.sourceLocale),
-      config,
-    }
-    await pluginRunner.runAfterExtract(extractContext)
-  }
-
-  const ext = config.format === 'json' ? '.json' : '.po'
-  const clean = options?.clean ?? false
-  const stripFuzzy = options?.stripFuzzy ?? false
-
-  for (const locale of localeCodes) {
-    const catalogPath = resolve(cwd, config.catalogDir, `${locale}${ext}`)
-    const existing = readCatalog(catalogPath, config.format)
-    const { catalog } = updateCatalog(existing, allMessages, { stripFuzzy })
-
-    const finalCatalog = clean
-      ? Object.fromEntries(Object.entries(catalog).filter(([, entry]) => !entry.obsolete))
-      : catalog
-
-    writeCatalog(catalogPath, finalCatalog, config.format)
-  }
+  await runExtractWorkflow(cwd, config, options)
 }

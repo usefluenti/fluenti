@@ -1,11 +1,8 @@
 #!/usr/bin/env node
 import { defineCommand, runMain } from 'citty'
 import consola from 'consola'
-import fg from 'fast-glob'
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs'
-import { resolve, dirname, extname } from 'node:path'
-import { extractFromTsx } from './tsx-extractor'
-import { updateCatalog } from './catalog'
+import { resolve, dirname } from 'node:path'
 import type { CatalogData } from './catalog'
 import { readJsonCatalog, writeJsonCatalog } from './json-format'
 import { readPoCatalog, writePoCatalog } from './po-format'
@@ -14,7 +11,6 @@ import { parallelCompile } from './parallel-compile'
 import { formatStatsRow } from './stats-format'
 import { lintCatalogs, formatDiagnostics } from './lint'
 import { checkCoverage, formatCheckText, formatCheckGitHub, formatCheckJson } from './check'
-import { ExtractCache } from './extract-cache'
 import { CompileCache } from './compile-cache'
 import { translateCatalog } from './translate'
 import type { AIProvider } from './translate'
@@ -22,10 +18,10 @@ import { loadGlossary, getGlossaryForLocale } from './glossary'
 import { runMigrate } from './migrate'
 import { runInit } from './init'
 import { loadConfig } from './config-loader'
+import { runExtractWorkflow } from './extract-workflow'
 import { runCodemod } from './codemod'
 import { formatDoctorReport, runDoctor } from './doctor'
 import { createHash } from 'node:crypto'
-import type { ExtractedMessage } from '@fluenti/core/compiler'
 import { resolveLocaleCodes } from '@fluenti/core/compiler'
 import type { FluentiPlugin, PluginCompileContext, FluentiBuildConfig } from '@fluenti/core/compiler'
 
@@ -45,26 +41,6 @@ function writeCatalog(filePath: string, catalog: CatalogData, format: 'json' | '
   writeFileSync(filePath, content, 'utf-8')
 }
 
-async function extractFromFile(
-  filePath: string,
-  code: string,
-  idGenerator?: (message: string, context?: string) => string,
-): Promise<ExtractedMessage[]> {
-  const ext = extname(filePath)
-  if (ext === '.vue') {
-    try {
-      const { extractFromVue } = await import('./vue-extractor')
-      return extractFromVue(code, filePath, idGenerator)
-    } catch {
-      consola.warn(
-        `Skipping ${filePath}: install @vue/compiler-sfc to extract from .vue files`,
-      )
-      return []
-    }
-  }
-  return extractFromTsx(code, filePath, idGenerator)
-}
-
 const extract = defineCommand({
   meta: { name: 'extract', description: 'Extract messages from source files' },
   args: {
@@ -75,78 +51,27 @@ const extract = defineCommand({
   },
   async run({ args }) {
     const config = await loadConfig(args.config)
-    const localeCodes = resolveLocaleCodes(config.locales)
     consola.info(`Extracting messages from ${config.include.join(', ')}`)
+    const result = await runExtractWorkflow(process.cwd(), config, {
+      clean: args.clean ?? false,
+      stripFuzzy: args['no-fuzzy'] ?? false,
+      useCache: !(args['no-cache'] ?? false),
+    })
 
-    const files = await fg(config.include, { ignore: config.exclude ?? [], absolute: false })
-    const allMessages: ExtractedMessage[] = []
-    const useCache = !(args['no-cache'] ?? false)
-    const cache = useCache ? new ExtractCache(config.catalogDir, deriveProjectId(process.cwd())) : null
-
-    let cacheHits = 0
-
-    for (const file of files) {
-      if (cache) {
-        const cached = cache.get(file)
-        if (cached) {
-          allMessages.push(...cached)
-          cacheHits++
-          continue
-        }
-      }
-
-      const code = readFileSync(file, 'utf-8')
-      const messages = await extractFromFile(file, code, config.idGenerator)
-      allMessages.push(...messages)
-
-      if (cache) {
-        cache.set(file, messages)
-      }
-    }
-
-    // Prune cache entries for deleted files
-    if (cache) {
-      cache.prune(new Set(files))
-      cache.save()
-    }
-
-    if (cacheHits > 0) {
-      consola.info(`Found ${allMessages.length} messages in ${files.length} files (${cacheHits} cached)`)
+    if (result.cacheHits > 0) {
+      consola.info(`Found ${result.messageCount} messages in ${result.fileCount} files (${result.cacheHits} cached)`)
     } else {
-      consola.info(`Found ${allMessages.length} messages in ${files.length} files`)
+      consola.info(`Found ${result.messageCount} messages in ${result.fileCount} files`)
     }
 
-    const ext = config.format === 'json' ? '.json' : '.po'
-    const clean = args.clean ?? false
-    const stripFuzzy = args['no-fuzzy'] ?? false
-
-    for (const locale of localeCodes) {
-      const catalogPath = resolve(config.catalogDir, `${locale}${ext}`)
-      const existing = readCatalog(catalogPath, config.format)
-      const { catalog, result } = updateCatalog(existing, allMessages, { stripFuzzy })
-
-      const finalCatalog = clean
-        ? Object.fromEntries(Object.entries(catalog).filter(([, entry]) => !entry.obsolete))
-        : catalog
-
-      writeCatalog(catalogPath, finalCatalog, config.format)
-
-      const obsoleteLabel = clean
-        ? `${result.obsolete} removed`
-        : `${result.obsolete} obsolete`
+    for (const localeResult of result.localeResults) {
+      const obsoleteLabel = args.clean
+        ? `${localeResult.result.obsolete} removed`
+        : `${localeResult.result.obsolete} obsolete`
       consola.success(
-        `${locale}: ${result.added} added, ${result.unchanged} unchanged, ${obsoleteLabel}`,
+        `${localeResult.locale}: ${localeResult.result.added} added, `
+        + `${localeResult.result.unchanged} unchanged, ${obsoleteLabel}`,
       )
-    }
-
-    // Run plugin onAfterExtract hooks
-    for (const plugin of config.plugins ?? []) {
-      await plugin.onAfterExtract?.({
-        messages: new Map(allMessages.map((m) => [m.id, m])),
-        sourceLocale: config.sourceLocale,
-        targetLocales: localeCodes.filter((l: string) => l !== config.sourceLocale),
-        config,
-      })
     }
   },
 })

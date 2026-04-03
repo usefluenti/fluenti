@@ -1,10 +1,12 @@
 import { describe, it, expect, afterEach } from 'vitest'
 import { mkdtempSync, rmSync, mkdirSync, writeFileSync, readFileSync, existsSync, statSync } from 'node:fs'
-import { join, dirname } from 'node:path'
+import { join, dirname, resolve } from 'node:path'
 import { tmpdir } from 'node:os'
 import { createHash } from 'node:crypto'
 import { runExtract } from '../src/extract-runner'
+import { runExtractWorkflow } from '../src/extract-workflow'
 import { runCompile } from '../src/compile-runner'
+import { loadConfig } from '../src/config-loader'
 
 // ── helpers ─────────────────────────────────────────────────────────────────
 
@@ -19,16 +21,20 @@ function createTmpProject(files: Record<string, string>): string {
 }
 
 /** Minimal fluenti config (explicit ESM, no external imports needed) */
-const CONFIG_MJS = `
+function createConfigMjs(include = './src/**/*.{tsx,ts,vue}'): string {
+  return `
 export default {
   sourceLocale: 'en',
   locales: ['en', 'ja'],
   catalogDir: './locales',
   format: 'po',
-  include: ['./src/**/*.{tsx,ts,vue}'],
+  include: [${JSON.stringify(include)}],
   compileOutDir: './src/locales/compiled',
 }
 `
+}
+
+const CONFIG_MJS = createConfigMjs()
 
 /** A PO file with one translated entry */
 function poWithTranslation(msgid: string, msgstr: string): string {
@@ -84,14 +90,61 @@ describe('extract + compile pipeline (integration)', () => {
     expect(jaPo).toContain('msgid "Regular User"')
   })
 
+  it('keeps PO references relative when include uses an absolute glob', async () => {
+    tmpDir = createTmpProject({
+      'src/App.tsx': `
+        import { msg } from '@fluenti/react'
+        export const HELLO = msg\`Hello from absolute glob\`
+      `,
+    })
+    writeFileSync(
+      join(tmpDir, 'fluenti.config.mjs'),
+      createConfigMjs(resolve(tmpDir, 'src/**/*.{tsx,ts,vue}')),
+      'utf-8',
+    )
+
+    await runExtract(tmpDir)
+
+    const enPo = readFileSync(join(tmpDir, 'locales/en.po'), 'utf-8')
+    expect(enPo).toContain('msgid "Hello from absolute glob"')
+    expect(enPo).toMatch(/#:\s+src\/App\.tsx:\d+/)
+    expect(enPo).not.toContain(tmpDir)
+  })
+
+  it('shared extract workflow used by the CLI keeps absolute include globs relative', async () => {
+    tmpDir = createTmpProject({
+      'src/App.tsx': `
+        import { msg } from '@fluenti/react'
+        export const HELLO = msg\`Hello from workflow\`
+      `,
+    })
+    writeFileSync(
+      join(tmpDir, 'fluenti.config.mjs'),
+      createConfigMjs(resolve(tmpDir, 'src/**/*.{tsx,ts,vue}')),
+      'utf-8',
+    )
+
+    const config = await loadConfig(undefined, tmpDir)
+    await runExtractWorkflow(tmpDir, config)
+
+    const enPo = readFileSync(join(tmpDir, 'locales/en.po'), 'utf-8')
+    expect(enPo).toContain('msgid "Hello from workflow"')
+    expect(enPo).toMatch(/#:\s+src\/App\.tsx:\d+/)
+    expect(enPo).not.toContain(tmpDir)
+  })
+
   it('normalizes cached absolute origins back to relative paths', async () => {
     tmpDir = createTmpProject({
-      'fluenti.config.mjs': CONFIG_MJS,
       'src/App.tsx': `
         import { msg } from '@fluenti/react'
         export const HELLO = msg\`Hello from cache\`
       `,
     })
+    writeFileSync(
+      join(tmpDir, 'fluenti.config.mjs'),
+      createConfigMjs(resolve(tmpDir, 'src/**/*.{tsx,ts,vue}')),
+      'utf-8',
+    )
 
     await runExtract(tmpDir)
 
