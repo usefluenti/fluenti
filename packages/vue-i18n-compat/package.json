@@ -48,7 +48,7 @@
     "vite-plugin-dts": "^4",
     "vitest": "^4",
     "vue": "^3.5",
-    "vue-i18n": "^10",
+    "vue-i18n": "^11",
     "@vue/test-utils": "^2",
     "happy-dom": "^20"
   }
