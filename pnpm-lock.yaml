@@ -31,7 +31,7 @@ importers:
         version: 25.5.0
       '@vitest/coverage-v8':
         specifier: ^4
-        version: 4.1.0(vitest@4.1.0(@types/node@25.5.0)(happy-dom@20.8.4)(vite@8.0.2(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.3)))
+        version: 4.1.0(vitest@4.1.0(@types/node@25.5.0)(happy-dom@20.8.9)(vite@8.0.2(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.3)))
       oxlint:
         specifier: ^1
         version: 1.56.0
@@ -40,7 +40,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: ^4
-        version: 4.1.0(@types/node@25.5.0)(happy-dom@20.8.4)(vite@8.0.2(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.3))
+        version: 4.1.0(@types/node@25.5.0)(happy-dom@20.8.9)(vite@8.0.2(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.3))
 
   apps/docs:
     dependencies:
@@ -1249,7 +1249,7 @@ importers:
     devDependencies:
       '@vitest/coverage-v8':
         specifier: ^4
-        version: 4.1.0(vitest@4.1.0(@types/node@25.5.0)(happy-dom@20.8.4)(vite@8.0.2(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.3)))
+        version: 4.1.0(vitest@4.1.0(@types/node@25.5.0)(happy-dom@20.8.9)(vite@8.0.2(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.3)))
       '@vue/compiler-sfc':
         specifier: ^3.5
         version: 3.5.30
@@ -1264,7 +1264,7 @@ importers:
         version: 4.5.4(@types/node@25.5.0)(rollup@4.59.0)(typescript@5.9.3)(vite@8.0.2(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.3))
       vitest:
         specifier: ^4
-        version: 4.1.0(@types/node@25.5.0)(happy-dom@20.8.4)(vite@8.0.2(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.3))
+        version: 4.1.0(@types/node@25.5.0)(happy-dom@20.8.9)(vite@8.0.2(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.3))
 
   packages/core:
     dependencies:
@@ -1280,7 +1280,7 @@ importers:
     devDependencies:
       '@vitest/coverage-v8':
         specifier: ^4
-        version: 4.1.0(vitest@4.1.0(@types/node@25.5.0)(happy-dom@20.8.4)(vite@8.0.2(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.3)))
+        version: 4.1.0(vitest@4.1.0(@types/node@25.5.0)(happy-dom@20.8.9)(vite@8.0.2(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.3)))
       typescript:
         specifier: ^5.9
         version: 5.9.3
@@ -1292,7 +1292,7 @@ importers:
         version: 4.5.4(@types/node@25.5.0)(rollup@4.59.0)(typescript@5.9.3)(vite@8.0.2(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.3))
       vitest:
         specifier: ^4
-        version: 4.1.0(@types/node@25.5.0)(happy-dom@20.8.4)(vite@8.0.2(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.3))
+        version: 4.1.0(@types/node@25.5.0)(happy-dom@20.8.9)(vite@8.0.2(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.3))
 
   packages/next-plugin:
     dependencies:
@@ -1320,7 +1320,7 @@ importers:
         version: 19.2.3(@types/react@19.2.14)
       '@vitest/coverage-v8':
         specifier: ^4
-        version: 4.1.0(vitest@4.1.0(@types/node@25.5.0)(happy-dom@20.8.4)(vite@8.0.2(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.3)))
+        version: 4.1.0(vitest@4.1.0(@types/node@25.5.0)(happy-dom@20.8.9)(vite@8.0.2(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.3)))
       next:
         specifier: ^16
         version: 16.2.1(@playwright/test@1.58.2)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -1341,7 +1341,7 @@ importers:
         version: 4.5.4(@types/node@25.5.0)(rollup@4.59.0)(typescript@5.9.3)(vite@8.0.2(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.3))
       vitest:
         specifier: ^4
-        version: 4.1.0(@types/node@25.5.0)(happy-dom@20.8.4)(vite@8.0.2(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.3))
+        version: 4.1.0(@types/node@25.5.0)(happy-dom@20.8.9)(vite@8.0.2(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.3))
       webpack:
         specifier: ^5
         version: 5.105.4(esbuild@0.27.4)
@@ -1363,7 +1363,7 @@ importers:
     devDependencies:
       '@vitest/coverage-v8':
         specifier: ^4
-        version: 4.1.0(vitest@4.1.0(@types/node@25.5.0)(happy-dom@20.8.4)(vite@8.0.2(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.3)))
+        version: 4.1.0(vitest@4.1.0(@types/node@25.5.0)(happy-dom@20.8.9)(vite@8.0.2(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.3)))
       nuxt:
         specifier: ^3.17
         version: 3.21.2(@parcel/watcher@2.5.6)(@types/node@25.5.0)(@vue/compiler-sfc@3.5.30)(cac@6.7.14)(db0@0.3.4)(ioredis@5.10.0)(lightningcss@1.32.0)(magicast@0.5.2)(oxlint@1.56.0)(rolldown@1.0.0-rc.11)(rollup-plugin-visualizer@6.0.11(rolldown@1.0.0-rc.11)(rollup@4.59.0))(rollup@4.59.0)(terser@5.46.0)(tsx@4.21.0)(typescript@5.9.3)(vite@8.0.2(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.3))(vue-tsc@3.2.6(typescript@5.9.3))(yaml@2.8.3)
@@ -1378,7 +1378,7 @@ importers:
         version: 4.5.4(@types/node@25.5.0)(rollup@4.59.0)(typescript@5.9.3)(vite@8.0.2(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.3))
       vitest:
         specifier: ^4
-        version: 4.1.0(@types/node@25.5.0)(happy-dom@20.8.4)(vite@8.0.2(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.3))
+        version: 4.1.0(@types/node@25.5.0)(happy-dom@20.8.9)(vite@8.0.2(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.3))
       vue:
         specifier: ^3.5
         version: 3.5.30(typescript@5.9.3)
@@ -1406,10 +1406,10 @@ importers:
         version: 19.2.3(@types/react@19.2.14)
       '@vitest/coverage-v8':
         specifier: ^4
-        version: 4.1.0(vitest@4.1.0(@types/node@25.5.0)(happy-dom@20.8.4)(vite@8.0.2(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.3)))
+        version: 4.1.0(vitest@4.1.0(@types/node@25.5.0)(happy-dom@20.8.9)(vite@8.0.2(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.3)))
       happy-dom:
         specifier: ^20
-        version: 20.8.4
+        version: 20.8.9
       react:
         specifier: ^19.0.0
         version: 19.2.4
@@ -1427,7 +1427,7 @@ importers:
         version: 4.5.4(@types/node@25.5.0)(rollup@4.59.0)(typescript@5.9.3)(vite@8.0.2(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.3))
       vitest:
         specifier: ^4
-        version: 4.1.0(@types/node@25.5.0)(happy-dom@20.8.4)(vite@8.0.2(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.3))
+        version: 4.1.0(@types/node@25.5.0)(happy-dom@20.8.9)(vite@8.0.2(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.3))
 
   packages/solid:
     dependencies:
@@ -1443,10 +1443,10 @@ importers:
         version: 0.8.10(@solidjs/router@0.15.4(solid-js@1.9.11))(solid-js@1.9.11)
       '@vitest/coverage-v8':
         specifier: ^4
-        version: 4.1.0(vitest@4.1.0(@types/node@25.5.0)(happy-dom@20.8.4)(vite@8.0.2(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.3)))
+        version: 4.1.0(vitest@4.1.0(@types/node@25.5.0)(happy-dom@20.8.9)(vite@8.0.2(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.3)))
       happy-dom:
         specifier: ^20
-        version: 20.8.4
+        version: 20.8.9
       solid-js:
         specifier: ^1.9
         version: 1.9.11
@@ -1464,7 +1464,7 @@ importers:
         version: 2.11.11(solid-js@1.9.11)(vite@8.0.2(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.3))
       vitest:
         specifier: ^4
-        version: 4.1.0(@types/node@25.5.0)(happy-dom@20.8.4)(vite@8.0.2(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.3))
+        version: 4.1.0(@types/node@25.5.0)(happy-dom@20.8.9)(vite@8.0.2(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.3))
 
   packages/vite-plugin:
     dependencies:
@@ -1474,7 +1474,7 @@ importers:
     devDependencies:
       '@vitest/coverage-v8':
         specifier: ^4
-        version: 4.1.0(vitest@4.1.0(@types/node@25.5.0)(happy-dom@20.8.4)(vite@8.0.2(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.3)))
+        version: 4.1.0(vitest@4.1.0(@types/node@25.5.0)(happy-dom@20.8.9)(vite@8.0.2(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.3)))
       '@vue/compiler-sfc':
         specifier: ^3.5
         version: 3.5.30
@@ -1489,7 +1489,7 @@ importers:
         version: 4.5.4(@types/node@25.5.0)(rollup@4.59.0)(typescript@5.9.3)(vite@8.0.2(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.3))
       vitest:
         specifier: ^4
-        version: 4.1.0(@types/node@25.5.0)(happy-dom@20.8.4)(vite@8.0.2(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.3))
+        version: 4.1.0(@types/node@25.5.0)(happy-dom@20.8.9)(vite@8.0.2(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.3))
 
   packages/vue:
     dependencies:
@@ -1502,13 +1502,13 @@ importers:
     devDependencies:
       '@vitest/coverage-v8':
         specifier: ^4
-        version: 4.1.0(vitest@4.1.0(@types/node@25.5.0)(happy-dom@20.8.4)(vite@8.0.2(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.3)))
+        version: 4.1.0(vitest@4.1.0(@types/node@25.5.0)(happy-dom@20.8.9)(vite@8.0.2(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.3)))
       '@vue/test-utils':
         specifier: ^2
         version: 2.4.6
       happy-dom:
         specifier: ^20
-        version: 20.8.4
+        version: 20.8.9
       typescript:
         specifier: ^5.9
         version: 5.9.3
@@ -1520,7 +1520,7 @@ importers:
         version: 4.5.4(@types/node@25.5.0)(rollup@4.59.0)(typescript@5.9.3)(vite@8.0.2(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.3))
       vitest:
         specifier: ^4
-        version: 4.1.0(@types/node@25.5.0)(happy-dom@20.8.4)(vite@8.0.2(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.3))
+        version: 4.1.0(@types/node@25.5.0)(happy-dom@20.8.9)(vite@8.0.2(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.3))
       vue:
         specifier: ^3.5
         version: 3.5.30(typescript@5.9.3)
@@ -1536,13 +1536,13 @@ importers:
     devDependencies:
       '@vitest/coverage-v8':
         specifier: ^4
-        version: 4.1.0(vitest@4.1.0(@types/node@25.5.0)(happy-dom@20.8.4)(vite@8.0.2(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.3)))
+        version: 4.1.0(vitest@4.1.0(@types/node@25.5.0)(happy-dom@20.8.9)(vite@8.0.2(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.3)))
       '@vue/test-utils':
         specifier: ^2
         version: 2.4.6
       happy-dom:
         specifier: ^20
-        version: 20.8.4
+        version: 20.8.9
       typescript:
         specifier: ^5.9
         version: 5.9.3
@@ -1554,7 +1554,7 @@ importers:
         version: 4.5.4(@types/node@25.5.0)(rollup@4.59.0)(typescript@5.9.3)(vite@8.0.2(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.3))
       vitest:
         specifier: ^4
-        version: 4.1.0(@types/node@25.5.0)(happy-dom@20.8.4)(vite@8.0.2(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.3))
+        version: 4.1.0(@types/node@25.5.0)(happy-dom@20.8.9)(vite@8.0.2(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.3))
       vue:
         specifier: ^3.5
         version: 3.5.30(typescript@5.9.3)
@@ -5952,8 +5952,8 @@ packages:
       crossws:
         optional: true
 
-  happy-dom@20.8.4:
-    resolution: {integrity: sha512-GKhjq4OQCYB4VLFBzv8mmccUadwlAusOZOI7hC1D9xDIT5HhzkJK17c4el2f6R6C715P9xB4uiMxeKUa2nHMwQ==}
+  happy-dom@20.8.9:
+    resolution: {integrity: sha512-Tz23LR9T9jOGVZm2x1EPdXqwA37G/owYMxRwU0E4miurAtFsPMQ1d2Jc2okUaSjZqAFz2oEn3FLXC5a0a+siyA==}
     engines: {node: '>=20.0.0'}
 
   has-flag@4.0.0:
@@ -9409,6 +9409,18 @@ packages:
       utf-8-validate:
         optional: true
 
+  ws@8.20.0:
+    resolution: {integrity: sha512-sAt8BhgNbzCtgGbt2OxmpuryO63ZoDk/sqaB/znQm94T4fCEsy/yV+7CdC1kJhOU9lboAEU7R3kquuycDoibVA==}
+    engines: {node: '>=10.0.0'}
+    peerDependencies:
+      bufferutil: ^4.0.1
+      utf-8-validate: '>=5.0.2'
+    peerDependenciesMeta:
+      bufferutil:
+        optional: true
+      utf-8-validate:
+        optional: true
+
   wsl-utils@0.1.0:
     resolution: {integrity: sha512-h3Fbisa2nKGPxCpm89Hk33lBLsnaGBvctQopaBSOW/uIs6FTe1ATyAnKFJrzVs9vpGdsTe73WF3V4lIsk4Gacw==}
     engines: {node: '>=18'}
@@ -12423,7 +12435,7 @@ snapshots:
       vite: 8.0.2(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.3)
       vue: 3.5.30(typescript@5.9.3)
 
-  '@vitest/coverage-v8@4.1.0(vitest@4.1.0(@types/node@25.5.0)(happy-dom@20.8.4)(vite@8.0.2(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.3)))':
+  '@vitest/coverage-v8@4.1.0(vitest@4.1.0(@types/node@25.5.0)(happy-dom@20.8.9)(vite@8.0.2(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.3)))':
     dependencies:
       '@bcoe/v8-coverage': 1.0.2
       '@vitest/utils': 4.1.0
@@ -12435,7 +12447,7 @@ snapshots:
       obug: 2.1.1
       std-env: 4.0.0
       tinyrainbow: 3.1.0
-      vitest: 4.1.0(@types/node@25.5.0)(happy-dom@20.8.4)(vite@8.0.2(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.3))
+      vitest: 4.1.0(@types/node@25.5.0)(happy-dom@20.8.9)(vite@8.0.2(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.3))
 
   '@vitest/expect@4.1.0':
     dependencies:
@@ -14351,14 +14363,14 @@ snapshots:
       rou3: 0.8.1
       srvx: 0.11.13
 
-  happy-dom@20.8.4:
+  happy-dom@20.8.9:
     dependencies:
       '@types/node': 25.5.0
       '@types/whatwg-mimetype': 3.0.2
       '@types/ws': 8.18.1
       entities: 7.0.1
       whatwg-mimetype: 3.0.0
-      ws: 8.19.0
+      ws: 8.20.0
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
@@ -18698,7 +18710,7 @@ snapshots:
     optionalDependencies:
       vite: 8.0.2(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.3)
 
-  vitest@4.1.0(@types/node@25.5.0)(happy-dom@20.8.4)(vite@8.0.2(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.3)):
+  vitest@4.1.0(@types/node@25.5.0)(happy-dom@20.8.9)(vite@8.0.2(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.3)):
     dependencies:
       '@vitest/expect': 4.1.0
       '@vitest/mocker': 4.1.0(vite@8.0.2(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.3))
@@ -18722,7 +18734,7 @@ snapshots:
       why-is-node-running: 2.3.0
     optionalDependencies:
       '@types/node': 25.5.0
-      happy-dom: 20.8.4
+      happy-dom: 20.8.9
     transitivePeerDependencies:
       - msw
 
@@ -18919,6 +18931,8 @@ snapshots:
   ws@7.5.10: {}
 
   ws@8.19.0: {}
+
+  ws@8.20.0: {}
 
   wsl-utils@0.1.0:
     dependencies:
