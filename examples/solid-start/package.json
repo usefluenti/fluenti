@@ -17,6 +17,6 @@
     "vinxi": "^0.5"
   },
   "devDependencies": {
-    "typescript": "^5.9"
+    "typescript": "^6.0"
   }
 }
